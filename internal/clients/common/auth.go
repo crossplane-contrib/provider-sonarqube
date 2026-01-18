@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Crossplane Authors.
+Copyright 2026 The Crossplane Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,5 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package sample contains group sample API versions
-package sample
+package common
+
+const (
+	// BasicAuth is SonarQube's BasicAuth method of authentification that needs a username and a password
+	BasicAuth AuthType = "BasicAuth"
+
+	// PersonalAccessToken is SonarQube's PersonalAccessToken method of authentification.
+	PersonalAccessToken AuthType = "PersonalAccessToken"
+)
+
+// AuthType represents an authentication type within SonarQube.
+type AuthType string

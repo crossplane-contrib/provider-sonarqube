@@ -1,0 +1,17 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: QualityGate
+metadata:
+  name: example-qualitygate
+  namespace: default
+spec:
+  forProvider:
+    name: TestQualityGate
+    default: false
+    conditions:
+      - metric: blocker_violations
+        op: GT
+        error: "0"
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

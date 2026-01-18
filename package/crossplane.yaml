@@ -1,13 +1,27 @@
 apiVersion: meta.pkg.crossplane.io/v1alpha1
 kind: Provider
 metadata:
-  name: provider-template
+  name: provider-sonarqube
   annotations:
     meta.crossplane.io/maintainer: Crossplane Maintainers <info@crossplane.io>
-    meta.crossplane.io/source: github.com/crossplane/provider-template
+    meta.crossplane.io/source: github.com/crossplane/provider-sonarqube
     meta.crossplane.io/license: Apache-2.0
     meta.crossplane.io/description: |
-      A template that can be used to create Crossplane providers.
+      The SonarQube Crossplane provider adds support for
+      managing SonarQube resources in Kubernetes.
+
+    meta.crossplane.io/readme: |
+      `provider-sonarqube` is the Crossplane infrastructure provider for
+      [SonarQube](https://www.sonarqube.org/).
+
+      Available resources and their fields can be found in the [CRD
+      Docs](https://marketplace.upbound.io/providers/crossplane-contrib/provider-sonarqube/latest/crds).
+
+      If you encounter an issue please reach out on
+      [slack.crossplane.io](https://slack.crossplane.io) and create an issue in
+      the [crossplane-contrib/provider-sonarqube](https://github.com/crossplane-contrib/provider-sonarqube)
+      repo.
+
 spec:
   capabilities:
     - safe-start

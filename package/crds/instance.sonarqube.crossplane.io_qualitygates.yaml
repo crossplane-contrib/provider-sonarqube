@@ -1,0 +1,338 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: qualitygates.instance.sonarqube.crossplane.io
+spec:
+  group: instance.sonarqube.crossplane.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - sonarqube
+    kind: QualityGate
+    listKind: QualityGateList
+    plural: qualitygates
+    singular: qualitygate
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: A QualityGate is an example API type.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: A QualityGateSpec defines the desired state of a QualityGate.
+            properties:
+              forProvider:
+                description: ForProvider represents the desired state of the Quality
+                  Gate.
+                properties:
+                  conditions:
+                    description: Conditions is the list of conditions associated with
+                      the Quality Gate.
+                    items:
+                      description: QualityGateConditionParameters are the configurable
+                        fields of a QualityGateCondition.
+                      properties:
+                        error:
+                          description: Error is the Condition error threshold
+                          maxLength: 64
+                          minLength: 1
+                          type: string
+                        id:
+                          description: |-
+                            Id is the Condition ID
+                            It will be populated by the controller upon creation / update
+                            WARNING: Updating it manually will cause unexpected behaviors.
+                          type: string
+                        metric:
+                          description: |-
+                            Metric is the Condition metric that the condition applies to.
+                            Only accepts metrics of the following types: INT, MILLISEC, RATING, WORK_DUR, FLOAT, PERCENT, LEVEL.
+                            The following metrics are forbidden: alert_status, security_hotspots, new_security_hotspots.
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9_]+$
+                          type: string
+                        op:
+                          description: |-
+                            Op is the Condition operator.
+                            Only LT (is lower than) and GT (is greater than) are supported.
+                          enum:
+                          - LT
+                          - GT
+                          type: string
+                      required:
+                      - error
+                      - metric
+                      type: object
+                    type: array
+                  default:
+                    description: |-
+                      Default indicates whether this Quality Gate is the default one.
+                      WARNING: It is currently not possible to unset the default Quality Gate in SonarQube once it is set. The only way to change the default Quality Gate is to set another Quality Gate as default.
+                    type: boolean
+                  name:
+                    description: |-
+                      Name is the Display name of the Quality Gate.
+                      WARNING: This field is immutable once set.
+                    maxLength: 100
+                    minLength: 1
+                    type: string
+                    x-kubernetes-validations:
+                    - message: Name is immutable.
+                      rule: self == oldSelf
+                required:
+                - name
+                type: object
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  kind: ClusterProviderConfig
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  kind:
+                    description: Kind of the referenced object.
+                    type: string
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - forProvider
+            type: object
+          status:
+            description: A QualityGateStatus represents the observed state of a QualityGate.
+            properties:
+              atProvider:
+                description: AtProvider represents the observed state of the Quality
+                  Gate.
+                properties:
+                  actions:
+                    description: Actions represents the actions that can be performed
+                      on the Quality Gate.
+                    properties:
+                      associateProjects:
+                        description: AssociateProjects defines whether projects can
+                          be associated with the Quality Gate.
+                        type: boolean
+                      copy:
+                        description: Copy defines whether the Quality Gate can be
+                          copied.
+                        type: boolean
+                      delegate:
+                        description: Delegate defines whether the Quality Gate can
+                          be delegated.
+                        type: boolean
+                      delete:
+                        description: Delete defines whether the Quality Gate can be
+                          deleted.
+                        type: boolean
+                      manageAiCodeAssurance:
+                        description: ManageAiCodeAssurance defines whether AI Code
+                          Assurance settings can be managed.
+                        type: boolean
+                      manageConditions:
+                        description: ManageConditions defines whether conditions of
+                          the Quality Gate can be managed.
+                        type: boolean
+                      rename:
+                        description: Rename defines whether the Quality Gate can be
+                          renamed.
+                        type: boolean
+                      setAsDefault:
+                        description: SetAsDefault defines whether the Quality Gate
+                          can be set as the default one.
+                        type: boolean
+                    required:
+                    - associateProjects
+                    - copy
+                    - delegate
+                    - delete
+                    - manageAiCodeAssurance
+                    - manageConditions
+                    - rename
+                    - setAsDefault
+                    type: object
+                  caycStatus:
+                    description: Defines the Clean as You Code status of the Quality
+                      Gate.
+                    type: string
+                  conditions:
+                    description: Conditions represents the list of conditions associated
+                      with the Quality Gate.
+                    items:
+                      description: QualityGateConditionObservation are the observable
+                        fields of a QualityGateCondition.
+                      properties:
+                        error:
+                          description: Error is the Condition error threshold
+                          type: string
+                        id:
+                          description: ID is the Condition ID
+                          type: string
+                        metric:
+                          description: Metric is the Condition metric that the condition
+                            applies to.
+                          type: string
+                        op:
+                          description: Op is the Condition operator.
+                          type: string
+                      type: object
+                    type: array
+                  isAiCodeSupported:
+                    description: IsAiCodeSupported indicates whether AI Code Assurance
+                      is supported for the Quality Gate.
+                    type: boolean
+                  isBuiltIn:
+                    description: IsBuiltIn indicates whether the Quality Gate is built-in.
+                    type: boolean
+                  isDefault:
+                    description: IsDefault indicates whether the Quality Gate is the
+                      default one.
+                    type: boolean
+                  name:
+                    description: Name represents the name of the Quality Gate.
+                    type: string
+                required:
+                - caycStatus
+                - isAiCodeSupported
+                - isBuiltIn
+                - isDefault
+                - name
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

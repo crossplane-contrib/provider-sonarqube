@@ -14,4 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package common
+
+import (
+	"testing"
+)
+
+func TestAuthTypeConstants(t *testing.T) {
+	tests := map[string]struct {
+		authType AuthType
+		want     string
+	}{
+		"BasicAuthConstant": {
+			authType: BasicAuth,
+			want:     "BasicAuth",
+		},
+		"PersonalAccessTokenConstant": {
+			authType: PersonalAccessToken,
+			want:     "PersonalAccessToken",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if string(tc.authType) != tc.want {
+				t.Errorf("AuthType = %v, want %v", tc.authType, tc.want)
+			}
+		})
+	}
+}

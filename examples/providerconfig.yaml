@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: example-provider-secret
+type: Opaque
+data:
+  token: QkFTRTY0RU5DT0RFRF9QUk9WSURFUl9DUkVEUwo=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: example-provider-secret-basicauth
+type: Opaque
+data:
+  username: ZXhhbXBsZQ==
+  password: ZXhhbXBsZQ==
+---
+apiVersion: sonarqube.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: example
+  namespace: default
+spec:
+  baseURL: http://sonarqube.example.com/api
+  token:
+    source: Secret
+    secretRef:
+      namespace: default
+      name: example-provider-secret
+      key: token
+---
+apiVersion: sonarqube.crossplane.io/v1alpha1
+kind: ClusterProviderConfig
+metadata:
+  name: example
+spec:
+  baseURL: http://sonarqube.example.com/api
+  username:
+    source: Secret
+    secretRef:
+      namespace: default
+      name: example-provider-secret-basicauth
+      key: username
+  password:
+    source: Secret
+    secretRef:
+      namespace: default
+      name: example-provider-secret-basicauth
+      key: password
