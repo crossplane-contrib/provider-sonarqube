@@ -1,0 +1,464 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: qualityprofiles.instance.sonarqube.crossplane.io
+spec:
+  group: instance.sonarqube.crossplane.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - sonarqube
+    kind: QualityProfile
+    listKind: QualityProfileList
+    plural: qualityprofiles
+    singular: qualityprofile
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: A QualityProfile is an example API type.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: A QualityProfileSpec defines the desired state of a QualityProfile.
+            properties:
+              forProvider:
+                description: QualityProfileParameters are the configurable fields
+                  of a QualityProfile.
+                properties:
+                  default:
+                    description: Default indicates whether this Quality Profile is
+                      the default one.
+                    type: boolean
+                  language:
+                    description: Language defines the programming language of the
+                      Quality Profile.
+                    enum:
+                    - azureresourcemanager
+                    - cloudformation
+                    - cs
+                    - css
+                    - docker
+                    - flex
+                    - go
+                    - ipynb
+                    - java
+                    - js
+                    - json
+                    - jsp
+                    - kotlin
+                    - kubernetes
+                    - php
+                    - py
+                    - ruby
+                    - rust
+                    - scala
+                    - scala
+                    - secrets
+                    - terraform
+                    - text
+                    - ts
+                    - vbnet
+                    - web
+                    - xml
+                    - yaml
+                    type: string
+                  name:
+                    description: Name is the Display name of the Quality Profile.
+                    maxLength: 100
+                    minLength: 1
+                    type: string
+                  rules:
+                    description: Rules is the list of rules to be activated in the
+                      Quality Profile.
+                    items:
+                      description: QualityProfileRuleParameters are the configurable
+                        fields of a QualityProfile Rule.
+                      properties:
+                        impacts:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Impacts overrides severities for the rule. Cannot be used as the same time as 'severity'.
+                            If used together with 'severity', 'impacts' will take precedence.
+                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read its value via SonarQube API.
+                          type: object
+                        params:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Parameters.
+                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read the activated values via SonarQube API.
+                          type: object
+                        prioritized:
+                          description: |-
+                            Prioritized marks activated rule as prioritized, so all corresponding Issues will have to be fixed.
+                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read its value via SonarQube API.
+                          type: boolean
+                        rule:
+                          description: Rule is the unique key (identifier) of the
+                            rule to be activated in the Quality Profile.
+                          minLength: 1
+                          type: string
+                        severity:
+                          description: |-
+                            Severity. Cannot be used as the same time as 'impacts'.
+                            If used together with 'impacts', 'impacts' will take precedence.
+                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read the activated value via SonarQube API.
+                          enum:
+                          - INFO
+                          - MINOR
+                          - MAJOR
+                          - CRITICAL
+                          - BLOCKER
+                          type: string
+                      required:
+                      - rule
+                      type: object
+                    type: array
+                required:
+                - language
+                - name
+                type: object
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  kind: ClusterProviderConfig
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  kind:
+                    description: Kind of the referenced object.
+                    type: string
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - forProvider
+            type: object
+          status:
+            description: A QualityProfileStatus represents the observed state of a
+              QualityProfile.
+            properties:
+              atProvider:
+                description: QualityProfileObservation are the observable fields of
+                  a QualityProfile.
+                properties:
+                  activeDeprecatedRuleCount:
+                    description: ActiveDeprecatedRuleCount represents the number of
+                      active deprecated rules in the Quality Profile.
+                    format: int64
+                    type: integer
+                  activeRuleCount:
+                    description: ActiveRuleCount represents the number of active rules
+                      in the Quality Profile.
+                    format: int64
+                    type: integer
+                  isBuiltIn:
+                    description: IsBuiltIn indicates whether the Quality Profile is
+                      built-in.
+                    type: boolean
+                  isDefault:
+                    description: IsDefault indicates whether the Quality Profile is
+                      the default one.
+                    type: boolean
+                  isInherited:
+                    description: IsInherited indicates whether the Quality Profile
+                      is inherited.
+                    type: boolean
+                  key:
+                    description: Key is the unique key (identifier) of the Quality
+                      Profile.
+                    type: string
+                  language:
+                    description: Language is the programming language to which the
+                      Quality Profile applies.
+                    type: string
+                  languageName:
+                    description: LanguageName is the display name of the programming
+                      language to which the Quality Profile applies.
+                    type: string
+                  lastUsed:
+                    description: LastUsed is the last time the Quality Profile was
+                      used.
+                    format: date-time
+                    type: string
+                  name:
+                    description: Name is the display name of the Quality Profile.
+                    type: string
+                  projectCount:
+                    description: ProjectCount is the number of projects associated
+                      with the Quality Profile.
+                    format: int64
+                    type: integer
+                  rules:
+                    description: Rules represents the list of rules activated in the
+                      Quality Profile.
+                    items:
+                      description: QualityProfileRuleObservation are the observable
+                        fields of a QualityProfile Rule.
+                      properties:
+                        cleanCodeAttribute:
+                          type: string
+                        cleanCodeAttributeCategory:
+                          type: string
+                        createdAt:
+                          format: date-time
+                          type: string
+                        descriptionSections:
+                          items:
+                            properties:
+                              content:
+                                type: string
+                              context:
+                                properties:
+                                  displayName:
+                                    type: string
+                                  key:
+                                    type: string
+                                type: object
+                              key:
+                                type: string
+                            type: object
+                          type: array
+                        htmlDesc:
+                          type: string
+                        htmlNote:
+                          type: string
+                        impacts:
+                          items:
+                            properties:
+                              severity:
+                                type: string
+                              softwareQuality:
+                                type: string
+                            type: object
+                          type: array
+                        internalKey:
+                          type: string
+                        isExternal:
+                          type: boolean
+                        isTemplate:
+                          type: boolean
+                        key:
+                          type: string
+                        language:
+                          type: string
+                        languageName:
+                          type: string
+                        mdNote:
+                          type: string
+                        name:
+                          type: string
+                        noteLogin:
+                          type: string
+                        parameters:
+                          items:
+                            properties:
+                              defaultValue:
+                                type: string
+                              desc:
+                                type: string
+                              key:
+                                type: string
+                            type: object
+                          type: array
+                        repo:
+                          type: string
+                        scope:
+                          type: string
+                        severity:
+                          type: string
+                        status:
+                          type: string
+                        sysTags:
+                          items:
+                            type: string
+                          type: array
+                        tags:
+                          items:
+                            type: string
+                          type: array
+                        templateKey:
+                          type: string
+                        type:
+                          type: string
+                        updatedAt:
+                          format: date-time
+                          type: string
+                      required:
+                      - cleanCodeAttribute
+                      - cleanCodeAttributeCategory
+                      - htmlDesc
+                      - htmlNote
+                      - internalKey
+                      - isExternal
+                      - isTemplate
+                      - key
+                      - language
+                      - languageName
+                      - mdNote
+                      - name
+                      - noteLogin
+                      - repo
+                      - scope
+                      - severity
+                      - status
+                      - templateKey
+                      - type
+                      type: object
+                    type: array
+                  rulesUpdatedAt:
+                    description: RulesUpdatedAt is the last time the rules in the
+                      Quality Profile were updated.
+                    format: date-time
+                    type: string
+                required:
+                - activeDeprecatedRuleCount
+                - activeRuleCount
+                - isBuiltIn
+                - isDefault
+                - isInherited
+                - key
+                - language
+                - languageName
+                - name
+                - projectCount
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

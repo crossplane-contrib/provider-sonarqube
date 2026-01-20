@@ -19,8 +19,10 @@ package helpers
 import (
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CloseBody closes the body of an http.Response safely.
@@ -72,4 +74,51 @@ func AssignIfNil[T any](ptr **T, val T) {
 	if *ptr == nil {
 		*ptr = &val
 	}
+}
+
+// TimeToMetaTime returns nil if parameter is nil, otherwise metav1.Time value
+func TimeToMetaTime(t *time.Time) *metav1.Time {
+	if t == nil {
+		return nil
+	}
+	return &metav1.Time{Time: *t}
+}
+
+// StringToMetaTime converts a string pointer representing a time in RFC3339 format to a metav1.Time pointer.
+// Returns nil if the input string pointer is nil or if parsing fails.
+func StringToMetaTime(s *string) *metav1.Time {
+	if s == nil {
+		return nil
+	}
+	parsedTime, err := time.Parse(time.RFC3339, *s)
+	if err != nil {
+		return nil
+	}
+	return &metav1.Time{Time: parsedTime}
+}
+
+// MapToSemicolonSeparatedString converts a map to a semicolon-separated key=value string
+func MapToSemicolonSeparatedString(m *map[string]string) string {
+	if m == nil || len(*m) == 0 {
+		return ""
+	}
+	result := ""
+	for k, v := range *m {
+		if result != "" {
+			result += ";"
+		}
+		result += k + "=" + v
+	}
+	return result
+}
+
+// AnySliceToStringSlice converts a []any to []string, skipping non-string elements
+func AnySliceToStringSlice(slice []any) []string {
+	result := make([]string, 0, len(slice))
+	for _, v := range slice {
+		if s, ok := v.(string); ok {
+			result = append(result, s)
+		}
+	}
+	return result
 }
