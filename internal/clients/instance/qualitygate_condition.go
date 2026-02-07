@@ -17,13 +17,13 @@ limitations under the License.
 package instance
 
 import (
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// GenerateQualityGateConditionObservation generates QualityGateConditionObservation from SonarQube QualitygatesShowObject_sub2
-func GenerateQualityGateConditionObservation(condition *sonargo.QualitygatesShowObject_sub2) v1alpha1.QualityGateConditionObservation {
+// GenerateQualityGateConditionObservation generates QualityGateConditionObservation from SonarQube QualityGateCondition
+func GenerateQualityGateConditionObservation(condition *sonar.QualityGateCondition) v1alpha1.QualityGateConditionObservation {
 	return v1alpha1.QualityGateConditionObservation{
 		Error:  condition.Error,
 		ID:     condition.ID,
@@ -32,8 +32,8 @@ func GenerateQualityGateConditionObservation(condition *sonargo.QualitygatesShow
 	}
 }
 
-// GenerateQualityGateConditionObservationFromCreate generates QualityGateConditionObservation from SonarQube QualitygatesShowObject_sub2
-func GenerateQualityGateConditionObservationFromCreate(condition *sonargo.QualitygatesCreateConditionObject) *v1alpha1.QualityGateConditionObservation {
+// GenerateQualityGateConditionObservationFromCreate generates QualityGateConditionObservation from SonarQube QualityGateCondition
+func GenerateQualityGateConditionObservationFromCreate(condition *sonar.QualitygatesCreateCondition) *v1alpha1.QualityGateConditionObservation {
 	return &v1alpha1.QualityGateConditionObservation{
 		Error:  condition.Error,
 		ID:     condition.ID,
@@ -42,8 +42,8 @@ func GenerateQualityGateConditionObservationFromCreate(condition *sonargo.Qualit
 	}
 }
 
-// GenerateQualityGateConditionsObservation generates a slice of QualityGateConditionObservation from a slice of SonarQube QualitygatesShowObject_sub2
-func GenerateQualityGateConditionsObservation(conditions []sonargo.QualitygatesShowObject_sub2) []v1alpha1.QualityGateConditionObservation {
+// GenerateQualityGateConditionsObservation generates a slice of QualityGateConditionObservation from a slice of SonarQube QualityGateCondition
+func GenerateQualityGateConditionsObservation(conditions []sonar.QualityGateCondition) []v1alpha1.QualityGateConditionObservation {
 	conditionObservations := make([]v1alpha1.QualityGateConditionObservation, len(conditions))
 	for i, condition := range conditions {
 		conditionObservations[i] = GenerateQualityGateConditionObservation(&condition)
@@ -52,8 +52,8 @@ func GenerateQualityGateConditionsObservation(conditions []sonargo.QualitygatesS
 }
 
 // GenerateCreateQualityGateConditionOption generates SonarQube QualitygatesCreateConditionOption from QualityGateConditionParameters
-func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.QualityGateConditionParameters) *sonargo.QualitygatesCreateConditionOption {
-	option := sonargo.QualitygatesCreateConditionOption{
+func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesCreateConditionOption {
+	option := sonar.QualitygatesCreateConditionOption{
 		GateName: gateName,
 		Error:    params.Error,
 		Metric:   params.Metric,
@@ -65,9 +65,9 @@ func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.Q
 }
 
 // GenerateUpdateQualityGateConditionOption generates SonarQube QualitygatesUpdateConditionOption from QualityGateConditionParameters
-func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.QualityGateConditionParameters) *sonargo.QualitygatesUpdateConditionOption {
-	option := sonargo.QualitygatesUpdateConditionOption{
-		Id:     id,
+func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesUpdateConditionOption {
+	option := sonar.QualitygatesUpdateConditionOption{
+		ID:     id,
 		Error:  params.Error,
 		Metric: params.Metric,
 	}
@@ -78,9 +78,9 @@ func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.Quality
 }
 
 // GenerateDeleteQualityGateConditionOption generates SonarQube QualitygatesDeleteConditionOption from QualityGateConditionObservation
-func GenerateDeleteQualityGateConditionOption(id string) *sonargo.QualitygatesDeleteConditionOption {
-	return &sonargo.QualitygatesDeleteConditionOption{
-		Id: id,
+func GenerateDeleteQualityGateConditionOption(id string) *sonar.QualitygatesDeleteConditionOption {
+	return &sonar.QualitygatesDeleteConditionOption{
+		ID: id,
 	}
 }
 
