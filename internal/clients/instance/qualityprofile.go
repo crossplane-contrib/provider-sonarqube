@@ -19,7 +19,7 @@ package instance
 import (
 	"net/http"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
@@ -28,35 +28,32 @@ import (
 
 // QualityProfilesClient is the interface for the Quality Profiles SonarQube client.
 type QualityProfilesClient interface {
-	ActivateRule(opt *sonargo.QualityprofilesActivateRuleOption) (resp *http.Response, err error)
-	ActivateRules(opt *sonargo.QualityprofilesActivateRulesOption) (resp *http.Response, err error)
-	AddGroup(opt *sonargo.QualityprofilesAddGroupOption) (resp *http.Response, err error)
-	AddProject(opt *sonargo.QualityprofilesAddProjectOption) (resp *http.Response, err error)
-	AddUser(opt *sonargo.QualityprofilesAddUserOption) (resp *http.Response, err error)
-	Backup(opt *sonargo.QualityprofilesBackupOption) (v *string, resp *http.Response, err error)
-	ChangeParent(opt *sonargo.QualityprofilesChangeParentOption) (resp *http.Response, err error)
-	Changelog(opt *sonargo.QualityprofilesChangelogOption) (v *sonargo.QualityprofilesChangelogObject, resp *http.Response, err error)
-	Compare(opt *sonargo.QualityprofilesCompareOption) (v *sonargo.QualityprofilesCompareObject, resp *http.Response, err error)
-	Copy(opt *sonargo.QualityprofilesCopyOption) (v *sonargo.QualityprofilesCopyObject, resp *http.Response, err error)
-	Create(opt *sonargo.QualityprofilesCreateOption) (v *sonargo.QualityprofilesCreateObject, resp *http.Response, err error)
-	DeactivateRule(opt *sonargo.QualityprofilesDeactivateRuleOption) (resp *http.Response, err error)
-	DeactivateRules(opt *sonargo.QualityprofilesDeactivateRulesOption) (resp *http.Response, err error)
-	Delete(opt *sonargo.QualityprofilesDeleteOption) (resp *http.Response, err error)
-	Export(opt *sonargo.QualityprofilesExportOption) (v *string, resp *http.Response, err error)
-	Exporters() (v *sonargo.QualityprofilesExportersObject, resp *http.Response, err error)
-	Importers() (v *sonargo.QualityprofilesImportersObject, resp *http.Response, err error)
-	Inheritance(opt *sonargo.QualityprofilesInheritanceOption) (v *sonargo.QualityprofilesInheritanceObject, resp *http.Response, err error)
-	Projects(opt *sonargo.QualityprofilesProjectsOption) (v *sonargo.QualityprofilesProjectsObject, resp *http.Response, err error)
-	RemoveGroup(opt *sonargo.QualityprofilesRemoveGroupOption) (resp *http.Response, err error)
-	RemoveProject(opt *sonargo.QualityprofilesRemoveProjectOption) (resp *http.Response, err error)
-	RemoveUser(opt *sonargo.QualityprofilesRemoveUserOption) (resp *http.Response, err error)
-	Rename(opt *sonargo.QualityprofilesRenameOption) (resp *http.Response, err error)
-	Restore(opt *sonargo.QualityprofilesRestoreOption) (resp *http.Response, err error)
-	Search(opt *sonargo.QualityprofilesSearchOption) (v *sonargo.QualityprofilesSearchObject, resp *http.Response, err error)
-	SearchGroups(opt *sonargo.QualityprofilesSearchGroupsOption) (v *sonargo.QualityprofilesSearchGroupsObject, resp *http.Response, err error)
-	SearchUsers(opt *sonargo.QualityprofilesSearchUsersOption) (v *sonargo.QualityprofilesSearchUsersObject, resp *http.Response, err error)
-	SetDefault(opt *sonargo.QualityprofilesSetDefaultOption) (resp *http.Response, err error)
-	Show(opt *sonargo.QualityprofilesShowOption) (v *sonargo.QualityprofilesShowObject, resp *http.Response, err error)
+	ActivateRule(opt *sonar.QualityprofilesActivateRuleOption) (resp *http.Response, err error)
+	ActivateRules(opt *sonar.QualityprofilesActivateRulesOption) (resp *http.Response, err error)
+	AddGroup(opt *sonar.QualityprofilesAddGroupOption) (resp *http.Response, err error)
+	AddProject(opt *sonar.QualityprofilesAddProjectOption) (resp *http.Response, err error)
+	AddUser(opt *sonar.QualityprofilesAddUserOption) (resp *http.Response, err error)
+	Backup(opt *sonar.QualityprofilesBackupOption) (v *string, resp *http.Response, err error)
+	ChangeParent(opt *sonar.QualityprofilesChangeParentOption) (resp *http.Response, err error)
+	Changelog(opt *sonar.QualityprofilesChangelogOption) (v *sonar.QualityprofilesChangelog, resp *http.Response, err error)
+	Compare(opt *sonar.QualityprofilesCompareOption) (v *sonar.QualityprofilesCompare, resp *http.Response, err error)
+	Copy(opt *sonar.QualityprofilesCopyOption) (v *sonar.QualityprofilesCopy, resp *http.Response, err error)
+	Create(opt *sonar.QualityprofilesCreateOption) (v *sonar.QualityprofilesCreate, resp *http.Response, err error)
+	DeactivateRule(opt *sonar.QualityprofilesDeactivateRuleOption) (resp *http.Response, err error)
+	DeactivateRules(opt *sonar.QualityprofilesDeactivateRulesOption) (resp *http.Response, err error)
+	Delete(opt *sonar.QualityprofilesDeleteOption) (resp *http.Response, err error)
+	Inheritance(opt *sonar.QualityprofilesInheritanceOption) (v *sonar.QualityprofilesInheritance, resp *http.Response, err error)
+	Projects(opt *sonar.QualityprofilesProjectsOption) (v *sonar.QualityprofilesProjects, resp *http.Response, err error)
+	RemoveGroup(opt *sonar.QualityprofilesRemoveGroupOption) (resp *http.Response, err error)
+	RemoveProject(opt *sonar.QualityprofilesRemoveProjectOption) (resp *http.Response, err error)
+	RemoveUser(opt *sonar.QualityprofilesRemoveUserOption) (resp *http.Response, err error)
+	Rename(opt *sonar.QualityprofilesRenameOption) (resp *http.Response, err error)
+	Restore(opt *sonar.QualityprofilesRestoreOption) (resp *http.Response, err error)
+	Search(opt *sonar.QualityprofilesSearchOption) (v *sonar.QualityprofilesSearch, resp *http.Response, err error)
+	SearchGroups(opt *sonar.QualityprofilesSearchGroupsOption) (v *sonar.QualityprofilesSearchGroups, resp *http.Response, err error)
+	SearchUsers(opt *sonar.QualityprofilesSearchUsersOption) (v *sonar.QualityprofilesSearchUsers, resp *http.Response, err error)
+	SetDefault(opt *sonar.QualityprofilesSetDefaultOption) (resp *http.Response, err error)
+	Show(opt *sonar.QualityprofilesShowOption) (v *sonar.QualityprofilesShow, resp *http.Response, err error)
 }
 
 // NewQualityProfilesClient creates a new QualityProfilesClient with the provided SonarQube client configuration.
@@ -66,31 +63,31 @@ func NewQualityProfilesClient(clientConfig common.Config) QualityProfilesClient 
 }
 
 // GenerateCreateQualityProfileOption generates SonarQube QualityprofilesCreateOption from QualityProfileParameters
-func GenerateCreateQualityProfileOption(params v1alpha1.QualityProfileParameters) *sonargo.QualityprofilesCreateOption {
-	return &sonargo.QualityprofilesCreateOption{
+func GenerateCreateQualityProfileOption(params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesCreateOption {
+	return &sonar.QualityprofilesCreateOption{
 		Name:     params.Name,
 		Language: params.Language,
 	}
 }
 
 // GenerateDeleteQualityProfileOption generates SonarQube QualityprofilesDeleteOption from QualityProfileParameters
-func GenerateDeleteQualityProfileOption(params v1alpha1.QualityProfileParameters) *sonargo.QualityprofilesDeleteOption {
-	return &sonargo.QualityprofilesDeleteOption{
+func GenerateDeleteQualityProfileOption(params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesDeleteOption {
+	return &sonar.QualityprofilesDeleteOption{
 		Language:       params.Language,
 		QualityProfile: params.Name,
 	}
 }
 
 // GenerateRenameQualityProfileOption generates SonarQube QualityprofilesRenameOption from QualityProfileParameters
-func GenerateRenameQualityProfileOption(key string, params v1alpha1.QualityProfileParameters) *sonargo.QualityprofilesRenameOption {
-	return &sonargo.QualityprofilesRenameOption{
+func GenerateRenameQualityProfileOption(key string, params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesRenameOption {
+	return &sonar.QualityprofilesRenameOption{
 		Key:  key,
 		Name: params.Name,
 	}
 }
 
-// GenerateQualityProfileObservation generates QualityProfileObservation from SonarQube QualityprofilesShowObject
-func GenerateQualityProfileObservation(observation *sonargo.QualityprofilesShowObject, rules *sonargo.RulesSearchObject) v1alpha1.QualityProfileObservation {
+// GenerateQualityProfileObservation generates QualityProfileObservation from SonarQube QualityprofilesShow
+func GenerateQualityProfileObservation(observation *sonar.QualityprofilesShow, rules *sonar.RulesSearch) v1alpha1.QualityProfileObservation {
 	return v1alpha1.QualityProfileObservation{
 		ActiveDeprecatedRuleCount: observation.Profile.ActiveDeprecatedRuleCount,
 		ActiveRuleCount:           observation.Profile.ActiveRuleCount,
@@ -109,8 +106,8 @@ func GenerateQualityProfileObservation(observation *sonargo.QualityprofilesShowO
 }
 
 // GenerateQualityprofilesSetDefaultOption generates SonarQube QualityprofilesSetDefaultOption from QualityProfileParameters
-func GenerateQualityprofilesSetDefaultOption(params v1alpha1.QualityProfileParameters) *sonargo.QualityprofilesSetDefaultOption {
-	return &sonargo.QualityprofilesSetDefaultOption{
+func GenerateQualityprofilesSetDefaultOption(params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesSetDefaultOption {
+	return &sonar.QualityprofilesSetDefaultOption{
 		QualityProfile: params.Name,
 		Language:       params.Language,
 	}
@@ -155,35 +152,35 @@ func LateInitializeQualityProfile(spec *v1alpha1.QualityProfileParameters, obser
 
 // GenerateQualityProfileActivateRuleOption generates SonarQube QualityprofilesActivateRuleOption from QualityProfileRuleParameters
 // Note: Per SonarQube API, impacts and severity cannot be used at the same time. If both are provided, impacts takes precedence.
-func GenerateQualityProfileActivateRuleOption(qualityProfileKey string, params v1alpha1.QualityProfileRuleParameters) *sonargo.QualityprofilesActivateRuleOption {
-	activateRulesOption := &sonargo.QualityprofilesActivateRuleOption{
+func GenerateQualityProfileActivateRuleOption(qualityProfileKey string, params v1alpha1.QualityProfileRuleParameters) *sonar.QualityprofilesActivateRuleOption {
+	activateRulesOption := &sonar.QualityprofilesActivateRuleOption{
 		Key:             qualityProfileKey,
 		Rule:            params.Rule,
-		PrioritizedRule: common.STR_FALSE,
+		PrioritizedRule: false,
 	}
 
 	if ptr.Deref(params.Prioritized, false) {
-		activateRulesOption.PrioritizedRule = common.STR_TRUE
+		activateRulesOption.PrioritizedRule = true
 	}
 
 	// Per SonarQube API: impacts and severity cannot be used together
 	// If impacts is provided, use it; otherwise use severity
-	if impacts := helpers.MapToSemicolonSeparatedString(params.Impacts); impacts != "" {
-		activateRulesOption.Impacts = impacts
+	if params.Impacts != nil && len(*params.Impacts) > 0 {
+		activateRulesOption.Impacts = *params.Impacts
 	} else if params.Severity != nil {
 		activateRulesOption.Severity = *params.Severity
 	}
 
-	if parameters := helpers.MapToSemicolonSeparatedString(params.Parameters); parameters != "" {
-		activateRulesOption.Params = parameters
+	if params.Parameters != nil && len(*params.Parameters) > 0 {
+		activateRulesOption.Params = *params.Parameters
 	}
 
 	return activateRulesOption
 }
 
 // GenerateQualityProfileDeactivateRuleOption generates SonarQube QualityprofilesDeactivateRuleOption from rule key
-func GenerateQualityProfileDeactivateRuleOption(qualityProfileKey string, ruleKey string) *sonargo.QualityprofilesDeactivateRuleOption {
-	return &sonargo.QualityprofilesDeactivateRuleOption{
+func GenerateQualityProfileDeactivateRuleOption(qualityProfileKey string, ruleKey string) *sonar.QualityprofilesDeactivateRuleOption {
+	return &sonar.QualityprofilesDeactivateRuleOption{
 		Key:  qualityProfileKey,
 		Rule: ruleKey,
 	}

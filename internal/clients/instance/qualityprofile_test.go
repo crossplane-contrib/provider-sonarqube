@@ -19,7 +19,7 @@ package instance
 import (
 	"testing"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 
@@ -29,14 +29,14 @@ import (
 func TestGenerateCreateQualityProfileOption(t *testing.T) {
 	tests := map[string]struct {
 		params v1alpha1.QualityProfileParameters
-		want   *sonargo.QualityprofilesCreateOption
+		want   *sonar.QualityprofilesCreateOption
 	}{
 		"BasicProfile": {
 			params: v1alpha1.QualityProfileParameters{
 				Name:     "my-profile",
 				Language: "java",
 			},
-			want: &sonargo.QualityprofilesCreateOption{
+			want: &sonar.QualityprofilesCreateOption{
 				Name:     "my-profile",
 				Language: "java",
 			},
@@ -47,7 +47,7 @@ func TestGenerateCreateQualityProfileOption(t *testing.T) {
 				Language: "go",
 				Default:  ptr.To(true),
 			},
-			want: &sonargo.QualityprofilesCreateOption{
+			want: &sonar.QualityprofilesCreateOption{
 				Name:     "default-profile",
 				Language: "go",
 			},
@@ -67,14 +67,14 @@ func TestGenerateCreateQualityProfileOption(t *testing.T) {
 func TestGenerateDeleteQualityProfileOption(t *testing.T) {
 	tests := map[string]struct {
 		params v1alpha1.QualityProfileParameters
-		want   *sonargo.QualityprofilesDeleteOption
+		want   *sonar.QualityprofilesDeleteOption
 	}{
 		"BasicDelete": {
 			params: v1alpha1.QualityProfileParameters{
 				Name:     "my-profile",
 				Language: "java",
 			},
-			want: &sonargo.QualityprofilesDeleteOption{
+			want: &sonar.QualityprofilesDeleteOption{
 				QualityProfile: "my-profile",
 				Language:       "java",
 			},
@@ -95,7 +95,7 @@ func TestGenerateRenameQualityProfileOption(t *testing.T) {
 	tests := map[string]struct {
 		key    string
 		params v1alpha1.QualityProfileParameters
-		want   *sonargo.QualityprofilesRenameOption
+		want   *sonar.QualityprofilesRenameOption
 	}{
 		"BasicRename": {
 			key: "AU-TpxcA-iU5OvuD2FLz",
@@ -103,7 +103,7 @@ func TestGenerateRenameQualityProfileOption(t *testing.T) {
 				Name:     "new-name",
 				Language: "java",
 			},
-			want: &sonargo.QualityprofilesRenameOption{
+			want: &sonar.QualityprofilesRenameOption{
 				Key:  "AU-TpxcA-iU5OvuD2FLz",
 				Name: "new-name",
 			},
@@ -666,17 +666,17 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 	tests := map[string]struct {
 		profileKey string
 		params     v1alpha1.QualityProfileRuleParameters
-		want       *sonargo.QualityprofilesActivateRuleOption
+		want       *sonar.QualityprofilesActivateRuleOption
 	}{
 		"BasicRule": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
 				Rule: "java:S1144",
 			},
-			want: &sonargo.QualityprofilesActivateRuleOption{
+			want: &sonar.QualityprofilesActivateRuleOption{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
 				Rule:            "java:S1144",
-				PrioritizedRule: "false",
+				PrioritizedRule: false,
 			},
 		},
 		"RuleWithSeverity": {
@@ -685,11 +685,11 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 				Rule:     "java:S1144",
 				Severity: ptr.To("CRITICAL"),
 			},
-			want: &sonargo.QualityprofilesActivateRuleOption{
+			want: &sonar.QualityprofilesActivateRuleOption{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
 				Rule:            "java:S1144",
 				Severity:        "CRITICAL",
-				PrioritizedRule: "false",
+				PrioritizedRule: false,
 			},
 		},
 		"RuleWithPrioritized": {
@@ -698,10 +698,10 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 				Rule:        "java:S1144",
 				Prioritized: ptr.To(true),
 			},
-			want: &sonargo.QualityprofilesActivateRuleOption{
+			want: &sonar.QualityprofilesActivateRuleOption{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
 				Rule:            "java:S1144",
-				PrioritizedRule: "true",
+				PrioritizedRule: true,
 			},
 		},
 		"RuleWithImpacts": {
@@ -710,11 +710,11 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 				Rule:    "java:S1144",
 				Impacts: &map[string]string{"MAINTAINABILITY": "HIGH"},
 			},
-			want: &sonargo.QualityprofilesActivateRuleOption{
+			want: &sonar.QualityprofilesActivateRuleOption{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
 				Rule:            "java:S1144",
-				Impacts:         "MAINTAINABILITY=HIGH",
-				PrioritizedRule: "false",
+				Impacts:         map[string]string{"MAINTAINABILITY": "HIGH"},
+				PrioritizedRule: false,
 			},
 		},
 		"RuleWithParams": {
@@ -723,11 +723,11 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 				Rule:       "java:S1144",
 				Parameters: &map[string]string{"max": "10"},
 			},
-			want: &sonargo.QualityprofilesActivateRuleOption{
+			want: &sonar.QualityprofilesActivateRuleOption{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
 				Rule:            "java:S1144",
-				Params:          "max=10",
-				PrioritizedRule: "false",
+				Params:          map[string]string{"max": "10"},
+				PrioritizedRule: false,
 			},
 		},
 		"RuleWithBothImpactsAndSeverityPrioritizesImpacts": {
@@ -737,11 +737,11 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 				Severity: ptr.To("CRITICAL"),
 				Impacts:  &map[string]string{"MAINTAINABILITY": "HIGH"},
 			},
-			want: &sonargo.QualityprofilesActivateRuleOption{
+			want: &sonar.QualityprofilesActivateRuleOption{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
 				Rule:            "java:S1144",
-				Impacts:         "MAINTAINABILITY=HIGH",
-				PrioritizedRule: "false",
+				Impacts:         map[string]string{"MAINTAINABILITY": "HIGH"},
+				PrioritizedRule: false,
 				// Note: Severity should NOT be set when Impacts is present
 			},
 		},
@@ -751,11 +751,11 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 				Rule:     "java:S1144",
 				Severity: ptr.To("BLOCKER"),
 			},
-			want: &sonargo.QualityprofilesActivateRuleOption{
+			want: &sonar.QualityprofilesActivateRuleOption{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
 				Rule:            "java:S1144",
 				Severity:        "BLOCKER",
-				PrioritizedRule: "false",
+				PrioritizedRule: false,
 			},
 		},
 	}
@@ -774,12 +774,12 @@ func TestGenerateQualityProfileDeactivateRuleOption(t *testing.T) {
 	tests := map[string]struct {
 		profileKey string
 		ruleKey    string
-		want       *sonargo.QualityprofilesDeactivateRuleOption
+		want       *sonar.QualityprofilesDeactivateRuleOption
 	}{
 		"BasicDeactivate": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			ruleKey:    "java:S1144",
-			want: &sonargo.QualityprofilesDeactivateRuleOption{
+			want: &sonar.QualityprofilesDeactivateRuleOption{
 				Key:  "AU-TpxcA-iU5OvuD2FLz",
 				Rule: "java:S1144",
 			},

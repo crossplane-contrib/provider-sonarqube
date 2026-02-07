@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -173,7 +173,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Retrieve the Quality Profile from SonarQube
-	qualityProfile, resp, err := c.qualityProfilesClient.Show(&sonargo.QualityprofilesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
+	qualityProfile, resp, err := c.qualityProfilesClient.Show(&sonar.QualityprofilesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
 		Key: externalName,
 	})
 	defer helpers.CloseBody(resp)

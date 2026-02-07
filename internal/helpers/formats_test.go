@@ -377,40 +377,6 @@ func TestStringToMetaTime(t *testing.T) {
 	})
 }
 
-func TestMapToSemicolonSeparatedString(t *testing.T) {
-	t.Run("NilMapReturnsEmptyString", func(t *testing.T) {
-		result := MapToSemicolonSeparatedString(nil)
-		if result != "" {
-			t.Errorf("MapToSemicolonSeparatedString(nil) = %q, want \"\"", result)
-		}
-	})
-
-	t.Run("EmptyMapReturnsEmptyString", func(t *testing.T) {
-		m := map[string]string{}
-		result := MapToSemicolonSeparatedString(&m)
-		if result != "" {
-			t.Errorf("MapToSemicolonSeparatedString(empty) = %q, want \"\"", result)
-		}
-	})
-
-	t.Run("SingleEntryMap", func(t *testing.T) {
-		m := map[string]string{"key1": "value1"}
-		result := MapToSemicolonSeparatedString(&m)
-		if result != "key1=value1" {
-			t.Errorf("MapToSemicolonSeparatedString() = %q, want \"key1=value1\"", result)
-		}
-	})
-
-	t.Run("MultipleEntriesMap", func(t *testing.T) {
-		m := map[string]string{"key1": "value1", "key2": "value2"}
-		result := MapToSemicolonSeparatedString(&m)
-		// Map iteration order is not guaranteed, so check both combinations
-		if result != "key1=value1;key2=value2" && result != "key2=value2;key1=value1" {
-			t.Errorf("MapToSemicolonSeparatedString() = %q, want \"key1=value1;key2=value2\" or \"key2=value2;key1=value1\"", result)
-		}
-	})
-}
-
 func TestAnySliceToStringSlice(t *testing.T) {
 	t.Run("NilSliceReturnsEmpty", func(t *testing.T) {
 		result := AnySliceToStringSlice(nil)

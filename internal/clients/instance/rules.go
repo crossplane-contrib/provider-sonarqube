@@ -18,9 +18,8 @@ package instance
 
 import (
 	"net/http"
-	"strconv"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
@@ -33,15 +32,15 @@ const (
 
 // RulesClient is the client for SonarQube Rules API
 type RulesClient interface {
-	App() (v *sonargo.RulesAppObject, resp *http.Response, err error)
-	Create(opt *sonargo.RulesCreateOption) (v *sonargo.RulesCreateObject, resp *http.Response, err error)
-	Delete(opt *sonargo.RulesDeleteOption) (resp *http.Response, err error)
-	List(opt *sonargo.RulesListOption) (v *string, resp *http.Response, err error)
-	Repositories(opt *sonargo.RulesRepositoriesOption) (v *sonargo.RulesRepositoriesObject, resp *http.Response, err error)
-	Search(opt *sonargo.RulesSearchOption) (v *sonargo.RulesSearchObject, resp *http.Response, err error)
-	Show(opt *sonargo.RulesShowOption) (v *sonargo.RulesShowObject, resp *http.Response, err error)
-	Tags(opt *sonargo.RulesTagsOption) (v *sonargo.RulesTagsObject, resp *http.Response, err error)
-	Update(opt *sonargo.RulesUpdateOption) (v *sonargo.RulesUpdateObject, resp *http.Response, err error)
+	App() (v *sonar.RulesApp, resp *http.Response, err error)
+	Create(opt *sonar.RulesCreateOption) (v *sonar.RulesCreate, resp *http.Response, err error)
+	Delete(opt *sonar.RulesDeleteOption) (resp *http.Response, err error)
+	List(opt *sonar.RulesListOption) (v *string, resp *http.Response, err error)
+	Repositories(opt *sonar.RulesRepositoriesOption) (v *sonar.RulesRepositories, resp *http.Response, err error)
+	Search(opt *sonar.RulesSearchOption) (v *sonar.RulesSearch, resp *http.Response, err error)
+	Show(opt *sonar.RulesShowOption) (v *sonar.RulesShow, resp *http.Response, err error)
+	Tags(opt *sonar.RulesTagsOption) (v *sonar.RulesTags, resp *http.Response, err error)
+	Update(opt *sonar.RulesUpdateOption) (v *sonar.RulesUpdate, resp *http.Response, err error)
 }
 
 // NewRulesClient creates a new RulesClient with the provided SonarQube client configuration.
@@ -52,24 +51,59 @@ func NewRulesClient(clientConfig common.Config) RulesClient {
 
 // GenerateQualityProfileRuleSearchOption generates SonarQube RulesSearchOption for a given quality profile key
 // to fetch activated rules in that quality profile.
-func GenerateQualityProfileRulesSearchOption(key string, page int) *sonargo.RulesSearchOption {
-	return &sonargo.RulesSearchOption{
+func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesSearchOption {
+	return &sonar.RulesSearchOption{
 		Qprofile: key,
 		// We want only activated rules in the quality profile
-		Activation: common.STR_TRUE,
-		// Set page size to maximum allowed
-		Ps: strconv.Itoa(maxRulesPerPage),
-		// Set page number (1-based)
-		P: strconv.Itoa(page),
+		Activation: true,
+		PaginationArgs: sonar.PaginationArgs{
+			// Set page size to maximum allowed
+			PageSize: maxRulesPerPage,
+			// Set page number (1-based)
+			Page: int64(page),
+		},
 		// Retrieve all fields, including "actives"
-		F: "actives,cleanCodeAttribute,createdAt,debtRemFn,defaultDebtRemFn,defaultRemFn,deprecatedKeys,descriptionSections,educationPrinciples,gapDescription,htmlDesc,htmlNote,internalKey,isExternal,isTemplate,lang,langName,mdDesc,mdNote,name,noteLogin,params,remFn,remFnOverloaded,repo,scope,severity,status,sysTags,tags,templateKey,updatedAt",
+		Fields: []string{
+			"actives",
+			"cleanCodeAttribute",
+			"createdAt",
+			"debtRemFn",
+			"defaultDebtRemFn",
+			"defaultRemFn",
+			"deprecatedKeys",
+			"descriptionSections",
+			"educationPrinciples",
+			"gapDescription",
+			"htmlDesc",
+			"htmlNote",
+			"internalKey",
+			"isExternal",
+			"isTemplate",
+			"lang",
+			"langName",
+			"mdDesc",
+			"mdNote",
+			"name",
+			"noteLogin",
+			"params",
+			"remFn",
+			"remFnOverloaded",
+			"repo",
+			"scope",
+			"severity",
+			"status",
+			"sysTags",
+			"tags",
+			"templateKey",
+			"updatedAt",
+		},
 	}
 }
 
 // FetchAllQualityProfileRules fetches all activated rules for a quality profile using pagination.
 // It iterates through all pages until all rules are fetched.
-func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey string) (*sonargo.RulesSearchObject, error) {
-	var allRules []sonargo.RulesSearchObject_sub11
+func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey string) (*sonar.RulesSearch, error) {
+	var allRules []sonar.RuleDetails
 	page := 1
 
 	for {
@@ -87,10 +121,10 @@ func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey stri
 		// Paging.Total is the total number of rules, we compare with what we've collected
 		if int64(len(allRules)) >= rules.Paging.Total {
 			// Return aggregated result with the paging info from last response
-			return &sonargo.RulesSearchObject{
+			return &sonar.RulesSearch{
 				Actives: rules.Actives,
 				Facets:  rules.Facets,
-				Paging: sonargo.RulesSearchObject_sub6{
+				Paging: sonar.Paging{
 					PageIndex: int64(page),
 					PageSize:  int64(len(allRules)),
 					Total:     rules.Paging.Total,
@@ -104,7 +138,7 @@ func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey stri
 }
 
 // GenerateQualityProfileRulesObservation generates observations for Quality Profile Rules
-func GenerateQualityProfileRulesObservation(rules *sonargo.RulesSearchObject) []v1alpha1.QualityProfileRuleObservation {
+func GenerateQualityProfileRulesObservation(rules *sonar.RulesSearch) []v1alpha1.QualityProfileRuleObservation {
 	if rules == nil || rules.Rules == nil {
 		return []v1alpha1.QualityProfileRuleObservation{}
 	}
@@ -119,7 +153,7 @@ func GenerateQualityProfileRulesObservation(rules *sonargo.RulesSearchObject) []
 }
 
 // GenerateQualityProfileRuleObservation generates observation for a Quality Profile Rule
-func GenerateQualityProfileRuleObservation(rule sonargo.RulesSearchObject_sub11) v1alpha1.QualityProfileRuleObservation {
+func GenerateQualityProfileRuleObservation(rule sonar.RuleDetails) v1alpha1.QualityProfileRuleObservation {
 	return v1alpha1.QualityProfileRuleObservation{
 		CleanCodeAttribute:         rule.CleanCodeAttribute,
 		CleanCodeAttributeCategory: rule.CleanCodeAttributeCategory,
@@ -151,7 +185,7 @@ func GenerateQualityProfileRuleObservation(rule sonargo.RulesSearchObject_sub11)
 }
 
 // GenerateQualityProfileRuleDescriptionSectionsObservation generates observations for Quality Profile Rule Descriptions
-func GenerateQualityProfileRuleDescriptionSectionsObservation(descriptionSections *[]sonargo.RulesSearchObject_sub8) []v1alpha1.QualityProfileRuleDescription {
+func GenerateQualityProfileRuleDescriptionSectionsObservation(descriptionSections *[]sonar.DescriptionSection) []v1alpha1.QualityProfileRuleDescription {
 	if descriptionSections == nil {
 		return []v1alpha1.QualityProfileRuleDescription{}
 	}
@@ -166,7 +200,7 @@ func GenerateQualityProfileRuleDescriptionSectionsObservation(descriptionSection
 }
 
 // GenerateQualityProfileRuleDescriptionObservation generates observation for Quality Profile Rule Description
-func GenerateQualityProfileRuleDescriptionObservation(descriptionSections sonargo.RulesSearchObject_sub8) v1alpha1.QualityProfileRuleDescription {
+func GenerateQualityProfileRuleDescriptionObservation(descriptionSections sonar.DescriptionSection) v1alpha1.QualityProfileRuleDescription {
 	return v1alpha1.QualityProfileRuleDescription{
 		Content: descriptionSections.Content,
 		Context: GenerateQualityProfileRuleDescriptionSectionsContextObservation(descriptionSections.Context),
@@ -175,7 +209,7 @@ func GenerateQualityProfileRuleDescriptionObservation(descriptionSections sonarg
 }
 
 // GenerateQualityProfileRuleDescriptionSectionsContextObservation generates observation for Quality Profile Rule Description Context
-func GenerateQualityProfileRuleDescriptionSectionsContextObservation(contextSection sonargo.RulesSearchObject_sub7) v1alpha1.QualityProfileRuleDescriptionSectionsContext {
+func GenerateQualityProfileRuleDescriptionSectionsContextObservation(contextSection sonar.DescriptionContext) v1alpha1.QualityProfileRuleDescriptionSectionsContext {
 	return v1alpha1.QualityProfileRuleDescriptionSectionsContext{
 		DisplayName: contextSection.DisplayName,
 		Key:         contextSection.Key,
@@ -183,7 +217,7 @@ func GenerateQualityProfileRuleDescriptionSectionsContextObservation(contextSect
 }
 
 // GenerateQualityProfileImpactsObservation generates observations for Quality Profile Rule Impacts
-func GenerateQualityProfileImpactsObservation(impacts *[]sonargo.RulesSearchObject_sub9) []v1alpha1.QualityProfileRuleImpact {
+func GenerateQualityProfileImpactsObservation(impacts *[]sonar.RuleImpact) []v1alpha1.QualityProfileRuleImpact {
 	if impacts == nil {
 		return []v1alpha1.QualityProfileRuleImpact{}
 	}
@@ -196,7 +230,7 @@ func GenerateQualityProfileImpactsObservation(impacts *[]sonargo.RulesSearchObje
 }
 
 // GenerateQualityProfileRuleImpactObservation generates observation for Quality Profile Rule Impact
-func GenerateQualityProfileRuleImpactObservation(impact sonargo.RulesSearchObject_sub9) v1alpha1.QualityProfileRuleImpact {
+func GenerateQualityProfileRuleImpactObservation(impact sonar.RuleImpact) v1alpha1.QualityProfileRuleImpact {
 	return v1alpha1.QualityProfileRuleImpact{
 		Severity:        impact.Severity,
 		SoftwareQuality: impact.SoftwareQuality,
@@ -204,7 +238,7 @@ func GenerateQualityProfileRuleImpactObservation(impact sonargo.RulesSearchObjec
 }
 
 // GenerateQualityProfileRuleParametersObservation generates observations for Quality Profile Rule Parameters
-func GenerateQualityProfileRuleParametersObservation(parameters []sonargo.RulesSearchObject_sub10) []v1alpha1.QualityProfileRuleParameter {
+func GenerateQualityProfileRuleParametersObservation(parameters []sonar.RuleParam) []v1alpha1.QualityProfileRuleParameter {
 	observations := make([]v1alpha1.QualityProfileRuleParameter, len(parameters))
 	for i, parameter := range parameters {
 		observations[i] = GenerateQualityProfileRuleParameterObservation(parameter)
@@ -213,7 +247,7 @@ func GenerateQualityProfileRuleParametersObservation(parameters []sonargo.RulesS
 }
 
 // GenerateQualityProfileRuleParameterObservation generates observation for Quality Profile Rule Parameter
-func GenerateQualityProfileRuleParameterObservation(parameter sonargo.RulesSearchObject_sub10) v1alpha1.QualityProfileRuleParameter {
+func GenerateQualityProfileRuleParameterObservation(parameter sonar.RuleParam) v1alpha1.QualityProfileRuleParameter {
 	return v1alpha1.QualityProfileRuleParameter{
 		DefaultValue: parameter.DefaultValue,
 		Desc:         parameter.Desc,

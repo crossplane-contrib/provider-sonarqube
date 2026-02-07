@@ -97,21 +97,6 @@ func StringToMetaTime(s *string) *metav1.Time {
 	return &metav1.Time{Time: parsedTime}
 }
 
-// MapToSemicolonSeparatedString converts a map to a semicolon-separated key=value string
-func MapToSemicolonSeparatedString(m *map[string]string) string {
-	if m == nil || len(*m) == 0 {
-		return ""
-	}
-	result := ""
-	for k, v := range *m {
-		if result != "" {
-			result += ";"
-		}
-		result += k + "=" + v
-	}
-	return result
-}
-
 // AnySliceToStringSlice converts a []any to []string, skipping non-string elements
 func AnySliceToStringSlice(slice []any) []string {
 	result := make([]string, 0, len(slice))

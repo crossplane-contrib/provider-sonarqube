@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -104,7 +104,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ShowFailsReturnsNotExists": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				ShowFn: func(opt *sonargo.QualityprofilesShowOption) (*sonargo.QualityprofilesShowObject, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualityprofilesShowOption) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return nil, nil, errors.New("api error")
 				},
 			},
@@ -129,9 +129,9 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveResourceExists": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				ShowFn: func(opt *sonargo.QualityprofilesShowOption) (*sonargo.QualityprofilesShowObject, *http.Response, error) {
-					return &sonargo.QualityprofilesShowObject{
-						Profile: sonargo.QualityprofilesShowObject_sub1{
+				ShowFn: func(opt *sonar.QualityprofilesShowOption) (*sonar.QualityprofilesShow, *http.Response, error) {
+					return &sonar.QualityprofilesShow{
+						Profile: sonar.ShownProfile{
 							Key:             "AU-TpxcA-iU5OvuD2FLz",
 							Name:            "test-profile",
 							Language:        "java",
@@ -145,10 +145,10 @@ func TestObserve(t *testing.T) {
 				},
 			},
 			rulesClient: &fake.MockRulesClient{
-				SearchFn: func(opt *sonargo.RulesSearchOption) (*sonargo.RulesSearchObject, *http.Response, error) {
-					return &sonargo.RulesSearchObject{
-						Rules: []sonargo.RulesSearchObject_sub11{},
-						Paging: sonargo.RulesSearchObject_sub6{
+				SearchFn: func(opt *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+					return &sonar.RulesSearch{
+						Rules: []sonar.RuleDetails{},
+						Paging: sonar.Paging{
 							Total: 0,
 						},
 					}, nil, nil
@@ -185,9 +185,9 @@ func TestObserve(t *testing.T) {
 		},
 		"ResourceNotUpToDateWhenNamesDiffer": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				ShowFn: func(opt *sonargo.QualityprofilesShowOption) (*sonargo.QualityprofilesShowObject, *http.Response, error) {
-					return &sonargo.QualityprofilesShowObject{
-						Profile: sonargo.QualityprofilesShowObject_sub1{
+				ShowFn: func(opt *sonar.QualityprofilesShowOption) (*sonar.QualityprofilesShow, *http.Response, error) {
+					return &sonar.QualityprofilesShow{
+						Profile: sonar.ShownProfile{
 							Key:          "AU-TpxcA-iU5OvuD2FLz",
 							Name:         "different-name",
 							Language:     "java",
@@ -199,10 +199,10 @@ func TestObserve(t *testing.T) {
 				},
 			},
 			rulesClient: &fake.MockRulesClient{
-				SearchFn: func(opt *sonargo.RulesSearchOption) (*sonargo.RulesSearchObject, *http.Response, error) {
-					return &sonargo.RulesSearchObject{
-						Rules: []sonargo.RulesSearchObject_sub11{},
-						Paging: sonargo.RulesSearchObject_sub6{
+				SearchFn: func(opt *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+					return &sonar.RulesSearch{
+						Rules: []sonar.RuleDetails{},
+						Paging: sonar.Paging{
 							Total: 0,
 						},
 					}, nil, nil
@@ -239,9 +239,9 @@ func TestObserve(t *testing.T) {
 		},
 		"LateInitializeDefault": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				ShowFn: func(opt *sonargo.QualityprofilesShowOption) (*sonargo.QualityprofilesShowObject, *http.Response, error) {
-					return &sonargo.QualityprofilesShowObject{
-						Profile: sonargo.QualityprofilesShowObject_sub1{
+				ShowFn: func(opt *sonar.QualityprofilesShowOption) (*sonar.QualityprofilesShow, *http.Response, error) {
+					return &sonar.QualityprofilesShow{
+						Profile: sonar.ShownProfile{
 							Key:          "AU-TpxcA-iU5OvuD2FLz",
 							Name:         "test-profile",
 							Language:     "java",
@@ -253,10 +253,10 @@ func TestObserve(t *testing.T) {
 				},
 			},
 			rulesClient: &fake.MockRulesClient{
-				SearchFn: func(opt *sonargo.RulesSearchOption) (*sonargo.RulesSearchObject, *http.Response, error) {
-					return &sonargo.RulesSearchObject{
-						Rules: []sonargo.RulesSearchObject_sub11{},
-						Paging: sonargo.RulesSearchObject_sub6{
+				SearchFn: func(opt *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+					return &sonar.RulesSearch{
+						Rules: []sonar.RuleDetails{},
+						Paging: sonar.Paging{
 							Total: 0,
 						},
 					}, nil, nil
@@ -339,9 +339,9 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreate": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				CreateFn: func(opt *sonargo.QualityprofilesCreateOption) (*sonargo.QualityprofilesCreateObject, *http.Response, error) {
-					return &sonargo.QualityprofilesCreateObject{
-						Profile: sonargo.QualityprofilesCreateObject_sub1{
+				CreateFn: func(opt *sonar.QualityprofilesCreateOption) (*sonar.QualityprofilesCreate, *http.Response, error) {
+					return &sonar.QualityprofilesCreate{
+						Profile: sonar.CreatedProfile{
 							Key:          "AU-TpxcA-iU5OvuD2FLz",
 							Name:         opt.Name,
 							Language:     opt.Language,
@@ -373,7 +373,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateFails": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				CreateFn: func(opt *sonargo.QualityprofilesCreateOption) (*sonargo.QualityprofilesCreateObject, *http.Response, error) {
+				CreateFn: func(opt *sonar.QualityprofilesCreateOption) (*sonar.QualityprofilesCreate, *http.Response, error) {
 					return nil, nil, errors.New("api error")
 				},
 			},
@@ -398,16 +398,16 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateWithDefault": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				CreateFn: func(opt *sonargo.QualityprofilesCreateOption) (*sonargo.QualityprofilesCreateObject, *http.Response, error) {
-					return &sonargo.QualityprofilesCreateObject{
-						Profile: sonargo.QualityprofilesCreateObject_sub1{
+				CreateFn: func(opt *sonar.QualityprofilesCreateOption) (*sonar.QualityprofilesCreate, *http.Response, error) {
+					return &sonar.QualityprofilesCreate{
+						Profile: sonar.CreatedProfile{
 							Key:      "AU-TpxcA-iU5OvuD2FLz",
 							Name:     opt.Name,
 							Language: opt.Language,
 						},
 					}, nil, nil
 				},
-				SetDefaultFn: func(opt *sonargo.QualityprofilesSetDefaultOption) (*http.Response, error) {
+				SetDefaultFn: func(opt *sonar.QualityprofilesSetDefaultOption) (*http.Response, error) {
 					return nil, nil
 				},
 			},
@@ -476,7 +476,7 @@ func TestDelete(t *testing.T) {
 		},
 		"SuccessfulDelete": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				DeleteFn: func(opt *sonargo.QualityprofilesDeleteOption) (*http.Response, error) {
+				DeleteFn: func(opt *sonar.QualityprofilesDeleteOption) (*http.Response, error) {
 					return nil, nil
 				},
 			},
@@ -505,7 +505,7 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteFails": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				DeleteFn: func(opt *sonargo.QualityprofilesDeleteOption) (*http.Response, error) {
+				DeleteFn: func(opt *sonar.QualityprofilesDeleteOption) (*http.Response, error) {
 					return nil, errors.New("api error")
 				},
 			},
@@ -599,7 +599,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 		},
 		"ActivateNewRules": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				ActivateRuleFn: func(opt *sonargo.QualityprofilesActivateRuleOption) (*http.Response, error) {
+				ActivateRuleFn: func(opt *sonar.QualityprofilesActivateRuleOption) (*http.Response, error) {
 					return nil, nil
 				},
 			},
@@ -621,7 +621,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 		},
 		"DeactivateUnwantedRules": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				DeactivateRuleFn: func(opt *sonargo.QualityprofilesDeactivateRuleOption) (*http.Response, error) {
+				DeactivateRuleFn: func(opt *sonar.QualityprofilesDeactivateRuleOption) (*http.Response, error) {
 					return nil, nil
 				},
 			},
@@ -643,7 +643,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 		},
 		"UpdateOutdatedRules": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				ActivateRuleFn: func(opt *sonargo.QualityprofilesActivateRuleOption) (*http.Response, error) {
+				ActivateRuleFn: func(opt *sonar.QualityprofilesActivateRuleOption) (*http.Response, error) {
 					return nil, nil
 				},
 			},
@@ -665,10 +665,10 @@ func TestSyncQualityProfileRules(t *testing.T) {
 		},
 		"ErrorAggregation": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
-				DeactivateRuleFn: func(opt *sonargo.QualityprofilesDeactivateRuleOption) (*http.Response, error) {
+				DeactivateRuleFn: func(opt *sonar.QualityprofilesDeactivateRuleOption) (*http.Response, error) {
 					return nil, errors.New("deactivate error")
 				},
-				ActivateRuleFn: func(opt *sonargo.QualityprofilesActivateRuleOption) (*http.Response, error) {
+				ActivateRuleFn: func(opt *sonar.QualityprofilesActivateRuleOption) (*http.Response, error) {
 					return nil, errors.New("activate error")
 				},
 			},
