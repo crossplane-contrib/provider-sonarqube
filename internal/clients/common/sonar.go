@@ -20,7 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -52,8 +52,8 @@ type Config struct {
 }
 
 // NewClient creates new SonarQube Client with provided SonarQube Configurations/Credentials.
-func NewClient(clientConfig Config) *sonargo.Client {
-	var client *sonargo.Client
+func NewClient(clientConfig Config) *sonar.Client {
+	var client *sonar.Client
 
 	switch clientConfig.AuthType {
 	case BasicAuth:
@@ -61,14 +61,23 @@ func NewClient(clientConfig Config) *sonargo.Client {
 			panic(errors.New("BasicAuth configuration is required for BasicAuth"))
 		}
 		// Create SonarQube client with Basic Auth
-		sonarClient, err := sonargo.NewClient(clientConfig.BaseURL, clientConfig.BasicAuth.Username, clientConfig.BasicAuth.Password)
+		sonarClient, err := sonar.NewClient(
+			&sonar.ClientCreateOption{
+				URL:      &clientConfig.BaseURL,
+				Username: &clientConfig.BasicAuth.Username,
+				Password: &clientConfig.BasicAuth.Password,
+			})
 		if err != nil {
 			panic(err)
 		}
 		client = sonarClient
 	case PersonalAccessToken:
 		// Create SonarQube client with Personal Access Token
-		sonarClient, err := sonargo.NewClientWithToken(clientConfig.BaseURL, clientConfig.Token)
+		sonarClient, err := sonar.NewClient(
+			&sonar.ClientCreateOption{
+				URL:   &clientConfig.BaseURL,
+				Token: &clientConfig.Token,
+			})
 		if err != nil {
 			panic(err)
 		}

@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -170,7 +170,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Retrieve the Quality Gate from SonarQube
-	qualityGate, resp, err := c.qualityGatesClient.Show(&sonargo.QualitygatesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
+	qualityGate, resp, err := c.qualityGatesClient.Show(&sonar.QualitygatesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
 		Name: externalName,
 	})
 	defer helpers.CloseBody(resp)
@@ -328,7 +328,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	// Set Quality Gate as default if specified in the spec
 	if cr.Spec.ForProvider.Default != nil && *cr.Spec.ForProvider.Default {
-		setDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonargo.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
+		setDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
 			Name: qualityGate.Name,
 		})
 		defer helpers.CloseBody(setDefaultResp)
@@ -354,7 +354,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	// Set Quality Gate as default if specified in the spec (idempotent)
 	if cr.Spec.ForProvider.Default != nil && *cr.Spec.ForProvider.Default {
-		updateSetDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonargo.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
+		updateSetDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
 			Name: cr.Spec.ForProvider.Name,
 		})
 		defer helpers.CloseBody(updateSetDefaultResp)
@@ -388,7 +388,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	destroyResp, err := c.qualityGatesClient.Destroy(&sonargo.QualitygatesDestroyOption{ //nolint:bodyclose // closed via helpers.CloseBody
+	destroyResp, err := c.qualityGatesClient.Destroy(&sonar.QualitygatesDestroyOption{ //nolint:bodyclose // closed via helpers.CloseBody
 		Name: externalName,
 	})
 	defer helpers.CloseBody(destroyResp)

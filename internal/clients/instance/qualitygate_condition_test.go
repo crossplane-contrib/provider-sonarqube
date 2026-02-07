@@ -19,7 +19,7 @@ package instance
 import (
 	"testing"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 
@@ -28,11 +28,11 @@ import (
 
 func TestGenerateQualityGateConditionObservation(t *testing.T) {
 	tests := map[string]struct {
-		condition *sonargo.QualitygatesShowObject_sub2
+		condition *sonar.QualityGateCondition
 		want      v1alpha1.QualityGateConditionObservation
 	}{
 		"BasicCondition": {
-			condition: &sonargo.QualitygatesShowObject_sub2{
+			condition: &sonar.QualityGateCondition{
 				ID:     "123",
 				Metric: "coverage",
 				Op:     "LT",
@@ -46,11 +46,11 @@ func TestGenerateQualityGateConditionObservation(t *testing.T) {
 			},
 		},
 		"EmptyCondition": {
-			condition: &sonargo.QualitygatesShowObject_sub2{},
+			condition: &sonar.QualityGateCondition{},
 			want:      v1alpha1.QualityGateConditionObservation{},
 		},
 		"ConditionWithGTOperator": {
-			condition: &sonargo.QualitygatesShowObject_sub2{
+			condition: &sonar.QualityGateCondition{
 				ID:     "456",
 				Metric: "duplicated_lines_density",
 				Op:     "GT",
@@ -77,15 +77,15 @@ func TestGenerateQualityGateConditionObservation(t *testing.T) {
 
 func TestGenerateQualityGateConditionsObservation(t *testing.T) {
 	tests := map[string]struct {
-		conditions []sonargo.QualitygatesShowObject_sub2
+		conditions []sonar.QualityGateCondition
 		want       []v1alpha1.QualityGateConditionObservation
 	}{
 		"EmptySlice": {
-			conditions: []sonargo.QualitygatesShowObject_sub2{},
+			conditions: []sonar.QualityGateCondition{},
 			want:       []v1alpha1.QualityGateConditionObservation{},
 		},
 		"SingleCondition": {
-			conditions: []sonargo.QualitygatesShowObject_sub2{
+			conditions: []sonar.QualityGateCondition{
 				{ID: "1", Metric: "coverage", Op: "LT", Error: "80"},
 			},
 			want: []v1alpha1.QualityGateConditionObservation{
@@ -93,7 +93,7 @@ func TestGenerateQualityGateConditionsObservation(t *testing.T) {
 			},
 		},
 		"MultipleConditions": {
-			conditions: []sonargo.QualitygatesShowObject_sub2{
+			conditions: []sonar.QualityGateCondition{
 				{ID: "1", Metric: "coverage", Op: "LT", Error: "80"},
 				{ID: "2", Metric: "duplicated_lines_density", Op: "GT", Error: "3"},
 				{ID: "3", Metric: "new_coverage", Op: "LT", Error: "90"},
@@ -119,14 +119,14 @@ func TestGenerateQualityGateConditionsObservation(t *testing.T) {
 func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 	tests := map[string]struct {
 		params v1alpha1.QualityGateConditionParameters
-		want   *sonargo.QualitygatesCreateConditionOption
+		want   *sonar.QualitygatesCreateConditionOption
 	}{
 		"BasicCondition": {
 			params: v1alpha1.QualityGateConditionParameters{
 				Metric: "coverage",
 				Error:  "80",
 			},
-			want: &sonargo.QualitygatesCreateConditionOption{
+			want: &sonar.QualitygatesCreateConditionOption{
 				GateName: "my-gate",
 				Metric:   "coverage",
 				Error:    "80",
@@ -138,7 +138,7 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 				Error:  "80",
 				Op:     ptr.To("LT"),
 			},
-			want: &sonargo.QualitygatesCreateConditionOption{
+			want: &sonar.QualitygatesCreateConditionOption{
 				GateName: "my-gate",
 				Metric:   "coverage",
 				Error:    "80",
@@ -151,7 +151,7 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 				Error:  "3",
 				Op:     ptr.To("GT"),
 			},
-			want: &sonargo.QualitygatesCreateConditionOption{
+			want: &sonar.QualitygatesCreateConditionOption{
 				GateName: "another-gate",
 				Metric:   "duplicated_lines_density",
 				Error:    "3",
@@ -174,7 +174,7 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 	tests := map[string]struct {
 		id     string
 		params v1alpha1.QualityGateConditionParameters
-		want   *sonargo.QualitygatesUpdateConditionOption
+		want   *sonar.QualitygatesUpdateConditionOption
 	}{
 		"BasicUpdate": {
 			id: "123",
@@ -182,8 +182,8 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 				Metric: "coverage",
 				Error:  "85",
 			},
-			want: &sonargo.QualitygatesUpdateConditionOption{
-				Id:     "123",
+			want: &sonar.QualitygatesUpdateConditionOption{
+				ID:     "123",
 				Metric: "coverage",
 				Error:  "85",
 			},
@@ -195,8 +195,8 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 				Error:  "5",
 				Op:     ptr.To("GT"),
 			},
-			want: &sonargo.QualitygatesUpdateConditionOption{
-				Id:     "456",
+			want: &sonar.QualitygatesUpdateConditionOption{
+				ID:     "456",
 				Metric: "duplicated_lines_density",
 				Error:  "5",
 				Op:     "GT",
@@ -217,15 +217,15 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 func TestGenerateDeleteQualityGateConditionOption(t *testing.T) {
 	tests := map[string]struct {
 		id   string
-		want *sonargo.QualitygatesDeleteConditionOption
+		want *sonar.QualitygatesDeleteConditionOption
 	}{
 		"BasicDelete": {
 			id:   "123",
-			want: &sonargo.QualitygatesDeleteConditionOption{Id: "123"},
+			want: &sonar.QualitygatesDeleteConditionOption{ID: "123"},
 		},
 		"EmptyID": {
 			id:   "",
-			want: &sonargo.QualitygatesDeleteConditionOption{Id: ""},
+			want: &sonar.QualitygatesDeleteConditionOption{ID: ""},
 		},
 	}
 
@@ -654,11 +654,11 @@ func TestFindNotUpToDateQualityGateConditions(t *testing.T) {
 
 func TestGenerateQualityGateConditionObservationFromCreate(t *testing.T) {
 	tests := map[string]struct {
-		condition *sonargo.QualitygatesCreateConditionObject
+		condition *sonar.QualitygatesCreateCondition
 		want      *v1alpha1.QualityGateConditionObservation
 	}{
 		"BasicCondition": {
-			condition: &sonargo.QualitygatesCreateConditionObject{
+			condition: &sonar.QualitygatesCreateCondition{
 				ID:     "123",
 				Metric: "coverage",
 				Op:     "LT",
@@ -672,7 +672,7 @@ func TestGenerateQualityGateConditionObservationFromCreate(t *testing.T) {
 			},
 		},
 		"EmptyCondition": {
-			condition: &sonargo.QualitygatesCreateConditionObject{},
+			condition: &sonar.QualitygatesCreateCondition{},
 			want:      &v1alpha1.QualityGateConditionObservation{},
 		},
 	}

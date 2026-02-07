@@ -19,7 +19,7 @@ package instance
 import (
 	"testing"
 
-	sonargo "github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 
@@ -29,13 +29,13 @@ import (
 func TestGenerateQualityGateCreateOptions(t *testing.T) {
 	tests := map[string]struct {
 		spec v1alpha1.QualityGateParameters
-		want *sonargo.QualitygatesCreateOption
+		want *sonar.QualitygatesCreateOption
 	}{
 		"BasicCreateOption": {
 			spec: v1alpha1.QualityGateParameters{
 				Name: "my-quality-gate",
 			},
-			want: &sonargo.QualitygatesCreateOption{
+			want: &sonar.QualitygatesCreateOption{
 				Name: "my-quality-gate",
 			},
 		},
@@ -44,7 +44,7 @@ func TestGenerateQualityGateCreateOptions(t *testing.T) {
 				Name:    "default-gate",
 				Default: ptr.To(true),
 			},
-			want: &sonargo.QualitygatesCreateOption{
+			want: &sonar.QualitygatesCreateOption{
 				Name: "default-gate",
 			},
 		},
@@ -62,18 +62,18 @@ func TestGenerateQualityGateCreateOptions(t *testing.T) {
 
 func TestGenerateQualityGateObservation(t *testing.T) {
 	tests := map[string]struct {
-		observation *sonargo.QualitygatesShowObject
+		observation *sonar.QualitygatesShow
 		want        v1alpha1.QualityGateObservation
 	}{
 		"BasicObservation": {
-			observation: &sonargo.QualitygatesShowObject{
+			observation: &sonar.QualitygatesShow{
 				Name:              "test-gate",
 				CaycStatus:        "compliant",
 				IsBuiltIn:         false,
 				IsDefault:         true,
 				IsAiCodeSupported: false,
-				Conditions:        []sonargo.QualitygatesShowObject_sub2{},
-				Actions: sonargo.QualitygatesShowObject_sub1{
+				Conditions:        []sonar.QualityGateCondition{},
+				Actions: sonar.QualityGateActions{
 					AssociateProjects:     true,
 					Copy:                  true,
 					Delete:                true,
@@ -104,12 +104,12 @@ func TestGenerateQualityGateObservation(t *testing.T) {
 			},
 		},
 		"ObservationWithConditions": {
-			observation: &sonargo.QualitygatesShowObject{
+			observation: &sonar.QualitygatesShow{
 				Name:       "gate-with-conditions",
 				CaycStatus: "non_compliant",
 				IsBuiltIn:  true,
 				IsDefault:  false,
-				Conditions: []sonargo.QualitygatesShowObject_sub2{
+				Conditions: []sonar.QualityGateCondition{
 					{
 						ID:     "1",
 						Metric: "coverage",
@@ -123,7 +123,7 @@ func TestGenerateQualityGateObservation(t *testing.T) {
 						Error:  "3",
 					},
 				},
-				Actions: sonargo.QualitygatesShowObject_sub1{},
+				Actions: sonar.QualityGateActions{},
 			},
 			want: v1alpha1.QualityGateObservation{
 				Name:       "gate-with-conditions",
@@ -161,11 +161,11 @@ func TestGenerateQualityGateObservation(t *testing.T) {
 
 func TestGenerateQualityGateActionsObservation(t *testing.T) {
 	tests := map[string]struct {
-		actions *sonargo.QualitygatesShowObject_sub1
+		actions *sonar.QualityGateActions
 		want    v1alpha1.QualityGatesActions
 	}{
 		"AllActionsEnabled": {
-			actions: &sonargo.QualitygatesShowObject_sub1{
+			actions: &sonar.QualityGateActions{
 				AssociateProjects:     true,
 				Copy:                  true,
 				Delegate:              true,
@@ -187,11 +187,11 @@ func TestGenerateQualityGateActionsObservation(t *testing.T) {
 			},
 		},
 		"NoActionsEnabled": {
-			actions: &sonargo.QualitygatesShowObject_sub1{},
+			actions: &sonar.QualityGateActions{},
 			want:    v1alpha1.QualityGatesActions{},
 		},
 		"PartialActionsEnabled": {
-			actions: &sonargo.QualitygatesShowObject_sub1{
+			actions: &sonar.QualityGateActions{
 				Copy:   true,
 				Rename: true,
 			},
