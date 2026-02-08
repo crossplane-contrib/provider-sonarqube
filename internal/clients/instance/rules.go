@@ -152,8 +152,6 @@ type ruleActiveSettings struct {
 	Params      *map[string]string
 	Impacts     []v1alpha1.QualityProfileRuleImpact
 	Prioritized *bool
-	CreatedAt   *string
-	UpdatedAt   *string
 }
 
 // findQualityProfileActiveRuleSettings parses the activated rules, confirms that they belong to the quality profile, and returns a map of rule key to its activated settings (severity and parameters).
@@ -174,8 +172,6 @@ func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *
 				Params:      &params,
 				Prioritized: &activeRule.PrioritizedRule,
 				Impacts:     GenerateQualityProfileImpactsObservation(&activeRule.Impacts),
-				CreatedAt:   &activeRule.CreatedAt,
-				UpdatedAt:   &activeRule.UpdatedAt,
 			}
 		}
 	}
