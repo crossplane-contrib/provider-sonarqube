@@ -887,7 +887,7 @@ func TestLateInitializeQualityProfile(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			LateInitializeQualityProfile(tc.spec, tc.observation)
+			LateInitializeQualityProfile(tc.spec, tc.observation, nil)
 
 			if tc.spec != nil {
 				if diff := cmp.Diff(tc.wantDefault, tc.spec.Default); diff != "" {

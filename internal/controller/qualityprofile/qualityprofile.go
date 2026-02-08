@@ -201,11 +201,12 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	profile.Status.AtProvider = instance.GenerateQualityProfileObservation(qualityProfile, rules)
 	profile.Status.SetConditions(xpv1.Available())
 	current := profile.Spec.ForProvider.DeepCopy()
-	// Late initialize the spec with observed state (includes conditions)
-	instance.LateInitializeQualityProfile(&profile.Spec.ForProvider, &profile.Status.AtProvider)
 
 	// Generate associations between QualityProfileRules spec and observation
 	associations := instance.GenerateQualityProfileRulesAssociation(profile.Spec.ForProvider.Rules, profile.Status.AtProvider.Rules)
+
+	// Late initialize the spec with observed state (includes conditions)
+	instance.LateInitializeQualityProfile(&profile.Spec.ForProvider, &profile.Status.AtProvider, associations)
 
 	// Check if rules were late-initialized
 	rulesLateInitialized := instance.WereQualityProfileRulesLateInitialized(current.Rules, profile.Spec.ForProvider.Rules)

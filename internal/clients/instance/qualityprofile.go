@@ -149,12 +149,15 @@ func IsQualityProfileUpToDate(spec *v1alpha1.QualityProfileParameters, observati
 
 // LateInitializeQualityProfile fills the empty fields in *QualityProfileParameters with
 // the values seen in QualityProfileObservation.
-func LateInitializeQualityProfile(spec *v1alpha1.QualityProfileParameters, observation *v1alpha1.QualityProfileObservation) {
+func LateInitializeQualityProfile(spec *v1alpha1.QualityProfileParameters, observation *v1alpha1.QualityProfileObservation, associations map[string]QualityProfileRuleAssociation) {
 	if spec == nil || observation == nil {
 		return
 	}
 
 	helpers.AssignIfNil(&spec.Default, observation.IsDefault)
+
+	// Late initialize rules
+	LateInitializeQualityProfileRules(associations)
 }
 
 // GenerateQualityProfileActivateRuleOption generates SonarQube QualityprofilesActivateRuleOption from QualityProfileRuleParameters
@@ -286,6 +289,27 @@ func FindNotUpToDateQualityProfileRules(associations map[string]QualityProfileRu
 	}
 
 	return notUpToDate
+}
+
+// LateInitializeQualityProfileRules fills the empty fields in QualityProfileRuleParameters with the values seen in QualityProfileRuleObservation for the rules that exist in both spec and observation.
+func LateInitializeQualityProfileRules(associations map[string]QualityProfileRuleAssociation) {
+	for key, assoc := range associations {
+		if assoc.Spec != nil && assoc.Observation != nil {
+			helpers.AssignIfNil(&assoc.Spec.Severity, assoc.Observation.Severity)
+			helpers.AssignIfNil(&assoc.Spec.Prioritized, assoc.Observation.Prioritized)
+			// Note: impacts is a map, so we only late initialize it if it's currently nil to avoid overwriting any existing values
+			if assoc.Spec.Impacts == nil && len(assoc.Observation.Impacts) > 0 {
+				impactsMap := make(map[string]string)
+				for idx := range assoc.Observation.Impacts {
+					impactsMap[assoc.Observation.Impacts[idx].SoftwareQuality] = assoc.Observation.Impacts[idx].Severity
+				}
+
+				assoc.Spec.Impacts = &impactsMap
+			}
+
+			associations[key] = assoc
+		}
+	}
 }
 
 // WereQualityProfileRulesLateInitialized checks if any rule parameters were updated during late initialization
