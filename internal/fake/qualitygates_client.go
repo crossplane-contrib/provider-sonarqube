@@ -18,11 +18,14 @@ limitations under the License.
 package fake
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
+
+var errNotImplemented = errors.New("mock function not implemented")
 
 // MockQualityGatesClient is a mock implementation of the QualityGatesClient interface.
 type MockQualityGatesClient struct {
@@ -58,7 +61,7 @@ func (m *MockQualityGatesClient) AddGroup(opt *sonar.QualitygatesAddGroupOption)
 		return m.AddGroupFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // AddUser implements QualityGatesClient.AddUser.
@@ -67,7 +70,7 @@ func (m *MockQualityGatesClient) AddUser(opt *sonar.QualitygatesAddUserOption) (
 		return m.AddUserFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // Copy implements QualityGatesClient.Copy.
@@ -76,7 +79,7 @@ func (m *MockQualityGatesClient) Copy(opt *sonar.QualitygatesCopyOption) (resp *
 		return m.CopyFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // Create implements QualityGatesClient.Create.
@@ -85,7 +88,7 @@ func (m *MockQualityGatesClient) Create(opt *sonar.QualitygatesCreateOption) (v 
 		return m.CreateFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // CreateCondition implements QualityGatesClient.CreateCondition.
@@ -94,7 +97,7 @@ func (m *MockQualityGatesClient) CreateCondition(opt *sonar.QualitygatesCreateCo
 		return m.CreateConditionFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // DeleteCondition implements QualityGatesClient.DeleteCondition.
@@ -103,7 +106,7 @@ func (m *MockQualityGatesClient) DeleteCondition(opt *sonar.QualitygatesDeleteCo
 		return m.DeleteConditionFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // Deselect implements QualityGatesClient.Deselect.
@@ -112,7 +115,7 @@ func (m *MockQualityGatesClient) Deselect(opt *sonar.QualitygatesDeselectOption)
 		return m.DeselectFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // Destroy implements QualityGatesClient.Destroy.
@@ -121,7 +124,7 @@ func (m *MockQualityGatesClient) Destroy(opt *sonar.QualitygatesDestroyOption) (
 		return m.DestroyFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // GetByProject implements QualityGatesClient.GetByProject.
@@ -130,7 +133,7 @@ func (m *MockQualityGatesClient) GetByProject(opt *sonar.QualitygatesGetByProjec
 		return m.GetByProjectFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // List implements QualityGatesClient.List.
@@ -139,7 +142,7 @@ func (m *MockQualityGatesClient) List() (v *sonar.QualitygatesList, resp *http.R
 		return m.ListFn()
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // ProjectStatus implements QualityGatesClient.ProjectStatus.
@@ -148,7 +151,7 @@ func (m *MockQualityGatesClient) ProjectStatus(opt *sonar.QualitygatesProjectSta
 		return m.ProjectStatusFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // RemoveGroup implements QualityGatesClient.RemoveGroup.
@@ -157,7 +160,7 @@ func (m *MockQualityGatesClient) RemoveGroup(opt *sonar.QualitygatesRemoveGroupO
 		return m.RemoveGroupFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // RemoveUser implements QualityGatesClient.RemoveUser.
@@ -166,7 +169,7 @@ func (m *MockQualityGatesClient) RemoveUser(opt *sonar.QualitygatesRemoveUserOpt
 		return m.RemoveUserFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // Rename implements QualityGatesClient.Rename.
@@ -175,7 +178,7 @@ func (m *MockQualityGatesClient) Rename(opt *sonar.QualitygatesRenameOption) (re
 		return m.RenameFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // Search implements QualityGatesClient.Search.
@@ -184,7 +187,7 @@ func (m *MockQualityGatesClient) Search(opt *sonar.QualitygatesSearchOption) (v 
 		return m.SearchFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // SearchGroups implements QualityGatesClient.SearchGroups.
@@ -193,7 +196,7 @@ func (m *MockQualityGatesClient) SearchGroups(opt *sonar.QualitygatesSearchGroup
 		return m.SearchGroupsFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // SearchUsers implements QualityGatesClient.SearchUsers.
@@ -202,7 +205,7 @@ func (m *MockQualityGatesClient) SearchUsers(opt *sonar.QualitygatesSearchUsersO
 		return m.SearchUsersFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // Select implements QualityGatesClient.Select.
@@ -211,7 +214,7 @@ func (m *MockQualityGatesClient) Select(opt *sonar.QualitygatesSelectOption) (re
 		return m.SelectFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // SetAsDefault implements QualityGatesClient.SetAsDefault.
@@ -220,7 +223,7 @@ func (m *MockQualityGatesClient) SetAsDefault(opt *sonar.QualitygatesSetAsDefaul
 		return m.SetAsDefaultFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 // Show implements QualityGatesClient.Show.
@@ -229,7 +232,7 @@ func (m *MockQualityGatesClient) Show(opt *sonar.QualitygatesShowOption) (v *son
 		return m.ShowFn(opt)
 	}
 
-	return nil, nil, nil
+	return nil, nil, errNotImplemented
 }
 
 // UpdateCondition implements QualityGatesClient.UpdateCondition.
@@ -238,5 +241,5 @@ func (m *MockQualityGatesClient) UpdateCondition(opt *sonar.QualitygatesUpdateCo
 		return m.UpdateConditionFn(opt)
 	}
 
-	return nil, nil
+	return nil, errNotImplemented
 }

@@ -27,6 +27,8 @@ import (
 )
 
 func TestGenerateQualityGateCreateOptions(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		spec v1alpha1.QualityGateParameters
 		want *sonar.QualitygatesCreateOption
@@ -52,6 +54,8 @@ func TestGenerateQualityGateCreateOptions(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateQualityGateCreateOptions(tc.spec)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateQualityGateCreateOptions() mismatch (-want +got):\n%s", diff)
@@ -61,6 +65,8 @@ func TestGenerateQualityGateCreateOptions(t *testing.T) {
 }
 
 func TestGenerateQualityGateObservation(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		observation *sonar.QualitygatesShow
 		want        v1alpha1.QualityGateObservation
@@ -151,6 +157,8 @@ func TestGenerateQualityGateObservation(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateQualityGateObservation(tc.observation)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateQualityGateObservation() mismatch (-want +got):\n%s", diff)
@@ -160,6 +168,8 @@ func TestGenerateQualityGateObservation(t *testing.T) {
 }
 
 func TestGenerateQualityGateActionsObservation(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		actions *sonar.QualityGateActions
 		want    v1alpha1.QualityGatesActions
@@ -204,6 +214,8 @@ func TestGenerateQualityGateActionsObservation(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateQualityGateActionsObservation(tc.actions)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateQualityGateActionsObservation() mismatch (-want +got):\n%s", diff)
@@ -213,6 +225,8 @@ func TestGenerateQualityGateActionsObservation(t *testing.T) {
 }
 
 func TestIsQualityGateUpToDate(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		spec         *v1alpha1.QualityGateParameters
 		observation  *v1alpha1.QualityGateObservation
@@ -287,6 +301,8 @@ func TestIsQualityGateUpToDate(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IsQualityGateUpToDate(tc.spec, tc.observation, tc.associations)
 			if got != tc.want {
 				t.Errorf("IsQualityGateUpToDate() = %v, want %v", got, tc.want)
@@ -296,6 +312,8 @@ func TestIsQualityGateUpToDate(t *testing.T) {
 }
 
 func TestLateInitializeQualityGate(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		spec           *v1alpha1.QualityGateParameters
 		observation    *v1alpha1.QualityGateObservation
@@ -482,6 +500,8 @@ func TestLateInitializeQualityGate(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			LateInitializeQualityGate(tc.spec, tc.observation)
 
 			if tc.spec == nil {
@@ -515,6 +535,8 @@ func TestLateInitializeQualityGate(t *testing.T) {
 }
 
 func TestWereQualityGateConditionsLateInitialized(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		before []v1alpha1.QualityGateConditionParameters
 		after  []v1alpha1.QualityGateConditionParameters
@@ -576,6 +598,8 @@ func TestWereQualityGateConditionsLateInitialized(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := WereQualityGateConditionsLateInitialized(tc.before, tc.after)
 			if got != tc.want {
 				t.Errorf("WereQualityGateConditionsLateInitialized() = %v, want %v", got, tc.want)

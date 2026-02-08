@@ -47,7 +47,17 @@ type notQualityGate struct {
 	resource.Managed
 }
 
+// mockHTTPResponse returns a mock HTTP response for testing.
+func mockHTTPResponse() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Status:     "200 OK",
+	}
+}
+
 func TestObserve(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
@@ -245,6 +255,8 @@ func TestObserve(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Observe(tc.args.ctx, tc.args.mg)
 
@@ -260,6 +272,8 @@ func TestObserve(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
@@ -372,7 +386,7 @@ func TestCreate(t *testing.T) {
 						return nil, errors.New("expected SonarQube gate name but got: " + opt.Name)
 					}
 
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -425,6 +439,8 @@ func TestCreate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Create(tc.args.ctx, tc.args.mg)
 
@@ -440,6 +456,8 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
@@ -485,7 +503,7 @@ func TestUpdate(t *testing.T) {
 		"SetAsDefaultWhenRequested": {
 			client: &fake.MockQualityGatesClient{
 				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOption) (*http.Response, error) {
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -548,6 +566,8 @@ func TestUpdate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Update(tc.args.ctx, tc.args.mg)
 
@@ -563,6 +583,8 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
@@ -613,7 +635,7 @@ func TestDelete(t *testing.T) {
 						return nil, errors.New("expected external name 'my-sonar-gate' but got: " + opt.Name)
 					}
 
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -664,6 +686,8 @@ func TestDelete(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Delete(tc.args.ctx, tc.args.mg)
 
@@ -679,6 +703,8 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
+	t.Parallel()
+
 	e := &external{qualityGatesClient: &fake.MockQualityGatesClient{}}
 
 	err := e.Disconnect(context.Background())
@@ -688,6 +714,8 @@ func TestDisconnect(t *testing.T) {
 }
 
 func TestCreateSetsExternalNameToSonarQubeName(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
 			return &sonar.QualitygatesCreate{
@@ -734,6 +762,8 @@ func errComparer(a, b error) bool {
 }
 
 func TestObserveLateInitializesConditionIds(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
@@ -804,6 +834,8 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 }
 
 func TestObserveWithExistingConditionIds(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
@@ -862,6 +894,8 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 }
 
 func TestObserveWithStaleConditionId(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
@@ -920,6 +954,8 @@ func TestObserveWithStaleConditionId(t *testing.T) {
 }
 
 func TestUpdateWithConditions(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
@@ -980,7 +1016,7 @@ func TestUpdateWithConditions(t *testing.T) {
 						return nil, errors.New("expected to delete orphan-id")
 					}
 
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -1130,6 +1166,8 @@ func TestUpdateWithConditions(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Update(tc.args.ctx, tc.args.mg)
 
@@ -1146,6 +1184,8 @@ func TestUpdateWithConditions(t *testing.T) {
 }
 
 func TestObserveWithConditions(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
@@ -1349,6 +1389,8 @@ func TestObserveWithConditions(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Observe(tc.args.ctx, tc.args.mg)
 

@@ -48,6 +48,8 @@ func newFakeClient(objs ...runtime.Object) client.Client {
 }
 
 func TestGetTokenValueFromSecret(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx      context.Context
 		client   client.Client
@@ -142,6 +144,8 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got, err := GetTokenValueFromSecret(tc.args.ctx, tc.args.client, tc.args.m, tc.args.selector)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetTokenValueFromSecret() error = %v, wantErr %v", err, tc.wantErr)
@@ -177,6 +181,8 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 }
 
 func TestGetTokenValueFromLocalSecret(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx    context.Context
 		client client.Client
@@ -252,6 +258,8 @@ func TestGetTokenValueFromLocalSecret(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got, err := GetTokenValueFromLocalSecret(tc.args.ctx, tc.args.client, tc.args.m, tc.args.l)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetTokenValueFromLocalSecret() error = %v, wantErr %v", err, tc.wantErr)

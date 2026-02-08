@@ -145,27 +145,27 @@ func GenerateQualityGateConditionsAssociation(specs []v1alpha1.QualityGateCondit
 	}
 
 	// Create associations for specs with IDs
-	for i := range specs {
-		if specs[i].Id != nil {
-			if assoc, exists := associations[*specs[i].Id]; exists {
-				assoc.Spec = &specs[i]
-				assoc.UpToDate = IsQualityGateConditionUpToDate(&specs[i], assoc.Observation)
-				associations[*specs[i].Id] = assoc
+	for idx := range specs {
+		if specs[idx].Id != nil {
+			if assoc, exists := associations[*specs[idx].Id]; exists {
+				assoc.Spec = &specs[idx]
+				assoc.UpToDate = IsQualityGateConditionUpToDate(&specs[idx], assoc.Observation)
+				associations[*specs[idx].Id] = assoc
 			} else {
 				// Spec has an ID but no matching observation (stale ID reference)
-				associations[*specs[i].Id] = QualityGateConditionAssociation{
+				associations[*specs[idx].Id] = QualityGateConditionAssociation{
 					Observation: nil,
-					Spec:        &specs[i],
+					Spec:        &specs[idx],
 					UpToDate:    false,
 				}
 			}
 		} else {
 			// Spec without ID is a new condition that needs to be created
 			// Use a unique placeholder key based on metric to track it
-			key := "new:" + specs[i].Metric
+			key := "new:" + specs[idx].Metric
 			associations[key] = QualityGateConditionAssociation{
 				Observation: nil,
-				Spec:        &specs[i],
+				Spec:        &specs[idx],
 				UpToDate:    false,
 			}
 		}

@@ -13,17 +13,17 @@ type ProviderConfigStatus struct {
 
 // ProviderCredentials required to authenticate.
 type ProviderCredentials struct {
+	xpv1.CommonCredentialSelectors `json:",inline"`
+
 	// Source of the provider credentials.
 	// +kubebuilder:validation:Enum=None;Secret;InjectedIdentity;Environment;Filesystem
 	Source xpv1.CredentialsSource `json:"source"`
-
-	xpv1.CommonCredentialSelectors `json:",inline"`
 }
 
 type ProviderConfigSpec struct {
 	// BaseURL of the SonarQube instance.
 	// +kubebuilder:validation:Required
-	BaseURL string `json:"baseURL"`
+	BaseURL string `json:"baseUrl"`
 
 	// InsecureSkipVerify indicates whether to skip TLS certificate verification.
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
@@ -43,42 +43,42 @@ type ProviderConfigSpec struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
-
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:printcolumn:name="SECRET-NAME",type="string",JSONPath=".spec.credentials.secretRef.name",priority=1
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,provider,sonarqube}
-// A ProviderConfig configures a Helm 'provider', i.e. a connection to a particular.
+
+// ProviderConfig configures a SonarQube provider.
 type ProviderConfig struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	Spec   ProviderConfigSpec   `json:"spec"`
-	Status ProviderConfigStatus `json:"status,omitempty"`
+	Status ProviderConfigStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
 
-// ProviderConfigList contains a list of Provider.
+// ProviderConfigList contains a list of ProviderConfig.
 type ProviderConfigList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 
 	Items []ProviderConfig `json:"items"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
-
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:printcolumn:name="CONFIG-NAME",type="string",JSONPath=".providerConfigRef.name"
 // +kubebuilder:printcolumn:name="RESOURCE-KIND",type="string",JSONPath=".resourceRef.kind"
 // +kubebuilder:printcolumn:name="RESOURCE-NAME",type="string",JSONPath=".resourceRef.name"
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,provider,sonarqube}
-// A ProviderConfigUsage indicates that a resource is using a ProviderConfig.
+
+// ProviderConfigUsage indicates that a resource is using a ProviderConfig.
 type ProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	xpv2.TypedProviderConfigUsage `json:",inline"`
 }
@@ -88,48 +88,48 @@ type ProviderConfigUsage struct {
 // ProviderConfigUsageList contains a list of ProviderConfigUsage.
 type ProviderConfigUsageList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 
 	Items []ProviderConfigUsage `json:"items"`
 }
 
 // +kubebuilder:object:root=true
-
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:printcolumn:name="SECRET-NAME",type="string",JSONPath=".spec.credentials.secretRef.name",priority=1
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,provider,sonarqube}
-// A ClusterProviderConfig configures a SonarQube provider.
+
+// ClusterProviderConfig configures a SonarQube provider.
 type ClusterProviderConfig struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	Spec   ProviderConfigSpec   `json:"spec"`
-	Status ProviderConfigStatus `json:"status,omitempty"`
+	Status ProviderConfigStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
 
-// ClusterProviderConfigList contains a list of ProviderConfig.
+// ClusterProviderConfigList contains a list of ClusterProviderConfig.
 type ClusterProviderConfigList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 
 	Items []ClusterProviderConfig `json:"items"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
-
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:printcolumn:name="CONFIG-NAME",type="string",JSONPath=".providerConfigRef.name"
 // +kubebuilder:printcolumn:name="RESOURCE-KIND",type="string",JSONPath=".resourceRef.kind"
 // +kubebuilder:printcolumn:name="RESOURCE-NAME",type="string",JSONPath=".resourceRef.name"
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,provider,sonarqube}
-// A ClusterProviderConfigUsage indicates that a resource is using a ClusterProviderConfig.
+
+// ClusterProviderConfigUsage indicates that a resource is using a ClusterProviderConfig.
 type ClusterProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	xpv2.TypedProviderConfigUsage `json:",inline"`
 }
@@ -139,7 +139,7 @@ type ClusterProviderConfigUsage struct {
 // ClusterProviderConfigUsageList contains a list of ClusterProviderConfigUsage.
 type ClusterProviderConfigUsageList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 
 	Items []ClusterProviderConfigUsage `json:"items"`
 }

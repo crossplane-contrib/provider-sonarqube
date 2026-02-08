@@ -52,9 +52,7 @@ const (
 
 	errCreateQualityGate  = "cannot create SonarQube Quality Gate"
 	errDefaultQualityGate = "cannot set SonarQube Quality Gate as default"
-	errUpdateQualityGate  = "cannot update SonarQube Quality Gate"
 	errDeleteQualityGate  = "cannot delete SonarQube Quality Gate"
-	errShowQualityGate    = "cannot get SonarQube Quality Gate"
 )
 
 // SetupGated adds a controller that reconciles QualityGate managed resources with safe-start support.
@@ -69,49 +67,50 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	return nil
 }
 
-func Setup(mgr ctrl.Manager, o controller.Options) error {
+func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	name := managed.ControllerName(v1alpha1.QualityGateGroupKind)
 
-	opts := []managed.ReconcilerOption{
+	options := []managed.ReconcilerOption{
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewQualityGatesClient}),
-		managed.WithLogger(o.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(o.PollInterval),
+		managed.WithLogger(opts.Logger.WithValues("controller", name)),
+		managed.WithPollInterval(opts.PollInterval),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 	}
 
-	if o.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		opts = append(opts, managed.WithManagementPolicies())
+	if opts.Features.Enabled(feature.EnableBetaManagementPolicies) {
+		options = append(options, managed.WithManagementPolicies())
 	}
 
-	if o.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		opts = append(opts, managed.WithChangeLogger(o.ChangeLogOptions.ChangeLogger))
+	if opts.Features.Enabled(feature.EnableAlphaChangeLogs) {
+		options = append(options, managed.WithChangeLogger(opts.ChangeLogOptions.ChangeLogger))
 	}
 
-	if o.MetricOptions != nil {
-		opts = append(opts, managed.WithMetricRecorder(o.MetricOptions.MRMetrics))
+	if opts.MetricOptions != nil {
+		options = append(options, managed.WithMetricRecorder(opts.MetricOptions.MRMetrics))
 	}
 
-	if o.MetricOptions != nil && o.MetricOptions.MRStateMetrics != nil {
+	if opts.MetricOptions != nil && opts.MetricOptions.MRStateMetrics != nil {
 		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &v1alpha1.QualityGateList{}, o.MetricOptions.PollStateMetricInterval,
+			mgr.GetClient(), opts.Logger, opts.MetricOptions.MRStateMetrics, &v1alpha1.QualityGateList{}, opts.MetricOptions.PollStateMetricInterval,
 		)
+
 		err := mgr.Add(stateMetricsRecorder)
 		if err != nil {
 			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.QualityGateList")
 		}
 	}
 
-	r := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.QualityGateGroupVersionKind), opts...)
+	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.QualityGateGroupVersionKind), options...)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(o.ForControllerRuntime()).
+		WithOptions(opts.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
 		For(&v1alpha1.QualityGate{}).
-		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
+		Complete(ratelimiter.NewReconciler(name, reconciler, opts.GlobalRateLimiter))
 }
 
 // A connector is expected to produce an ExternalClient when its Connect method
@@ -127,20 +126,24 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.QualityGate)
-	if !ok {
+func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
+	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
+	if !isValid {
 		return nil, errors.New(errNotQualityGate)
 	}
 
-	if err := c.usage.Track(ctx, cr); err != nil {
+	err := c.usage.Track(ctx, qualityGate)
+	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
 	// Switch to ModernManaged resource to get ProviderConfigRef
-	m := mg.(resource.ModernManaged)
+	modernManaged, isValid := managedResource.(resource.ModernManaged)
+	if !isValid {
+		return nil, errors.New("managed resource is not a ModernManaged")
+	}
 
-	config, err := common.GetConfig(ctx, c.kube, m)
+	config, err := common.GetConfig(ctx, c.kube, modernManaged)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -159,21 +162,21 @@ type external struct {
 
 // Observe checks if the external resource exists and if it matches the
 // desired state of the managed resource.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.QualityGate)
-	if !ok {
+func (c *external) Observe(ctx context.Context, managedResource resource.Managed) (managed.ExternalObservation, error) {
+	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
+	if !isValid {
 		return managed.ExternalObservation{}, errors.New(errNotQualityGate)
 	}
 
 	// Use external name as the identifier to check if the resource exists
 	// This allows returning early when the external name is not set
-	externalName := meta.GetExternalName(cr)
+	externalName := meta.GetExternalName(qualityGate)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
 	// Retrieve the Quality Gate from SonarQube
-	qualityGate, resp, err := c.qualityGatesClient.Show(&sonar.QualitygatesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
+	observedQualityGate, resp, err := c.qualityGatesClient.Show(&sonar.QualitygatesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
 		Name: externalName,
 	})
 	defer helpers.CloseBody(resp)
@@ -184,29 +187,131 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Update status with observed state
-	cr.Status.AtProvider = instance.GenerateQualityGateObservation(qualityGate)
-	cr.Status.SetConditions(xpv1.Available())
+	qualityGate.Status.AtProvider = instance.GenerateQualityGateObservation(observedQualityGate)
+	qualityGate.Status.SetConditions(xpv1.Available())
 
-	current := cr.Spec.ForProvider.DeepCopy()
+	current := qualityGate.Spec.ForProvider.DeepCopy()
 	// Late initialize the spec with observed state (includes conditions)
-	instance.LateInitializeQualityGate(&cr.Spec.ForProvider, &cr.Status.AtProvider)
+	instance.LateInitializeQualityGate(&qualityGate.Spec.ForProvider, &qualityGate.Status.AtProvider)
 
 	// Generate associations between QualityGateConditions spec and observation
-	associations := instance.GenerateQualityGateConditionsAssociation(cr.Spec.ForProvider.Conditions, cr.Status.AtProvider.Conditions)
+	associations := instance.GenerateQualityGateConditionsAssociation(qualityGate.Spec.ForProvider.Conditions, qualityGate.Status.AtProvider.Conditions)
 
 	// Check if conditions were late-initialized
-	conditionsLateInitialized := instance.WereQualityGateConditionsLateInitialized(current.Conditions, cr.Spec.ForProvider.Conditions)
+	conditionsLateInitialized := instance.WereQualityGateConditionsLateInitialized(current.Conditions, qualityGate.Spec.ForProvider.Conditions)
 
 	return managed.ExternalObservation{
 		ResourceExists:   true,
-		ResourceUpToDate: instance.IsQualityGateUpToDate(&cr.Spec.ForProvider, &cr.Status.AtProvider, associations),
+		ResourceUpToDate: instance.IsQualityGateUpToDate(&qualityGate.Spec.ForProvider, &qualityGate.Status.AtProvider, associations),
 		// Check both regular fields and conditions for late-initialization
 		ResourceLateInitialized: !cmp.Equal(
 			current,
-			&cr.Spec.ForProvider,
+			&qualityGate.Spec.ForProvider,
 			cmpopts.IgnoreFields(v1alpha1.QualityGateParameters{}, "Conditions"),
 		) || conditionsLateInitialized,
 	}, nil
+}
+
+// Create creates the external resource and sets the external name.
+func (c *external) Create(ctx context.Context, managedResource resource.Managed) (managed.ExternalCreation, error) {
+	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
+	if !isValid {
+		return managed.ExternalCreation{}, errors.New(errNotQualityGate)
+	}
+
+	qualityGate.Status.SetConditions(xpv1.Creating())
+
+	qualityGateCreateOptions := instance.GenerateQualityGateCreateOptions(qualityGate.Spec.ForProvider)
+
+	createdQualityGate, resp, err := c.qualityGatesClient.Create(qualityGateCreateOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
+
+	if err != nil {
+		return managed.ExternalCreation{}, errors.Wrap(err, errCreateQualityGate)
+	}
+
+	// Set the external name to the Name of the created Quality Gate
+	meta.SetExternalName(qualityGate, createdQualityGate.Name)
+
+	// Set Quality Gate as default if specified in the spec
+	if qualityGate.Spec.ForProvider.Default != nil && *qualityGate.Spec.ForProvider.Default {
+		setDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
+			Name: createdQualityGate.Name,
+		})
+		defer helpers.CloseBody(setDefaultResp)
+
+		if err != nil {
+			return managed.ExternalCreation{}, errors.Wrap(err, errDefaultQualityGate)
+		}
+	}
+
+	return managed.ExternalCreation{}, nil
+}
+
+// Update updates the external resource to match the desired state of the managed resource.
+func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
+	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
+	if !isValid {
+		return managed.ExternalUpdate{}, errors.New(errNotQualityGate)
+	}
+
+	externalName := meta.GetExternalName(qualityGate)
+	if externalName == "" {
+		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for Quality Gate %s", qualityGate.Name)
+	}
+
+	// Set Quality Gate as default if specified in the spec (idempotent)
+	if qualityGate.Spec.ForProvider.Default != nil && *qualityGate.Spec.ForProvider.Default {
+		updateSetDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
+			Name: qualityGate.Spec.ForProvider.Name,
+		})
+		defer helpers.CloseBody(updateSetDefaultResp)
+
+		if err != nil {
+			return managed.ExternalUpdate{}, errors.Wrap(err, errDefaultQualityGate)
+		}
+	}
+
+	associations := instance.GenerateQualityGateConditionsAssociation(qualityGate.Spec.ForProvider.Conditions, qualityGate.Status.AtProvider.Conditions)
+
+	// Sync Quality Gate Conditions
+	err := c.syncQualityGateConditions(qualityGate, associations)
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot sync Quality Gate Conditions")
+	}
+
+	return managed.ExternalUpdate{}, nil
+}
+
+// Delete deletes the external resource.
+func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
+	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
+	if !isValid {
+		return managed.ExternalDelete{}, errors.New(errNotQualityGate)
+	}
+
+	qualityGate.Status.SetConditions(xpv1.Deleting())
+
+	// Use external name as the identifier to delete the resource
+	externalName := meta.GetExternalName(qualityGate)
+	if externalName == "" {
+		return managed.ExternalDelete{}, nil
+	}
+
+	destroyResp, err := c.qualityGatesClient.Destroy(&sonar.QualitygatesDestroyOption{ //nolint:bodyclose // closed via helpers.CloseBody
+		Name: externalName,
+	})
+	defer helpers.CloseBody(destroyResp)
+
+	if err != nil {
+		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityGate)
+	}
+
+	return managed.ExternalDelete{}, nil
+}
+
+func (c *external) Disconnect(ctx context.Context) error {
+	return nil
 }
 
 // syncQualityGateConditions synchronizes the Quality Gate Conditions in SonarQube
@@ -321,107 +426,5 @@ func (c *external) updateOutdatedQualityGateConditions(qualityGateConditionAssoc
 		}
 	}
 
-	return nil
-}
-
-// Create creates the external resource and sets the external name.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.QualityGate)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotQualityGate)
-	}
-
-	cr.Status.SetConditions(xpv1.Creating())
-
-	qualityGateCreateOptions := instance.GenerateQualityGateCreateOptions(cr.Spec.ForProvider)
-
-	qualityGate, resp, err := c.qualityGatesClient.Create(qualityGateCreateOptions) //nolint:bodyclose // closed via helpers.CloseBody
-	defer helpers.CloseBody(resp)
-
-	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, errCreateQualityGate)
-	}
-
-	// Set the external name to the Name of the created Quality Gate
-	meta.SetExternalName(cr, qualityGate.Name)
-
-	// Set Quality Gate as default if specified in the spec
-	if cr.Spec.ForProvider.Default != nil && *cr.Spec.ForProvider.Default {
-		setDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
-			Name: qualityGate.Name,
-		})
-		defer helpers.CloseBody(setDefaultResp)
-
-		if err != nil {
-			return managed.ExternalCreation{}, errors.Wrap(err, errDefaultQualityGate)
-		}
-	}
-
-	return managed.ExternalCreation{}, nil
-}
-
-// Update updates the external resource to match the desired state of the managed resource.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.QualityGate)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotQualityGate)
-	}
-
-	externalName := meta.GetExternalName(cr)
-	if externalName == "" {
-		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for Quality Gate %s", cr.Name)
-	}
-
-	// Set Quality Gate as default if specified in the spec (idempotent)
-	if cr.Spec.ForProvider.Default != nil && *cr.Spec.ForProvider.Default {
-		updateSetDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
-			Name: cr.Spec.ForProvider.Name,
-		})
-		defer helpers.CloseBody(updateSetDefaultResp)
-
-		if err != nil {
-			return managed.ExternalUpdate{}, errors.Wrap(err, errDefaultQualityGate)
-		}
-	}
-
-	associations := instance.GenerateQualityGateConditionsAssociation(cr.Spec.ForProvider.Conditions, cr.Status.AtProvider.Conditions)
-
-	// Sync Quality Gate Conditions
-	err := c.syncQualityGateConditions(cr, associations)
-	if err != nil {
-		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot sync Quality Gate Conditions")
-	}
-
-	return managed.ExternalUpdate{}, nil
-}
-
-// Delete deletes the external resource.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.QualityGate)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotQualityGate)
-	}
-
-	cr.Status.SetConditions(xpv1.Deleting())
-
-	// Use external name as the identifier to delete the resource
-	externalName := meta.GetExternalName(cr)
-	if externalName == "" {
-		return managed.ExternalDelete{}, nil
-	}
-
-	destroyResp, err := c.qualityGatesClient.Destroy(&sonar.QualitygatesDestroyOption{ //nolint:bodyclose // closed via helpers.CloseBody
-		Name: externalName,
-	})
-	defer helpers.CloseBody(destroyResp)
-
-	if err != nil {
-		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityGate)
-	}
-
-	return managed.ExternalDelete{}, nil
-}
-
-func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }

@@ -48,6 +48,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/version"
 )
 
+//nolint:funlen,mnd,nlreturn,varnamelen // Default crossplane template main function, which is expected to be long and have many variables
 func main() {
 	var (
 		app            = kingpin.New(filepath.Base(os.Args[0]), "SonarQube support for Crossplane.").DefaultEnvars()

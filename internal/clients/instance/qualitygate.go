@@ -29,6 +29,8 @@ import (
 // It handles all the operations related to Quality Gates in SonarQube, such as creating, updating, deleting, and retrieving Quality Gates and their conditions.
 // It also handles users / groups / projects association with Quality Gates.
 // It also interacts with Quality Gate Conditions.
+//
+//nolint:interfacebloat // This interface wraps the SonarQube Quality Gates API which has 21 methods
 type QualityGatesClient interface {
 	AddGroup(opt *sonar.QualitygatesAddGroupOption) (resp *http.Response, err error)
 	AddUser(opt *sonar.QualitygatesAddUserOption) (resp *http.Response, err error)
@@ -159,9 +161,9 @@ func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation
 	observationIdSet := buildObservationIdSet(observation.Conditions)
 
 	// Late-initialize or update condition IDs by matching on metric, error, and op
-	for i := range spec.Conditions {
+	for idx := range spec.Conditions {
 		// Check if the spec has an ID that still exists in observations
-		hasValidId := spec.Conditions[i].Id != nil && observationIdSet[*spec.Conditions[i].Id]
+		hasValidId := spec.Conditions[idx].Id != nil && observationIdSet[*spec.Conditions[idx].Id]
 
 		if hasValidId {
 			// Already has a valid ID that exists in observations, skip
@@ -169,8 +171,8 @@ func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation
 		}
 
 		// Either no ID or stale ID - find matching observation by metric, error, and op
-		if matchingId := findMatchingObservationId(spec.Conditions[i], observation.Conditions); matchingId != nil {
-			spec.Conditions[i].Id = matchingId
+		if matchingId := findMatchingObservationId(spec.Conditions[idx], observation.Conditions); matchingId != nil {
+			spec.Conditions[idx].Id = matchingId
 		}
 	}
 }

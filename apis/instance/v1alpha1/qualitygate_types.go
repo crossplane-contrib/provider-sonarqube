@@ -47,7 +47,7 @@ type QualityGateParameters struct {
 // QualityGateObservation are the observable fields of a QualityGate.
 type QualityGateObservation struct {
 	// Actions represents the actions that can be performed on the Quality Gate.
-	Actions QualityGatesActions `json:"actions,omitempty"`
+	Actions QualityGatesActions `json:"actions,omitzero"`
 	// Defines the Clean as You Code status of the Quality Gate.
 	CaycStatus string `json:"caycStatus"`
 	// Conditions represents the list of conditions associated with the Quality Gate.
@@ -75,7 +75,7 @@ type QualityGateStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
 
 	// AtProvider represents the observed state of the Quality Gate.
-	AtProvider QualityGateObservation `json:"atProvider,omitempty"`
+	AtProvider QualityGateObservation `json:"atProvider,omitzero"`
 }
 
 // QualityGatesActions represents the actions that can be performed on a Quality Gate.
@@ -150,10 +150,10 @@ type QualityGateConditionObservation struct {
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}
 type QualityGate struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	Spec   QualityGateSpec   `json:"spec"`
-	Status QualityGateStatus `json:"status,omitempty"`
+	Status QualityGateStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -161,7 +161,7 @@ type QualityGate struct {
 // QualityGateList contains a list of QualityGate.
 type QualityGateList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 
 	Items []QualityGate `json:"items"`
 }

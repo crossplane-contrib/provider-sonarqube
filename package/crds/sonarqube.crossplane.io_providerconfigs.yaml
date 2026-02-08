@@ -29,8 +29,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A ProviderConfig configures a Helm 'provider', i.e. a connection
-          to a particular
+        description: ProviderConfig configures a SonarQube provider.
         properties:
           apiVersion:
             description: |-
@@ -51,7 +50,7 @@ spec:
             type: object
           spec:
             properties:
-              baseURL:
+              baseUrl:
                 description: BaseURL of the SonarQube instance.
                 type: string
               insecureSkipVerify:
@@ -231,7 +230,7 @@ spec:
                 - source
                 type: object
             required:
-            - baseURL
+            - baseUrl
             type: object
           status:
             description: A ProviderConfigStatus defines the status of a Provider.
@@ -288,7 +287,9 @@ spec:
                 type: integer
             type: object
         required:
+        - metadata
         - spec
+        - status
         type: object
     served: true
     storage: true
