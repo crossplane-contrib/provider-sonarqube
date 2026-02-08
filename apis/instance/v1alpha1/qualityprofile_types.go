@@ -34,7 +34,7 @@ type QualityProfileParameters struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// Language defines the programming language of the Quality Profile.
-	// +kubebuilder:validation:Enum=azureresourcemanager;cloudformation;cs;css;docker;flex;go;ipynb;java;js;json;jsp;kotlin;kubernetes;php;py;ruby;rust;scala;scala;secrets;terraform;text;ts;vbnet;web;xml;yaml
+	// +kubebuilder:validation:Enum=azureresourcemanager;cloudformation;cs;css;docker;flex;go;ipynb;java;js;json;jsp;kotlin;kubernetes;php;py;ruby;rust;scala;secrets;terraform;text;ts;vbnet;web;xml;yaml
 	// +kubebuilder:validation:Required
 	Language string `json:"language"`
 	// Default indicates whether this Quality Profile is the default one.

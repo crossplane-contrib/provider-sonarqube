@@ -87,7 +87,6 @@ spec:
                     - ruby
                     - rust
                     - scala
-                    - scala
                     - secrets
                     - terraform
                     - text

@@ -238,7 +238,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateQualityProfile)
 	}
 
-	// Set the external name to the Name of the created Quality Profile
+	// Set the external name to the Key of the created Quality Profile
 	meta.SetExternalName(profile, qualityProfile.Profile.Key)
 
 	// Set Quality Profile as default if specified in the spec
