@@ -65,6 +65,7 @@ type QualityGateObservation struct {
 // A QualityGateSpec defines the desired state of a QualityGate.
 type QualityGateSpec struct {
 	xpv2.ManagedResourceSpec `json:",inline"`
+
 	// ForProvider represents the desired state of the Quality Gate.
 	ForProvider QualityGateParameters `json:"forProvider"`
 }
@@ -72,6 +73,7 @@ type QualityGateSpec struct {
 // A QualityGateStatus represents the observed state of a QualityGate.
 type QualityGateStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
+
 	// AtProvider represents the observed state of the Quality Gate.
 	AtProvider QualityGateObservation `json:"atProvider,omitempty"`
 }
@@ -156,16 +158,17 @@ type QualityGate struct {
 
 // +kubebuilder:object:root=true
 
-// QualityGateList contains a list of QualityGate
+// QualityGateList contains a list of QualityGate.
 type QualityGateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []QualityGate `json:"items"`
+
+	Items []QualityGate `json:"items"`
 }
 
 // QualityGate type metadata.
 var (
-	QualityGateKind             = reflect.TypeOf(QualityGate{}).Name()
+	QualityGateKind             = reflect.TypeFor[QualityGate]().Name()
 	QualityGateGroupKind        = schema.GroupKind{Group: Group, Kind: QualityGateKind}.String()
 	QualityGateKindAPIVersion   = QualityGateKind + "." + SchemeGroupVersion.String()
 	QualityGateGroupVersionKind = SchemeGroupVersion.WithKind(QualityGateKind)

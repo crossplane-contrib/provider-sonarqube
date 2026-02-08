@@ -54,6 +54,7 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 		m        resource.Managed
 		selector *xpv1.SecretKeySelector
 	}
+
 	tests := map[string]struct {
 		args        args
 		want        *string
@@ -144,22 +145,30 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 			got, err := GetTokenValueFromSecret(tc.args.ctx, tc.args.client, tc.args.m, tc.args.selector)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetTokenValueFromSecret() error = %v, wantErr %v", err, tc.wantErr)
+
 				return
 			}
+
 			if tc.wantErr && tc.errContains != "" {
 				if err == nil || !containsString(err.Error(), tc.errContains) {
 					t.Errorf("GetTokenValueFromSecret() error = %v, should contain %v", err, tc.errContains)
 				}
+
 				return
 			}
+
 			if tc.want == nil && got != nil {
 				t.Errorf("GetTokenValueFromSecret() = %v, want nil", *got)
+
 				return
 			}
+
 			if tc.want != nil && got == nil {
 				t.Errorf("GetTokenValueFromSecret() = nil, want %v", *tc.want)
+
 				return
 			}
+
 			if tc.want != nil && got != nil && *got != *tc.want {
 				t.Errorf("GetTokenValueFromSecret() = %v, want %v", *got, *tc.want)
 			}
@@ -174,6 +183,7 @@ func TestGetTokenValueFromLocalSecret(t *testing.T) {
 		m      resource.Managed
 		l      *xpv1.LocalSecretKeySelector
 	}
+
 	tests := map[string]struct {
 		args        args
 		want        *string
@@ -245,22 +255,30 @@ func TestGetTokenValueFromLocalSecret(t *testing.T) {
 			got, err := GetTokenValueFromLocalSecret(tc.args.ctx, tc.args.client, tc.args.m, tc.args.l)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetTokenValueFromLocalSecret() error = %v, wantErr %v", err, tc.wantErr)
+
 				return
 			}
+
 			if tc.wantErr && tc.errContains != "" {
 				if err == nil || !containsString(err.Error(), tc.errContains) {
 					t.Errorf("GetTokenValueFromLocalSecret() error = %v, should contain %v", err, tc.errContains)
 				}
+
 				return
 			}
+
 			if tc.want == nil && got != nil {
 				t.Errorf("GetTokenValueFromLocalSecret() = %v, want nil", *got)
+
 				return
 			}
+
 			if tc.want != nil && got == nil {
 				t.Errorf("GetTokenValueFromLocalSecret() = nil, want %v", *tc.want)
+
 				return
 			}
+
 			if tc.want != nil && got != nil && *got != *tc.want {
 				t.Errorf("GetTokenValueFromLocalSecret() = %v, want %v", *got, *tc.want)
 			}
@@ -285,5 +303,6 @@ func findSubstring(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }

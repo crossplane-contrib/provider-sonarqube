@@ -56,10 +56,11 @@ type QualityGatesClient interface {
 // NewQualityGatesClient creates a new QualityGatesClient with the provided SonarQube client configuration.
 func NewQualityGatesClient(clientConfig common.Config) QualityGatesClient {
 	newClient := common.NewClient(clientConfig)
+
 	return newClient.Qualitygates
 }
 
-// GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption from QualityGateParameters
+// GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption from QualityGateParameters.
 func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sonar.QualitygatesCreateOption {
 	return &sonar.QualitygatesCreateOption{
 		Name: spec.Name,
@@ -67,7 +68,7 @@ func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sona
 }
 
 // GenerateQualityGateObservation generates QualityGateObservation from SonarQube QualityGate
-// observation should not be nil, else it will panic
+// observation should not be nil, else it will panic.
 func GenerateQualityGateObservation(observation *sonar.QualitygatesShow) v1alpha1.QualityGateObservation {
 	return v1alpha1.QualityGateObservation{
 		Actions:           GenerateQualityGateActionsObservation(&observation.Actions),
@@ -81,7 +82,7 @@ func GenerateQualityGateObservation(observation *sonar.QualitygatesShow) v1alpha
 }
 
 // GenerateQualityGateActionsObservation generates QualityGatesActions from SonarQube QualityGateActions
-// actions should not be nil, else it will panic
+// actions should not be nil, else it will panic.
 func GenerateQualityGateActionsObservation(actions *sonar.QualityGateActions) v1alpha1.QualityGatesActions {
 	return v1alpha1.QualityGatesActions{
 		AssociateProjects:     actions.AssociateProjects,
@@ -95,11 +96,12 @@ func GenerateQualityGateActionsObservation(actions *sonar.QualityGateActions) v1
 	}
 }
 
-// IsQualityGateUpToDate checks if the Quality Gate spec is up to date with the observed state
+// IsQualityGateUpToDate checks if the Quality Gate spec is up to date with the observed state.
 func IsQualityGateUpToDate(spec *v1alpha1.QualityGateParameters, observation *v1alpha1.QualityGateObservation, associations map[string]QualityGateConditionAssociation) bool {
 	if spec == nil {
 		return true
 	}
+
 	if observation == nil {
 		return false
 	}
@@ -119,17 +121,18 @@ func IsQualityGateUpToDate(spec *v1alpha1.QualityGateParameters, observation *v1
 	return true
 }
 
-// buildObservationIdSet creates a map of all observation condition IDs for quick lookup
+// buildObservationIdSet creates a map of all observation condition IDs for quick lookup.
 func buildObservationIdSet(conditions []v1alpha1.QualityGateConditionObservation) map[string]bool {
 	idSet := make(map[string]bool)
 	for i := range conditions {
 		idSet[conditions[i].ID] = true
 	}
+
 	return idSet
 }
 
 // findMatchingObservationId searches for an observation condition that matches the spec condition
-// by metric, error, and op, and returns its ID
+// by metric, error, and op, and returns its ID.
 func findMatchingObservationId(specCondition v1alpha1.QualityGateConditionParameters, observations []v1alpha1.QualityGateConditionObservation) *string {
 	for i := range observations {
 		if specCondition.Metric == observations[i].Metric &&
@@ -138,12 +141,13 @@ func findMatchingObservationId(specCondition v1alpha1.QualityGateConditionParame
 			return &observations[i].ID
 		}
 	}
+
 	return nil
 }
 
 // LateInitializeQualityGate fills the spec with the observed state if the spec fields are nil
 // It also late-initializes condition IDs by matching conditions by their metric, error, and op fields
-// If a condition has a stale ID (doesn't exist in observations), it will be updated to the correct ID
+// If a condition has a stale ID (doesn't exist in observations), it will be updated to the correct ID.
 func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation *v1alpha1.QualityGateObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -172,7 +176,7 @@ func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation
 }
 
 // WereQualityGateConditionsLateInitialized checks if any conditions had their IDs late-initialized
-// by comparing the before and after states
+// by comparing the before and after states.
 func WereQualityGateConditionsLateInitialized(before, after []v1alpha1.QualityGateConditionParameters) bool {
 	if len(before) != len(after) {
 		return true

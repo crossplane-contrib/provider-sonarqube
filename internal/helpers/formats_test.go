@@ -203,9 +203,11 @@ func TestAssignIfNil(t *testing.T) {
 	t.Run("NilInnerPointerAssignsValue", func(t *testing.T) {
 		var inner *string
 		AssignIfNil(&inner, "hello")
+
 		if inner == nil {
 			t.Error("AssignIfNil() did not assign value to nil pointer")
 		}
+
 		if *inner != "hello" {
 			t.Errorf("AssignIfNil() assigned %v, want %v", *inner, "hello")
 		}
@@ -215,6 +217,7 @@ func TestAssignIfNil(t *testing.T) {
 		original := "original"
 		inner := &original
 		AssignIfNil(&inner, "new")
+
 		if *inner != "original" {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, "original")
 		}
@@ -223,9 +226,11 @@ func TestAssignIfNil(t *testing.T) {
 	t.Run("IntNilInnerPointerAssignsValue", func(t *testing.T) {
 		var inner *int
 		AssignIfNil(&inner, 42)
+
 		if inner == nil {
 			t.Error("AssignIfNil() did not assign value to nil pointer")
 		}
+
 		if *inner != 42 {
 			t.Errorf("AssignIfNil() assigned %v, want %v", *inner, 42)
 		}
@@ -235,6 +240,7 @@ func TestAssignIfNil(t *testing.T) {
 		original := 100
 		inner := &original
 		AssignIfNil(&inner, 42)
+
 		if *inner != 100 {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, 100)
 		}
@@ -243,9 +249,11 @@ func TestAssignIfNil(t *testing.T) {
 	t.Run("BoolNilInnerPointerAssignsValue", func(t *testing.T) {
 		var inner *bool
 		AssignIfNil(&inner, true)
+
 		if inner == nil {
 			t.Error("AssignIfNil() did not assign value to nil pointer")
 		}
+
 		if *inner != true {
 			t.Errorf("AssignIfNil() assigned %v, want %v", *inner, true)
 		}
@@ -255,6 +263,7 @@ func TestAssignIfNil(t *testing.T) {
 		original := false
 		inner := &original
 		AssignIfNil(&inner, true)
+
 		if *inner != false {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, false)
 		}

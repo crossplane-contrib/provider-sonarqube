@@ -361,17 +361,23 @@ func TestLateInitializeQualityGateCondition(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			LateInitializeQualityGateCondition(tc.params, tc.observation)
+
 			if tc.params == nil {
 				return
 			}
+
 			if tc.wantOp == nil && tc.params.Op != nil {
 				t.Errorf("LateInitializeQualityGateCondition() Op = %v, want nil", *tc.params.Op)
+
 				return
 			}
+
 			if tc.wantOp != nil && tc.params.Op == nil {
 				t.Errorf("LateInitializeQualityGateCondition() Op = nil, want %v", *tc.wantOp)
+
 				return
 			}
+
 			if tc.wantOp != nil && tc.params.Op != nil && *tc.params.Op != *tc.wantOp {
 				t.Errorf("LateInitializeQualityGateCondition() Op = %v, want %v", *tc.params.Op, *tc.wantOp)
 			}
@@ -433,6 +439,7 @@ func TestGenerateQualityGateConditionsAssociation(t *testing.T) {
 			if len(got) != len(tc.wantKeys) {
 				t.Errorf("GenerateQualityGateConditionsAssociation() returned %d associations, want %d", len(got), len(tc.wantKeys))
 			}
+
 			for _, key := range tc.wantKeys {
 				if _, exists := got[key]; !exists {
 					t.Errorf("GenerateQualityGateConditionsAssociation() missing key %q", key)

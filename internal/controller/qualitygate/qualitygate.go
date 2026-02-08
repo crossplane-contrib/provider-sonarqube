@@ -60,10 +60,12 @@ const (
 // SetupGated adds a controller that reconciles QualityGate managed resources with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
-		if err := Setup(mgr, o); err != nil {
+		err := Setup(mgr, o)
+		if err != nil {
 			panic(errors.Wrap(err, "cannot setup QualityGate controller"))
 		}
 	}, v1alpha1.QualityGateGroupVersionKind)
+
 	return nil
 }
 
@@ -96,7 +98,8 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
 			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &v1alpha1.QualityGateList{}, o.MetricOptions.PollStateMetricInterval,
 		)
-		if err := mgr.Add(stateMetricsRecorder); err != nil {
+		err := mgr.Add(stateMetricsRecorder)
+		if err != nil {
 			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.QualityGateList")
 		}
 	}
@@ -174,6 +177,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		Name: externalName,
 	})
 	defer helpers.CloseBody(resp)
+
 	if err != nil {
 		// If the quality gate is not found, treat as resource doesn't exist
 		return managed.ExternalObservation{ResourceExists: false}, nil
@@ -206,7 +210,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 // syncQualityGateConditions synchronizes the Quality Gate Conditions in SonarQube
-// It deletes unwanted conditions, creates missing conditions, and updates out-of-date conditions
+// It deletes unwanted conditions, creates missing conditions, and updates out-of-date conditions.
 func (c *external) syncQualityGateConditions(qualityGate *v1alpha1.QualityGate, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	if len(qualityGateConditionAssociations) == 0 {
 		return nil
@@ -217,40 +221,46 @@ func (c *external) syncQualityGateConditions(qualityGate *v1alpha1.QualityGate, 
 		return fmt.Errorf("external name is not set for Quality Gate %s", qualityGate.Name)
 	}
 
-	if err := c.deleteUnwantedQualityGateConditions(qualityGateConditionAssociations); err != nil {
+	err := c.deleteUnwantedQualityGateConditions(qualityGateConditionAssociations)
+	if err != nil {
 		return err
 	}
 
-	if err := c.createMissingQualityGateConditions(externalName, qualityGateConditionAssociations); err != nil {
+	err = c.createMissingQualityGateConditions(externalName, qualityGateConditionAssociations)
+	if err != nil {
 		return err
 	}
 
-	if err := c.updateOutdatedQualityGateConditions(qualityGateConditionAssociations); err != nil {
+	err = c.updateOutdatedQualityGateConditions(qualityGateConditionAssociations)
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// deleteUnwantedQualityGateConditions deletes Quality Gate Conditions that are no longer needed
+// deleteUnwantedQualityGateConditions deletes Quality Gate Conditions that are no longer needed.
 func (c *external) deleteUnwantedQualityGateConditions(qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	missingQualityGateConditions := instance.FindMissingQualityGateConditions(qualityGateConditionAssociations)
 	for _, conditionObservation := range missingQualityGateConditions {
 		if conditionObservation == nil {
 			continue
 		}
+
 		deleteResponse, err := c.qualityGatesClient.DeleteCondition(instance.GenerateDeleteQualityGateConditionOption(conditionObservation.ID)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(deleteResponse)
+
 		if err != nil {
 			return errors.Wrapf(err, "cannot delete SonarQube Quality Gate Condition with ID %s", conditionObservation.ID)
 		}
 		// Delete the condition from the associations map after successful deletion
 		delete(qualityGateConditionAssociations, conditionObservation.ID)
 	}
+
 	return nil
 }
 
-// createMissingQualityGateConditions creates Quality Gate Conditions that are specified but do not exist
+// createMissingQualityGateConditions creates Quality Gate Conditions that are specified but do not exist.
 func (c *external) createMissingQualityGateConditions(externalName string, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	nonExistingQualityGateConditions := instance.FindNonExistingQualityGateConditions(qualityGateConditionAssociations)
 	for _, conditionSpec := range nonExistingQualityGateConditions {
@@ -260,18 +270,22 @@ func (c *external) createMissingQualityGateConditions(externalName string, quali
 
 		// Find the old key for this spec (likely "new:{metric}")
 		var oldKey string
+
 		for key, assoc := range qualityGateConditionAssociations {
 			if assoc.Spec == conditionSpec {
 				oldKey = key
+
 				break
 			}
 		}
 
 		qualityGateCondition, createResponse, err := c.qualityGatesClient.CreateCondition(instance.GenerateCreateQualityGateConditionOption(externalName, *conditionSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(createResponse)
+
 		if err != nil {
 			return errors.Wrapf(err, "cannot create SonarQube Quality Gate Condition for Quality Gate %s", externalName)
 		}
+
 		conditionObservation := instance.GenerateQualityGateConditionObservationFromCreate(qualityGateCondition)
 
 		// Remove the old "new:{metric}" key from the associations map
@@ -287,26 +301,30 @@ func (c *external) createMissingQualityGateConditions(externalName string, quali
 			UpToDate:    true,
 		}
 	}
+
 	return nil
 }
 
-// updateOutdatedQualityGateConditions updates Quality Gate Conditions that are out of date
+// updateOutdatedQualityGateConditions updates Quality Gate Conditions that are out of date.
 func (c *external) updateOutdatedQualityGateConditions(qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	outdatedQualityGateConditions := instance.FindNotUpToDateQualityGateConditions(qualityGateConditionAssociations)
 	for _, association := range outdatedQualityGateConditions {
 		if association.Spec == nil || association.Observation == nil {
 			continue
 		}
+
 		updateResponse, err := c.qualityGatesClient.UpdateCondition(instance.GenerateUpdateQualityGateConditionOption(association.Observation.ID, *association.Spec)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(updateResponse)
+
 		if err != nil {
 			return errors.Wrapf(err, "cannot update SonarQube Quality Gate Condition with ID %s", *association.Spec.Id)
 		}
 	}
+
 	return nil
 }
 
-// Create creates the external resource and sets the external name
+// Create creates the external resource and sets the external name.
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
 	cr, ok := mg.(*v1alpha1.QualityGate)
 	if !ok {
@@ -319,6 +337,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	qualityGate, resp, err := c.qualityGatesClient.Create(qualityGateCreateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
+
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateQualityGate)
 	}
@@ -332,6 +351,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 			Name: qualityGate.Name,
 		})
 		defer helpers.CloseBody(setDefaultResp)
+
 		if err != nil {
 			return managed.ExternalCreation{}, errors.Wrap(err, errDefaultQualityGate)
 		}
@@ -340,7 +360,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalCreation{}, nil
 }
 
-// Update updates the external resource to match the desired state of the managed resource
+// Update updates the external resource to match the desired state of the managed resource.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	cr, ok := mg.(*v1alpha1.QualityGate)
 	if !ok {
@@ -358,6 +378,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 			Name: cr.Spec.ForProvider.Name,
 		})
 		defer helpers.CloseBody(updateSetDefaultResp)
+
 		if err != nil {
 			return managed.ExternalUpdate{}, errors.Wrap(err, errDefaultQualityGate)
 		}
@@ -366,14 +387,15 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	associations := instance.GenerateQualityGateConditionsAssociation(cr.Spec.ForProvider.Conditions, cr.Status.AtProvider.Conditions)
 
 	// Sync Quality Gate Conditions
-	if err := c.syncQualityGateConditions(cr, associations); err != nil {
+	err := c.syncQualityGateConditions(cr, associations)
+	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot sync Quality Gate Conditions")
 	}
 
 	return managed.ExternalUpdate{}, nil
 }
 
-// Delete deletes the external resource
+// Delete deletes the external resource.
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
 	cr, ok := mg.(*v1alpha1.QualityGate)
 	if !ok {
@@ -392,6 +414,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		Name: externalName,
 	})
 	defer helpers.CloseBody(destroyResp)
+
 	if err != nil {
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityGate)
 	}

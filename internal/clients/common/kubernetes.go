@@ -43,7 +43,8 @@ func GetTokenValueFromSecret(ctx context.Context, client client.Client, m resour
 	}
 
 	secret := &corev1.Secret{}
-	if err := client.Get(ctx, types.NamespacedName{Name: selector.Name, Namespace: selector.Namespace}, secret); err != nil {
+	err := client.Get(ctx, types.NamespacedName{Name: selector.Name, Namespace: selector.Namespace}, secret)
+	if err != nil {
 		return nil, errors.Wrap(err, ErrSecretNotFound)
 	}
 
@@ -53,6 +54,7 @@ func GetTokenValueFromSecret(ctx context.Context, client client.Client, m resour
 	}
 
 	data := string(value)
+
 	return &data, nil
 }
 

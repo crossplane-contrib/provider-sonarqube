@@ -30,9 +30,11 @@ import (
 // Setup adds a controller that reconciles ProviderConfigs by accounting for
 // their current usage.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	if err := setupNamespacedProviderConfig(mgr, o); err != nil {
+	err := setupNamespacedProviderConfig(mgr, o)
+	if err != nil {
 		return err
 	}
+
 	return setupClusterProviderConfig(mgr, o)
 }
 

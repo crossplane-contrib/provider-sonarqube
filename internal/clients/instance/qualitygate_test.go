@@ -483,17 +483,23 @@ func TestLateInitializeQualityGate(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			LateInitializeQualityGate(tc.spec, tc.observation)
+
 			if tc.spec == nil {
 				return
 			}
+
 			if tc.wantDefault == nil && tc.spec.Default != nil {
 				t.Errorf("LateInitializeQualityGate() Default = %v, want nil", *tc.spec.Default)
+
 				return
 			}
+
 			if tc.wantDefault != nil && tc.spec.Default == nil {
 				t.Errorf("LateInitializeQualityGate() Default = nil, want %v", *tc.wantDefault)
+
 				return
 			}
+
 			if tc.wantDefault != nil && tc.spec.Default != nil && *tc.spec.Default != *tc.wantDefault {
 				t.Errorf("LateInitializeQualityGate() Default = %v, want %v", *tc.spec.Default, *tc.wantDefault)
 			}
