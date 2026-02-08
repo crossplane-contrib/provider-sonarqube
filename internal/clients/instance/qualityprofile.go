@@ -27,6 +27,8 @@ import (
 )
 
 // QualityProfilesClient is the interface for the Quality Profiles SonarQube client.
+//
+//nolint:interfacebloat // This interface wraps the SonarQube Quality Profiles API which has 26 methods
 type QualityProfilesClient interface {
 	ActivateRule(opt *sonar.QualityprofilesActivateRuleOption) (resp *http.Response, err error)
 	ActivateRules(opt *sonar.QualityprofilesActivateRulesOption) (resp *http.Response, err error)
@@ -59,10 +61,11 @@ type QualityProfilesClient interface {
 // NewQualityProfilesClient creates a new QualityProfilesClient with the provided SonarQube client configuration.
 func NewQualityProfilesClient(clientConfig common.Config) QualityProfilesClient {
 	newClient := common.NewClient(clientConfig)
+
 	return newClient.Qualityprofiles
 }
 
-// GenerateCreateQualityProfileOption generates SonarQube QualityprofilesCreateOption from QualityProfileParameters
+// GenerateCreateQualityProfileOption generates SonarQube QualityprofilesCreateOption from QualityProfileParameters.
 func GenerateCreateQualityProfileOption(params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesCreateOption {
 	return &sonar.QualityprofilesCreateOption{
 		Name:     params.Name,
@@ -70,7 +73,7 @@ func GenerateCreateQualityProfileOption(params v1alpha1.QualityProfileParameters
 	}
 }
 
-// GenerateDeleteQualityProfileOption generates SonarQube QualityprofilesDeleteOption from QualityProfileParameters
+// GenerateDeleteQualityProfileOption generates SonarQube QualityprofilesDeleteOption from QualityProfileParameters.
 func GenerateDeleteQualityProfileOption(params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesDeleteOption {
 	return &sonar.QualityprofilesDeleteOption{
 		Language:       params.Language,
@@ -78,7 +81,7 @@ func GenerateDeleteQualityProfileOption(params v1alpha1.QualityProfileParameters
 	}
 }
 
-// GenerateRenameQualityProfileOption generates SonarQube QualityprofilesRenameOption from QualityProfileParameters
+// GenerateRenameQualityProfileOption generates SonarQube QualityprofilesRenameOption from QualityProfileParameters.
 func GenerateRenameQualityProfileOption(key string, params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesRenameOption {
 	return &sonar.QualityprofilesRenameOption{
 		Key:  key,
@@ -86,7 +89,7 @@ func GenerateRenameQualityProfileOption(key string, params v1alpha1.QualityProfi
 	}
 }
 
-// GenerateQualityProfileObservation generates QualityProfileObservation from SonarQube QualityprofilesShow
+// GenerateQualityProfileObservation generates QualityProfileObservation from SonarQube QualityprofilesShow.
 func GenerateQualityProfileObservation(observation *sonar.QualityprofilesShow, rules *sonar.RulesSearch) v1alpha1.QualityProfileObservation {
 	return v1alpha1.QualityProfileObservation{
 		ActiveDeprecatedRuleCount: observation.Profile.ActiveDeprecatedRuleCount,
@@ -105,7 +108,7 @@ func GenerateQualityProfileObservation(observation *sonar.QualityprofilesShow, r
 	}
 }
 
-// GenerateQualityprofilesSetDefaultOption generates SonarQube QualityprofilesSetDefaultOption from QualityProfileParameters
+// GenerateQualityprofilesSetDefaultOption generates SonarQube QualityprofilesSetDefaultOption from QualityProfileParameters.
 func GenerateQualityprofilesSetDefaultOption(params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesSetDefaultOption {
 	return &sonar.QualityprofilesSetDefaultOption{
 		QualityProfile: params.Name,
@@ -114,11 +117,12 @@ func GenerateQualityprofilesSetDefaultOption(params v1alpha1.QualityProfileParam
 }
 
 // IsQualityProfileUpToDate checks whether the observed QualityProfile is up to date with the desired QualityProfileParameters
-// It also checks that all rule associations are up to date
+// It also checks that all rule associations are up to date.
 func IsQualityProfileUpToDate(spec *v1alpha1.QualityProfileParameters, observation *v1alpha1.QualityProfileObservation, associations map[string]QualityProfileRuleAssociation) bool {
 	if spec == nil {
 		return true
 	}
+
 	if observation == nil {
 		return false
 	}
@@ -126,9 +130,11 @@ func IsQualityProfileUpToDate(spec *v1alpha1.QualityProfileParameters, observati
 	if spec.Name != observation.Name {
 		return false
 	}
+
 	if spec.Language != observation.Language {
 		return false
 	}
+
 	if !helpers.IsComparablePtrEqualComparable(spec.Default, observation.IsDefault) {
 		return false
 	}
@@ -147,6 +153,7 @@ func LateInitializeQualityProfile(spec *v1alpha1.QualityProfileParameters, obser
 	if spec == nil || observation == nil {
 		return
 	}
+
 	helpers.AssignIfNil(&spec.Default, observation.IsDefault)
 }
 
@@ -178,7 +185,7 @@ func GenerateQualityProfileActivateRuleOption(qualityProfileKey string, params v
 	return activateRulesOption
 }
 
-// GenerateQualityProfileDeactivateRuleOption generates SonarQube QualityprofilesDeactivateRuleOption from rule key
+// GenerateQualityProfileDeactivateRuleOption generates SonarQube QualityprofilesDeactivateRuleOption from rule key.
 func GenerateQualityProfileDeactivateRuleOption(qualityProfileKey string, ruleKey string) *sonar.QualityprofilesDeactivateRuleOption {
 	return &sonar.QualityprofilesDeactivateRuleOption{
 		Key:  qualityProfileKey,
@@ -186,7 +193,7 @@ func GenerateQualityProfileDeactivateRuleOption(qualityProfileKey string, ruleKe
 	}
 }
 
-// QualityProfileRuleAssociation associates a QualityProfileRuleObservation with its corresponding QualityProfileRuleParameters
+// QualityProfileRuleAssociation associates a QualityProfileRuleObservation with its corresponding QualityProfileRuleParameters.
 type QualityProfileRuleAssociation struct {
 	Observation *v1alpha1.QualityProfileRuleObservation
 	Spec        *v1alpha1.QualityProfileRuleParameters
@@ -194,7 +201,7 @@ type QualityProfileRuleAssociation struct {
 }
 
 // GenerateQualityProfileRulesAssociation generates associations between QualityProfileRuleParameters and QualityProfileRuleObservation
-// The key in the returned map is the rule key (which is unique per rule)
+// The key in the returned map is the rule key (which is unique per rule).
 func GenerateQualityProfileRulesAssociation(specs []v1alpha1.QualityProfileRuleParameters, observations []v1alpha1.QualityProfileRuleObservation) map[string]QualityProfileRuleAssociation {
 	associations := make(map[string]QualityProfileRuleAssociation)
 
@@ -208,18 +215,18 @@ func GenerateQualityProfileRulesAssociation(specs []v1alpha1.QualityProfileRuleP
 	}
 
 	// Then, match specs to observations
-	for i := range specs {
-		ruleKey := specs[i].Rule
+	for idx := range specs {
+		ruleKey := specs[idx].Rule
 		if assoc, exists := associations[ruleKey]; exists {
 			// Rule exists in observation - check if up to date
-			assoc.Spec = &specs[i]
-			assoc.UpToDate = IsQualityProfileRuleUpToDate(&specs[i], assoc.Observation)
+			assoc.Spec = &specs[idx]
+			assoc.UpToDate = IsQualityProfileRuleUpToDate(&specs[idx], assoc.Observation)
 			associations[ruleKey] = assoc
 		} else {
 			// Rule not currently active - needs activation
 			associations[ruleKey] = QualityProfileRuleAssociation{
 				Observation: nil,
-				Spec:        &specs[i],
+				Spec:        &specs[idx],
 				UpToDate:    false,
 			}
 		}
@@ -228,54 +235,61 @@ func GenerateQualityProfileRulesAssociation(specs []v1alpha1.QualityProfileRuleP
 	return associations
 }
 
-// AreQualityProfileRulesUpToDate checks whether all rule associations are up to date
+// AreQualityProfileRulesUpToDate checks whether all rule associations are up to date.
 func AreQualityProfileRulesUpToDate(associations map[string]QualityProfileRuleAssociation) bool {
 	for _, assoc := range associations {
 		if !assoc.UpToDate {
 			return false
 		}
 	}
+
 	return true
 }
 
 // FindNonExistingQualityProfileRules finds QualityProfileRuleParameters that do not have a corresponding QualityProfileRuleObservation
-// These are rules that need to be activated
+// These are rules that need to be activated.
 func FindNonExistingQualityProfileRules(associations map[string]QualityProfileRuleAssociation) []*v1alpha1.QualityProfileRuleParameters {
 	var nonExisting []*v1alpha1.QualityProfileRuleParameters
+
 	for _, assoc := range associations {
 		if assoc.Observation == nil && assoc.Spec != nil {
 			nonExisting = append(nonExisting, assoc.Spec)
 		}
 	}
+
 	return nonExisting
 }
 
 // FindMissingQualityProfileRules finds QualityProfileRuleObservations that do not have a corresponding QualityProfileRuleParameters
-// These are rules that need to be deactivated
+// These are rules that need to be deactivated.
 func FindMissingQualityProfileRules(associations map[string]QualityProfileRuleAssociation) []*v1alpha1.QualityProfileRuleObservation {
 	var missing []*v1alpha1.QualityProfileRuleObservation
+
 	for _, assoc := range associations {
 		if assoc.Spec == nil && assoc.Observation != nil {
 			missing = append(missing, assoc.Observation)
 		}
 	}
+
 	return missing
 }
 
 // FindNotUpToDateQualityProfileRules finds QualityProfileRuleAssociations that are not up to date
-// These are rules where both spec and observation exist but have different parameters
+// These are rules where both spec and observation exist but have different parameters.
 func FindNotUpToDateQualityProfileRules(associations map[string]QualityProfileRuleAssociation) []QualityProfileRuleAssociation {
 	var notUpToDate []QualityProfileRuleAssociation
+
 	for _, assoc := range associations {
 		if !assoc.UpToDate && assoc.Spec != nil && assoc.Observation != nil {
 			notUpToDate = append(notUpToDate, assoc)
 		}
 	}
+
 	return notUpToDate
 }
 
 // WereQualityProfileRulesLateInitialized checks if any rule parameters were updated during late initialization
-// This compares the original rules slice with the updated one after late initialization
+// This compares the original rules slice with the updated one after late initialization.
 func WereQualityProfileRulesLateInitialized(original, updated []v1alpha1.QualityProfileRuleParameters) bool {
 	if len(original) != len(updated) {
 		return true
@@ -283,20 +297,21 @@ func WereQualityProfileRulesLateInitialized(original, updated []v1alpha1.Quality
 
 	// Build a map for quick lookup of original rules
 	originalMap := make(map[string]*v1alpha1.QualityProfileRuleParameters, len(original))
-	for i := range original {
-		originalMap[original[i].Rule] = &original[i]
+	for idx := range original {
+		originalMap[original[idx].Rule] = &original[idx]
 	}
 
-	for i := range updated {
-		orig, exists := originalMap[updated[i].Rule]
+	for idx := range updated {
+		orig, exists := originalMap[updated[idx].Rule]
 		if !exists {
 			return true
 		}
 		// Compare the spec fields that could be late-initialized
-		if !helpers.IsComparablePtrEqualComparablePtr(orig.Severity, updated[i].Severity) {
+		if !helpers.IsComparablePtrEqualComparablePtr(orig.Severity, updated[idx].Severity) {
 			return true
 		}
-		if !helpers.IsComparablePtrEqualComparablePtr(orig.Prioritized, updated[i].Prioritized) {
+
+		if !helpers.IsComparablePtrEqualComparablePtr(orig.Prioritized, updated[idx].Prioritized) {
 			return true
 		}
 	}

@@ -76,11 +76,12 @@ func AssignIfNil[T any](ptr **T, val T) {
 	}
 }
 
-// TimeToMetaTime returns nil if parameter is nil, otherwise metav1.Time value
+// TimeToMetaTime returns nil if parameter is nil, otherwise metav1.Time value.
 func TimeToMetaTime(t *time.Time) *metav1.Time {
 	if t == nil {
 		return nil
 	}
+
 	return &metav1.Time{Time: *t}
 }
 
@@ -90,14 +91,16 @@ func StringToMetaTime(s *string) *metav1.Time {
 	if s == nil {
 		return nil
 	}
+
 	parsedTime, err := time.Parse(time.RFC3339, *s)
 	if err != nil {
 		return nil
 	}
+
 	return &metav1.Time{Time: parsedTime}
 }
 
-// AnySliceToStringSlice converts a []any to []string, skipping non-string elements
+// AnySliceToStringSlice converts a []any to []string, skipping non-string elements.
 func AnySliceToStringSlice(slice []any) []string {
 	result := make([]string, 0, len(slice))
 	for _, v := range slice {
@@ -105,5 +108,6 @@ func AnySliceToStringSlice(slice []any) []string {
 			result = append(result, s)
 		}
 	}
+
 	return result
 }

@@ -27,6 +27,8 @@ import (
 )
 
 func TestGenerateCreateQualityProfileOption(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		params v1alpha1.QualityProfileParameters
 		want   *sonar.QualityprofilesCreateOption
@@ -56,6 +58,8 @@ func TestGenerateCreateQualityProfileOption(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateCreateQualityProfileOption(tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateCreateQualityProfileOption() mismatch (-want +got):\n%s", diff)
@@ -65,6 +69,8 @@ func TestGenerateCreateQualityProfileOption(t *testing.T) {
 }
 
 func TestGenerateDeleteQualityProfileOption(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		params v1alpha1.QualityProfileParameters
 		want   *sonar.QualityprofilesDeleteOption
@@ -83,6 +89,8 @@ func TestGenerateDeleteQualityProfileOption(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateDeleteQualityProfileOption(tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateDeleteQualityProfileOption() mismatch (-want +got):\n%s", diff)
@@ -92,6 +100,8 @@ func TestGenerateDeleteQualityProfileOption(t *testing.T) {
 }
 
 func TestGenerateRenameQualityProfileOption(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		key    string
 		params v1alpha1.QualityProfileParameters
@@ -112,6 +122,8 @@ func TestGenerateRenameQualityProfileOption(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateRenameQualityProfileOption(tc.key, tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateRenameQualityProfileOption() mismatch (-want +got):\n%s", diff)
@@ -121,6 +133,8 @@ func TestGenerateRenameQualityProfileOption(t *testing.T) {
 }
 
 func TestIsQualityProfileUpToDate(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		spec         *v1alpha1.QualityProfileParameters
 		observation  *v1alpha1.QualityProfileObservation
@@ -244,6 +258,8 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IsQualityProfileUpToDate(tc.spec, tc.observation, tc.associations)
 			if got != tc.want {
 				t.Errorf("IsQualityProfileUpToDate() = %v, want %v", got, tc.want)
@@ -253,6 +269,8 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 }
 
 func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		specs        []v1alpha1.QualityProfileRuleParameters
 		observations []v1alpha1.QualityProfileRuleObservation
@@ -321,6 +339,8 @@ func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateQualityProfileRulesAssociation(tc.specs, tc.observations)
 
 			// Check keys
@@ -347,6 +367,8 @@ func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
 }
 
 func TestFindNonExistingQualityProfileRules(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		associations map[string]QualityProfileRuleAssociation
 		wantCount    int
@@ -388,6 +410,8 @@ func TestFindNonExistingQualityProfileRules(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := FindNonExistingQualityProfileRules(tc.associations)
 			if len(got) != tc.wantCount {
 				t.Errorf("FindNonExistingQualityProfileRules() returned %d rules, want %d", len(got), tc.wantCount)
@@ -395,12 +419,15 @@ func TestFindNonExistingQualityProfileRules(t *testing.T) {
 
 			for _, wantRule := range tc.wantRules {
 				found := false
+
 				for _, rule := range got {
 					if rule.Rule == wantRule {
 						found = true
+
 						break
 					}
 				}
+
 				if !found {
 					t.Errorf("FindNonExistingQualityProfileRules() missing rule %s", wantRule)
 				}
@@ -410,6 +437,8 @@ func TestFindNonExistingQualityProfileRules(t *testing.T) {
 }
 
 func TestFindMissingQualityProfileRules(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		associations map[string]QualityProfileRuleAssociation
 		wantCount    int
@@ -451,6 +480,8 @@ func TestFindMissingQualityProfileRules(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := FindMissingQualityProfileRules(tc.associations)
 			if len(got) != tc.wantCount {
 				t.Errorf("FindMissingQualityProfileRules() returned %d rules, want %d", len(got), tc.wantCount)
@@ -458,12 +489,15 @@ func TestFindMissingQualityProfileRules(t *testing.T) {
 
 			for _, wantRule := range tc.wantRules {
 				found := false
+
 				for _, rule := range got {
 					if rule.Key == wantRule {
 						found = true
+
 						break
 					}
 				}
+
 				if !found {
 					t.Errorf("FindMissingQualityProfileRules() missing rule %s", wantRule)
 				}
@@ -473,6 +507,8 @@ func TestFindMissingQualityProfileRules(t *testing.T) {
 }
 
 func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		associations map[string]QualityProfileRuleAssociation
 		wantCount    int
@@ -530,6 +566,8 @@ func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := FindNotUpToDateQualityProfileRules(tc.associations)
 			if len(got) != tc.wantCount {
 				t.Errorf("FindNotUpToDateQualityProfileRules() returned %d rules, want %d", len(got), tc.wantCount)
@@ -537,12 +575,15 @@ func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 
 			for _, wantRule := range tc.wantRules {
 				found := false
+
 				for _, assoc := range got {
 					if assoc.Spec != nil && assoc.Spec.Rule == wantRule {
 						found = true
+
 						break
 					}
 				}
+
 				if !found {
 					t.Errorf("FindNotUpToDateQualityProfileRules() missing rule %s", wantRule)
 				}
@@ -552,6 +593,8 @@ func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 }
 
 func TestAreQualityProfileRulesUpToDate(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		associations map[string]QualityProfileRuleAssociation
 		want         bool
@@ -585,6 +628,8 @@ func TestAreQualityProfileRulesUpToDate(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := AreQualityProfileRulesUpToDate(tc.associations)
 			if got != tc.want {
 				t.Errorf("AreQualityProfileRulesUpToDate() = %v, want %v", got, tc.want)
@@ -594,6 +639,8 @@ func TestAreQualityProfileRulesUpToDate(t *testing.T) {
 }
 
 func TestWereQualityProfileRulesLateInitialized(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		original []v1alpha1.QualityProfileRuleParameters
 		updated  []v1alpha1.QualityProfileRuleParameters
@@ -654,6 +701,8 @@ func TestWereQualityProfileRulesLateInitialized(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := WereQualityProfileRulesLateInitialized(tc.original, tc.updated)
 			if got != tc.want {
 				t.Errorf("WereQualityProfileRulesLateInitialized() = %v, want %v", got, tc.want)
@@ -663,6 +712,8 @@ func TestWereQualityProfileRulesLateInitialized(t *testing.T) {
 }
 
 func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		profileKey string
 		params     v1alpha1.QualityProfileRuleParameters
@@ -762,6 +813,8 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateQualityProfileActivateRuleOption(tc.profileKey, tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateQualityProfileActivateRuleOption() mismatch (-want +got):\n%s", diff)
@@ -771,6 +824,8 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 }
 
 func TestGenerateQualityProfileDeactivateRuleOption(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		profileKey string
 		ruleKey    string
@@ -788,6 +843,8 @@ func TestGenerateQualityProfileDeactivateRuleOption(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateQualityProfileDeactivateRuleOption(tc.profileKey, tc.ruleKey)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateQualityProfileDeactivateRuleOption() mismatch (-want +got):\n%s", diff)
@@ -797,6 +854,8 @@ func TestGenerateQualityProfileDeactivateRuleOption(t *testing.T) {
 }
 
 func TestLateInitializeQualityProfile(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		spec        *v1alpha1.QualityProfileParameters
 		observation *v1alpha1.QualityProfileObservation
@@ -826,7 +885,10 @@ func TestLateInitializeQualityProfile(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			LateInitializeQualityProfile(tc.spec, tc.observation)
+
 			if tc.spec != nil {
 				if diff := cmp.Diff(tc.wantDefault, tc.spec.Default); diff != "" {
 					t.Errorf("LateInitializeQualityProfile() Default mismatch (-want +got):\n%s", diff)

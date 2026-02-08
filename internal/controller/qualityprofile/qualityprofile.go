@@ -61,55 +61,59 @@ const (
 // SetupGated adds a controller that reconciles QualityProfile managed resources with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
-		if err := Setup(mgr, o); err != nil {
+		err := Setup(mgr, o)
+		if err != nil {
 			panic(errors.Wrap(err, "cannot setup QualityProfile controller"))
 		}
 	}, v1alpha1.QualityProfileGroupVersionKind)
+
 	return nil
 }
 
-func Setup(mgr ctrl.Manager, o controller.Options) error {
+func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	name := managed.ControllerName(v1alpha1.QualityProfileGroupKind)
 
-	opts := []managed.ReconcilerOption{
+	options := []managed.ReconcilerOption{
 		managed.WithExternalConnector(&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
-		managed.WithLogger(o.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(o.PollInterval),
+		managed.WithLogger(opts.Logger.WithValues("controller", name)),
+		managed.WithPollInterval(opts.PollInterval),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 	}
 
-	if o.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		opts = append(opts, managed.WithManagementPolicies())
+	if opts.Features.Enabled(feature.EnableBetaManagementPolicies) {
+		options = append(options, managed.WithManagementPolicies())
 	}
 
-	if o.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		opts = append(opts, managed.WithChangeLogger(o.ChangeLogOptions.ChangeLogger))
+	if opts.Features.Enabled(feature.EnableAlphaChangeLogs) {
+		options = append(options, managed.WithChangeLogger(opts.ChangeLogOptions.ChangeLogger))
 	}
 
-	if o.MetricOptions != nil {
-		opts = append(opts, managed.WithMetricRecorder(o.MetricOptions.MRMetrics))
+	if opts.MetricOptions != nil {
+		options = append(options, managed.WithMetricRecorder(opts.MetricOptions.MRMetrics))
 	}
 
-	if o.MetricOptions != nil && o.MetricOptions.MRStateMetrics != nil {
+	if opts.MetricOptions != nil && opts.MetricOptions.MRStateMetrics != nil {
 		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &v1alpha1.QualityProfileList{}, o.MetricOptions.PollStateMetricInterval,
+			mgr.GetClient(), opts.Logger, opts.MetricOptions.MRStateMetrics, &v1alpha1.QualityProfileList{}, opts.MetricOptions.PollStateMetricInterval,
 		)
-		if err := mgr.Add(stateMetricsRecorder); err != nil {
+
+		err := mgr.Add(stateMetricsRecorder)
+		if err != nil {
 			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.QualityProfileList")
 		}
 	}
 
-	r := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.QualityProfileGroupVersionKind), opts...)
+	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.QualityProfileGroupVersionKind), options...)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(o.ForControllerRuntime()).
+		WithOptions(opts.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
 		For(&v1alpha1.QualityProfile{}).
-		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
+		Complete(ratelimiter.NewReconciler(name, reconciler, opts.GlobalRateLimiter))
 }
 
 // A connector is expected to produce an ExternalClient when its Connect method
@@ -124,20 +128,24 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.QualityProfile)
+func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
+	profile, ok := managedResource.(*v1alpha1.QualityProfile)
 	if !ok {
 		return nil, errors.New(errNotQualityProfile)
 	}
 
-	if err := c.usage.Track(ctx, cr); err != nil {
+	err := c.usage.Track(ctx, profile)
+	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
 	// Switch to ModernManaged resource to get ProviderConfigRef
-	m := mg.(resource.ModernManaged)
+	modernManaged, isValid := managedResource.(resource.ModernManaged)
+	if !isValid {
+		return nil, errors.New("managed resource is not a ModernManaged")
+	}
 
-	config, err := common.GetConfig(ctx, c.kube, m)
+	config, err := common.GetConfig(ctx, c.kube, modernManaged)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -159,15 +167,15 @@ type external struct {
 
 // Observe checks if the external resource exists and if it matches the
 // desired state of the managed resource.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.QualityProfile)
+func (c *external) Observe(ctx context.Context, managedResource resource.Managed) (managed.ExternalObservation, error) {
+	profile, ok := managedResource.(*v1alpha1.QualityProfile)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotQualityProfile)
 	}
 
 	// Use external name as the identifier to check if the resource exists
 	// This allows returning early when the external name is not set
-	externalName := meta.GetExternalName(cr)
+	externalName := meta.GetExternalName(profile)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
@@ -177,6 +185,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		Key: externalName,
 	})
 	defer helpers.CloseBody(resp)
+
 	if err != nil {
 		// If the quality profile is not found, treat as resource doesn't exist
 		return managed.ExternalObservation{ResourceExists: false}, nil
@@ -189,52 +198,54 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Update status with observed state
-	cr.Status.AtProvider = instance.GenerateQualityProfileObservation(qualityProfile, rules)
-	cr.Status.SetConditions(xpv1.Available())
-	current := cr.Spec.ForProvider.DeepCopy()
+	profile.Status.AtProvider = instance.GenerateQualityProfileObservation(qualityProfile, rules)
+	profile.Status.SetConditions(xpv1.Available())
+	current := profile.Spec.ForProvider.DeepCopy()
 	// Late initialize the spec with observed state (includes conditions)
-	instance.LateInitializeQualityProfile(&cr.Spec.ForProvider, &cr.Status.AtProvider)
+	instance.LateInitializeQualityProfile(&profile.Spec.ForProvider, &profile.Status.AtProvider)
 
 	// Generate associations between QualityProfileRules spec and observation
-	associations := instance.GenerateQualityProfileRulesAssociation(cr.Spec.ForProvider.Rules, cr.Status.AtProvider.Rules)
+	associations := instance.GenerateQualityProfileRulesAssociation(profile.Spec.ForProvider.Rules, profile.Status.AtProvider.Rules)
 
 	// Check if rules were late-initialized
-	rulesLateInitialized := instance.WereQualityProfileRulesLateInitialized(current.Rules, cr.Spec.ForProvider.Rules)
+	rulesLateInitialized := instance.WereQualityProfileRulesLateInitialized(current.Rules, profile.Spec.ForProvider.Rules)
 
 	return managed.ExternalObservation{
 		ResourceExists:   true,
-		ResourceUpToDate: instance.IsQualityProfileUpToDate(&cr.Spec.ForProvider, &cr.Status.AtProvider, associations),
+		ResourceUpToDate: instance.IsQualityProfileUpToDate(&profile.Spec.ForProvider, &profile.Status.AtProvider, associations),
 		// Check both regular fields and conditions for late-initialization
 		ResourceLateInitialized: !cmp.Equal(
 			current,
-			&cr.Spec.ForProvider,
+			&profile.Spec.ForProvider,
 			cmpopts.IgnoreFields(v1alpha1.QualityProfileParameters{}, "Rules"),
 		) || rulesLateInitialized,
 	}, nil
 }
 
-// Create creates the external resource and sets the external name
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.QualityProfile)
+// Create creates the external resource and sets the external name.
+func (c *external) Create(ctx context.Context, managedResource resource.Managed) (managed.ExternalCreation, error) {
+	profile, ok := managedResource.(*v1alpha1.QualityProfile)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotQualityProfile)
 	}
 
-	cr.Status.SetConditions(xpv1.Creating())
+	profile.Status.SetConditions(xpv1.Creating())
 
-	qualityProfile, resp, err := c.qualityProfilesClient.Create(instance.GenerateCreateQualityProfileOption(cr.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	qualityProfile, resp, err := c.qualityProfilesClient.Create(instance.GenerateCreateQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
+
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateQualityProfile)
 	}
 
 	// Set the external name to the Name of the created Quality Profile
-	meta.SetExternalName(cr, qualityProfile.Profile.Key)
+	meta.SetExternalName(profile, qualityProfile.Profile.Key)
 
 	// Set Quality Profile as default if specified in the spec
-	if ptr.Deref(cr.Spec.ForProvider.Default, false) {
-		setDefaultResp, err := c.qualityProfilesClient.SetDefault(instance.GenerateQualityprofilesSetDefaultOption(cr.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	if ptr.Deref(profile.Spec.ForProvider.Default, false) {
+		setDefaultResp, err := c.qualityProfilesClient.SetDefault(instance.GenerateQualityprofilesSetDefaultOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(setDefaultResp)
+
 		if err != nil {
 			return managed.ExternalCreation{}, errors.Wrap(err, errDefaultQualityProfile)
 		}
@@ -243,57 +254,86 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalCreation{}, nil
 }
 
-// Update updates the external resource to match the desired state of the managed resource
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.QualityProfile)
+// Update updates the external resource to match the desired state of the managed resource.
+func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
+	profile, ok := managedResource.(*v1alpha1.QualityProfile)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotQualityProfile)
 	}
 
-	externalName := meta.GetExternalName(cr)
+	externalName := meta.GetExternalName(profile)
 	if externalName == "" {
-		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for Quality Profile %s", cr.Name)
+		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for Quality Profile %s", profile.Name)
 	}
 
 	// Set Quality Profile as default if specified in the spec (idempotent)
-	if ptr.Deref(cr.Spec.ForProvider.Default, false) {
-		updateSetDefaultResp, err := c.qualityProfilesClient.SetDefault(instance.GenerateQualityprofilesSetDefaultOption(cr.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	if ptr.Deref(profile.Spec.ForProvider.Default, false) {
+		updateSetDefaultResp, err := c.qualityProfilesClient.SetDefault(instance.GenerateQualityprofilesSetDefaultOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(updateSetDefaultResp)
+
 		if err != nil {
 			return managed.ExternalUpdate{}, errors.Wrap(err, errDefaultQualityProfile)
 		}
 	}
 
 	// Set Quality Profile name if it has changed
-	if cr.Spec.ForProvider.Name != cr.Status.AtProvider.Name {
-		updateResp, err := c.qualityProfilesClient.Rename(instance.GenerateRenameQualityProfileOption(externalName, cr.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	if profile.Spec.ForProvider.Name != profile.Status.AtProvider.Name {
+		updateResp, err := c.qualityProfilesClient.Rename(instance.GenerateRenameQualityProfileOption(externalName, profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(updateResp)
+
 		if err != nil {
 			return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateQualityProfile)
 		}
 	}
 
-	associations := instance.GenerateQualityProfileRulesAssociation(cr.Spec.ForProvider.Rules, cr.Status.AtProvider.Rules)
+	associations := instance.GenerateQualityProfileRulesAssociation(profile.Spec.ForProvider.Rules, profile.Status.AtProvider.Rules)
 
 	// Sync Quality Profile Rules
-	if err := c.syncQualityProfileRules(cr, associations); err != nil {
+	err := c.syncQualityProfileRules(profile, associations)
+	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot sync Quality Profile Rules")
 	}
 
 	return managed.ExternalUpdate{}, nil
 }
 
-// syncQualityProfileRules syncs the Quality Profile Rules based on the desired state in the spec and the observed state.
-// It performs three phases: deactivate unwanted rules, activate missing rules, update outdated rules.
-// Error aggregation is used to collect all errors instead of failing on the first one.
-func (c *external) syncQualityProfileRules(cr *v1alpha1.QualityProfile, associations map[string]instance.QualityProfileRuleAssociation) error {
+// Delete deletes the external resource.
+func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
+	profile, ok := managedResource.(*v1alpha1.QualityProfile)
+	if !ok {
+		return managed.ExternalDelete{}, errors.New(errNotQualityProfile)
+	}
+
+	profile.Status.SetConditions(xpv1.Deleting())
+
+	// Use external name as the identifier to delete the resource
+	externalName := meta.GetExternalName(profile)
+	if externalName == "" {
+		return managed.ExternalDelete{}, nil
+	}
+
+	destroyResp, err := c.qualityProfilesClient.Delete(instance.GenerateDeleteQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(destroyResp)
+
+	if err != nil {
+		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityProfile)
+	}
+
+	return managed.ExternalDelete{}, nil
+}
+
+func (c *external) Disconnect(ctx context.Context) error {
+	return nil
+}
+
+func (c *external) syncQualityProfileRules(profile *v1alpha1.QualityProfile, associations map[string]instance.QualityProfileRuleAssociation) error {
 	if len(associations) == 0 {
 		return nil
 	}
 
-	externalName := meta.GetExternalName(cr)
+	externalName := meta.GetExternalName(profile)
 	if externalName == "" {
-		return fmt.Errorf("external name is not set for Quality Profile %s", cr.Name)
+		return fmt.Errorf("external name is not set for Quality Profile %s", profile.Name)
 	}
 
 	var aggregatedErrors []error
@@ -321,16 +361,20 @@ func (c *external) syncQualityProfileRules(cr *v1alpha1.QualityProfile, associat
 // Returns a slice of errors encountered during deactivation.
 func (c *external) deactivateUnwantedQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
+
 	missingRules := instance.FindMissingQualityProfileRules(associations)
 
 	for _, ruleObservation := range missingRules {
 		if ruleObservation == nil {
 			continue
 		}
+
 		deactivateResp, err := c.qualityProfilesClient.DeactivateRule(instance.GenerateQualityProfileDeactivateRuleOption(externalName, ruleObservation.Key)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(deactivateResp)
+
 		if err != nil {
 			errs = append(errs, errors.Wrapf(err, "cannot deactivate rule %s", ruleObservation.Key))
+
 			continue
 		}
 		// Remove from associations after successful deactivation
@@ -344,16 +388,20 @@ func (c *external) deactivateUnwantedQualityProfileRules(externalName string, as
 // Returns a slice of errors encountered during activation.
 func (c *external) activateMissingQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
+
 	nonExistingRules := instance.FindNonExistingQualityProfileRules(associations)
 
 	for _, ruleSpec := range nonExistingRules {
 		if ruleSpec == nil {
 			continue
 		}
+
 		activateResp, err := c.qualityProfilesClient.ActivateRule(instance.GenerateQualityProfileActivateRuleOption(externalName, *ruleSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(activateResp)
+
 		if err != nil {
 			errs = append(errs, errors.Wrapf(err, "cannot activate rule %s", ruleSpec.Rule))
+
 			continue
 		}
 		// Update association to reflect the activation (mark as up to date)
@@ -372,6 +420,7 @@ func (c *external) activateMissingQualityProfileRules(externalName string, assoc
 // Returns a slice of errors encountered during update.
 func (c *external) updateOutdatedQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
+
 	outdatedRules := instance.FindNotUpToDateQualityProfileRules(associations)
 
 	for _, assoc := range outdatedRules {
@@ -381,8 +430,10 @@ func (c *external) updateOutdatedQualityProfileRules(externalName string, associ
 		// Re-activate rule with new parameters to update it
 		activateResp, err := c.qualityProfilesClient.ActivateRule(instance.GenerateQualityProfileActivateRuleOption(externalName, *assoc.Spec)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(activateResp)
+
 		if err != nil {
 			errs = append(errs, errors.Wrapf(err, "cannot update rule %s", assoc.Spec.Rule))
+
 			continue
 		}
 		// Update association to reflect the update
@@ -394,32 +445,4 @@ func (c *external) updateOutdatedQualityProfileRules(externalName string, associ
 	}
 
 	return errs
-}
-
-// Delete deletes the external resource
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.QualityProfile)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotQualityProfile)
-	}
-
-	cr.Status.SetConditions(xpv1.Deleting())
-
-	// Use external name as the identifier to delete the resource
-	externalName := meta.GetExternalName(cr)
-	if externalName == "" {
-		return managed.ExternalDelete{}, nil
-	}
-
-	destroyResp, err := c.qualityProfilesClient.Delete(instance.GenerateDeleteQualityProfileOption(cr.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
-	defer helpers.CloseBody(destroyResp)
-	if err != nil {
-		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityProfile)
-	}
-
-	return managed.ExternalDelete{}, nil
-}
-
-func (c *external) Disconnect(ctx context.Context) error {
-	return nil
 }

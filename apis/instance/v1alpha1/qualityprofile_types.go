@@ -134,7 +134,7 @@ type QualityProfileRuleObservation struct {
 
 type QualityProfileRuleDescription struct {
 	Content string                                       `json:"content,omitempty"`
-	Context QualityProfileRuleDescriptionSectionsContext `json:"context,omitempty"`
+	Context QualityProfileRuleDescriptionSectionsContext `json:"context,omitzero"`
 	Key     string                                       `json:"key,omitempty"`
 }
 
@@ -157,13 +157,15 @@ type QualityProfileRuleParameter struct {
 // A QualityProfileSpec defines the desired state of a QualityProfile.
 type QualityProfileSpec struct {
 	xpv2.ManagedResourceSpec `json:",inline"`
-	ForProvider              QualityProfileParameters `json:"forProvider"`
+
+	ForProvider QualityProfileParameters `json:"forProvider"`
 }
 
 // A QualityProfileStatus represents the observed state of a QualityProfile.
 type QualityProfileStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
-	AtProvider          QualityProfileObservation `json:"atProvider,omitempty"`
+
+	AtProvider QualityProfileObservation `json:"atProvider,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -177,24 +179,25 @@ type QualityProfileStatus struct {
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}
 type QualityProfile struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	Spec   QualityProfileSpec   `json:"spec"`
-	Status QualityProfileStatus `json:"status,omitempty"`
+	Status QualityProfileStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
 
-// QualityProfileList contains a list of QualityProfile
+// QualityProfileList contains a list of QualityProfile.
 type QualityProfileList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []QualityProfile `json:"items"`
+	metav1.ListMeta `json:"metadata,omitzero"`
+
+	Items []QualityProfile `json:"items"`
 }
 
 // QualityProfile type metadata.
 var (
-	QualityProfileKind             = reflect.TypeOf(QualityProfile{}).Name()
+	QualityProfileKind             = reflect.TypeFor[QualityProfile]().Name()
 	QualityProfileGroupKind        = schema.GroupKind{Group: Group, Kind: QualityProfileKind}.String()
 	QualityProfileKindAPIVersion   = QualityProfileKind + "." + SchemeGroupVersion.String()
 	QualityProfileGroupVersionKind = SchemeGroupVersion.WithKind(QualityProfileKind)

@@ -51,17 +51,29 @@ func errComparer(a, b error) bool {
 	if a == nil && b == nil {
 		return true
 	}
+
 	if a == nil || b == nil {
 		return false
 	}
+
 	return a.Error() == b.Error()
 }
 
+func mockHTTPResponse() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       http.NoBody,
+	}
+}
+
 func TestObserve(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalObservation
 		err error
@@ -119,6 +131,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 			},
@@ -171,6 +184,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 			},
@@ -225,6 +239,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 			},
@@ -279,6 +294,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 			},
@@ -295,6 +311,8 @@ func TestObserve(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{
 				qualityProfilesClient: tc.qualityProfilesClient,
 				rulesClient:           tc.rulesClient,
@@ -304,6 +322,7 @@ func TestObserve(t *testing.T) {
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Observe() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Observe() mismatch (-want +got):\n%s", diff)
 			}
@@ -312,10 +331,13 @@ func TestObserve(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalCreation
 		err error
@@ -405,10 +427,10 @@ func TestCreate(t *testing.T) {
 							Name:     opt.Name,
 							Language: opt.Language,
 						},
-					}, nil, nil
+					}, mockHTTPResponse(), nil
 				},
 				SetDefaultFn: func(opt *sonar.QualityprofilesSetDefaultOption) (*http.Response, error) {
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -435,12 +457,15 @@ func TestCreate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityProfilesClient: tc.qualityProfilesClient}
 			got, err := e.Create(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Create() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Create() mismatch (-want +got):\n%s", diff)
 			}
@@ -449,10 +474,13 @@ func TestCreate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalDelete
 		err error
@@ -477,7 +505,7 @@ func TestDelete(t *testing.T) {
 		"SuccessfulDelete": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				DeleteFn: func(opt *sonar.QualityprofilesDeleteOption) (*http.Response, error) {
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -495,6 +523,7 @@ func TestDelete(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 			},
@@ -524,6 +553,7 @@ func TestDelete(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 			},
@@ -558,12 +588,15 @@ func TestDelete(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityProfilesClient: tc.qualityProfilesClient}
 			got, err := e.Delete(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Delete() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Delete() mismatch (-want +got):\n%s", diff)
 			}
@@ -572,10 +605,13 @@ func TestDelete(t *testing.T) {
 }
 
 func TestSyncQualityProfileRules(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		cr           *v1alpha1.QualityProfile
 		associations map[string]instance.QualityProfileRuleAssociation
 	}
+
 	type want struct {
 		err error
 	}
@@ -591,6 +627,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				cr: func() *v1alpha1.QualityProfile {
 					qp := &v1alpha1.QualityProfile{}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{},
@@ -600,13 +637,14 @@ func TestSyncQualityProfileRules(t *testing.T) {
 		"ActivateNewRules": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				ActivateRuleFn: func(opt *sonar.QualityprofilesActivateRuleOption) (*http.Response, error) {
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
 				cr: func() *v1alpha1.QualityProfile {
 					qp := &v1alpha1.QualityProfile{}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
@@ -622,13 +660,14 @@ func TestSyncQualityProfileRules(t *testing.T) {
 		"DeactivateUnwantedRules": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				DeactivateRuleFn: func(opt *sonar.QualityprofilesDeactivateRuleOption) (*http.Response, error) {
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
 				cr: func() *v1alpha1.QualityProfile {
 					qp := &v1alpha1.QualityProfile{}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
@@ -644,13 +683,14 @@ func TestSyncQualityProfileRules(t *testing.T) {
 		"UpdateOutdatedRules": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				ActivateRuleFn: func(opt *sonar.QualityprofilesActivateRuleOption) (*http.Response, error) {
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
 				cr: func() *v1alpha1.QualityProfile {
 					qp := &v1alpha1.QualityProfile{}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
@@ -676,6 +716,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				cr: func() *v1alpha1.QualityProfile {
 					qp := &v1alpha1.QualityProfile{}
 					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
 					return qp
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
@@ -700,6 +741,8 @@ func TestSyncQualityProfileRules(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityProfilesClient: tc.qualityProfilesClient}
 			err := e.syncQualityProfileRules(tc.args.cr, tc.args.associations)
 
@@ -708,6 +751,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				if err == nil {
 					t.Error("syncQualityProfileRules() expected error for ErrorAggregation case, got nil")
 				}
+
 				return
 			}
 
