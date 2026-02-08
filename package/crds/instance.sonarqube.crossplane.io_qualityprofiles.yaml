@@ -4,7 +4,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: qualitygates.instance.sonarqube.crossplane.io
+  name: qualityprofiles.instance.sonarqube.crossplane.io
 spec:
   group: instance.sonarqube.crossplane.io
   names:
@@ -12,10 +12,10 @@ spec:
     - crossplane
     - managed
     - sonarqube
-    kind: QualityGate
-    listKind: QualityGateList
-    plural: qualitygates
-    singular: qualitygate
+    kind: QualityProfile
+    listKind: QualityProfileList
+    plural: qualityprofiles
+    singular: qualityprofile
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -34,7 +34,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A QualityGate is an example API type.
+        description: A QualityProfile is an example API type.
         properties:
           apiVersion:
             description: |-
@@ -54,67 +54,98 @@ spec:
           metadata:
             type: object
           spec:
-            description: A QualityGateSpec defines the desired state of a QualityGate.
+            description: A QualityProfileSpec defines the desired state of a QualityProfile.
             properties:
               forProvider:
-                description: ForProvider represents the desired state of the Quality
-                  Gate.
+                description: QualityProfileParameters are the configurable fields
+                  of a QualityProfile.
                 properties:
-                  conditions:
-                    description: Conditions is the list of conditions associated with
-                      the Quality Gate.
-                    items:
-                      description: QualityGateConditionParameters are the configurable
-                        fields of a QualityGateCondition.
-                      properties:
-                        error:
-                          description: Error is the Condition error threshold
-                          maxLength: 64
-                          minLength: 1
-                          type: string
-                        id:
-                          description: |-
-                            Id is the Condition ID
-                            It will be populated by the controller upon creation / update
-                            WARNING: Updating it manually will cause unexpected behaviors.
-                          type: string
-                        metric:
-                          description: |-
-                            Metric is the Condition metric that the condition applies to.
-                            Only accepts metrics of the following types: INT, MILLISEC, RATING, WORK_DUR, FLOAT, PERCENT, LEVEL.
-                            The following metrics are forbidden: alert_status, security_hotspots, new_security_hotspots.
-                          minLength: 1
-                          pattern: ^[a-zA-Z0-9_]+$
-                          type: string
-                        op:
-                          description: |-
-                            Op is the Condition operator.
-                            Only LT (is lower than) and GT (is greater than) are supported.
-                          enum:
-                          - LT
-                          - GT
-                          type: string
-                      required:
-                      - error
-                      - metric
-                      type: object
-                    type: array
                   default:
-                    description: |-
-                      Default indicates whether this Quality Gate is the default one.
-                      WARNING: It is currently not possible to unset the default Quality Gate in SonarQube once it is set. The only way to change the default Quality Gate is to set another Quality Gate as default.
+                    description: Default indicates whether this Quality Profile is
+                      the default one.
                     type: boolean
+                  language:
+                    description: Language defines the programming language of the
+                      Quality Profile.
+                    enum:
+                    - azureresourcemanager
+                    - cloudformation
+                    - cs
+                    - css
+                    - docker
+                    - flex
+                    - go
+                    - ipynb
+                    - java
+                    - js
+                    - json
+                    - jsp
+                    - kotlin
+                    - kubernetes
+                    - php
+                    - py
+                    - ruby
+                    - rust
+                    - scala
+                    - secrets
+                    - terraform
+                    - text
+                    - ts
+                    - vbnet
+                    - web
+                    - xml
+                    - yaml
+                    type: string
                   name:
-                    description: |-
-                      Name is the Display name of the Quality Gate.
-                      WARNING: This field is immutable once set.
+                    description: Name is the Display name of the Quality Profile.
                     maxLength: 100
                     minLength: 1
                     type: string
-                    x-kubernetes-validations:
-                    - message: Name is immutable.
-                      rule: self == oldSelf
+                  rules:
+                    description: Rules is the list of rules to be activated in the
+                      Quality Profile.
+                    items:
+                      description: QualityProfileRuleParameters are the configurable
+                        fields of a QualityProfile Rule.
+                      properties:
+                        impacts:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Impacts overrides severities for the rule. Cannot be used as the same time as 'severity'.
+                            If used together with 'severity', 'impacts' will take precedence.
+                          type: object
+                        params:
+                          additionalProperties:
+                            type: string
+                          description: Parameters.
+                          type: object
+                        prioritized:
+                          description: Prioritized marks activated rule as prioritized,
+                            so all corresponding Issues will have to be fixed.
+                          type: boolean
+                        rule:
+                          description: Rule is the unique key (identifier) of the
+                            rule to be activated in the Quality Profile.
+                          minLength: 1
+                          type: string
+                        severity:
+                          description: |-
+                            Severity. Cannot be used as the same time as 'impacts'.
+                            If used together with 'impacts', 'impacts' will take precedence.
+                          enum:
+                          - INFO
+                          - MINOR
+                          - MAJOR
+                          - CRITICAL
+                          - BLOCKER
+                          type: string
+                      required:
+                      - rule
+                      type: object
+                    type: array
                 required:
+                - language
                 - name
                 type: object
               managementPolicies:
@@ -176,104 +207,117 @@ spec:
             - forProvider
             type: object
           status:
-            description: A QualityGateStatus represents the observed state of a QualityGate.
+            description: A QualityProfileStatus represents the observed state of a
+              QualityProfile.
             properties:
               atProvider:
-                description: AtProvider represents the observed state of the Quality
-                  Gate.
+                description: QualityProfileObservation are the observable fields of
+                  a QualityProfile.
                 properties:
-                  actions:
-                    description: Actions represents the actions that can be performed
-                      on the Quality Gate.
-                    properties:
-                      associateProjects:
-                        description: AssociateProjects defines whether projects can
-                          be associated with the Quality Gate.
-                        type: boolean
-                      copy:
-                        description: Copy defines whether the Quality Gate can be
-                          copied.
-                        type: boolean
-                      delegate:
-                        description: Delegate defines whether the Quality Gate can
-                          be delegated.
-                        type: boolean
-                      delete:
-                        description: Delete defines whether the Quality Gate can be
-                          deleted.
-                        type: boolean
-                      manageAiCodeAssurance:
-                        description: ManageAiCodeAssurance defines whether AI Code
-                          Assurance settings can be managed.
-                        type: boolean
-                      manageConditions:
-                        description: ManageConditions defines whether conditions of
-                          the Quality Gate can be managed.
-                        type: boolean
-                      rename:
-                        description: Rename defines whether the Quality Gate can be
-                          renamed.
-                        type: boolean
-                      setAsDefault:
-                        description: SetAsDefault defines whether the Quality Gate
-                          can be set as the default one.
-                        type: boolean
-                    required:
-                    - associateProjects
-                    - copy
-                    - delegate
-                    - delete
-                    - manageAiCodeAssurance
-                    - manageConditions
-                    - rename
-                    - setAsDefault
-                    type: object
-                  caycStatus:
-                    description: Defines the Clean as You Code status of the Quality
-                      Gate.
-                    type: string
-                  conditions:
-                    description: Conditions represents the list of conditions associated
-                      with the Quality Gate.
-                    items:
-                      description: QualityGateConditionObservation are the observable
-                        fields of a QualityGateCondition.
-                      properties:
-                        error:
-                          description: Error is the Condition error threshold
-                          type: string
-                        id:
-                          description: ID is the Condition ID
-                          type: string
-                        metric:
-                          description: Metric is the Condition metric that the condition
-                            applies to.
-                          type: string
-                        op:
-                          description: Op is the Condition operator.
-                          type: string
-                      type: object
-                    type: array
-                  isAiCodeSupported:
-                    description: IsAiCodeSupported indicates whether AI Code Assurance
-                      is supported for the Quality Gate.
-                    type: boolean
+                  activeDeprecatedRuleCount:
+                    description: ActiveDeprecatedRuleCount represents the number of
+                      active deprecated rules in the Quality Profile.
+                    format: int64
+                    type: integer
+                  activeRuleCount:
+                    description: ActiveRuleCount represents the number of active rules
+                      in the Quality Profile.
+                    format: int64
+                    type: integer
                   isBuiltIn:
-                    description: IsBuiltIn indicates whether the Quality Gate is built-in.
+                    description: IsBuiltIn indicates whether the Quality Profile is
+                      built-in.
                     type: boolean
                   isDefault:
-                    description: IsDefault indicates whether the Quality Gate is the
-                      default one.
+                    description: IsDefault indicates whether the Quality Profile is
+                      the default one.
                     type: boolean
+                  isInherited:
+                    description: IsInherited indicates whether the Quality Profile
+                      is inherited.
+                    type: boolean
+                  key:
+                    description: Key is the unique key (identifier) of the Quality
+                      Profile.
+                    type: string
+                  language:
+                    description: Language is the programming language to which the
+                      Quality Profile applies.
+                    type: string
+                  languageName:
+                    description: LanguageName is the display name of the programming
+                      language to which the Quality Profile applies.
+                    type: string
+                  lastUsed:
+                    description: LastUsed is the last time the Quality Profile was
+                      used.
+                    format: date-time
+                    type: string
                   name:
-                    description: Name represents the name of the Quality Gate.
+                    description: Name is the display name of the Quality Profile.
+                    type: string
+                  projectCount:
+                    description: ProjectCount is the number of projects associated
+                      with the Quality Profile.
+                    format: int64
+                    type: integer
+                  rules:
+                    description: Rules represents the list of rules activated in the
+                      Quality Profile.
+                    items:
+                      description: QualityProfileRuleObservation are the observable
+                        fields of a QualityProfile Rule.
+                      properties:
+                        createdAt:
+                          format: date-time
+                          type: string
+                        impacts:
+                          items:
+                            properties:
+                              severity:
+                                type: string
+                              softwareQuality:
+                                type: string
+                            type: object
+                          type: array
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        parameters:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        prioritized:
+                          type: boolean
+                        severity:
+                          type: string
+                        updatedAt:
+                          format: date-time
+                          type: string
+                      required:
+                      - key
+                      - name
+                      - prioritized
+                      - severity
+                      type: object
+                    type: array
+                  rulesUpdatedAt:
+                    description: RulesUpdatedAt is the last time the rules in the
+                      Quality Profile were updated.
+                    format: date-time
                     type: string
                 required:
-                - caycStatus
-                - isAiCodeSupported
+                - activeDeprecatedRuleCount
+                - activeRuleCount
                 - isBuiltIn
                 - isDefault
+                - isInherited
+                - key
+                - language
+                - languageName
                 - name
+                - projectCount
                 type: object
               conditions:
                 description: Conditions of the resource.

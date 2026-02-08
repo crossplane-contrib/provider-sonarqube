@@ -17,7 +17,11 @@ limitations under the License.
 package helpers
 
 import (
+	"bytes"
+	"io"
+	"net/http"
 	"testing"
+	"time"
 
 	"k8s.io/utils/ptr"
 )
@@ -298,6 +302,169 @@ func TestAssignIfNil(t *testing.T) {
 
 		if *inner != false {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, false)
+		}
+	})
+}
+
+func TestCloseBody(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilResponseDoesNotPanic", func(t *testing.T) {
+		t.Parallel()
+
+		CloseBody(nil)
+	})
+
+	t.Run("NilBodyDoesNotPanic", func(t *testing.T) {
+		t.Parallel()
+
+		resp := &http.Response{Body: nil}
+		CloseBody(resp)
+	})
+
+	t.Run("ClosesBodySuccessfully", func(t *testing.T) {
+		t.Parallel()
+
+		body := io.NopCloser(bytes.NewBufferString("test"))
+		resp := &http.Response{Body: body}
+		CloseBody(resp)
+		// Verify body is closed by trying to read
+		_, err := body.Read(make([]byte, 1))
+		if err == nil {
+			t.Error("Expected error reading from closed body")
+		}
+	})
+}
+
+func TestTimeToMetaTime(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilTimeReturnsNil", func(t *testing.T) {
+		t.Parallel()
+
+		result := TimeToMetaTime(nil)
+		if result != nil {
+			t.Errorf("TimeToMetaTime(nil) = %v, want nil", result)
+		}
+	})
+
+	t.Run("ValidTimeReturnsMetaTime", func(t *testing.T) {
+		t.Parallel()
+
+		now := time.Now()
+
+		result := TimeToMetaTime(&now)
+		if result == nil {
+			t.Fatal("TimeToMetaTime() returned nil, want non-nil")
+		}
+
+		if !result.Time.Equal(now) {
+			t.Errorf("TimeToMetaTime() time = %v, want %v", result.Time, now)
+		}
+	})
+}
+
+func TestStringToMetaTime(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilStringReturnsNil", func(t *testing.T) {
+		t.Parallel()
+
+		result := StringToMetaTime(nil)
+		if result != nil {
+			t.Errorf("StringToMetaTime(nil) = %v, want nil", result)
+		}
+	})
+
+	t.Run("InvalidStringReturnsNil", func(t *testing.T) {
+		t.Parallel()
+
+		invalid := "not-a-valid-time"
+
+		result := StringToMetaTime(&invalid)
+		if result != nil {
+			t.Errorf("StringToMetaTime(invalid) = %v, want nil", result)
+		}
+	})
+
+	t.Run("ValidRFC3339StringReturnsMetaTime", func(t *testing.T) {
+		t.Parallel()
+
+		rfc3339 := "2026-01-20T22:00:00Z"
+
+		result := StringToMetaTime(&rfc3339)
+		if result == nil {
+			t.Fatal("StringToMetaTime() returned nil, want non-nil")
+		}
+
+		expected, _ := time.Parse(time.RFC3339, rfc3339)
+		if !result.Time.Equal(expected) {
+			t.Errorf("StringToMetaTime() time = %v, want %v", result.Time, expected)
+		}
+	})
+}
+
+func TestAnySliceToStringSlice(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilSliceReturnsEmpty", func(t *testing.T) {
+		t.Parallel()
+
+		result := AnySliceToStringSlice(nil)
+		if len(result) != 0 {
+			t.Errorf("AnySliceToStringSlice(nil) length = %d, want 0", len(result))
+		}
+	})
+
+	t.Run("EmptySliceReturnsEmpty", func(t *testing.T) {
+		t.Parallel()
+
+		slice := []any{}
+
+		result := AnySliceToStringSlice(slice)
+		if len(result) != 0 {
+			t.Errorf("AnySliceToStringSlice(empty) length = %d, want 0", len(result))
+		}
+	})
+
+	t.Run("AllStringsReturnsAllElements", func(t *testing.T) {
+		t.Parallel()
+
+		slice := []any{"string1", "string2", "string3"}
+
+		result := AnySliceToStringSlice(slice)
+		if len(result) != 3 {
+			t.Fatalf("AnySliceToStringSlice() length = %d, want 3", len(result))
+		}
+
+		if result[0] != "string1" || result[1] != "string2" || result[2] != "string3" {
+			t.Errorf("AnySliceToStringSlice() = %v, want [string1 string2 string3]", result)
+		}
+	})
+
+	t.Run("MixedTypesFiltersNonStrings", func(t *testing.T) {
+		t.Parallel()
+
+		slice := []any{"string1", 42, "string2", true, "string3"}
+
+		result := AnySliceToStringSlice(slice)
+		if len(result) != 3 {
+			t.Fatalf("AnySliceToStringSlice() length = %d, want 3", len(result))
+		}
+
+		if result[0] != "string1" || result[1] != "string2" || result[2] != "string3" {
+			t.Errorf("AnySliceToStringSlice() = %v, want [string1 string2 string3]", result)
+		}
+	})
+
+	t.Run("NoStringsReturnsEmpty", func(t *testing.T) {
+		t.Parallel()
+
+		slice := []any{42, true, 3.14}
+
+		result := AnySliceToStringSlice(slice)
+		if len(result) != 0 {
+			t.Errorf("AnySliceToStringSlice(no strings) length = %d, want 0", len(result))
 		}
 	})
 }

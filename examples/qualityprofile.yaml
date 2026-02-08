@@ -1,0 +1,37 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: QualityProfile
+metadata:
+  name: example-qualityprofile-go
+  namespace: default
+spec:
+  forProvider:
+    # Display name of the profile in SonarQube
+    name: example-go-profile
+    # Language must match one of the supported values; using Go here
+    language: go
+    # Don't make this the server default in this example
+    default: false
+    # Two example rules showcasing parameters, severity/impacts and prioritization
+    rules:
+      # Rule using traditional severity approach
+      - rule: "go:S103"
+        # Severity: use this OR impacts, not both
+        severity: "CRITICAL"
+        # Mark this activated rule as prioritized
+        prioritized: true
+        params:
+          maximumLineLength: "120"
+
+      # Rule using new impacts approach (more granular)
+      - rule: "go:S104"
+        # Impacts: map of softwareQuality=severity (use this OR severity, not both)
+        impacts:
+          MAINTAINABILITY: HIGH
+        prioritized: false
+        params:
+          Max: "500"
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
