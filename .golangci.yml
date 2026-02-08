@@ -1,41 +1,19 @@
 version: "2"
 linters:
-  enable:
-    - asasalint
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - contextcheck
-    - durationcheck
-    - errchkjson
-    - errorlint
-    - exhaustive
-    - gocheckcompilerdirectives
-    - gochecksumtype
-    - goconst
-    - gocritic
-    - gocyclo
-    - gosec
-    - gosmopolitan
-    - loggercheck
-    - makezero
-    - misspell
-    - musttag
-    - nakedret
-    - nilerr
-    - nilnesserr
-    - noctx
-    - prealloc
-    - protogetter
-    - reassign
-    - recvcheck
-    - rowserrcheck
-    - spancheck
-    - sqlclosecheck
-    - testifylint
-    - unconvert
-    - unparam
-    - zerologlint
+  default: all
+  disable:
+    - depguard
+    - err113
+    - exhaustruct
+    - gochecknoglobals
+    - gochecknoinits
+    - ireturn
+    - lll
+    - nonamedreturns
+    - revive
+    - testpackage
+    - wrapcheck
+    - wsl
   settings:
     dupl:
       threshold: 100
@@ -71,12 +49,16 @@ linters:
     generated: lax
     rules:
       - linters:
+          - containedctx
+          - cyclop
           - dupl
           - errcheck
           - exportloopref
+          - funlen
           - gocyclo
           - gosec
           - unparam
+          - varnamelen
         path: _test(ing)?\.go
       - linters:
           - gocritic
