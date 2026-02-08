@@ -23,6 +23,8 @@ import (
 )
 
 func TestIsComparablePtrEqualComparable(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		ptr  *string
 		val  string
@@ -57,6 +59,8 @@ func TestIsComparablePtrEqualComparable(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IsComparablePtrEqualComparable(tc.ptr, tc.val)
 			if got != tc.want {
 				t.Errorf("IsComparablePtrEqualComparable() = %v, want %v", got, tc.want)
@@ -66,6 +70,8 @@ func TestIsComparablePtrEqualComparable(t *testing.T) {
 }
 
 func TestIsComparablePtrEqualComparableInt(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		ptr  *int
 		val  int
@@ -95,6 +101,8 @@ func TestIsComparablePtrEqualComparableInt(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IsComparablePtrEqualComparable(tc.ptr, tc.val)
 			if got != tc.want {
 				t.Errorf("IsComparablePtrEqualComparable() = %v, want %v", got, tc.want)
@@ -104,6 +112,8 @@ func TestIsComparablePtrEqualComparableInt(t *testing.T) {
 }
 
 func TestIsComparablePtrEqualComparablePtr(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		ptr1 *string
 		ptr2 *string
@@ -143,6 +153,8 @@ func TestIsComparablePtrEqualComparablePtr(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IsComparablePtrEqualComparablePtr(tc.ptr1, tc.ptr2)
 			if got != tc.want {
 				t.Errorf("IsComparablePtrEqualComparablePtr() = %v, want %v", got, tc.want)
@@ -152,6 +164,8 @@ func TestIsComparablePtrEqualComparablePtr(t *testing.T) {
 }
 
 func TestIsComparablePtrEqualComparablePtrInt(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		ptr1 *int
 		ptr2 *int
@@ -186,6 +200,8 @@ func TestIsComparablePtrEqualComparablePtrInt(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IsComparablePtrEqualComparablePtr(tc.ptr1, tc.ptr2)
 			if got != tc.want {
 				t.Errorf("IsComparablePtrEqualComparablePtr() = %v, want %v", got, tc.want)
@@ -195,66 +211,91 @@ func TestIsComparablePtrEqualComparablePtrInt(t *testing.T) {
 }
 
 func TestAssignIfNil(t *testing.T) {
+	t.Parallel()
+
 	t.Run("NilOuterPointerDoesNothing", func(t *testing.T) {
+		t.Parallel()
+
 		// Should not panic
 		AssignIfNil[string](nil, "value")
 	})
 
 	t.Run("NilInnerPointerAssignsValue", func(t *testing.T) {
+		t.Parallel()
+
 		var inner *string
 		AssignIfNil(&inner, "hello")
+
 		if inner == nil {
 			t.Error("AssignIfNil() did not assign value to nil pointer")
 		}
+
 		if *inner != "hello" {
 			t.Errorf("AssignIfNil() assigned %v, want %v", *inner, "hello")
 		}
 	})
 
 	t.Run("NonNilInnerPointerKeepsOriginalValue", func(t *testing.T) {
+		t.Parallel()
+
 		original := "original"
 		inner := &original
 		AssignIfNil(&inner, "new")
+
 		if *inner != "original" {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, "original")
 		}
 	})
 
 	t.Run("IntNilInnerPointerAssignsValue", func(t *testing.T) {
+		t.Parallel()
+
 		var inner *int
 		AssignIfNil(&inner, 42)
+
 		if inner == nil {
 			t.Error("AssignIfNil() did not assign value to nil pointer")
 		}
+
 		if *inner != 42 {
 			t.Errorf("AssignIfNil() assigned %v, want %v", *inner, 42)
 		}
 	})
 
 	t.Run("IntNonNilInnerPointerKeepsOriginalValue", func(t *testing.T) {
+		t.Parallel()
+
 		original := 100
 		inner := &original
 		AssignIfNil(&inner, 42)
+
 		if *inner != 100 {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, 100)
 		}
 	})
 
 	t.Run("BoolNilInnerPointerAssignsValue", func(t *testing.T) {
+		t.Parallel()
+
 		var inner *bool
 		AssignIfNil(&inner, true)
+
 		if inner == nil {
 			t.Error("AssignIfNil() did not assign value to nil pointer")
 		}
+
 		if *inner != true {
 			t.Errorf("AssignIfNil() assigned %v, want %v", *inner, true)
 		}
 	})
 
 	t.Run("BoolNonNilInnerPointerKeepsOriginalValue", func(t *testing.T) {
+		t.Parallel()
+
 		original := false
 		inner := &original
 		AssignIfNil(&inner, true)
+
 		if *inner != false {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, false)
 		}

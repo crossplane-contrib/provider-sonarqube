@@ -18,11 +18,14 @@ limitations under the License.
 package fake
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
+
+var errNotImplemented = errors.New("mock function not implemented")
 
 // MockQualityGatesClient is a mock implementation of the QualityGatesClient interface.
 type MockQualityGatesClient struct {
@@ -49,173 +52,194 @@ type MockQualityGatesClient struct {
 	UpdateConditionFn func(opt *sonar.QualitygatesUpdateConditionOption) (resp *http.Response, err error)
 }
 
-// Ensure MockQualityGatesClient implements QualityGatesClient
+// Ensure MockQualityGatesClient implements QualityGatesClient.
 var _ instance.QualityGatesClient = &MockQualityGatesClient{}
 
-// AddGroup implements QualityGatesClient.AddGroup
+// AddGroup implements QualityGatesClient.AddGroup.
 func (m *MockQualityGatesClient) AddGroup(opt *sonar.QualitygatesAddGroupOption) (resp *http.Response, err error) {
 	if m.AddGroupFn != nil {
 		return m.AddGroupFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// AddUser implements QualityGatesClient.AddUser
+// AddUser implements QualityGatesClient.AddUser.
 func (m *MockQualityGatesClient) AddUser(opt *sonar.QualitygatesAddUserOption) (resp *http.Response, err error) {
 	if m.AddUserFn != nil {
 		return m.AddUserFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// Copy implements QualityGatesClient.Copy
+// Copy implements QualityGatesClient.Copy.
 func (m *MockQualityGatesClient) Copy(opt *sonar.QualitygatesCopyOption) (resp *http.Response, err error) {
 	if m.CopyFn != nil {
 		return m.CopyFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// Create implements QualityGatesClient.Create
+// Create implements QualityGatesClient.Create.
 func (m *MockQualityGatesClient) Create(opt *sonar.QualitygatesCreateOption) (v *sonar.QualitygatesCreate, resp *http.Response, err error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// CreateCondition implements QualityGatesClient.CreateCondition
+// CreateCondition implements QualityGatesClient.CreateCondition.
 func (m *MockQualityGatesClient) CreateCondition(opt *sonar.QualitygatesCreateConditionOption) (v *sonar.QualitygatesCreateCondition, resp *http.Response, err error) {
 	if m.CreateConditionFn != nil {
 		return m.CreateConditionFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// DeleteCondition implements QualityGatesClient.DeleteCondition
+// DeleteCondition implements QualityGatesClient.DeleteCondition.
 func (m *MockQualityGatesClient) DeleteCondition(opt *sonar.QualitygatesDeleteConditionOption) (resp *http.Response, err error) {
 	if m.DeleteConditionFn != nil {
 		return m.DeleteConditionFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// Deselect implements QualityGatesClient.Deselect
+// Deselect implements QualityGatesClient.Deselect.
 func (m *MockQualityGatesClient) Deselect(opt *sonar.QualitygatesDeselectOption) (resp *http.Response, err error) {
 	if m.DeselectFn != nil {
 		return m.DeselectFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// Destroy implements QualityGatesClient.Destroy
+// Destroy implements QualityGatesClient.Destroy.
 func (m *MockQualityGatesClient) Destroy(opt *sonar.QualitygatesDestroyOption) (resp *http.Response, err error) {
 	if m.DestroyFn != nil {
 		return m.DestroyFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// GetByProject implements QualityGatesClient.GetByProject
+// GetByProject implements QualityGatesClient.GetByProject.
 func (m *MockQualityGatesClient) GetByProject(opt *sonar.QualitygatesGetByProjectOption) (v *sonar.QualitygatesGetByProject, resp *http.Response, err error) {
 	if m.GetByProjectFn != nil {
 		return m.GetByProjectFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// List implements QualityGatesClient.List
+// List implements QualityGatesClient.List.
 func (m *MockQualityGatesClient) List() (v *sonar.QualitygatesList, resp *http.Response, err error) {
 	if m.ListFn != nil {
 		return m.ListFn()
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// ProjectStatus implements QualityGatesClient.ProjectStatus
+// ProjectStatus implements QualityGatesClient.ProjectStatus.
 func (m *MockQualityGatesClient) ProjectStatus(opt *sonar.QualitygatesProjectStatusOption) (v *sonar.QualitygatesProjectStatus, resp *http.Response, err error) {
 	if m.ProjectStatusFn != nil {
 		return m.ProjectStatusFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// RemoveGroup implements QualityGatesClient.RemoveGroup
+// RemoveGroup implements QualityGatesClient.RemoveGroup.
 func (m *MockQualityGatesClient) RemoveGroup(opt *sonar.QualitygatesRemoveGroupOption) (resp *http.Response, err error) {
 	if m.RemoveGroupFn != nil {
 		return m.RemoveGroupFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// RemoveUser implements QualityGatesClient.RemoveUser
+// RemoveUser implements QualityGatesClient.RemoveUser.
 func (m *MockQualityGatesClient) RemoveUser(opt *sonar.QualitygatesRemoveUserOption) (resp *http.Response, err error) {
 	if m.RemoveUserFn != nil {
 		return m.RemoveUserFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// Rename implements QualityGatesClient.Rename
+// Rename implements QualityGatesClient.Rename.
 func (m *MockQualityGatesClient) Rename(opt *sonar.QualitygatesRenameOption) (resp *http.Response, err error) {
 	if m.RenameFn != nil {
 		return m.RenameFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// Search implements QualityGatesClient.Search
+// Search implements QualityGatesClient.Search.
 func (m *MockQualityGatesClient) Search(opt *sonar.QualitygatesSearchOption) (v *sonar.QualitygatesSearch, resp *http.Response, err error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// SearchGroups implements QualityGatesClient.SearchGroups
+// SearchGroups implements QualityGatesClient.SearchGroups.
 func (m *MockQualityGatesClient) SearchGroups(opt *sonar.QualitygatesSearchGroupsOption) (v *sonar.QualitygatesSearchGroups, resp *http.Response, err error) {
 	if m.SearchGroupsFn != nil {
 		return m.SearchGroupsFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// SearchUsers implements QualityGatesClient.SearchUsers
+// SearchUsers implements QualityGatesClient.SearchUsers.
 func (m *MockQualityGatesClient) SearchUsers(opt *sonar.QualitygatesSearchUsersOption) (v *sonar.QualitygatesSearchUsers, resp *http.Response, err error) {
 	if m.SearchUsersFn != nil {
 		return m.SearchUsersFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// Select implements QualityGatesClient.Select
+// Select implements QualityGatesClient.Select.
 func (m *MockQualityGatesClient) Select(opt *sonar.QualitygatesSelectOption) (resp *http.Response, err error) {
 	if m.SelectFn != nil {
 		return m.SelectFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// SetAsDefault implements QualityGatesClient.SetAsDefault
+// SetAsDefault implements QualityGatesClient.SetAsDefault.
 func (m *MockQualityGatesClient) SetAsDefault(opt *sonar.QualitygatesSetAsDefaultOption) (resp *http.Response, err error) {
 	if m.SetAsDefaultFn != nil {
 		return m.SetAsDefaultFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }
 
-// Show implements QualityGatesClient.Show
+// Show implements QualityGatesClient.Show.
 func (m *MockQualityGatesClient) Show(opt *sonar.QualitygatesShowOption) (v *sonar.QualitygatesShow, resp *http.Response, err error) {
 	if m.ShowFn != nil {
 		return m.ShowFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errNotImplemented
 }
 
-// UpdateCondition implements QualityGatesClient.UpdateCondition
+// UpdateCondition implements QualityGatesClient.UpdateCondition.
 func (m *MockQualityGatesClient) UpdateCondition(opt *sonar.QualitygatesUpdateConditionOption) (resp *http.Response, err error) {
 	if m.UpdateConditionFn != nil {
 		return m.UpdateConditionFn(opt)
 	}
-	return nil, nil
+
+	return nil, errNotImplemented
 }

@@ -47,11 +47,22 @@ type notQualityGate struct {
 	resource.Managed
 }
 
+// mockHTTPResponse returns a mock HTTP response for testing.
+func mockHTTPResponse() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Status:     "200 OK",
+	}
+}
+
 func TestObserve(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalObservation
 		err error
@@ -105,6 +116,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -142,6 +154,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -183,6 +196,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -224,6 +238,7 @@ func TestObserve(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -240,12 +255,15 @@ func TestObserve(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Observe(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Observe() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Observe() mismatch (-want +got):\n%s", diff)
 			}
@@ -254,10 +272,13 @@ func TestObserve(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalCreation
 		err error
@@ -364,7 +385,8 @@ func TestCreate(t *testing.T) {
 					if opt.Name != "my-sonar-gate" {
 						return nil, errors.New("expected SonarQube gate name but got: " + opt.Name)
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -417,12 +439,15 @@ func TestCreate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Create(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Create() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Create() mismatch (-want +got):\n%s", diff)
 			}
@@ -431,10 +456,13 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalUpdate
 		err error
@@ -475,7 +503,7 @@ func TestUpdate(t *testing.T) {
 		"SetAsDefaultWhenRequested": {
 			client: &fake.MockQualityGatesClient{
 				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOption) (*http.Response, error) {
-					return nil, nil
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -494,6 +522,7 @@ func TestUpdate(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -524,6 +553,7 @@ func TestUpdate(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -536,12 +566,15 @@ func TestUpdate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Update(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Update() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Update() mismatch (-want +got):\n%s", diff)
 			}
@@ -550,10 +583,13 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalDelete
 		err error
@@ -598,7 +634,8 @@ func TestDelete(t *testing.T) {
 					if opt.Name != "my-sonar-gate" {
 						return nil, errors.New("expected external name 'my-sonar-gate' but got: " + opt.Name)
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -611,6 +648,7 @@ func TestDelete(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "my-sonar-gate") // this should be used for deletion
+
 					return qg
 				}(),
 			},
@@ -635,6 +673,7 @@ func TestDelete(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -647,12 +686,15 @@ func TestDelete(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Delete(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Delete() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Delete() mismatch (-want +got):\n%s", diff)
 			}
@@ -661,7 +703,10 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
+	t.Parallel()
+
 	e := &external{qualityGatesClient: &fake.MockQualityGatesClient{}}
+
 	err := e.Disconnect(context.Background())
 	if err != nil {
 		t.Errorf("Disconnect() error = %v, want nil", err)
@@ -669,6 +714,8 @@ func TestDisconnect(t *testing.T) {
 }
 
 func TestCreateSetsExternalNameToSonarQubeName(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
 			return &sonar.QualitygatesCreate{
@@ -688,6 +735,7 @@ func TestCreateSetsExternalNameToSonarQubeName(t *testing.T) {
 	}
 
 	e := &external{qualityGatesClient: client}
+
 	_, err := e.Create(context.Background(), qg)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -700,18 +748,22 @@ func TestCreateSetsExternalNameToSonarQubeName(t *testing.T) {
 	}
 }
 
-// errComparer compares errors by their message
+// errComparer compares errors by their message.
 func errComparer(a, b error) bool {
 	if a == nil && b == nil {
 		return true
 	}
+
 	if a == nil || b == nil {
 		return false
 	}
+
 	return a.Error() == b.Error()
 }
 
 func TestObserveLateInitializesConditionIds(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
@@ -747,6 +799,7 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 	meta.SetExternalName(qg, "test-gate")
 
 	e := &external{qualityGatesClient: client}
+
 	obs, err := e.Observe(context.Background(), qg)
 	if err != nil {
 		t.Fatalf("Observe() error = %v", err)
@@ -781,6 +834,8 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 }
 
 func TestObserveWithExistingConditionIds(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
@@ -814,6 +869,7 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 	meta.SetExternalName(qg, "test-gate")
 
 	e := &external{qualityGatesClient: client}
+
 	obs, err := e.Observe(context.Background(), qg)
 	if err != nil {
 		t.Fatalf("Observe() error = %v", err)
@@ -838,6 +894,8 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 }
 
 func TestObserveWithStaleConditionId(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockQualityGatesClient{
 		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
@@ -871,6 +929,7 @@ func TestObserveWithStaleConditionId(t *testing.T) {
 	meta.SetExternalName(qg, "test-gate")
 
 	e := &external{qualityGatesClient: client}
+
 	obs, err := e.Observe(context.Background(), qg)
 	if err != nil {
 		t.Fatalf("Observe() error = %v", err)
@@ -895,10 +954,13 @@ func TestObserveWithStaleConditionId(t *testing.T) {
 }
 
 func TestUpdateWithConditions(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalUpdate
 		err error
@@ -938,6 +1000,7 @@ func TestUpdateWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -952,7 +1015,8 @@ func TestUpdateWithConditions(t *testing.T) {
 					if opt.ID != "orphan-id" {
 						return nil, errors.New("expected to delete orphan-id")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -978,6 +1042,7 @@ func TestUpdateWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1017,6 +1082,7 @@ func TestUpdateWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1049,6 +1115,7 @@ func TestUpdateWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1086,6 +1153,7 @@ func TestUpdateWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1098,12 +1166,15 @@ func TestUpdateWithConditions(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Update(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Update() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Update() mismatch (-want +got):\n%s", diff)
 			}
@@ -1113,10 +1184,13 @@ func TestUpdateWithConditions(t *testing.T) {
 }
 
 func TestObserveWithConditions(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalObservation
 		err error
@@ -1161,6 +1235,7 @@ func TestObserveWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1207,6 +1282,7 @@ func TestObserveWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1251,6 +1327,7 @@ func TestObserveWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1295,6 +1372,7 @@ func TestObserveWithConditions(t *testing.T) {
 						},
 					}
 					meta.SetExternalName(qg, "test-gate")
+
 					return qg
 				}(),
 			},
@@ -1311,12 +1389,15 @@ func TestObserveWithConditions(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{qualityGatesClient: tc.client}
 			got, err := e.Observe(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Observe() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Observe() mismatch (-want +got):\n%s", diff)
 			}

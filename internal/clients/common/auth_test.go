@@ -21,6 +21,8 @@ import (
 )
 
 func TestAuthTypeConstants(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		authType AuthType
 		want     string
@@ -37,6 +39,8 @@ func TestAuthTypeConstants(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			if string(tc.authType) != tc.want {
 				t.Errorf("AuthType = %v, want %v", tc.authType, tc.want)
 			}

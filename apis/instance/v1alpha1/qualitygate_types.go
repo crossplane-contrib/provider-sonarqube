@@ -47,7 +47,7 @@ type QualityGateParameters struct {
 // QualityGateObservation are the observable fields of a QualityGate.
 type QualityGateObservation struct {
 	// Actions represents the actions that can be performed on the Quality Gate.
-	Actions QualityGatesActions `json:"actions,omitempty"`
+	Actions QualityGatesActions `json:"actions,omitzero"`
 	// Defines the Clean as You Code status of the Quality Gate.
 	CaycStatus string `json:"caycStatus"`
 	// Conditions represents the list of conditions associated with the Quality Gate.
@@ -65,6 +65,7 @@ type QualityGateObservation struct {
 // A QualityGateSpec defines the desired state of a QualityGate.
 type QualityGateSpec struct {
 	xpv2.ManagedResourceSpec `json:",inline"`
+
 	// ForProvider represents the desired state of the Quality Gate.
 	ForProvider QualityGateParameters `json:"forProvider"`
 }
@@ -72,8 +73,9 @@ type QualityGateSpec struct {
 // A QualityGateStatus represents the observed state of a QualityGate.
 type QualityGateStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
+
 	// AtProvider represents the observed state of the Quality Gate.
-	AtProvider QualityGateObservation `json:"atProvider,omitempty"`
+	AtProvider QualityGateObservation `json:"atProvider,omitzero"`
 }
 
 // QualityGatesActions represents the actions that can be performed on a Quality Gate.
@@ -148,24 +150,25 @@ type QualityGateConditionObservation struct {
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}
 type QualityGate struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	Spec   QualityGateSpec   `json:"spec"`
-	Status QualityGateStatus `json:"status,omitempty"`
+	Status QualityGateStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
 
-// QualityGateList contains a list of QualityGate
+// QualityGateList contains a list of QualityGate.
 type QualityGateList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []QualityGate `json:"items"`
+	metav1.ListMeta `json:"metadata,omitzero"`
+
+	Items []QualityGate `json:"items"`
 }
 
 // QualityGate type metadata.
 var (
-	QualityGateKind             = reflect.TypeOf(QualityGate{}).Name()
+	QualityGateKind             = reflect.TypeFor[QualityGate]().Name()
 	QualityGateGroupKind        = schema.GroupKind{Group: Group, Kind: QualityGateKind}.String()
 	QualityGateKindAPIVersion   = QualityGateKind + "." + SchemeGroupVersion.String()
 	QualityGateGroupVersionKind = SchemeGroupVersion.WithKind(QualityGateKind)

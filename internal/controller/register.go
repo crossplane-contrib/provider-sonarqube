@@ -31,9 +31,11 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 		config.Setup,
 		qualitygate.SetupGated,
 	} {
-		if err := setup(mgr, o); err != nil {
+		err := setup(mgr, o)
+		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }

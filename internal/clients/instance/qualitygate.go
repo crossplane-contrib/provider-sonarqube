@@ -29,6 +29,8 @@ import (
 // It handles all the operations related to Quality Gates in SonarQube, such as creating, updating, deleting, and retrieving Quality Gates and their conditions.
 // It also handles users / groups / projects association with Quality Gates.
 // It also interacts with Quality Gate Conditions.
+//
+//nolint:interfacebloat // This interface wraps the SonarQube Quality Gates API which has 21 methods
 type QualityGatesClient interface {
 	AddGroup(opt *sonar.QualitygatesAddGroupOption) (resp *http.Response, err error)
 	AddUser(opt *sonar.QualitygatesAddUserOption) (resp *http.Response, err error)
@@ -56,10 +58,11 @@ type QualityGatesClient interface {
 // NewQualityGatesClient creates a new QualityGatesClient with the provided SonarQube client configuration.
 func NewQualityGatesClient(clientConfig common.Config) QualityGatesClient {
 	newClient := common.NewClient(clientConfig)
+
 	return newClient.Qualitygates
 }
 
-// GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption from QualityGateParameters
+// GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption from QualityGateParameters.
 func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sonar.QualitygatesCreateOption {
 	return &sonar.QualitygatesCreateOption{
 		Name: spec.Name,
@@ -67,7 +70,7 @@ func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sona
 }
 
 // GenerateQualityGateObservation generates QualityGateObservation from SonarQube QualityGate
-// observation should not be nil, else it will panic
+// observation should not be nil, else it will panic.
 func GenerateQualityGateObservation(observation *sonar.QualitygatesShow) v1alpha1.QualityGateObservation {
 	return v1alpha1.QualityGateObservation{
 		Actions:           GenerateQualityGateActionsObservation(&observation.Actions),
@@ -81,7 +84,7 @@ func GenerateQualityGateObservation(observation *sonar.QualitygatesShow) v1alpha
 }
 
 // GenerateQualityGateActionsObservation generates QualityGatesActions from SonarQube QualityGateActions
-// actions should not be nil, else it will panic
+// actions should not be nil, else it will panic.
 func GenerateQualityGateActionsObservation(actions *sonar.QualityGateActions) v1alpha1.QualityGatesActions {
 	return v1alpha1.QualityGatesActions{
 		AssociateProjects:     actions.AssociateProjects,
@@ -95,11 +98,12 @@ func GenerateQualityGateActionsObservation(actions *sonar.QualityGateActions) v1
 	}
 }
 
-// IsQualityGateUpToDate checks if the Quality Gate spec is up to date with the observed state
+// IsQualityGateUpToDate checks if the Quality Gate spec is up to date with the observed state.
 func IsQualityGateUpToDate(spec *v1alpha1.QualityGateParameters, observation *v1alpha1.QualityGateObservation, associations map[string]QualityGateConditionAssociation) bool {
 	if spec == nil {
 		return true
 	}
+
 	if observation == nil {
 		return false
 	}
@@ -119,17 +123,18 @@ func IsQualityGateUpToDate(spec *v1alpha1.QualityGateParameters, observation *v1
 	return true
 }
 
-// buildObservationIdSet creates a map of all observation condition IDs for quick lookup
+// buildObservationIdSet creates a map of all observation condition IDs for quick lookup.
 func buildObservationIdSet(conditions []v1alpha1.QualityGateConditionObservation) map[string]bool {
 	idSet := make(map[string]bool)
 	for i := range conditions {
 		idSet[conditions[i].ID] = true
 	}
+
 	return idSet
 }
 
 // findMatchingObservationId searches for an observation condition that matches the spec condition
-// by metric, error, and op, and returns its ID
+// by metric, error, and op, and returns its ID.
 func findMatchingObservationId(specCondition v1alpha1.QualityGateConditionParameters, observations []v1alpha1.QualityGateConditionObservation) *string {
 	for i := range observations {
 		if specCondition.Metric == observations[i].Metric &&
@@ -138,12 +143,13 @@ func findMatchingObservationId(specCondition v1alpha1.QualityGateConditionParame
 			return &observations[i].ID
 		}
 	}
+
 	return nil
 }
 
 // LateInitializeQualityGate fills the spec with the observed state if the spec fields are nil
 // It also late-initializes condition IDs by matching conditions by their metric, error, and op fields
-// If a condition has a stale ID (doesn't exist in observations), it will be updated to the correct ID
+// If a condition has a stale ID (doesn't exist in observations), it will be updated to the correct ID.
 func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation *v1alpha1.QualityGateObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -155,9 +161,9 @@ func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation
 	observationIdSet := buildObservationIdSet(observation.Conditions)
 
 	// Late-initialize or update condition IDs by matching on metric, error, and op
-	for i := range spec.Conditions {
+	for idx := range spec.Conditions {
 		// Check if the spec has an ID that still exists in observations
-		hasValidId := spec.Conditions[i].Id != nil && observationIdSet[*spec.Conditions[i].Id]
+		hasValidId := spec.Conditions[idx].Id != nil && observationIdSet[*spec.Conditions[idx].Id]
 
 		if hasValidId {
 			// Already has a valid ID that exists in observations, skip
@@ -165,14 +171,14 @@ func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation
 		}
 
 		// Either no ID or stale ID - find matching observation by metric, error, and op
-		if matchingId := findMatchingObservationId(spec.Conditions[i], observation.Conditions); matchingId != nil {
-			spec.Conditions[i].Id = matchingId
+		if matchingId := findMatchingObservationId(spec.Conditions[idx], observation.Conditions); matchingId != nil {
+			spec.Conditions[idx].Id = matchingId
 		}
 	}
 }
 
 // WereQualityGateConditionsLateInitialized checks if any conditions had their IDs late-initialized
-// by comparing the before and after states
+// by comparing the before and after states.
 func WereQualityGateConditionsLateInitialized(before, after []v1alpha1.QualityGateConditionParameters) bool {
 	if len(before) != len(after) {
 		return true

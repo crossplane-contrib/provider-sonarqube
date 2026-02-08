@@ -31,13 +31,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// BasicAuthArgs is the expected struct that can be passed in the Config.Token field to add support for BasicAuth AuthMethod
+// BasicAuthArgs is the expected struct that can be passed in the Config.Token field to add support for BasicAuth AuthMethod.
 type BasicAuthArgs struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-// Config provides SonarQube configurations for the SonarQube client
+// Config provides SonarQube configurations for the SonarQube client.
 type Config struct {
 	// AuthType is the SonarQube authentication type to use (e.g., BasicAuth, PersonalAccessToken)
 	AuthType AuthType
@@ -70,6 +70,7 @@ func NewClient(clientConfig Config) *sonar.Client {
 		if err != nil {
 			panic(err)
 		}
+
 		client = sonarClient
 	case PersonalAccessToken:
 		// Create SonarQube client with Personal Access Token
@@ -81,6 +82,7 @@ func NewClient(clientConfig Config) *sonar.Client {
 		if err != nil {
 			panic(err)
 		}
+
 		client = sonarClient
 	default:
 		panic(errors.New("unsupported authentication type"))
@@ -96,16 +98,18 @@ func NewClient(clientConfig Config) *sonar.Client {
 				MinVersion: tls.VersionTLS12,
 			}
 		}
+
 		transport.TLSClientConfig.InsecureSkipVerify = true
 		httpClient.Transport = transport
 	}
+
 	client.SetHTTPClient(httpClient)
 
 	return client
 }
 
 // GetConfig constructs a Config that can be used to authenticate to SonarQube's
-// API by the SonarQube Go client
+// API by the SonarQube Go client.
 func GetConfig(ctx context.Context, kubeClient client.Client, managedResource resource.Managed) (*Config, error) {
 	switch managedResourceCast := managedResource.(type) {
 	case resource.ModernManaged:
@@ -121,30 +125,38 @@ func GetConfig(ctx context.Context, kubeClient client.Client, managedResource re
 }
 
 // UseProviderConfig uses the given ProviderConfig reference to construct a Config
-// that can be used to authenticate to SonarQube's API by the SonarQube Go client
+// that can be used to authenticate to SonarQube's API by the SonarQube Go client.
 func UseProviderConfig(ctx context.Context, kubeClient client.Client, managedResource resource.ModernManaged) (*Config, error) {
 	providerConfigRef := managedResource.GetProviderConfigReference()
 
 	switch providerConfigRef.Kind {
 	case "ClusterProviderConfig":
 		cpc := &v1alpha1.ClusterProviderConfig{}
-		if err := kubeClient.Get(ctx, types.NamespacedName{Name: providerConfigRef.Name}, cpc); err != nil {
+
+		err := kubeClient.Get(ctx, types.NamespacedName{Name: providerConfigRef.Name}, cpc)
+		if err != nil {
 			return nil, errors.Wrap(err, "cannot get referenced ClusterProviderConfig")
 		}
+
 		return buildConfigFromSpec(ctx, kubeClient, managedResource, cpc.Spec)
 	default: // "ProviderConfig" or empty (default)
-		pc := &v1alpha1.ProviderConfig{}
-		if err := kubeClient.Get(ctx, types.NamespacedName{Name: providerConfigRef.Name, Namespace: managedResource.GetNamespace()}, pc); err != nil {
+		providerConfig := &v1alpha1.ProviderConfig{}
+
+		err := kubeClient.Get(ctx, types.NamespacedName{Name: providerConfigRef.Name, Namespace: managedResource.GetNamespace()}, providerConfig)
+		if err != nil {
 			return nil, errors.Wrap(err, "cannot get referenced ProviderConfig")
 		}
-		return buildConfigFromSpec(ctx, kubeClient, managedResource, pc.Spec)
+
+		return buildConfigFromSpec(ctx, kubeClient, managedResource, providerConfig.Spec)
 	}
 }
 
-// buildConfigFromSpec builds a Config from the given ProviderConfigSpec
+// buildConfigFromSpec builds a Config from the given ProviderConfigSpec.
 func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedResource resource.ModernManaged, spec v1alpha1.ProviderConfigSpec) (*Config, error) {
 	t := resource.NewProviderConfigUsageTracker(kubeClient, &v1alpha1.ProviderConfigUsage{})
-	if err := t.Track(ctx, managedResource); err != nil {
+
+	err := t.Track(ctx, managedResource)
+	if err != nil {
 		return nil, errors.Wrap(err, "cannot track ProviderConfig usage")
 	}
 
@@ -157,6 +169,7 @@ func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedR
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot determine authentication type from ProviderConfigSpec")
 	}
+
 	config.AuthType = authType
 
 	switch authType {
@@ -165,16 +178,19 @@ func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedR
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get token from secret")
 		}
+
 		config.Token = *token
 	case BasicAuth:
 		username, err := GetTokenValueFromSecret(ctx, kubeClient, managedResource, spec.Username.SecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get username from secret")
 		}
+
 		password, err := GetTokenValueFromSecret(ctx, kubeClient, managedResource, spec.Password.SecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get password from secret")
 		}
+
 		config.BasicAuth = &BasicAuthArgs{
 			Username: *username,
 			Password: *password,
@@ -186,39 +202,51 @@ func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedR
 
 // determineAuthType determines the AuthType based on the provided ProviderConfigSpec
 // It populates the AuthType and BasicAuth fields in the Config struct accordingly
-// It returns an error if no valid authentication method is found
+// It returns an error if no valid authentication method is found.
 func determineAuthType(spec v1alpha1.ProviderConfigSpec) (AuthType, error) {
 	// Check if Token is provided for Personal Access Token authentication
 	if spec.Token != nil {
-		switch spec.Token.Source {
-		case xpv1.CredentialsSourceSecret:
-			if spec.Token.SecretRef == nil {
-				return "", errors.New("secretRef must be provided for token")
-			}
-			return PersonalAccessToken, nil
-		default:
-			return "", errors.Errorf("credentials source %s for token is not currently supported", spec.Token.Source)
-		}
-	} else if spec.Username != nil && spec.Password != nil {
-		// Check if Username and Password are provided for Basic Authentication
-		switch spec.Username.Source {
-		case xpv1.CredentialsSourceSecret:
-			if spec.Username.SecretRef == nil {
-				return "", errors.New("secretRef must be provided for username")
-			}
-			switch spec.Password.Source {
-			case xpv1.CredentialsSourceSecret:
-				if spec.Password.SecretRef == nil {
-					return "", errors.New("secretRef must be provided for password")
-				}
-				return BasicAuth, nil
-			default:
-				return "", errors.Errorf("credentials source %s for password is not currently supported", spec.Password.Source)
-			}
-		default:
-			return "", errors.Errorf("credentials source %s for username is not currently supported", spec.Username.Source)
-		}
+		return validateTokenAuth(spec.Token)
+	}
+
+	// Check if Username and Password are provided for Basic Authentication
+	if spec.Username != nil && spec.Password != nil {
+		return validateBasicAuth(spec.Username, spec.Password)
 	}
 
 	return "", errors.New("no valid authentication method found in ProviderConfigSpec")
+}
+
+// validateTokenAuth validates token-based authentication configuration.
+func validateTokenAuth(token *v1alpha1.ProviderCredentials) (AuthType, error) {
+	if token.Source != xpv1.CredentialsSourceSecret {
+		return "", errors.Errorf("credentials source %s for token is not currently supported", token.Source)
+	}
+
+	if token.SecretRef == nil {
+		return "", errors.New("secretRef must be provided for token")
+	}
+
+	return PersonalAccessToken, nil
+}
+
+// validateBasicAuth validates basic authentication configuration.
+func validateBasicAuth(username, password *v1alpha1.ProviderCredentials) (AuthType, error) {
+	if username.Source != xpv1.CredentialsSourceSecret {
+		return "", errors.Errorf("credentials source %s for username is not currently supported", username.Source)
+	}
+
+	if username.SecretRef == nil {
+		return "", errors.New("secretRef must be provided for username")
+	}
+
+	if password.Source != xpv1.CredentialsSourceSecret {
+		return "", errors.Errorf("credentials source %s for password is not currently supported", password.Source)
+	}
+
+	if password.SecretRef == nil {
+		return "", errors.New("secretRef must be provided for password")
+	}
+
+	return BasicAuth, nil
 }

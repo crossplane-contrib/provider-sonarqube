@@ -43,7 +43,9 @@ func GetTokenValueFromSecret(ctx context.Context, client client.Client, m resour
 	}
 
 	secret := &corev1.Secret{}
-	if err := client.Get(ctx, types.NamespacedName{Name: selector.Name, Namespace: selector.Namespace}, secret); err != nil {
+
+	err := client.Get(ctx, types.NamespacedName{Name: selector.Name, Namespace: selector.Namespace}, secret)
+	if err != nil {
 		return nil, errors.Wrap(err, ErrSecretNotFound)
 	}
 
@@ -53,20 +55,21 @@ func GetTokenValueFromSecret(ctx context.Context, client client.Client, m resour
 	}
 
 	data := string(value)
+
 	return &data, nil
 }
 
 // GetTokenValueFromLocalSecret retrieves the token value from a local secret in the same namespace as the managed resource.
-func GetTokenValueFromLocalSecret(ctx context.Context, client client.Client, m resource.Managed, l *xpv1.LocalSecretKeySelector) (*string, error) {
-	if l == nil {
+func GetTokenValueFromLocalSecret(ctx context.Context, client client.Client, managedResource resource.Managed, localSelector *xpv1.LocalSecretKeySelector) (*string, error) {
+	if localSelector == nil {
 		return nil, errors.Errorf(ErrSecretSelectorNil)
 	}
 
-	return GetTokenValueFromSecret(ctx, client, m, &xpv1.SecretKeySelector{
-		Key: l.Key,
+	return GetTokenValueFromSecret(ctx, client, managedResource, &xpv1.SecretKeySelector{
+		Key: localSelector.Key,
 		SecretReference: xpv1.SecretReference{
-			Name:      l.Name,
-			Namespace: m.GetNamespace(),
+			Name:      localSelector.Name,
+			Namespace: managedResource.GetNamespace(),
 		},
 	})
 }

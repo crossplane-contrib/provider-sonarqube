@@ -23,56 +23,70 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/providerconfig"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
 
 // Setup adds a controller that reconciles ProviderConfigs by accounting for
 // their current usage.
-func Setup(mgr ctrl.Manager, o controller.Options) error {
-	if err := setupNamespacedProviderConfig(mgr, o); err != nil {
+func Setup(mgr ctrl.Manager, opts controller.Options) error {
+	err := setupNamespacedProviderConfig(mgr, opts)
+	if err != nil {
 		return err
 	}
-	return setupClusterProviderConfig(mgr, o)
+
+	return setupClusterProviderConfig(mgr, opts)
 }
 
-func setupNamespacedProviderConfig(mgr ctrl.Manager, o controller.Options) error {
-	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind)
+func setupNamespacedProviderConfig(mgr ctrl.Manager, opts controller.Options) error {
+	return setupProviderConfig(
+		mgr,
+		opts,
+		v1alpha1.ProviderConfigGroupKind,
+		resource.ProviderConfigKinds{
+			Config:    v1alpha1.ProviderConfigGroupVersionKind,
+			Usage:     v1alpha1.ProviderConfigUsageGroupVersionKind,
+			UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
+		},
+		&v1alpha1.ProviderConfig{},
+		&v1alpha1.ProviderConfigUsage{},
+	)
+}
 
-	of := resource.ProviderConfigKinds{
-		Config:    v1alpha1.ProviderConfigGroupVersionKind,
-		Usage:     v1alpha1.ProviderConfigUsageGroupVersionKind,
-		UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
-	}
+func setupClusterProviderConfig(mgr ctrl.Manager, opts controller.Options) error {
+	return setupProviderConfig(
+		mgr,
+		opts,
+		v1alpha1.ClusterProviderConfigGroupKind,
+		resource.ProviderConfigKinds{
+			Config:    v1alpha1.ClusterProviderConfigGroupVersionKind,
+			Usage:     v1alpha1.ClusterProviderConfigUsageGroupVersionKind,
+			UsageList: v1alpha1.ClusterProviderConfigUsageListGroupVersionKind,
+		},
+		&v1alpha1.ClusterProviderConfig{},
+		&v1alpha1.ClusterProviderConfigUsage{},
+	)
+}
 
-	r := providerconfig.NewReconciler(mgr, of,
-		providerconfig.WithLogger(o.Logger.WithValues("controller", name)),
+func setupProviderConfig(
+	mgr ctrl.Manager,
+	opts controller.Options,
+	groupKind string,
+	kinds resource.ProviderConfigKinds,
+	config client.Object,
+	usage client.Object,
+) error {
+	name := providerconfig.ControllerName(groupKind)
+
+	reconciler := providerconfig.NewReconciler(mgr, kinds,
+		providerconfig.WithLogger(opts.Logger.WithValues("controller", name)),
 		providerconfig.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(o.ForControllerRuntime()).
-		For(&v1alpha1.ProviderConfig{}).
-		Watches(&v1alpha1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
-		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
-}
-
-func setupClusterProviderConfig(mgr ctrl.Manager, o controller.Options) error {
-	name := providerconfig.ControllerName(v1alpha1.ClusterProviderConfigGroupKind)
-	of := resource.ProviderConfigKinds{
-		Config:    v1alpha1.ClusterProviderConfigGroupVersionKind,
-		Usage:     v1alpha1.ClusterProviderConfigUsageGroupVersionKind,
-		UsageList: v1alpha1.ClusterProviderConfigUsageListGroupVersionKind,
-	}
-
-	r := providerconfig.NewReconciler(mgr, of,
-		providerconfig.WithLogger(o.Logger.WithValues("controller", name)),
-		providerconfig.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
-
-	return ctrl.NewControllerManagedBy(mgr).
-		Named(name).
-		WithOptions(o.ForControllerRuntime()).
-		For(&v1alpha1.ClusterProviderConfig{}).
-		Watches(&v1alpha1.ClusterProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
-		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
+		WithOptions(opts.ForControllerRuntime()).
+		For(config).
+		Watches(usage, &resource.EnqueueRequestForProviderConfig{}).
+		Complete(ratelimiter.NewReconciler(name, reconciler, opts.GlobalRateLimiter))
 }
