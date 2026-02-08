@@ -115,7 +115,6 @@ spec:
                           description: |-
                             Impacts overrides severities for the rule. Cannot be used as the same time as 'severity'.
                             If used together with 'severity', 'impacts' will take precedence.
-                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read its value via SonarQube API.
                           type: object
                         params:
                           additionalProperties:
@@ -123,9 +122,8 @@ spec:
                           description: Parameters.
                           type: object
                         prioritized:
-                          description: |-
-                            Prioritized marks activated rule as prioritized, so all corresponding Issues will have to be fixed.
-                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read its value via SonarQube API.
+                          description: Prioritized marks activated rule as prioritized,
+                            so all corresponding Issues will have to be fixed.
                           type: boolean
                         rule:
                           description: Rule is the unique key (identifier) of the
