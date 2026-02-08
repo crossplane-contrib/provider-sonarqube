@@ -49,20 +49,24 @@ type ProviderConfigSpec struct {
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,provider,sonarqube}
 
 // ProviderConfig configures a SonarQube provider.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ProviderConfig struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitzero"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   ProviderConfigSpec   `json:"spec"`
-	Status ProviderConfigStatus `json:"status,omitzero"`
+	Status ProviderConfigStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
 // ProviderConfigList contains a list of ProviderConfig.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ProviderConfigList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []ProviderConfig `json:"items"`
 }
@@ -76,9 +80,11 @@ type ProviderConfigList struct {
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,provider,sonarqube}
 
 // ProviderConfigUsage indicates that a resource is using a ProviderConfig.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitzero"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	xpv2.TypedProviderConfigUsage `json:",inline"`
 }
@@ -86,9 +92,11 @@ type ProviderConfigUsage struct {
 // +kubebuilder:object:root=true
 
 // ProviderConfigUsageList contains a list of ProviderConfigUsage.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ProviderConfigUsageList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []ProviderConfigUsage `json:"items"`
 }
@@ -100,20 +108,24 @@ type ProviderConfigUsageList struct {
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,provider,sonarqube}
 
 // ClusterProviderConfig configures a SonarQube provider.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ClusterProviderConfig struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitzero"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   ProviderConfigSpec   `json:"spec"`
-	Status ProviderConfigStatus `json:"status,omitzero"`
+	Status ProviderConfigStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
 // ClusterProviderConfigList contains a list of ClusterProviderConfig.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ClusterProviderConfigList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []ClusterProviderConfig `json:"items"`
 }
@@ -127,9 +139,11 @@ type ClusterProviderConfigList struct {
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,provider,sonarqube}
 
 // ClusterProviderConfigUsage indicates that a resource is using a ClusterProviderConfig.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ClusterProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitzero"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	xpv2.TypedProviderConfigUsage `json:",inline"`
 }
@@ -137,9 +151,11 @@ type ClusterProviderConfigUsage struct {
 // +kubebuilder:object:root=true
 
 // ClusterProviderConfigUsageList contains a list of ClusterProviderConfigUsage.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type ClusterProviderConfigUsageList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []ClusterProviderConfigUsage `json:"items"`
 }

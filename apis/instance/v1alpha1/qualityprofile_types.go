@@ -79,15 +79,12 @@ type QualityProfileObservation struct {
 type QualityProfileRuleParameters struct {
 	// Impacts overrides severities for the rule. Cannot be used as the same time as 'severity'.
 	// If used together with 'severity', 'impacts' will take precedence.
-	// WARNING: This field is currently not reconciled against manual edits, as it is not possible to read its value via SonarQube API.
 	// +kubebuilder:validation:Optional
 	Impacts *map[string]string `json:"impacts,omitempty"`
 	// Parameters.
-	// WARNING: This field is currently not reconciled against manual edits, as it is not possible to read the activated values via SonarQube API.
 	// +kubebuilder:validation:Optional
 	Parameters *map[string]string `json:"params,omitempty"`
 	// Prioritized marks activated rule as prioritized, so all corresponding Issues will have to be fixed.
-	// WARNING: This field is currently not reconciled against manual edits, as it is not possible to read its value via SonarQube API.
 	// +kubebuilder:validation:Optional
 	Prioritized *bool `json:"prioritized,omitempty"`
 	// Rule is the unique key (identifier) of the rule to be activated in the Quality Profile.
@@ -96,7 +93,6 @@ type QualityProfileRuleParameters struct {
 	Rule string `json:"rule"`
 	// Severity. Cannot be used as the same time as 'impacts'.
 	// If used together with 'impacts', 'impacts' will take precedence.
-	// WARNING: This field is currently not reconciled against manual edits, as it is not possible to read the activated value via SonarQube API.
 	// +kubebuilder:validation:Enum=INFO;MINOR;MAJOR;CRITICAL;BLOCKER
 	// +kubebuilder:validation:Optional
 	Severity *string `json:"severity,omitempty"`
@@ -104,54 +100,19 @@ type QualityProfileRuleParameters struct {
 
 // QualityProfileRuleObservation are the observable fields of a QualityProfile Rule.
 type QualityProfileRuleObservation struct {
-	Key                        string                          `json:"key"`
-	Repo                       string                          `json:"repo"`
-	Name                       string                          `json:"name"`
-	NoteLogin                  string                          `json:"noteLogin"`
-	MdNote                     string                          `json:"mdNote"`
-	HTMLNote                   string                          `json:"htmlNote"`
-	CreatedAt                  *metav1.Time                    `json:"createdAt,omitempty"`
-	UpdatedAt                  *metav1.Time                    `json:"updatedAt,omitempty"`
-	HTMLDesc                   string                          `json:"htmlDesc"`
-	Severity                   string                          `json:"severity"`
-	Status                     string                          `json:"status"`
-	InternalKey                string                          `json:"internalKey"`
-	IsTemplate                 bool                            `json:"isTemplate"`
-	Tags                       []string                        `json:"tags,omitempty"`
-	TemplateKey                string                          `json:"templateKey"`
-	SysTags                    []string                        `json:"sysTags,omitempty"`
-	Language                   string                          `json:"language"`
-	LanguageName               string                          `json:"languageName"`
-	Scope                      string                          `json:"scope"`
-	IsExternal                 bool                            `json:"isExternal"`
-	Type                       string                          `json:"type"`
-	CleanCodeAttributeCategory string                          `json:"cleanCodeAttributeCategory"`
-	CleanCodeAttribute         string                          `json:"cleanCodeAttribute"`
-	Impacts                    []QualityProfileRuleImpact      `json:"impacts,omitempty"`
-	DescriptionSections        []QualityProfileRuleDescription `json:"descriptionSections,omitempty"`
-	Parameters                 []QualityProfileRuleParameter   `json:"parameters,omitempty"`
-}
-
-type QualityProfileRuleDescription struct {
-	Content string                                       `json:"content,omitempty"`
-	Context QualityProfileRuleDescriptionSectionsContext `json:"context,omitzero"`
-	Key     string                                       `json:"key,omitempty"`
-}
-
-type QualityProfileRuleDescriptionSectionsContext struct {
-	DisplayName string `json:"displayName,omitempty"`
-	Key         string `json:"key,omitempty"`
+	Key         string                     `json:"key"`
+	Name        string                     `json:"name"`
+	CreatedAt   *metav1.Time               `json:"createdAt,omitempty"`
+	UpdatedAt   *metav1.Time               `json:"updatedAt,omitempty"`
+	Severity    string                     `json:"severity"`
+	Impacts     []QualityProfileRuleImpact `json:"impacts,omitempty"`
+	Parameters  map[string]string          `json:"parameters,omitempty"`
+	Prioritized bool                       `json:"prioritized"`
 }
 
 type QualityProfileRuleImpact struct {
 	Severity        string `json:"severity,omitempty"`
 	SoftwareQuality string `json:"softwareQuality,omitempty"`
-}
-
-type QualityProfileRuleParameter struct {
-	DefaultValue string `json:"defaultValue,omitempty"`
-	Desc         string `json:"desc,omitempty"`
-	Key          string `json:"key,omitempty"`
 }
 
 // A QualityProfileSpec defines the desired state of a QualityProfile.
@@ -162,10 +123,12 @@ type QualityProfileSpec struct {
 }
 
 // A QualityProfileStatus represents the observed state of a QualityProfile.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityProfileStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
 
-	AtProvider QualityProfileObservation `json:"atProvider,omitzero"`
+	AtProvider QualityProfileObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -177,20 +140,24 @@ type QualityProfileStatus struct {
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityProfile struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitzero"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   QualityProfileSpec   `json:"spec"`
-	Status QualityProfileStatus `json:"status,omitzero"`
+	Status QualityProfileStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
 // QualityProfileList contains a list of QualityProfile.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityProfileList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []QualityProfile `json:"items"`
 }

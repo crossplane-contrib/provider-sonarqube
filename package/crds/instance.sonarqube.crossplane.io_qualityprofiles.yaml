@@ -120,9 +120,7 @@ spec:
                         params:
                           additionalProperties:
                             type: string
-                          description: |-
-                            Parameters.
-                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read the activated values via SonarQube API.
+                          description: Parameters.
                           type: object
                         prioritized:
                           description: |-
@@ -138,7 +136,6 @@ spec:
                           description: |-
                             Severity. Cannot be used as the same time as 'impacts'.
                             If used together with 'impacts', 'impacts' will take precedence.
-                            WARNING: This field is currently not reconciled against manual edits, as it is not possible to read the activated value via SonarQube API.
                           enum:
                           - INFO
                           - MINOR
@@ -274,34 +271,8 @@ spec:
                       description: QualityProfileRuleObservation are the observable
                         fields of a QualityProfile Rule.
                       properties:
-                        cleanCodeAttribute:
-                          type: string
-                        cleanCodeAttributeCategory:
-                          type: string
                         createdAt:
                           format: date-time
-                          type: string
-                        descriptionSections:
-                          items:
-                            properties:
-                              content:
-                                type: string
-                              context:
-                                properties:
-                                  displayName:
-                                    type: string
-                                  key:
-                                    type: string
-                                type: object
-                              key:
-                                type: string
-                            required:
-                            - context
-                            type: object
-                          type: array
-                        htmlDesc:
-                          type: string
-                        htmlNote:
                           type: string
                         impacts:
                           items:
@@ -312,78 +283,26 @@ spec:
                                 type: string
                             type: object
                           type: array
-                        internalKey:
-                          type: string
-                        isExternal:
-                          type: boolean
-                        isTemplate:
-                          type: boolean
                         key:
-                          type: string
-                        language:
-                          type: string
-                        languageName:
-                          type: string
-                        mdNote:
                           type: string
                         name:
                           type: string
-                        noteLogin:
-                          type: string
                         parameters:
-                          items:
-                            properties:
-                              defaultValue:
-                                type: string
-                              desc:
-                                type: string
-                              key:
-                                type: string
-                            type: object
-                          type: array
-                        repo:
-                          type: string
-                        scope:
-                          type: string
+                          additionalProperties:
+                            type: string
+                          type: object
+                        prioritized:
+                          type: boolean
                         severity:
-                          type: string
-                        status:
-                          type: string
-                        sysTags:
-                          items:
-                            type: string
-                          type: array
-                        tags:
-                          items:
-                            type: string
-                          type: array
-                        templateKey:
-                          type: string
-                        type:
                           type: string
                         updatedAt:
                           format: date-time
                           type: string
                       required:
-                      - cleanCodeAttribute
-                      - cleanCodeAttributeCategory
-                      - htmlDesc
-                      - htmlNote
-                      - internalKey
-                      - isExternal
-                      - isTemplate
                       - key
-                      - language
-                      - languageName
-                      - mdNote
                       - name
-                      - noteLogin
-                      - repo
-                      - scope
+                      - prioritized
                       - severity
-                      - status
-                      - templateKey
-                      - type
                       type: object
                     type: array
                   rulesUpdatedAt:
@@ -456,13 +375,9 @@ spec:
                   it can not recover from without human intervention.
                 format: int64
                 type: integer
-            required:
-            - atProvider
             type: object
         required:
-        - metadata
         - spec
-        - status
         type: object
     served: true
     storage: true

@@ -104,7 +104,7 @@ func GenerateQualityProfileObservation(observation *sonar.QualityprofilesShow, r
 		Name:                      observation.Profile.Name,
 		ProjectCount:              observation.Profile.ProjectCount,
 		RulesUpdatedAt:            helpers.StringToMetaTime(&observation.Profile.RulesUpdatedAt),
-		Rules:                     GenerateQualityProfileRulesObservation(rules),
+		Rules:                     GenerateQualityProfileRulesObservation(observation.Profile.Key, rules),
 	}
 }
 

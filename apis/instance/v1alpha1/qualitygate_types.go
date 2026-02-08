@@ -45,9 +45,11 @@ type QualityGateParameters struct {
 }
 
 // QualityGateObservation are the observable fields of a QualityGate.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityGateObservation struct {
 	// Actions represents the actions that can be performed on the Quality Gate.
-	Actions QualityGatesActions `json:"actions,omitzero"`
+	Actions QualityGatesActions `json:"actions,omitempty"`
 	// Defines the Clean as You Code status of the Quality Gate.
 	CaycStatus string `json:"caycStatus"`
 	// Conditions represents the list of conditions associated with the Quality Gate.
@@ -71,11 +73,13 @@ type QualityGateSpec struct {
 }
 
 // A QualityGateStatus represents the observed state of a QualityGate.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityGateStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
 
 	// AtProvider represents the observed state of the Quality Gate.
-	AtProvider QualityGateObservation `json:"atProvider,omitzero"`
+	AtProvider QualityGateObservation `json:"atProvider,omitempty"`
 }
 
 // QualityGatesActions represents the actions that can be performed on a Quality Gate.
@@ -148,20 +152,24 @@ type QualityGateConditionObservation struct {
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityGate struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitzero"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   QualityGateSpec   `json:"spec"`
-	Status QualityGateStatus `json:"status,omitzero"`
+	Status QualityGateStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
 // QualityGateList contains a list of QualityGate.
+//
+//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityGateList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []QualityGate `json:"items"`
 }

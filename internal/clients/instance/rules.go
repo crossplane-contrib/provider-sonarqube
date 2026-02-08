@@ -23,6 +23,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 const (
@@ -66,36 +68,12 @@ func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesS
 		// Retrieve all fields, including "actives"
 		Fields: []string{
 			"actives",
-			"cleanCodeAttribute",
 			"createdAt",
-			"debtRemFn",
-			"defaultDebtRemFn",
-			"defaultRemFn",
-			"deprecatedKeys",
-			"descriptionSections",
-			"educationPrinciples",
-			"gapDescription",
-			"htmlDesc",
-			"htmlNote",
 			"internalKey",
-			"isExternal",
-			"isTemplate",
-			"lang",
-			"langName",
-			"mdDesc",
-			"mdNote",
 			"name",
-			"noteLogin",
 			"params",
-			"remFn",
-			"remFnOverloaded",
-			"repo",
-			"scope",
 			"severity",
 			"status",
-			"sysTags",
-			"tags",
-			"templateKey",
 			"updatedAt",
 		},
 	}
@@ -105,6 +83,8 @@ func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesS
 // It iterates through all pages until all rules are fetched.
 func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey string) (*sonar.RulesSearch, error) {
 	var allRules []sonar.RuleDetails
+
+	allActives := make(map[string][]sonar.RuleActivation)
 
 	page := 1
 
@@ -118,6 +98,9 @@ func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey stri
 
 		if rules.Rules != nil {
 			allRules = append(allRules, rules.Rules...)
+			for key, activations := range rules.Actives {
+				allActives[key] = append(allActives[key], activations...)
+			}
 		}
 
 		// Check if we've fetched all rules
@@ -125,7 +108,7 @@ func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey stri
 		if int64(len(allRules)) >= rules.Paging.Total {
 			// Return aggregated result with the paging info from last response
 			return &sonar.RulesSearch{
-				Actives: rules.Actives,
+				Actives: allActives,
 				Facets:  rules.Facets,
 				Paging: sonar.Paging{
 					PageIndex: int64(page),
@@ -141,82 +124,95 @@ func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey stri
 }
 
 // GenerateQualityProfileRulesObservation generates observations for Quality Profile Rules.
-func GenerateQualityProfileRulesObservation(rules *sonar.RulesSearch) []v1alpha1.QualityProfileRuleObservation {
+func GenerateQualityProfileRulesObservation(qualityProfileId string, rules *sonar.RulesSearch) []v1alpha1.QualityProfileRuleObservation {
 	if rules == nil || rules.Rules == nil {
 		return []v1alpha1.QualityProfileRuleObservation{}
 	}
 
 	observations := make([]v1alpha1.QualityProfileRuleObservation, len(rules.Rules))
 
-	for i, rule := range rules.Rules {
-		observations[i] = GenerateQualityProfileRuleObservation(rule)
+	for index, rule := range rules.Rules {
+		var activatedRuleList *[]sonar.RuleActivation
+
+		activatedRuleFetch, exists := rules.Actives[rule.Key]
+		if exists {
+			activatedRuleList = &activatedRuleFetch
+		}
+
+		ruleActivatedSettings := findQualityProfileActiveRuleSettings(qualityProfileId, activatedRuleList)
+		observations[index] = GenerateQualityProfileRuleObservation(rule, ruleActivatedSettings)
 	}
 
 	return observations
+}
+
+// ruleActiveSettings holds the activated settings for a rule, including severity and parameters.
+type ruleActiveSettings struct {
+	Severity    *string
+	Params      *map[string]string
+	Impacts     []v1alpha1.QualityProfileRuleImpact
+	Prioritized *bool
+	CreatedAt   *string
+	UpdatedAt   *string
+}
+
+// findQualityProfileActiveRuleSettings parses the activated rules, confirms that they belong to the quality profile, and returns a map of rule key to its activated settings (severity and parameters).
+func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *[]sonar.RuleActivation) *ruleActiveSettings {
+	if activeRules == nil {
+		return nil
+	}
+
+	for _, activeRule := range *activeRules {
+		if activeRule.QProfile == qualityProfileId {
+			params := make(map[string]string, len(activeRule.Params))
+			for _, param := range activeRule.Params {
+				params[param.Key] = param.Value
+			}
+
+			return &ruleActiveSettings{
+				Severity:    &activeRule.Severity,
+				Params:      &params,
+				Prioritized: &activeRule.PrioritizedRule,
+				Impacts:     GenerateQualityProfileImpactsObservation(&activeRule.Impacts),
+				CreatedAt:   &activeRule.CreatedAt,
+				UpdatedAt:   &activeRule.UpdatedAt,
+			}
+		}
+	}
+
+	return nil
 }
 
 // GenerateQualityProfileRuleObservation generates observation for a Quality Profile Rule.
-func GenerateQualityProfileRuleObservation(rule sonar.RuleDetails) v1alpha1.QualityProfileRuleObservation {
-	return v1alpha1.QualityProfileRuleObservation{
-		CleanCodeAttribute:         rule.CleanCodeAttribute,
-		CleanCodeAttributeCategory: rule.CleanCodeAttributeCategory,
-		CreatedAt:                  helpers.StringToMetaTime(&rule.CreatedAt),
-		DescriptionSections:        GenerateQualityProfileRuleDescriptionSectionsObservation(&rule.DescriptionSections),
-		HTMLDesc:                   rule.HTMLDesc,
-		HTMLNote:                   rule.HTMLNote,
-		Impacts:                    GenerateQualityProfileImpactsObservation(&rule.Impacts),
-		InternalKey:                rule.InternalKey,
-		IsExternal:                 rule.IsExternal,
-		IsTemplate:                 rule.IsTemplate,
-		Key:                        rule.Key,
-		Language:                   rule.Lang,
-		LanguageName:               rule.LangName,
-		MdNote:                     rule.MdNote,
-		Name:                       rule.Name,
-		NoteLogin:                  rule.NoteLogin,
-		Parameters:                 GenerateQualityProfileRuleParametersObservation(rule.Params),
-		Repo:                       rule.Repo,
-		Scope:                      rule.Scope,
-		Severity:                   rule.Severity,
-		Status:                     rule.Status,
-		SysTags:                    rule.SysTags,
-		Tags:                       helpers.AnySliceToStringSlice(rule.Tags),
-		TemplateKey:                rule.TemplateKey,
-		Type:                       rule.Type,
-		UpdatedAt:                  helpers.StringToMetaTime(&rule.UpdatedAt),
-	}
-}
-
-// GenerateQualityProfileRuleDescriptionSectionsObservation generates observations for Quality Profile Rule Descriptions.
-func GenerateQualityProfileRuleDescriptionSectionsObservation(descriptionSections *[]sonar.DescriptionSection) []v1alpha1.QualityProfileRuleDescription {
-	if descriptionSections == nil {
-		return []v1alpha1.QualityProfileRuleDescription{}
+func GenerateQualityProfileRuleObservation(rule sonar.RuleDetails, activatedSettings *ruleActiveSettings) v1alpha1.QualityProfileRuleObservation {
+	ruleObservation := v1alpha1.QualityProfileRuleObservation{
+		Key:       rule.Key,
+		CreatedAt: helpers.StringToMetaTime(&rule.CreatedAt),
+		Impacts:   GenerateQualityProfileImpactsObservation(&rule.Impacts),
+		Name:      rule.Name,
+		UpdatedAt: helpers.StringToMetaTime(&rule.UpdatedAt),
+		Severity:  rule.Severity,
 	}
 
-	observations := make([]v1alpha1.QualityProfileRuleDescription, len(*descriptionSections))
+	if activatedSettings != nil {
+		if activatedSettings.Severity != nil {
+			ruleObservation.Severity = *activatedSettings.Severity
+		}
 
-	for i, section := range *descriptionSections {
-		observations[i] = GenerateQualityProfileRuleDescriptionObservation(section)
+		if activatedSettings.Params != nil {
+			ruleObservation.Parameters = *activatedSettings.Params
+		}
+
+		if activatedSettings.Impacts != nil {
+			ruleObservation.Impacts = activatedSettings.Impacts
+		}
+
+		if activatedSettings.Prioritized != nil {
+			ruleObservation.Prioritized = *activatedSettings.Prioritized
+		}
 	}
 
-	return observations
-}
-
-// GenerateQualityProfileRuleDescriptionObservation generates observation for Quality Profile Rule Description.
-func GenerateQualityProfileRuleDescriptionObservation(descriptionSections sonar.DescriptionSection) v1alpha1.QualityProfileRuleDescription {
-	return v1alpha1.QualityProfileRuleDescription{
-		Content: descriptionSections.Content,
-		Context: GenerateQualityProfileRuleDescriptionSectionsContextObservation(descriptionSections.Context),
-		Key:     descriptionSections.Key,
-	}
-}
-
-// GenerateQualityProfileRuleDescriptionSectionsContextObservation generates observation for Quality Profile Rule Description Context.
-func GenerateQualityProfileRuleDescriptionSectionsContextObservation(contextSection sonar.DescriptionContext) v1alpha1.QualityProfileRuleDescriptionSectionsContext {
-	return v1alpha1.QualityProfileRuleDescriptionSectionsContext{
-		DisplayName: contextSection.DisplayName,
-		Key:         contextSection.Key,
-	}
+	return ruleObservation
 }
 
 // GenerateQualityProfileImpactsObservation generates observations for Quality Profile Rule Impacts.
@@ -241,28 +237,8 @@ func GenerateQualityProfileRuleImpactObservation(impact sonar.RuleImpact) v1alph
 	}
 }
 
-// GenerateQualityProfileRuleParametersObservation generates observations for Quality Profile Rule Parameters.
-func GenerateQualityProfileRuleParametersObservation(parameters []sonar.RuleParam) []v1alpha1.QualityProfileRuleParameter {
-	observations := make([]v1alpha1.QualityProfileRuleParameter, len(parameters))
-	for i, parameter := range parameters {
-		observations[i] = GenerateQualityProfileRuleParameterObservation(parameter)
-	}
-
-	return observations
-}
-
-// GenerateQualityProfileRuleParameterObservation generates observation for Quality Profile Rule Parameter.
-func GenerateQualityProfileRuleParameterObservation(parameter sonar.RuleParam) v1alpha1.QualityProfileRuleParameter {
-	return v1alpha1.QualityProfileRuleParameter{
-		DefaultValue: parameter.DefaultValue,
-		Desc:         parameter.Desc,
-		Key:          parameter.Key,
-	}
-}
-
 // IsQualityProfileRuleUpToDate checks whether the observed QualityProfileRule is up to date with the desired QualityProfileRuleParameters
-// Note: We only compare the rule key since the SonarQube API does not return the activated severity, impacts, or parameter values.
-// The API returns rule definitions with default values, not the customized activation configuration.
+// Compares rule key, severity (if specified), and parameters (if specified).
 func IsQualityProfileRuleUpToDate(spec *v1alpha1.QualityProfileRuleParameters, observation *v1alpha1.QualityProfileRuleObservation) bool {
 	if spec == nil {
 		return true
@@ -272,64 +248,47 @@ func IsQualityProfileRuleUpToDate(spec *v1alpha1.QualityProfileRuleParameters, o
 		return false
 	}
 
-	// Only compare rule keys - we cannot reliably compare severity, impacts, or parameters
-	// because the API returns defaults, not activated values
+	// Rule key must match
 	if spec.Rule != observation.Key {
 		return false
 	}
 
-	// if !helpers.IsComparablePtrEqualComparable(spec.Severity, observation.Severity) {
-	// 	return false
-	// }
+	// Check severity if specified
+	if !helpers.IsComparablePtrEqualComparable(spec.Severity, observation.Severity) {
+		return false
+	}
 
-	// if !areQualityProfileRuleImpactsUpToDate(spec.Impacts, observation.Impacts) {
-	// 	return false
-	// }
+	// Check prioritized if specified
+	if !helpers.IsComparablePtrEqualComparable(spec.Prioritized, observation.Prioritized) {
+		return false
+	}
 
-	// if !areQualityProfileRuleParametersUpToDate(spec.Parameters, observation.Parameters) {
-	// 	return false
-	// }
+	// Check impacts if specified
+	if !areQualityProfileRuleImpactsUpToDate(spec.Impacts, observation.Impacts) {
+		return false
+	}
+
+	// Check parameters if specified
+	if spec.Parameters != nil {
+		if !cmp.Equal(*spec.Parameters, observation.Parameters, cmpopts.EquateEmpty()) {
+			return false
+		}
+	}
 
 	return true
 }
 
-// // areQualityProfileRuleImpactsUpToDate checks whether the observed QualityProfileRule impacts are up to date with the desired impacts
-// // Not functional yet because SonarQube API does not return proper values for impacts (SonarQube 25.12.X)
-// func areQualityProfileRuleImpactsUpToDate(spec *map[string]string, observation []v1alpha1.QualityProfileRuleImpact) bool {
-// 	if spec == nil {
-// 		return true
-// 	}
+// areQualityProfileRuleImpactsUpToDate checks whether the observed QualityProfileRule impacts are up to date with the desired impacts.
+func areQualityProfileRuleImpactsUpToDate(spec *map[string]string, observation []v1alpha1.QualityProfileRuleImpact) bool {
+	if spec == nil {
+		return true
+	}
 
-// 	// Build an impact map from observation for easy lookup
-// 	impactMap := make(map[string]string, len(observation))
-// 	for _, impact := range observation {
-// 		impactMap[impact.SoftwareQuality] = impact.Severity
-// 	}
+	// Build an impact map from observation for easy lookup
+	impactMap := make(map[string]string, len(observation))
+	for _, impact := range observation {
+		impactMap[impact.SoftwareQuality] = impact.Severity
+	}
 
-// 	for k, v := range *spec {
-// 		if observedSeverity, ok := impactMap[k]; !ok || observedSeverity != v {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
-
-// // areQualityProfileRuleParametersUpToDate checks whether the observed QualityProfileRule parameters are up to date with the desired parameters
-// func areQualityProfileRuleParametersUpToDate(spec *map[string]string, observation []v1alpha1.QualityProfileRuleParameter) bool {
-// 	if spec == nil {
-// 		return true
-// 	}
-
-// 	// Build a parameter map from observation for easy lookup
-// 	parameterMap := make(map[string]string, len(observation))
-// 	for _, parameter := range observation {
-// 		parameterMap[parameter.Key] = parameter.DefaultValue
-// 	}
-
-// 	for k, v := range *spec {
-// 		if observedValue, ok := parameterMap[k]; !ok || observedValue != v {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
+	return cmp.Equal(*spec, impactMap, cmpopts.EquateEmpty())
+}
