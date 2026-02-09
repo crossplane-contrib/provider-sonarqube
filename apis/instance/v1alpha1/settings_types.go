@@ -44,10 +44,6 @@ type SettingsParameters struct {
 
 // SettingParameters represent the desired state of a single SonarQube Setting.
 type SettingParameters struct {
-	// Key is the unique identifier of the setting.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	Key string `json:"key"`
 	// Value is the value of the setting. The format of the value depends on the type of the setting. It can be a string, a number, a boolean or a JSON object.
 	// This field must be set if "Values" and "fieldValues" are not set.
 	// +kubebuilder:validation:Optional

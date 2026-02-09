@@ -196,7 +196,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 	// Iterate over the settings in the CR and create them in SonarQube using the settingsClient.
 	for key, params := range settings.Spec.ForProvider.Settings {
-		settingSetOptions := instance.GenerateSettingSetOptions(params, settings.Spec.ForProvider.Component)
+		settingSetOptions := instance.GenerateSettingSetOptions(key, params, settings.Spec.ForProvider.Component)
 
 		resp, err := c.settingsClient.Set(settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
@@ -273,7 +273,7 @@ func (c *external) updateOutOfDateSettings(settings *v1alpha1.Settings) []error 
 
 	for key, params := range settings.Spec.ForProvider.Settings {
 		if !instance.IsSettingUpToDate(params, settings.Status.AtProvider.Settings[key]) {
-			settingSetOptions := instance.GenerateSettingSetOptions(params, settings.Spec.ForProvider.Component)
+			settingSetOptions := instance.GenerateSettingSetOptions(key, params, settings.Spec.ForProvider.Component)
 
 			resp, err := c.settingsClient.Set(settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			defer helpers.CloseBody(resp)

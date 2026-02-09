@@ -30,13 +30,14 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
+		key       string
 		params    v1alpha1.SettingParameters
 		component *string
 		want      *sonar.SettingsSetOption
 	}{
 		"BasicSetOptionWithValueOnly": {
+			key: "sonar.core.serverBaseURL",
 			params: v1alpha1.SettingParameters{
-				Key:   "sonar.core.serverBaseURL",
 				Value: ptr.To("https://sonarqube.example.com"),
 			},
 			component: nil,
@@ -46,8 +47,8 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 			},
 		},
 		"SetOptionWithComponent": {
+			key: "sonar.coverage.jacoco.xmlReportPaths",
 			params: v1alpha1.SettingParameters{
-				Key:   "sonar.coverage.jacoco.xmlReportPaths",
 				Value: ptr.To("target/site/jacoco/jacoco.xml"),
 			},
 			component: ptr.To("my-project-key"),
@@ -58,8 +59,8 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 			},
 		},
 		"SetOptionWithValues": {
+			key: "sonar.exclusions",
 			params: v1alpha1.SettingParameters{
-				Key:    "sonar.exclusions",
 				Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
 			},
 			component: nil,
@@ -69,8 +70,8 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 			},
 		},
 		"SetOptionWithFieldValues": {
+			key: "sonar.issue.enforce.multicriteria",
 			params: v1alpha1.SettingParameters{
-				Key: "sonar.issue.enforce.multicriteria",
 				FieldValues: ptr.To(map[string]string{
 					"1.ruleKey":         "squid:S1134",
 					"1.resourceKey":     "**/*.java",
@@ -90,28 +91,28 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 			},
 		},
 		"SetOptionWithEmptyValues": {
+			key: "sonar.test.empty",
 			params: v1alpha1.SettingParameters{
-				Key:    "sonar.test.key",
 				Values: ptr.To([]string{}),
 			},
 			component: nil,
 			want: &sonar.SettingsSetOption{
-				Key: "sonar.test.key",
+				Key: "sonar.test.empty",
 			},
 		},
 		"SetOptionWithEmptyFieldValues": {
+			key: "sonar.test.empty.fields",
 			params: v1alpha1.SettingParameters{
-				Key:         "sonar.test.key",
 				FieldValues: ptr.To(map[string]string{}),
 			},
 			component: nil,
 			want: &sonar.SettingsSetOption{
-				Key: "sonar.test.key",
+				Key: "sonar.test.empty.fields",
 			},
 		},
 		"SetOptionWithAllFields": {
+			key: "sonar.multifield.setting",
 			params: v1alpha1.SettingParameters{
-				Key:    "sonar.complex.setting",
 				Value:  ptr.To("base-value"),
 				Values: ptr.To([]string{"value1", "value2"}),
 				FieldValues: ptr.To(map[string]string{
@@ -121,7 +122,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 			},
 			component: ptr.To("project-key"),
 			want: &sonar.SettingsSetOption{
-				Key:       "sonar.complex.setting",
+				Key:       "sonar.multifield.setting",
 				Value:     "base-value",
 				Values:    []string{"value1", "value2"},
 				Component: "project-key",
@@ -137,7 +138,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateSettingSetOptions(tc.params, tc.component)
+			got := GenerateSettingSetOptions(tc.key, tc.params, tc.component)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateSettingSetOptions() mismatch (-want +got):\n%s", diff)
 			}
@@ -156,7 +157,6 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 			params: &v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 				},
@@ -170,7 +170,6 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 				Component: ptr.To("my-project-key"),
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.coverage.jacoco.xmlReportPaths": {
-						Key:   "sonar.coverage.jacoco.xmlReportPaths",
 						Value: ptr.To("target/site/jacoco/jacoco.xml"),
 					},
 				},
@@ -184,15 +183,12 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 			params: &v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Key:    "sonar.exclusions",
 						Values: ptr.To([]string{"**/*.test.js"}),
 					},
 					"sonar.coverage.exclusions": {
-						Key:    "sonar.coverage.exclusions",
 						Values: ptr.To([]string{"**/*.spec.js"}),
 					},
 				},
@@ -248,7 +244,6 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 				},
@@ -262,7 +257,6 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 				Component: ptr.To("my-project-key"),
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.coverage.jacoco.xmlReportPaths": {
-						Key:   "sonar.coverage.jacoco.xmlReportPaths",
 						Value: ptr.To("target/site/jacoco/jacoco.xml"),
 					},
 				},
@@ -276,11 +270,9 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Key:    "sonar.exclusions",
 						Values: ptr.To([]string{"**/*.test.js"}),
 					},
 				},
@@ -386,7 +378,6 @@ func TestGenerateSettingObservation(t *testing.T) {
 	}{
 		"ObservationWithValueOnly": {
 			observed: &sonar.SettingValue{
-				Key:   "sonar.core.serverBaseURL",
 				Value: "https://sonarqube.example.com",
 			},
 			want: v1alpha1.SettingObservation{
@@ -397,7 +388,6 @@ func TestGenerateSettingObservation(t *testing.T) {
 		},
 		"ObservationWithValues": {
 			observed: &sonar.SettingValue{
-				Key:    "sonar.exclusions",
 				Values: []string{"**/*.test.js", "**/*.spec.js"},
 			},
 			want: v1alpha1.SettingObservation{
@@ -408,7 +398,6 @@ func TestGenerateSettingObservation(t *testing.T) {
 		},
 		"ObservationWithFieldValues": {
 			observed: &sonar.SettingValue{
-				Key: "sonar.issue.enforce.multicriteria",
 				FieldValues: []map[string]string{
 					{
 						"1.ruleKey":         "squid:S1134",
@@ -431,7 +420,6 @@ func TestGenerateSettingObservation(t *testing.T) {
 		},
 		"ObservationWithMultipleFieldValues": {
 			observed: &sonar.SettingValue{
-				Key: "sonar.multi.field",
 				FieldValues: []map[string]string{
 					{
 						"1.key1": "value1",
@@ -456,7 +444,6 @@ func TestGenerateSettingObservation(t *testing.T) {
 		},
 		"ObservationWithEmptyFieldValues": {
 			observed: &sonar.SettingValue{
-				Key:         "sonar.empty.field",
 				FieldValues: []map[string]string{},
 			},
 			want: v1alpha1.SettingObservation{
@@ -565,7 +552,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 	}{
 		"MatchingValue": {
 			params: v1alpha1.SettingParameters{
-				Key:   "sonar.core.serverBaseURL",
 				Value: ptr.To("https://sonarqube.example.com"),
 			},
 			observation: v1alpha1.SettingObservation{
@@ -575,7 +561,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"DifferentValue": {
 			params: v1alpha1.SettingParameters{
-				Key:   "sonar.core.serverBaseURL",
 				Value: ptr.To("https://sonarqube.example.com"),
 			},
 			observation: v1alpha1.SettingObservation{
@@ -585,7 +570,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"NilValueMatchesAnything": {
 			params: v1alpha1.SettingParameters{
-				Key:   "sonar.core.serverBaseURL",
 				Value: nil,
 			},
 			observation: v1alpha1.SettingObservation{
@@ -595,7 +579,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"MatchingValues": {
 			params: v1alpha1.SettingParameters{
-				Key:    "sonar.exclusions",
 				Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
 			},
 			observation: v1alpha1.SettingObservation{
@@ -605,7 +588,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"DifferentValues": {
 			params: v1alpha1.SettingParameters{
-				Key:    "sonar.exclusions",
 				Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
 			},
 			observation: v1alpha1.SettingObservation{
@@ -615,7 +597,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"NilValuesMatchesAnything": {
 			params: v1alpha1.SettingParameters{
-				Key:    "sonar.exclusions",
 				Values: nil,
 			},
 			observation: v1alpha1.SettingObservation{
@@ -625,7 +606,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"MatchingFieldValues": {
 			params: v1alpha1.SettingParameters{
-				Key: "sonar.issue.enforce.multicriteria",
 				FieldValues: ptr.To(map[string]string{
 					"1.ruleKey":     "squid:S1134",
 					"1.resourceKey": "**/*.java",
@@ -641,7 +621,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"DifferentFieldValues": {
 			params: v1alpha1.SettingParameters{
-				Key: "sonar.issue.enforce.multicriteria",
 				FieldValues: ptr.To(map[string]string{
 					"1.ruleKey":     "squid:S1134",
 					"1.resourceKey": "**/*.java",
@@ -656,7 +635,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"NilFieldValuesMatchesAnything": {
 			params: v1alpha1.SettingParameters{
-				Key:         "sonar.issue.enforce.multicriteria",
 				FieldValues: nil,
 			},
 			observation: v1alpha1.SettingObservation{
@@ -669,7 +647,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"EmptyObservedValuesMatchesNilParams": {
 			params: v1alpha1.SettingParameters{
-				Key:    "sonar.exclusions",
 				Values: nil,
 			},
 			observation: v1alpha1.SettingObservation{
@@ -679,7 +656,6 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"EmptyObservedFieldValuesMatchesNilParams": {
 			params: v1alpha1.SettingParameters{
-				Key:         "sonar.field.setting",
 				FieldValues: nil,
 			},
 			observation: v1alpha1.SettingObservation{
@@ -713,11 +689,9 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Key:    "sonar.exclusions",
 						Values: ptr.To([]string{"**/*.test.js"}),
 					},
 				},
@@ -738,11 +712,9 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Key:    "sonar.exclusions",
 						Values: ptr.To([]string{"**/*.test.js"}),
 					},
 				},
@@ -763,11 +735,9 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Key:    "sonar.exclusions",
 						Values: ptr.To([]string{"**/*.test.js"}),
 					},
 				},
@@ -794,7 +764,6 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Key:   "sonar.core.serverBaseURL",
 						Value: ptr.To("https://sonarqube.example.com"),
 					},
 				},

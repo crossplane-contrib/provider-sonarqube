@@ -42,9 +42,9 @@ func NewSettingsClient(clientConfig common.Config) SettingsClient {
 }
 
 // GenerateSettingSetOptions generates the options for the Set API call based on the provided settings parameters and component.
-func GenerateSettingSetOptions(params v1alpha1.SettingParameters, component *string) *sonar.SettingsSetOption {
+func GenerateSettingSetOptions(key string, params v1alpha1.SettingParameters, component *string) *sonar.SettingsSetOption {
 	settingsSetOptions := &sonar.SettingsSetOption{
-		Key: params.Key,
+		Key: key,
 	}
 	helpers.AssignIfNonNil(&settingsSetOptions.Value, params.Value)
 	helpers.AssignIfNonNil(&settingsSetOptions.Component, component)
