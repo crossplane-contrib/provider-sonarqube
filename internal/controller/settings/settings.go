@@ -176,6 +176,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	}
 
 	observation := instance.GenerateSettingsObservation(sonarSettings)
+	settings.Status.AtProvider = observation
 
 	return managed.ExternalObservation{
 		ResourceExists:   true,
