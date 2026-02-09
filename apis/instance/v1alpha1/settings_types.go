@@ -83,13 +83,15 @@ type SettingObservation struct {
 // A SettingsSpec defines the desired state of a Settings.
 type SettingsSpec struct {
 	xpv2.ManagedResourceSpec `json:",inline"`
-	ForProvider              SettingsParameters `json:"forProvider"`
+
+	ForProvider SettingsParameters `json:"forProvider"`
 }
 
 // A SettingsStatus represents the observed state of a Settings.
 type SettingsStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
-	AtProvider          SettingsObservation `json:"atProvider,omitempty"`
+
+	AtProvider SettingsObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -111,16 +113,17 @@ type Settings struct {
 
 // +kubebuilder:object:root=true
 
-// SettingsList contains a list of Settings
+// SettingsList contains a list of Settings.
 type SettingsList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Settings `json:"items"`
+
+	Items []Settings `json:"items"`
 }
 
 // Settings type metadata.
 var (
-	SettingsKind             = reflect.TypeOf(Settings{}).Name()
+	SettingsKind             = reflect.TypeFor[Settings]().Name()
 	SettingsGroupKind        = schema.GroupKind{Group: Group, Kind: SettingsKind}.String()
 	SettingsKindAPIVersion   = SettingsKind + "." + SchemeGroupVersion.String()
 	SettingsGroupVersionKind = SchemeGroupVersion.WithKind(SettingsKind)

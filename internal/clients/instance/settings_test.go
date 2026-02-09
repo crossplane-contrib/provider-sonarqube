@@ -27,6 +27,8 @@ import (
 )
 
 func TestGenerateSettingSetOptions(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		params    v1alpha1.SettingParameters
 		component *string
@@ -133,6 +135,8 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateSettingSetOptions(tc.params, tc.component)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateSettingSetOptions() mismatch (-want +got):\n%s", diff)
@@ -142,6 +146,8 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 }
 
 func TestGenerateSettingsValuesOptions(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		params *v1alpha1.SettingsParameters
 		want   *sonar.SettingsValuesOption
@@ -199,6 +205,8 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateSettingsValuesOptions(tc.params)
 			// Note: The order of keys in a map is not guaranteed, so we need to sort them before comparing
 			if len(got.Keys) != len(tc.want.Keys) {
@@ -209,12 +217,15 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 			for _, k := range tc.want.Keys {
 				expectedKeys[k] = true
 			}
+
 			for _, k := range got.Keys {
 				if !expectedKeys[k] {
 					t.Errorf("GenerateSettingsValuesOptions() unexpected key: %s", k)
 				}
+
 				delete(expectedKeys, k)
 			}
+
 			if len(expectedKeys) > 0 {
 				t.Errorf("GenerateSettingsValuesOptions() missing keys: %v", expectedKeys)
 			}
@@ -227,6 +238,8 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 }
 
 func TestGenerateSettingsResetOptions(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		params v1alpha1.SettingsParameters
 		want   *sonar.SettingsResetOption
@@ -280,6 +293,8 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateSettingsResetOptions(tc.params)
 			// Check keys length
 			if len(got.Keys) != len(tc.want.Keys) {
@@ -290,12 +305,15 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 			for _, k := range tc.want.Keys {
 				expectedKeys[k] = true
 			}
+
 			for _, k := range got.Keys {
 				if !expectedKeys[k] {
 					t.Errorf("GenerateSettingsResetOptions() unexpected key: %s", k)
 				}
+
 				delete(expectedKeys, k)
 			}
+
 			if len(expectedKeys) > 0 {
 				t.Errorf("GenerateSettingsResetOptions() missing keys: %v", expectedKeys)
 			}
@@ -308,6 +326,8 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 }
 
 func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		keys      []string
 		component *string
@@ -347,6 +367,8 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateSettingsResetOptionsFromList(tc.keys, tc.component)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateSettingsResetOptionsFromList() mismatch (-want +got):\n%s", diff)
@@ -356,6 +378,8 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 }
 
 func TestGenerateSettingObservation(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		observed *sonar.SettingValue
 		want     v1alpha1.SettingObservation
@@ -445,6 +469,8 @@ func TestGenerateSettingObservation(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateSettingObservation(tc.observed)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateSettingObservation() mismatch (-want +got):\n%s", diff)
@@ -454,6 +480,8 @@ func TestGenerateSettingObservation(t *testing.T) {
 }
 
 func TestGenerateSettingsObservation(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		observed *sonar.SettingsValues
 		want     v1alpha1.SettingsObservation
@@ -517,6 +545,8 @@ func TestGenerateSettingsObservation(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := GenerateSettingsObservation(tc.observed)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("GenerateSettingsObservation() mismatch (-want +got):\n%s", diff)
@@ -526,6 +556,8 @@ func TestGenerateSettingsObservation(t *testing.T) {
 }
 
 func TestIsSettingUpToDate(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		params      v1alpha1.SettingParameters
 		observation v1alpha1.SettingObservation
@@ -659,6 +691,8 @@ func TestIsSettingUpToDate(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IsSettingUpToDate(tc.params, tc.observation)
 			if got != tc.want {
 				t.Errorf("IsSettingUpToDate() = %v, want %v", got, tc.want)
@@ -668,6 +702,8 @@ func TestIsSettingUpToDate(t *testing.T) {
 }
 
 func TestAreSettingsUpToDate(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		params      v1alpha1.SettingsParameters
 		observation v1alpha1.SettingsObservation
@@ -779,6 +815,8 @@ func TestAreSettingsUpToDate(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			got := AreSettingsUpToDate(tc.params, tc.observation)
 			if got != tc.want {
 				t.Errorf("AreSettingsUpToDate() = %v, want %v", got, tc.want)

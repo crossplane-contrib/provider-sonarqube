@@ -17,6 +17,7 @@ limitations under the License.
 package instance
 
 import (
+	"maps"
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
@@ -36,6 +37,7 @@ type SettingsClient interface {
 // NewSettingsClient creates a new SettingsClient with the provided SonarQube client configuration.
 func NewSettingsClient(clientConfig common.Config) SettingsClient {
 	newClient := common.NewClient(clientConfig)
+
 	return newClient.Settings
 }
 
@@ -82,6 +84,7 @@ func GenerateSettingsResetOptions(params v1alpha1.SettingsParameters) *sonar.Set
 	for key := range params.Settings {
 		keys = append(keys, key)
 	}
+
 	settingsResetOptions := &sonar.SettingsResetOption{
 		Keys: keys,
 	}
@@ -116,11 +119,11 @@ func GenerateSettingsObservation(observed *sonar.SettingsValues) v1alpha1.Settin
 // GenerateSettingObservation generates the SettingObservation based on the observed SettingValue from SonarQube.
 func GenerateSettingObservation(observed *sonar.SettingValue) v1alpha1.SettingObservation {
 	fieldValues := make(map[string]string)
+
 	for _, fieldValue := range observed.FieldValues {
-		for k, v := range fieldValue {
-			fieldValues[k] = v
-		}
+		maps.Copy(fieldValues, fieldValue)
 	}
+
 	return v1alpha1.SettingObservation{
 		Value:       observed.Value,
 		Values:      observed.Values,
@@ -143,5 +146,6 @@ func AreSettingsUpToDate(params v1alpha1.SettingsParameters, observation v1alpha
 			return false
 		}
 	}
+
 	return true
 }

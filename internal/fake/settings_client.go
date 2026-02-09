@@ -14,15 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package fake provides mock implementations for testing.
 package fake
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
+
+var errSettingsNotImplemented = errors.New("settings operation not implemented")
 
 // MockSettingsClient is a mock implementation of the SettingsClient interface.
 type MockSettingsClient struct {
@@ -31,29 +33,32 @@ type MockSettingsClient struct {
 	ResetFn  func(opt *sonar.SettingsResetOption) (*http.Response, error)
 }
 
-// Ensure MockSettingsClient implements SettingsClient
+// Ensure MockSettingsClient implements SettingsClient.
 var _ instance.SettingsClient = &MockSettingsClient{}
 
-// Set implements SettingsClient.Set
+// Set implements SettingsClient.Set.
 func (m *MockSettingsClient) Set(opt *sonar.SettingsSetOption) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}
-	return nil, nil
+
+	return nil, errSettingsNotImplemented
 }
 
-// Values implements SettingsClient.Values
+// Values implements SettingsClient.Values.
 func (m *MockSettingsClient) Values(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
 	if m.ValuesFn != nil {
 		return m.ValuesFn(opt)
 	}
-	return nil, nil, nil
+
+	return nil, nil, errSettingsNotImplemented
 }
 
-// Reset implements SettingsClient.Reset
+// Reset implements SettingsClient.Reset.
 func (m *MockSettingsClient) Reset(opt *sonar.SettingsResetOption) (*http.Response, error) {
 	if m.ResetFn != nil {
 		return m.ResetFn(opt)
 	}
-	return nil, nil
+
+	return nil, errSettingsNotImplemented
 }

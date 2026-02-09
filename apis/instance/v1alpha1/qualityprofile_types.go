@@ -123,8 +123,6 @@ type QualityProfileSpec struct {
 }
 
 // A QualityProfileStatus represents the observed state of a QualityProfile.
-//
-//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityProfileStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
 
@@ -140,8 +138,6 @@ type QualityProfileStatus struct {
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}
-//
-//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityProfile struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -153,8 +149,6 @@ type QualityProfile struct {
 // +kubebuilder:object:root=true
 
 // QualityProfileList contains a list of QualityProfile.
-//
-//nolint:modernize // omitempty is needed because of kubebuilder's handling of optional fields in status.
 type QualityProfileList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

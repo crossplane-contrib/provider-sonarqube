@@ -46,22 +46,36 @@ type notSettings struct {
 	resource.Managed
 }
 
-// errComparer compares error messages for testing
+// mockHTTPResponse creates a minimal mock HTTP response for testing.
+func mockHTTPResponse() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       http.NoBody,
+	}
+}
+
+// errComparer compares error messages for testing.
 func errComparer(a, b error) bool {
 	if a == nil && b == nil {
 		return true
 	}
+
 	if a == nil || b == nil {
 		return false
 	}
+
 	return a.Error() == b.Error()
 }
 
+//nolint:maintidx // Test function complexity is acceptable for comprehensive table-driven tests
 func TestObserve(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalObservation
 		err error
@@ -320,6 +334,7 @@ func TestObserve(t *testing.T) {
 					if opt.Component != "my-project-key" {
 						return nil, nil, errors.New("expected component to be 'my-project-key'")
 					}
+
 					return &sonar.SettingsValues{
 						Settings: []sonar.SettingValue{
 							{
@@ -361,12 +376,15 @@ func TestObserve(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{settingsClient: tc.client}
 			got, err := e.Observe(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Observe() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Observe() mismatch (-want +got):\n%s", diff)
 			}
@@ -374,11 +392,15 @@ func TestObserve(t *testing.T) {
 	}
 }
 
+//nolint:maintidx // Test function complexity is acceptable for comprehensive table-driven tests
 func TestCreate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalCreation
 		err error
@@ -433,10 +455,12 @@ func TestCreate(t *testing.T) {
 					if opt.Key != "sonar.core.serverBaseURL" {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
+
 					if opt.Value != "https://sonarqube.example.com" {
 						return nil, errors.New("unexpected value")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -471,7 +495,8 @@ func TestCreate(t *testing.T) {
 					if !validKeys[opt.Key] {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -505,7 +530,8 @@ func TestCreate(t *testing.T) {
 					if opt.Component != "my-project-key" {
 						return nil, errors.New("expected component to be 'my-project-key'")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -537,7 +563,8 @@ func TestCreate(t *testing.T) {
 					if opt.Key == "sonar.exclusions" {
 						return nil, errors.New("api error for exclusions")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -572,10 +599,12 @@ func TestCreate(t *testing.T) {
 					if opt.Key != "sonar.issue.enforce.multicriteria" {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
+
 					if len(opt.FieldValues) == 0 {
 						return nil, errors.New("expected field values to be set")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -606,12 +635,15 @@ func TestCreate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{settingsClient: tc.client}
 			got, err := e.Create(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Create() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Create() mismatch (-want +got):\n%s", diff)
 			}
@@ -619,11 +651,15 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+//nolint:maintidx // Test function complexity is acceptable for comprehensive table-driven tests
 func TestUpdate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalUpdate
 		err error
@@ -651,10 +687,12 @@ func TestUpdate(t *testing.T) {
 					if opt.Key != "sonar.core.serverBaseURL" {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
+
 					if opt.Value != "https://new-url.com" {
 						return nil, errors.New("unexpected value")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -728,15 +766,18 @@ func TestUpdate(t *testing.T) {
 				ResetFn: func(opt *sonar.SettingsResetOption) (*http.Response, error) {
 					// Verify that the obsolete setting is being reset
 					found := false
+
 					for _, key := range opt.Keys {
 						if key == "sonar.obsolete.setting" {
 							found = true
 						}
 					}
+
 					if !found {
 						return nil, errors.New("expected sonar.obsolete.setting to be reset")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -782,7 +823,8 @@ func TestUpdate(t *testing.T) {
 					if !validKeys[opt.Key] {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -835,7 +877,8 @@ func TestUpdate(t *testing.T) {
 					if opt.Key == "sonar.exclusions" {
 						return nil, errors.New("api error for exclusions")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -920,7 +963,8 @@ func TestUpdate(t *testing.T) {
 					if opt.Component != "my-project-key" {
 						return nil, errors.New("expected component to be 'my-project-key'")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -958,12 +1002,15 @@ func TestUpdate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{settingsClient: tc.client}
 			got, err := e.Update(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Update() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Update() mismatch (-want +got):\n%s", diff)
 			}
@@ -972,10 +1019,13 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx context.Context
 		mg  resource.Managed
 	}
+
 	type want struct {
 		o   managed.ExternalDelete
 		err error
@@ -1008,12 +1058,14 @@ func TestDelete(t *testing.T) {
 					if len(opt.Keys) != len(expectedKeys) {
 						return nil, errors.New("expected all settings to be reset")
 					}
+
 					for _, key := range opt.Keys {
 						if !expectedKeys[key] {
 							return nil, errors.New("unexpected key: " + key)
 						}
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -1047,7 +1099,8 @@ func TestDelete(t *testing.T) {
 					if opt.Component != "my-project-key" {
 						return nil, errors.New("expected component to be 'my-project-key'")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -1105,7 +1158,8 @@ func TestDelete(t *testing.T) {
 					if len(opt.Keys) != 0 {
 						return nil, errors.New("expected no keys to reset")
 					}
-					return nil, nil
+
+					return mockHTTPResponse(), nil
 				},
 			},
 			args: args{
@@ -1128,12 +1182,15 @@ func TestDelete(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			e := &external{settingsClient: tc.client}
 			got, err := e.Delete(tc.args.ctx, tc.args.mg)
 
 			if diff := cmp.Diff(tc.want.err, err, cmp.Comparer(errComparer)); diff != "" {
 				t.Errorf("Delete() error mismatch (-want +got):\n%s", diff)
 			}
+
 			if diff := cmp.Diff(tc.want.o, got); diff != "" {
 				t.Errorf("Delete() mismatch (-want +got):\n%s", diff)
 			}
@@ -1142,6 +1199,8 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
+	t.Parallel()
+
 	client := &fake.MockSettingsClient{}
 	e := &external{settingsClient: client}
 
