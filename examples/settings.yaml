@@ -1,0 +1,17 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Settings
+metadata:
+  name: example-instance-settings
+  namespace: default
+spec:
+  forProvider:
+    settings:
+      sonar.junit.reportPaths:
+        values:
+          - codequality/unit-tests.xml
+      sonar.cpd.go.minimumtokens:
+        value: "100"
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
