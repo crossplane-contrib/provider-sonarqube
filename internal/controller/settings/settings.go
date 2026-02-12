@@ -200,11 +200,11 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 		settingSetOptions := instance.GenerateSettingSetOptions(key, params, settings.Spec.ForProvider.Component)
 
 		resp, err := c.settingsClient.Set(settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(resp)
-
 		if err != nil {
 			errs = append(errs, errors.Errorf("failed to set setting %s: %s", key, err.Error()))
 		}
+
+		helpers.CloseBody(resp)
 	}
 
 	// Since there is no external name to return or connection details to provide, we can return an empty ExternalCreation and no error.
@@ -279,11 +279,11 @@ func (c *external) updateOutOfDateSettings(settings *v1alpha1.Settings) []error 
 			settingSetOptions := instance.GenerateSettingSetOptions(key, params, settings.Spec.ForProvider.Component)
 
 			resp, err := c.settingsClient.Set(settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
-			defer helpers.CloseBody(resp)
-
 			if err != nil {
 				updateErrors = append(updateErrors, errors.Errorf("failed to update setting %s: %s", key, err.Error()))
 			}
+
+			helpers.CloseBody(resp)
 		}
 	}
 
