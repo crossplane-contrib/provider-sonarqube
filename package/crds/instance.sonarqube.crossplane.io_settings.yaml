@@ -34,7 +34,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A Settings is an example API type.
+        description: Settings manages SonarQube settings configuration.
         properties:
           apiVersion:
             description: |-
