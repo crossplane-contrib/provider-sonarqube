@@ -23,6 +23,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/config"
 	"github.com/crossplane/provider-sonarqube/internal/controller/qualitygate"
 	"github.com/crossplane/provider-sonarqube/internal/controller/qualityprofile"
+	"github.com/crossplane/provider-sonarqube/internal/controller/settings"
 )
 
 // SetupGated creates all SonarQube controllers with safe-start support and adds them to
@@ -32,6 +33,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		config.Setup,
 		qualitygate.SetupGated,
 		qualityprofile.SetupGated,
+		settings.SetupGated,
 	} {
 		err := setup(mgr, opts)
 		if err != nil {

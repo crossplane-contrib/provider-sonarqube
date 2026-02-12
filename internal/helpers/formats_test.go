@@ -26,6 +26,8 @@ import (
 	"k8s.io/utils/ptr"
 )
 
+const original = "original"
+
 func TestIsComparablePtrEqualComparable(t *testing.T) {
 	t.Parallel()
 
@@ -242,12 +244,12 @@ func TestAssignIfNil(t *testing.T) {
 	t.Run("NonNilInnerPointerKeepsOriginalValue", func(t *testing.T) {
 		t.Parallel()
 
-		original := "original"
+		original := original
 		inner := &original
 		AssignIfNil(&inner, "new")
 
-		if *inner != "original" {
-			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, "original")
+		if *inner != original {
+			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, original)
 		}
 	})
 
@@ -465,6 +467,179 @@ func TestAnySliceToStringSlice(t *testing.T) {
 		result := AnySliceToStringSlice(slice)
 		if len(result) != 0 {
 			t.Errorf("AnySliceToStringSlice(no strings) length = %d, want 0", len(result))
+		}
+	})
+}
+func TestIsComparableSlicePtrEqualComparableSlice(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		ptr  *[]string
+		val  []string
+		want bool
+	}{
+		"NilPointerReturnsTrue": {
+			ptr:  nil,
+			val:  []string{"a", "b"},
+			want: true,
+		},
+		"MatchingSlicesReturnsTrue": {
+			ptr:  ptr.To([]string{"a", "b", "c"}),
+			val:  []string{"a", "b", "c"},
+			want: true,
+		},
+		"DifferentSlicesReturnsFalse": {
+			ptr:  ptr.To([]string{"a", "b"}),
+			val:  []string{"a", "c"},
+			want: false,
+		},
+		"EmptySliceMatch": {
+			ptr:  ptr.To([]string{}),
+			val:  []string{},
+			want: true,
+		},
+		"NilSliceAndEmptySliceMatch": {
+			ptr:  ptr.To([]string(nil)),
+			val:  []string{},
+			want: true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsComparableSlicePtrEqualComparableSlice(tc.ptr, tc.val)
+			if got != tc.want {
+				t.Errorf("IsComparableSlicePtrEqualComparableSlice() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsComparableMapPtrEqualComparableMap(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		ptr  *map[string]int
+		val  map[string]int
+		want bool
+	}{
+		"NilPointerReturnsTrue": {
+			ptr:  nil,
+			val:  map[string]int{"key": 42},
+			want: true,
+		},
+		"MatchingMapsReturnsTrue": {
+			ptr:  ptr.To(map[string]int{"a": 1, "b": 2}),
+			val:  map[string]int{"a": 1, "b": 2},
+			want: true,
+		},
+		"DifferentMapsReturnsFalse": {
+			ptr:  ptr.To(map[string]int{"a": 1}),
+			val:  map[string]int{"a": 2},
+			want: false,
+		},
+		"EmptyMapMatch": {
+			ptr:  ptr.To(map[string]int{}),
+			val:  map[string]int{},
+			want: true,
+		},
+		"NilMapAndEmptyMapMatch": {
+			ptr:  ptr.To(map[string]int(nil)),
+			val:  map[string]int{},
+			want: true,
+		},
+		"DifferentKeysReturnsFalse": {
+			ptr:  ptr.To(map[string]int{"a": 1}),
+			val:  map[string]int{"b": 1},
+			want: false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsComparableMapPtrEqualComparableMap(tc.ptr, tc.val)
+			if got != tc.want {
+				t.Errorf("IsComparableMapPtrEqualComparableMap() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAssignIfNonNil(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilPointerDoesNothing", func(t *testing.T) {
+		t.Parallel()
+
+		// Should not panic
+		val := "value"
+		AssignIfNonNil[string](nil, &val)
+	})
+
+	t.Run("NilRefDoesNothing", func(t *testing.T) {
+		t.Parallel()
+
+		original := original
+		ptr := &original
+		AssignIfNonNil(ptr, nil)
+
+		if *ptr != original {
+			t.Errorf("AssignIfNonNil() changed value to %v, want %v", *ptr, original)
+		}
+	})
+
+	t.Run("NonNilRefAssignsValue", func(t *testing.T) {
+		t.Parallel()
+
+		original := original
+		ptr := &original
+		newVal := "new"
+		AssignIfNonNil(ptr, &newVal)
+
+		if *ptr != "new" {
+			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, "new")
+		}
+	})
+
+	t.Run("IntNilRefDoesNothing", func(t *testing.T) {
+		t.Parallel()
+
+		original := 42
+		ptr := &original
+		AssignIfNonNil(ptr, nil)
+
+		if *ptr != 42 {
+			t.Errorf("AssignIfNonNil() changed value to %v, want %v", *ptr, 42)
+		}
+	})
+
+	t.Run("IntNonNilRefAssignsValue", func(t *testing.T) {
+		t.Parallel()
+
+		original := 42
+		ptr := &original
+		newVal := 100
+		AssignIfNonNil(ptr, &newVal)
+
+		if *ptr != 100 {
+			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, 100)
+		}
+	})
+
+	t.Run("BoolNonNilRefAssignsValue", func(t *testing.T) {
+		t.Parallel()
+
+		original := false
+		ptr := &original
+		newVal := true
+		AssignIfNonNil(ptr, &newVal)
+
+		if *ptr != true {
+			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, true)
 		}
 	})
 }

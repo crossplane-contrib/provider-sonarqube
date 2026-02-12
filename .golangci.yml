@@ -37,6 +37,9 @@ linters:
       min-complexity: 10
     lll:
       tab-width: 1
+    modernize:
+      disable:
+        - omitzero
     nakedret:
       max-func-lines: 30
     prealloc:

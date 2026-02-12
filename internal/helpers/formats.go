@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,6 +46,30 @@ func IsComparablePtrEqualComparable[T comparable](ptr *T, val T) bool {
 	}
 	// use cmp library to compare dereferenced ptr with val
 	return cmp.Equal(*ptr, val)
+}
+
+// IsComparableSlicePtrEqualComparableSlice compares a pointer to a slice of comparable types with a slice of comparable types.
+// If the pointer is nil, it returns true.
+// Otherwise, it dereferences the pointer and compares the slice with the provided slice of comparable types.
+func IsComparableSlicePtrEqualComparableSlice[T comparable](ptr *[]T, val []T) bool {
+	// if ptr is nil, consider it equal (no difference between nil and any value)
+	if ptr == nil {
+		return true
+	}
+	// use cmp library to compare dereferenced ptr with val
+	return cmp.Equal(*ptr, val, cmpopts.EquateEmpty())
+}
+
+// IsComparableMapPtrEqualComparableMap compares a pointer to a map of comparable types with a map of comparable types.
+// If the pointer is nil, it returns true.
+// Otherwise, it dereferences the pointer and compares the map with the provided map of comparable types.
+func IsComparableMapPtrEqualComparableMap[K comparable, V comparable](ptr *map[K]V, val map[K]V) bool {
+	// if ptr is nil, consider it equal (no difference between nil and any value)
+	if ptr == nil {
+		return true
+	}
+	// use cmp library to compare dereferenced ptr with val
+	return cmp.Equal(*ptr, val, cmpopts.EquateEmpty())
 }
 
 // IsComparablePtrEqualComparablePtr compares two pointers to comparable types.
@@ -110,4 +135,17 @@ func AnySliceToStringSlice(slice []any) []string {
 	}
 
 	return result
+}
+
+// AssignIfNonNil assigns a value to a pointer if the reference pointer is not nil.
+// If the reference pointer is nil, it does nothing.
+func AssignIfNonNil[T comparable](ptr *T, ref *T) {
+	// return early if ptr is nil to avoid dereferencing a nil pointer
+	if ptr == nil {
+		return
+	}
+	// assign value of ref to ptr if ref is not nil
+	if ref != nil {
+		*ptr = *ref
+	}
 }
