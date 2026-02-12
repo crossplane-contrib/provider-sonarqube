@@ -243,8 +243,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalUpdate{}, stderrors.Join(updateErrors...)
 }
 
-// Delete deletes the external resource.
-// updateOutOfDateSettings updates settings that are out of date by comparing the desired settings in the CR with the observed settings in SonarQube.
+// Delete resets the settings in SonarQube based on the given managed resource. It returns any error that occurred during deletion.
 func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
 	settings, ok := managedResource.(*v1alpha1.Settings)
 	if !ok {
@@ -266,9 +265,12 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect is called when the external resource is disconnected from the provider. Since SonarQube settings cannot be deleted, there is no cleanup to perform, so this method simply returns nil.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
+
+// updateOutOfDateSettings updates settings that are out of date by comparing the desired settings in the CR with the observed settings in SonarQube.
 func (c *external) updateOutOfDateSettings(settings *v1alpha1.Settings) []error {
 	var updateErrors []error
 
@@ -313,5 +315,3 @@ func (c *external) resetObsoleteSettings(settings *v1alpha1.Settings) []error {
 
 	return resetErrors
 }
-
-// Delete resets the settings in SonarQube based on the given managed resource. It returns any error that occurred during deletion.
