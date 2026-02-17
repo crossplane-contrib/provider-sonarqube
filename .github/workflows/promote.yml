@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g. v0.1.0)'
+        description: "Release version (e.g. v0.1.0)"
         required: true
       channel:
-        description: 'Release channel'
+        description: "Release channel"
         required: true
-        default: 'stable'
+        default: "stable"
 
 env:
   # Common users. We can't run a step 'if secrets.AWS_USR != ""' but we can run
