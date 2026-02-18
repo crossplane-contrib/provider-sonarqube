@@ -1,0 +1,118 @@
+/*
+Copyright 2026 The Crossplane Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package instance
+
+import (
+	"net/http"
+
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
+)
+
+type NewCodePeriodsClient interface {
+	List(opt *sonar.NewCodePeriodsListOption) (*sonar.NewCodePeriodsList, *http.Response, error)
+	Set(opt *sonar.NewCodePeriodsSetOption) (*http.Response, error)
+	Show(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error)
+	Unset(opt *sonar.NewCodePeriodsUnsetOption) (*http.Response, error)
+}
+
+// NewNewCodePeriodsClient creates a new NewCodePeriodsClient with the provided SonarQube client configuration.
+func NewNewCodePeriodsClient(clientConfig common.Config) NewCodePeriodsClient {
+	newClient := common.NewClient(clientConfig)
+
+	return newClient.NewCodePeriods
+}
+
+// GenerateNewCodePeriodsShowOptions generates the options for showing the new code period of a SonarQube Project based on the provided project key.
+func GenerateNewCodePeriodsShowOptions(projectKey *string, branch *string) *sonar.NewCodePeriodsShowOption {
+	opts := sonar.NewCodePeriodsShowOption{}
+	helpers.AssignIfNonNil(&opts.Project, projectKey)
+	helpers.AssignIfNonNil(&opts.Branch, branch)
+
+	return &opts
+}
+
+// GenerateProjectNewCodePeriodsSetOptions generates the options for setting the new code period of a SonarQube Project based on the provided ProjectParameters.
+func GenerateProjectNewCodePeriodsSetOptions(projectKey string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOption {
+	opts := sonar.NewCodePeriodsSetOption{
+		Project: projectKey,
+	}
+	if newCodePeriodParameters != nil {
+		opts.Type = newCodePeriodParameters.Type
+		helpers.AssignIfNonNil(&opts.Value, newCodePeriodParameters.Value)
+	}
+
+	return &opts
+}
+
+// GenerateBranchNewCodePeriodsSetOptions generates the options for setting the new code period of a SonarQube Project branch based on the provided branch name and ProjectParameters.
+func GenerateBranchNewCodePeriodsSetOptions(projectKey string, branchName string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOption {
+	opts := sonar.NewCodePeriodsSetOption{
+		Project: projectKey,
+		Branch:  branchName,
+	}
+	if newCodePeriodParameters != nil {
+		opts.Type = newCodePeriodParameters.Type
+		helpers.AssignIfNonNil(&opts.Value, newCodePeriodParameters.Value)
+	}
+
+	return &opts
+}
+
+// GenerateProjectNewCodePeriodsListOptions generates the options for listing the new code periods of a SonarQube Project based on the provided project key.
+func GenerateProjectNewCodePeriodsListOptions(projectKey string) *sonar.NewCodePeriodsListOption {
+	return &sonar.NewCodePeriodsListOption{
+		Project: projectKey,
+	}
+}
+
+// IsNewCodePeriodUpToDate checks if the observed new code period of a SonarQube Project is up to date with the new code definition specified in the managed resource.
+func IsNewCodePeriodUpToDate(spec *v1alpha1.ProjectNewCodePeriodParameters, observation *v1alpha1.ProjectNewCodePeriodObservation) bool {
+	if observation == nil {
+		return false
+	}
+
+	return spec == nil ||
+		spec.Type == observation.Type &&
+			helpers.IsComparablePtrEqualComparable(spec.Value, observation.Value)
+}
+
+// GenerateProjectNewCodePeriodObservation generates the observation for the new code period of a SonarQube Project based on the provided NewCodePeriodsShow response.
+func GenerateProjectNewCodePeriodObservation(obs *sonar.NewCodePeriodsShow) v1alpha1.ProjectNewCodePeriodObservation {
+	return v1alpha1.ProjectNewCodePeriodObservation{
+		Type:      obs.Type,
+		Value:     obs.Value,
+		Inherited: obs.Inherited,
+	}
+}
+
+// GenerateBranchNewCodePeriodObservation generates the observation for the new code period of a SonarQube Project branch based on the provided NewCodePeriod response.
+func GenerateBranchNewCodePeriodObservation(obs *sonar.NewCodePeriod) v1alpha1.ProjectNewCodePeriodObservation {
+	return v1alpha1.ProjectNewCodePeriodObservation{
+		Type:           obs.Type,
+		Value:          obs.Value,
+		Inherited:      obs.Inherited,
+		EffectiveValue: obs.EffectiveValue,
+	}
+}
+
+// LateInitializeProjectNewCodePeriod performs late initialization of the ProjectNewCodePeriodParameters in the ProjectParameters based on the observed new code period from SonarQube.
+func LateInitializeProjectNewCodePeriod(spec *v1alpha1.ProjectNewCodePeriodParameters, observation *v1alpha1.ProjectNewCodePeriodObservation) {
+	helpers.AssignIfNil(&spec.Value, observation.Value)
+}

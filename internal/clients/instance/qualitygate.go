@@ -193,3 +193,18 @@ func WereQualityGateConditionsLateInitialized(before, after []v1alpha1.QualityGa
 
 	return false
 }
+
+// GenerateQualityGateGetByProjectOptions generates the options for getting a SonarQube Quality Gate by project based on the provided project key.
+func GenerateQualityGateGetByProjectOptions(projectKey string) *sonar.QualitygatesGetByProjectOption {
+	return &sonar.QualitygatesGetByProjectOption{
+		Project: projectKey,
+	}
+}
+
+// GenerateQualityGateSelectOptions generates the options for selecting a SonarQube Quality Gate based on the provided quality gate name.
+func GenerateQualityGateSelectOptions(projectKey string, qualityGateName string) *sonar.QualitygatesSelectOption {
+	return &sonar.QualitygatesSelectOption{
+		ProjectKey: projectKey,
+		GateName:   qualityGateName,
+	}
+}
