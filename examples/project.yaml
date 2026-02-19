@@ -25,7 +25,13 @@ spec:
       - name: GitHub Repository
         url: https://github.com/crossplane-contrib/provider-sonarqube
     # Quality gate to apply to the project in SonarQube
-    qualityGateName: Sonar way
+    qualityGateNameRef:
+      name: example-qualitygate
+    # Quality profiles to apply to the project in SonarQube, keyed by language
+    qualityProfiles:
+      go:
+        idRef:
+          name: example-qualityprofile-go
 
   providerConfigRef:
     name: example
