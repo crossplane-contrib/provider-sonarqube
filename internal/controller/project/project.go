@@ -126,12 +126,12 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
+	project, isValid := managedResource.(*v1alpha1.Project)
 	if !isValid {
 		return nil, errors.New(errNotProject)
 	}
 
-	err := c.usage.Track(ctx, qualityGate)
+	err := c.usage.Track(ctx, project)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
@@ -216,7 +216,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Make all observation API calls concurrently, collecting results safely.
-	result := c.observeProjectDetails(externalName)
+	result := c.observeProjectDetails(externalName, project.Status.AtProvider.Uuid)
 
 	// Safely populate observation from collected results (single-threaded)
 	c.applyObserveResult(&project.Status.AtProvider, &result)
@@ -275,7 +275,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New("external name is not set for the Project")
 	}
 
-	allErrors := c.updateProjectConcurrently(project, projectKey)
+	allErrors := c.updateProjectConcurrently(project, projectKey, project.Status.AtProvider.Uuid)
 
 	if len(allErrors) > 0 {
 		return managed.ExternalUpdate{}, stderrors.Join(allErrors...)
@@ -348,7 +348,7 @@ func (c *external) observeProjectExistence(projectKey string, observation *v1alp
 }
 
 // observeProjectDetails makes all observation API calls concurrently and returns the results.
-func (c *external) observeProjectDetails(projectKey string) observeResult {
+func (c *external) observeProjectDetails(projectKey string, projectId string) observeResult {
 	var (
 		result observeResult
 		mutex  sync.Mutex
@@ -362,7 +362,7 @@ func (c *external) observeProjectDetails(projectKey string) observeResult {
 	})
 
 	waitGr.Go(func() {
-		c.observeLinks(projectKey, &result, &mutex)
+		c.observeLinks(projectId, &result, &mutex)
 	})
 
 	waitGr.Go(func() {
@@ -408,8 +408,8 @@ func (c *external) observeBranches(projectKey string, result *observeResult, mut
 }
 
 // observeLinks retrieves the project links from SonarQube and populates the result.
-func (c *external) observeLinks(projectKey string, result *observeResult, mutex *sync.Mutex) {
-	links, resp, linkErr := c.projectLinksClient.Search(instance.GenerateProjectLinksSearchOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observeLinks(projectId string, result *observeResult, mutex *sync.Mutex) {
+	links, resp, linkErr := c.projectLinksClient.Search(instance.GenerateProjectLinksSearchOptions(projectId)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -495,10 +495,14 @@ func (c *external) applyObserveResult(observation *v1alpha1.ProjectObservation, 
 	if result.branches != nil {
 		observation.Branches = result.branches
 		observation.DefaultBranch = result.mainBranch
+	} else if observation.Branches == nil {
+		observation.Branches = make(map[string]v1alpha1.ProjectBranchObservation)
 	}
 
 	if result.links != nil {
 		observation.Links = result.links
+	} else if observation.Links == nil {
+		observation.Links = make(map[string]v1alpha1.ProjectLinkObservation)
 	}
 
 	observation.NewCodePeriod = result.projectNewCodePeriod
@@ -518,7 +522,7 @@ func (c *external) applyObserveResult(observation *v1alpha1.ProjectObservation, 
 }
 
 // updateProjectConcurrently launches all project update operations concurrently and collects errors.
-func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectKey string) []error {
+func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectKey string, projectId string) []error {
 	waitGr := sync.WaitGroup{}
 	errChan := make(chan error)
 
@@ -537,7 +541,7 @@ func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectK
 	c.updateBranchNewCodePeriods(project, projectKey, &waitGr, errChan)
 
 	waitGr.Go(func() {
-		c.updateProjectLinks(project, projectKey, errChan)
+		c.updateProjectLinks(project, projectId, errChan)
 	})
 
 	waitGr.Go(func() {
@@ -642,7 +646,7 @@ func (c *external) updateBranchNewCodePeriods(project *v1alpha1.Project, project
 }
 
 // updateProjectLinks updates the links of the project if they differ from the desired state.
-func (c *external) updateProjectLinks(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId string, errChan chan<- error) {
 	if instance.AreProjectLinksUpToDate(project.Spec.ForProvider.Links, project.Status.AtProvider.Links) {
 		return
 	}
@@ -661,7 +665,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectKey stri
 		}
 
 		if !linkUpToDate {
-			_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptions(projectKey, link)) //nolint:bodyclose // closed via helpers.CloseBody
+			_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptions(projectId, link)) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {

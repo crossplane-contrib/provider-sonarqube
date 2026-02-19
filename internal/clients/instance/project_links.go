@@ -86,8 +86,10 @@ func GenerateProjectLinksObservations(links sonar.ProjectLinksSearch) map[string
 	observations := make(map[string]v1alpha1.ProjectLinkObservation)
 	for _, link := range links.Links {
 		observations[link.Name] = v1alpha1.ProjectLinkObservation{
-			ID:  link.ID,
-			URL: link.URL,
+			ID:   link.ID,
+			Name: link.Name,
+			Type: link.Type,
+			URL:  link.URL,
 		}
 	}
 

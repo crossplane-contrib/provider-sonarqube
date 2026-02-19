@@ -303,7 +303,8 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 			},
 			want: want{
 				observation: managed.ExternalObservation{
-					ResourceExists: true,
+					ResourceExists:   true,
+					ResourceUpToDate: true,
 				},
 			},
 		},
@@ -431,6 +432,108 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 			want: want{
 				observation: managed.ExternalObservation{ResourceExists: true},
 				errSubstr:   "cannot list Project new code periods",
+			},
+		},
+		// Regression: when spec has no qualityProfiles but SonarQube returns default
+		// built-in profiles for all languages, the reconciler must not set
+		// ResourceUpToDate=false (which was causing an infinite update loop).
+		"SpecWithNoQualityProfiles_SonarReturnsDefaults_IsUpToDate": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				// Override QP search to return many default profiles (like the real cluster)
+				qp.SearchFn = func(opt *sonar.QualityprofilesSearchOption) (*sonar.QualityprofilesSearch, *http.Response, error) {
+					return &sonar.QualityprofilesSearch{
+						Profiles: []sonar.QualityProfile{
+							{Key: "uuid-1", Name: "Sonar way", Language: "java"},
+							{Key: "uuid-2", Name: "Sonar way", Language: "go"},
+							{Key: "uuid-3", Name: "Sonar way", Language: "ts"},
+							{Key: "uuid-4", Name: "Sonar way", Language: "py"},
+						},
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: ptr.To("public"),
+					// No qualityProfiles field — user did not specify any
+				}),
+			},
+			want: want{
+				// Must be up-to-date; the controller must not trigger an update.
+				observation: managed.ExternalObservation{
+					ResourceExists:   true,
+					ResourceUpToDate: true,
+				},
+			},
+		},
+		// Regression: links were stored without the Name field in the observation,
+		// so IsProjectLinkUpToDate always returned false (infinite update loop).
+		"SpecWithLinks_ObservationHasMatchingLinks_IsUpToDate": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+					return &sonar.ProjectLinksSearch{
+						Links: []sonar.ProjectLink{
+							{ID: "link-uuid-1", Name: "GitHub Repository", Type: "", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
+						},
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: ptr.To("public"),
+					Links: []v1alpha1.ProjectLinkParameters{
+						{ID: ptr.To("link-uuid-1"), Name: "GitHub Repository", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
+					},
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:   true,
+					ResourceUpToDate: true,
+				},
+			},
+		},
+		// Verifies the opposite: a link URL change is detected and triggers an update.
+		"SpecWithLinks_URLChanged_IsNotUpToDate": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+					return &sonar.ProjectLinksSearch{
+						Links: []sonar.ProjectLink{
+							{ID: "link-uuid-1", Name: "GitHub Repository", URL: "https://github.com/old-url"},
+						},
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: ptr.To("public"),
+					Links: []v1alpha1.ProjectLinkParameters{
+						{ID: ptr.To("link-uuid-1"), Name: "GitHub Repository", URL: "https://github.com/new-url"},
+					},
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:   true,
+					ResourceUpToDate: false,
+				},
 			},
 		},
 	}
@@ -998,5 +1101,178 @@ func TestDisconnect(t *testing.T) {
 	err := ext.Disconnect(context.Background())
 	if err != nil {
 		t.Errorf("Disconnect() unexpected error: %v", err)
+	}
+}
+
+// TestConnectTypeAssertion verifies that Connect returns errNotProject when
+// the managed resource is not a *v1alpha1.Project (regression test for the
+// copy-paste bug where the connector asserted *v1alpha1.QualityGate).
+func TestConnectTypeAssertion(t *testing.T) {
+	t.Parallel()
+
+	c := &connector{}
+
+	// Passing a non-Project type must return errNotProject immediately.
+	_, err := c.Connect(context.Background(), &notProject{})
+	if err == nil {
+		t.Fatal("Connect() expected error for non-Project type, got nil")
+	}
+
+	if !strings.Contains(err.Error(), errNotProject) {
+		t.Errorf("Connect() error: want %q, got %q", errNotProject, err.Error())
+	}
+}
+
+// TestApplyObserveResultNilMapInit tests that applyObserveResult always
+// initialises Branches and Links to at least an empty map, preventing the
+// "Required value" Kubernetes validation errors that occur when nil maps are
+// serialised as JSON null.
+func TestApplyObserveResultNilMapInit(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		startObs  v1alpha1.ProjectObservation
+		result    observeResult
+		wantLinks map[string]v1alpha1.ProjectLinkObservation
+		wantBrs   map[string]v1alpha1.ProjectBranchObservation
+	}{
+		"BothNilResultInitialisesToEmptyMaps": {
+			startObs:  v1alpha1.ProjectObservation{},
+			result:    observeResult{},
+			wantLinks: map[string]v1alpha1.ProjectLinkObservation{},
+			wantBrs:   map[string]v1alpha1.ProjectBranchObservation{},
+		},
+		"ExistingMapsArePreservedWhenResultIsNil": {
+			startObs: v1alpha1.ProjectObservation{
+				Branches: map[string]v1alpha1.ProjectBranchObservation{"main": {Name: "main"}},
+				Links:    map[string]v1alpha1.ProjectLinkObservation{"home": {Name: "home"}},
+			},
+			result:    observeResult{},
+			wantLinks: map[string]v1alpha1.ProjectLinkObservation{"home": {Name: "home"}},
+			wantBrs:   map[string]v1alpha1.ProjectBranchObservation{"main": {Name: "main"}},
+		},
+		"ResultBranchesOverwriteObservation": {
+			startObs: v1alpha1.ProjectObservation{},
+			result: observeResult{
+				branches: map[string]v1alpha1.ProjectBranchObservation{
+					"main": {Name: "main", IsMain: true, Type: "LONG"},
+				},
+				mainBranch: "main",
+			},
+			wantLinks: map[string]v1alpha1.ProjectLinkObservation{},
+			wantBrs:   map[string]v1alpha1.ProjectBranchObservation{"main": {Name: "main", IsMain: true, Type: "LONG"}},
+		},
+		"ResultLinksOverwriteObservation": {
+			startObs: v1alpha1.ProjectObservation{},
+			result: observeResult{
+				links: map[string]v1alpha1.ProjectLinkObservation{
+					"homepage": {ID: "1", Name: "homepage", URL: "https://example.com"},
+				},
+			},
+			wantLinks: map[string]v1alpha1.ProjectLinkObservation{"homepage": {ID: "1", Name: "homepage", URL: "https://example.com"}},
+			wantBrs:   map[string]v1alpha1.ProjectBranchObservation{},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			p, l, b, n, q, qp, tg := defaultMockClients()
+			ext := newTestExternalClient(p, l, b, n, q, qp, tg)
+
+			obs := tc.startObs
+			// branchNewCodePeriods must always be initialised (mimics observeProjectDetails).
+			tc.result.branchNewCodePeriods = make(map[string]v1alpha1.ProjectNewCodePeriodObservation)
+
+			ext.applyObserveResult(&obs, &tc.result)
+
+			if obs.Branches == nil {
+				t.Error("applyObserveResult() left Branches as nil; expected non-nil map")
+			}
+
+			if obs.Links == nil {
+				t.Error("applyObserveResult() left Links as nil; expected non-nil map")
+			}
+
+			if diff := cmp.Diff(tc.wantBrs, obs.Branches); diff != "" {
+				t.Errorf("Branches mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.wantLinks, obs.Links); diff != "" {
+				t.Errorf("Links mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestObserveNilMapsNeverOccur verifies that after Observe completes (even with
+// partial API failures), the managed resource's AtProvider.Branches and
+// AtProvider.Links are never nil, preventing the CRD required-field validation
+// failure.
+func TestObserveNilMapsNeverOccur(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		buildExt func() *external
+		name     string
+	}{
+		"BranchAPIFailure": {
+			name: "BranchAPIFailure",
+			buildExt: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				b.ListFn = func(opt *sonar.ProjectBranchesListOption) (*sonar.ProjectBranchesList, *http.Response, error) {
+					return nil, nil, errors.New("branch api down")
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			},
+		},
+		"LinksAPIFailure": {
+			name: "LinksAPIFailure",
+			buildExt: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+					return nil, nil, errors.New("links api down")
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			},
+		},
+		"BothBranchesAndLinksAPIFailure": {
+			name: "BothBranchesAndLinksAPIFailure",
+			buildExt: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				b.ListFn = func(opt *sonar.ProjectBranchesListOption) (*sonar.ProjectBranchesList, *http.Response, error) {
+					return nil, nil, errors.New("branch api down")
+				}
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+					return nil, nil, errors.New("links api down")
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			proj := newTestProject("test-key", v1alpha1.ProjectParameters{
+				Name: "test-project",
+				Key:  "test-key",
+			})
+
+			_, _ = tc.buildExt().Observe(context.Background(), proj)
+
+			if proj.Status.AtProvider.Branches == nil {
+				t.Errorf("[%s] AtProvider.Branches is nil after Observe; CRD validation would fail", name)
+			}
+
+			if proj.Status.AtProvider.Links == nil {
+				t.Errorf("[%s] AtProvider.Links is nil after Observe; CRD validation would fail", name)
+			}
+		})
 	}
 }

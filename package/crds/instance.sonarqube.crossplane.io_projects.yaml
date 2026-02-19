@@ -486,8 +486,6 @@ spec:
                       - id
                       - isMain
                       - name
-                      - newCodePeriod
-                      - status
                       - type
                       type: object
                     description: ProjectBranches is the list of branches associated
@@ -594,13 +592,10 @@ spec:
                     description: Visibility is the project visibility.
                     type: string
                 required:
-                - branches
                 - defaultBranch
                 - key
-                - links
                 - managed
                 - name
-                - newCodePeriod
                 - qualifier
                 - revision
                 - uuid

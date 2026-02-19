@@ -221,23 +221,33 @@ func TestGenerateProjectLinksObservations(t *testing.T) {
 		"SingleLink": {
 			links: sonar.ProjectLinksSearch{
 				Links: []sonar.ProjectLink{
-					{ID: "link-1", Name: "homepage", URL: "https://example.com"},
+					{ID: "link-1", Name: "homepage", Type: "homepage", URL: "https://example.com"},
 				},
 			},
 			want: map[string]v1alpha1.ProjectLinkObservation{
-				"homepage": {ID: "link-1", URL: "https://example.com"},
+				"homepage": {ID: "link-1", Name: "homepage", Type: "homepage", URL: "https://example.com"},
 			},
 		},
 		"MultipleLinks": {
 			links: sonar.ProjectLinksSearch{
 				Links: []sonar.ProjectLink{
-					{ID: "link-1", Name: "homepage", URL: "https://example.com"},
-					{ID: "link-2", Name: "ci", URL: "https://ci.example.com"},
+					{ID: "link-1", Name: "homepage", Type: "homepage", URL: "https://example.com"},
+					{ID: "link-2", Name: "ci", Type: "ci", URL: "https://ci.example.com"},
 				},
 			},
 			want: map[string]v1alpha1.ProjectLinkObservation{
-				"homepage": {ID: "link-1", URL: "https://example.com"},
-				"ci":       {ID: "link-2", URL: "https://ci.example.com"},
+				"homepage": {ID: "link-1", Name: "homepage", Type: "homepage", URL: "https://example.com"},
+				"ci":       {ID: "link-2", Name: "ci", Type: "ci", URL: "https://ci.example.com"},
+			},
+		},
+		"LinkWithoutType": {
+			links: sonar.ProjectLinksSearch{
+				Links: []sonar.ProjectLink{
+					{ID: "link-3", Name: "GitHub Repository", URL: "https://github.com/example/repo"},
+				},
+			},
+			want: map[string]v1alpha1.ProjectLinkObservation{
+				"GitHub Repository": {ID: "link-3", Name: "GitHub Repository", Type: "", URL: "https://github.com/example/repo"},
 			},
 		},
 	}

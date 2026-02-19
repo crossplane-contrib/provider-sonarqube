@@ -1,0 +1,32 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: example-project
+  namespace: default
+spec:
+  forProvider:
+    # Key of the project in SonarQube, must be unique across the server
+    key: example-project-key
+    # Display name of the project in SonarQube
+    name: Example Project
+    # Description of the project in SonarQube
+    description: This is an example project managed by Crossplane
+    # Visibility of the project, either public or private
+    visibility: public
+    # Tags to associate with the project in SonarQube
+    tags:
+      - crossplane
+      - example
+    # Default branch for the project in SonarQube
+    defaultBranch: main
+    # Links to display in the project overview in SonarQube
+    links:
+      - name: GitHub Repository
+        url: https://github.com/crossplane-contrib/provider-sonarqube
+    # Quality gate to apply to the project in SonarQube
+    qualityGateName: Sonar way
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

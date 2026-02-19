@@ -897,3 +897,158 @@ func TestLateInitializeQualityProfile(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateQualityProfilesSearchProjectObservation verifies that the observation
+// is keyed by language (not by profile UUID) so that AreProjectQualityProfilesUpToDate
+// can look up profiles via the language key used in the spec.
+func TestGenerateQualityProfilesSearchProjectObservation(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		input *sonar.QualityprofilesSearch
+		want  map[string]v1alpha1.ProjectQualityProfileObservation
+	}{
+		"EmptyProfiles": {
+			input: &sonar.QualityprofilesSearch{},
+			want:  map[string]v1alpha1.ProjectQualityProfileObservation{},
+		},
+		"SingleProfile_KeyedByLanguage": {
+			input: &sonar.QualityprofilesSearch{
+				Profiles: []sonar.QualityProfile{
+					{Key: "uuid-java-sonarway", Name: "Sonar way", Language: "java"},
+				},
+			},
+			want: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-java-sonarway", Name: "Sonar way"},
+			},
+		},
+		"MultipleProfiles_EachKeyedByItsLanguage": {
+			input: &sonar.QualityprofilesSearch{
+				Profiles: []sonar.QualityProfile{
+					{Key: "uuid-java", Name: "Sonar way", Language: "java"},
+					{Key: "uuid-go", Name: "Sonar way Go", Language: "go"},
+					{Key: "uuid-ts", Name: "Sonar way TS", Language: "ts"},
+				},
+			},
+			want: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-java", Name: "Sonar way"},
+				"go":   {Id: "uuid-go", Name: "Sonar way Go"},
+				"ts":   {Id: "uuid-ts", Name: "Sonar way TS"},
+			},
+		},
+		// Regression test: previously keyed by UUID, causing infinite reconcile loops
+		// when the spec referenced profiles by language but the observation was keyed by UUID.
+		"ProfileUUIDIsStoredInId_NotAsMapKey": {
+			input: &sonar.QualityprofilesSearch{
+				Profiles: []sonar.QualityProfile{
+					{Key: "0dd2332b-b4b4-4ac1-a2e4-07adec0ae6e5", Name: "Sonar way", Language: "java"},
+				},
+			},
+			want: map[string]v1alpha1.ProjectQualityProfileObservation{
+				// Key must be "java" (language), not the UUID
+				"java": {Id: "0dd2332b-b4b4-4ac1-a2e4-07adec0ae6e5", Name: "Sonar way"},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfilesSearchProjectObservation(tc.input)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfilesSearchProjectObservation() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestAreProjectQualityProfilesUpToDate verifies the up-to-date check, with special
+// attention to the regression cases that caused infinite reconcile loops:
+//   - empty spec + non-empty observation must be considered up to date (no management needed)
+//   - observation may have more entries than spec (default built-in profiles)
+func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec        map[string]v1alpha1.ProjectQualityProfileReference
+		observation map[string]v1alpha1.ProjectQualityProfileObservation
+		want        bool
+	}{
+		// Regression: spec has no qualityProfiles but SonarQube returns 27 default ones.
+		// Previously returned false (len 0 != len 27) → infinite update loop.
+		"NilSpec_NonEmptyObservation_ShouldBeUpToDate": {
+			spec: nil,
+			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-java", Name: "Sonar way"},
+				"go":   {Id: "uuid-go", Name: "Sonar way"},
+			},
+			want: true,
+		},
+		"EmptySpec_NonEmptyObservation_ShouldBeUpToDate": {
+			spec: map[string]v1alpha1.ProjectQualityProfileReference{},
+			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-java", Name: "Sonar way"},
+			},
+			want: true,
+		},
+		"BothEmpty_ShouldBeUpToDate": {
+			spec:        nil,
+			observation: nil,
+			want:        true,
+		},
+		// Spec declares a profile for java and the observation has the same UUID → up to date.
+		"SpecMatchesObservation_UpToDate": {
+			spec: map[string]v1alpha1.ProjectQualityProfileReference{
+				"java": {Id: ptr.To("uuid-java")},
+			},
+			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-java", Name: "Sonar way"},
+			},
+			want: true,
+		},
+		// Spec declares java but the UUID in observations differs → not up to date.
+		"SpecIDMismatch_NotUpToDate": {
+			spec: map[string]v1alpha1.ProjectQualityProfileReference{
+				"java": {Id: ptr.To("uuid-new-java")},
+			},
+			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-old-java", Name: "Sonar way"},
+			},
+			want: false,
+		},
+		// Spec declares a language that is not in the observation → not up to date.
+		"SpecLanguageMissingFromObservation_NotUpToDate": {
+			spec: map[string]v1alpha1.ProjectQualityProfileReference{
+				"go": {Id: ptr.To("uuid-go")},
+			},
+			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-java", Name: "Sonar way"},
+			},
+			want: false,
+		},
+		// Observation has extra languages not in spec → still up to date (unmanaged profiles).
+		"ObservationHasExtraLanguages_UpToDate": {
+			spec: map[string]v1alpha1.ProjectQualityProfileReference{
+				"java": {Id: ptr.To("uuid-java")},
+			},
+			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
+				"java": {Id: "uuid-java", Name: "Sonar way"},
+				"go":   {Id: "uuid-go", Name: "Sonar way"},
+				"ts":   {Id: "uuid-ts", Name: "Sonar way"},
+			},
+			want: true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := AreProjectQualityProfilesUpToDate(tc.spec, tc.observation)
+			if got != tc.want {
+				t.Errorf("AreProjectQualityProfilesUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

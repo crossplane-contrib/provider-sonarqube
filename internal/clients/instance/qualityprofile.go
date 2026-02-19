@@ -361,11 +361,12 @@ func GenerateQualityProfileAddProjectOptions(projectKey string, qualityProfileNa
 }
 
 // GenerateQualityProfilesSearchProjectObservation generates the observation for a SonarQube Quality Profile associated with a project based on the provided QualityprofilesSearch response.
+// The observation is keyed by language so that AreProjectQualityProfilesUpToDate can look up profiles by language (matching the spec map key).
 func GenerateQualityProfilesSearchProjectObservation(observation *sonar.QualityprofilesSearch) map[string]v1alpha1.ProjectQualityProfileObservation {
 	qualityProfiles := make(map[string]v1alpha1.ProjectQualityProfileObservation, len(observation.Profiles))
 
 	for _, profile := range observation.Profiles {
-		qualityProfiles[profile.Key] = v1alpha1.ProjectQualityProfileObservation{
+		qualityProfiles[profile.Language] = v1alpha1.ProjectQualityProfileObservation{
 			Id:   profile.Key,
 			Name: profile.Name,
 		}
@@ -375,9 +376,11 @@ func GenerateQualityProfilesSearchProjectObservation(observation *sonar.Qualityp
 }
 
 // AreProjectQualityProfilesUpToDate checks whether the observed project quality profiles are up to date with the desired project quality profile references.
+// When the spec is empty, the quality profiles are considered up to date because no explicit assignment is required.
+// The observation may contain more entries than the spec (e.g. default built-in profiles for languages not referenced in the spec); only the languages present in the spec are checked.
 func AreProjectQualityProfilesUpToDate(spec map[string]v1alpha1.ProjectQualityProfileReference, observation map[string]v1alpha1.ProjectQualityProfileObservation) bool {
-	if len(spec) != len(observation) {
-		return false
+	if len(spec) == 0 {
+		return true
 	}
 
 	for language, specProfile := range spec {

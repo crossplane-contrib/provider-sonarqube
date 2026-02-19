@@ -145,13 +145,13 @@ type ProjectObservation struct {
 	// Managed indicates if the project is managed.
 	Managed bool `json:"managed"`
 	// ProjectLinks is the list of links associated with the project.
-	Links map[string]ProjectLinkObservation `json:"links"`
+	Links map[string]ProjectLinkObservation `json:"links,omitempty"`
 	// DefaultBranch is the default branch of the project.
 	DefaultBranch string `json:"defaultBranch"`
 	// ProjectBranches is the list of branches associated with the project.
-	Branches map[string]ProjectBranchObservation `json:"branches"`
+	Branches map[string]ProjectBranchObservation `json:"branches,omitempty"`
 	// NewCodePeriod is the new code definition of the project.
-	NewCodePeriod ProjectNewCodePeriodObservation `json:"newCodePeriod,omitzero"`
+	NewCodePeriod ProjectNewCodePeriodObservation `json:"newCodePeriod,omitempty"`
 	// QualityGateName is the name of the quality gate associated with the project.
 	QualityGateName string `json:"qualityGateName,omitempty"`
 	// QualityProfiles is a map of language:quality profile associated with the project.
@@ -192,11 +192,11 @@ type ProjectBranchObservation struct {
 	// Name is the name of the branch.
 	Name string `json:"name"`
 	// Status is the status of the branch.
-	Status ProjectBranchStatusObservation `json:"status,omitzero"`
+	Status ProjectBranchStatusObservation `json:"status,omitempty"`
 	// Type is the type of the branch.
 	Type string `json:"type"`
 	// NewCodePeriod is the new code definition of the branch.
-	NewCodePeriod ProjectNewCodePeriodObservation `json:"newCodePeriod,omitzero"`
+	NewCodePeriod ProjectNewCodePeriodObservation `json:"newCodePeriod,omitempty"`
 }
 
 // ProjectNewCodePeriodObservation represent the observed state of the new code period of a project.
