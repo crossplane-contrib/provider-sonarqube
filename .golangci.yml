@@ -96,7 +96,7 @@ formatters:
       simplify: true
     goimports:
       local-prefixes:
-        - github.com/crossplane/provider-template
+        - github.com/crossplane/provider-sonarqube
   exclusions:
     generated: lax
     paths:

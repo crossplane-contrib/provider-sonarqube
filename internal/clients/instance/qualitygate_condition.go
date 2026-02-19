@@ -18,6 +18,7 @@ package instance
 
 import (
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
+
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )

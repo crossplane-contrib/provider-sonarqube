@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
+
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 

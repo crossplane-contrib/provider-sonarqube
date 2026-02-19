@@ -23,12 +23,13 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
 
 // BasicAuthArgs is the expected struct that can be passed in the Config.Token field to add support for BasicAuth AuthMethod.

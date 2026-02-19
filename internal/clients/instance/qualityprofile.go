@@ -20,10 +20,11 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"k8s.io/utils/ptr"
+
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
-	"k8s.io/utils/ptr"
 )
 
 // QualityProfilesClient is the interface for the Quality Profiles SonarQube client.

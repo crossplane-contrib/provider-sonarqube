@@ -20,9 +20,10 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
+
+	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
 func TestGenerateQualityProfileRulesSearchOption(t *testing.T) {
