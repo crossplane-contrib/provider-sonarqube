@@ -464,6 +464,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		c := &test.MockClient{
 			MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
 				callCount++
+
 				switch key.Name {
 				case "example-qualitygate":
 					// Real SonarQube quality gate name, set by qualitygate controller.
@@ -479,7 +480,8 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			},
 		}
 
-		if err := p.ResolveReferences(context.Background(), c); err != nil {
+		err := p.ResolveReferences(context.Background(), c)
+		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
