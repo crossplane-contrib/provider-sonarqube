@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-alm-secrets
+  namespace: default
+type: Opaque
+stringData:
+  client-secret: "my-client-secret"
+  private-key: |
+    -----BEGIN RSA PRIVATE KEY-----
+    ...
+    -----END RSA PRIVATE KEY-----
+  webhook-secret: "my-webhook-secret"
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: AlmGithub
+metadata:
+  name: example-almgithub
+  namespace: default
+spec:
+  forProvider:
+    key: github-integration
+    appId: "12345"
+    clientId: "Iv1.abc123def456"
+    clientSecretSecretRef:
+      name: github-alm-secrets
+      namespace: default
+      key: client-secret
+    privateKeySecretRef:
+      name: github-alm-secrets
+      namespace: default
+      key: private-key
+    url: https://api.github.com
+    webhookSecretSecretRef:
+      name: github-alm-secrets
+      namespace: default
+      key: webhook-secret
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

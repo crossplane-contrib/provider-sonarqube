@@ -20,6 +20,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/crossplane/provider-sonarqube/internal/controller/almgithub"
 	"github.com/crossplane/provider-sonarqube/internal/controller/config"
 	"github.com/crossplane/provider-sonarqube/internal/controller/qualitygate"
 	"github.com/crossplane/provider-sonarqube/internal/controller/qualityprofile"
@@ -30,6 +31,7 @@ import (
 // the supplied manager.
 func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
+		almgithub.SetupGated,
 		config.Setup,
 		qualitygate.SetupGated,
 		qualityprofile.SetupGated,
