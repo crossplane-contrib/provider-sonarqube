@@ -234,7 +234,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	return managed.ExternalObservation{
 		ResourceExists:          true,
 		ResourceUpToDate:        instance.IsProjectUpToDate(&project.Spec.ForProvider, &project.Status.AtProvider),
-		ResourceLateInitialized: cmp.Equal(current, &project.Status.AtProvider, cmpopts.EquateEmpty()),
+		ResourceLateInitialized: !cmp.Equal(current, &project.Spec.ForProvider, cmpopts.EquateEmpty()),
 	}, nil
 }
 
@@ -481,7 +481,7 @@ func (c *external) observeQualityProfiles(projectKey string, result *observeResu
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	if qpErr != nil || len(qualityProfiles.Profiles) == 0 {
+	if qpErr != nil {
 		result.errors = append(result.errors, errors.Wrap(qpErr, "cannot observe Project quality profile"))
 
 		return
@@ -651,28 +651,76 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 		return
 	}
 
+	linksUpdateWaitGroup := sync.WaitGroup{}
+	linksUpdateWaitGroup.Go(func() {
+		c.deleteNonSpecLinks(project, errChan)
+	})
+
 	for _, link := range project.Spec.ForProvider.Links {
 		linkObservation, linkExists := project.Status.AtProvider.Links[link.Name]
 		linkUpToDate := linkExists && instance.IsProjectLinkUpToDate(link, &linkObservation)
 
-		if linkExists && !linkUpToDate {
-			resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkObservation.ID)) //nolint:bodyclose // closed via helpers.CloseBody
-			helpers.CloseBody(resp)
+		linksUpdateWaitGroup.Add(1)
 
-			if err != nil {
-				errChan <- errors.Wrapf(err, "cannot delete Project link %s", link.Name)
+		go func(linkId string, linkSpec v1alpha1.ProjectLinkParameters) {
+			defer linksUpdateWaitGroup.Done()
+
+			if linkExists && !linkUpToDate {
+				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
+				helpers.CloseBody(resp)
+
+				if err != nil {
+					errChan <- errors.Wrapf(err, "cannot delete Project link %s", linkSpec.Name)
+				}
 			}
-		}
 
-		if !linkUpToDate {
-			_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptions(projectId, link)) //nolint:bodyclose // closed via helpers.CloseBody
-			helpers.CloseBody(resp)
+			if !linkUpToDate {
+				_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptions(projectId, linkSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+				helpers.CloseBody(resp)
 
-			if err != nil {
-				errChan <- errors.Wrapf(err, "cannot create Project link %s", link.Name)
+				if err != nil {
+					errChan <- errors.Wrapf(err, "cannot create Project link %s", linkSpec.Name)
+				}
 			}
+		}(linkObservation.ID, link)
+	}
+
+	linksUpdateWaitGroup.Wait()
+}
+
+// deleteNonSpecLinks deletes the project links that exist in the observed state but not in the desired state, or that differ between the observed and desired state.
+func (c *external) deleteNonSpecLinks(project *v1alpha1.Project, errChan chan<- error) {
+	deleteWaitGroup := sync.WaitGroup{}
+	// Delete links that exist in the observed state but not in the desired state, or that differ between the observed and desired state.
+	for linkName, linkObservation := range project.Status.AtProvider.Links {
+		if !c.isProjectLinkInSpec(project.Spec.ForProvider.Links, linkName) {
+			deleteWaitGroup.Add(1)
+
+			go func(linkName string, linkId string) {
+				defer deleteWaitGroup.Done()
+
+				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
+				helpers.CloseBody(resp)
+
+				if err != nil {
+					errChan <- errors.Wrapf(err, "cannot delete Project link %s", linkName)
+				}
+			}(linkName, linkObservation.ID)
 		}
 	}
+
+	deleteWaitGroup.Wait()
+}
+
+// isProjectLinkInSpec checks if a link with the given name exists in the spec.
+func (c *external) isProjectLinkInSpec(spec []v1alpha1.ProjectLinkParameters, linkName string) bool {
+	for _, linSpec := range spec {
+		if linSpec.Name == linkName {
+			return true
+		}
+	}
+
+	return false
 }
 
 // updateProjectNewCodePeriod updates the project-level new code period if it differs from the desired state.

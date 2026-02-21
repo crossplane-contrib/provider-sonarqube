@@ -226,9 +226,8 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 		return managed.ExternalUpdate{}, errors.New(errNotSettings)
 	}
 
-	var updateErrors []error
 	// Update out of date settings
-	updateErrors = append(updateErrors, c.updateOutOfDateSettings(settings)...)
+	updateErrors := c.updateOutOfDateSettings(settings)
 	// Reset obsolete settings
 	updateErrors = append(updateErrors, c.resetObsoleteSettings(settings)...)
 

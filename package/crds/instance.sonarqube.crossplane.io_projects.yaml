@@ -65,12 +65,14 @@ spec:
                         of the new code definition of a project.
                       properties:
                         type:
-                          description: Type is the type of the new code definition.
-                            Can be either "previous_version" or "reference_branch".
+                          description: |-
+                            Type is the type of the new code definition. Can be either "PREVIOUS_VERSION" or "NUMBER_OF_DAYS" or "REFERENCE_BRANCH" for projects.
+                            Can be "SPECIFIC_ANALYSIS" for branches.
                           enum:
                           - PREVIOUS_VERSION
                           - NUMBER_OF_DAYS
                           - REFERENCE_BRANCH
+                          - SPECIFIC_ANALYSIS
                           type: string
                         value:
                           description: Value is the value of the new code definition.
@@ -144,12 +146,14 @@ spec:
                     description: NewCodePeriod is the new code definition of the project.
                     properties:
                       type:
-                        description: Type is the type of the new code definition.
-                          Can be either "previous_version" or "reference_branch".
+                        description: |-
+                          Type is the type of the new code definition. Can be either "PREVIOUS_VERSION" or "NUMBER_OF_DAYS" or "REFERENCE_BRANCH" for projects.
+                          Can be "SPECIFIC_ANALYSIS" for branches.
                         enum:
                         - PREVIOUS_VERSION
                         - NUMBER_OF_DAYS
                         - REFERENCE_BRANCH
+                        - SPECIFIC_ANALYSIS
                         type: string
                       value:
                         description: Value is the value of the new code definition.

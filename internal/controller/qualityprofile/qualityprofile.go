@@ -337,11 +337,8 @@ func (c *external) syncQualityProfileRules(profile *v1alpha1.QualityProfile, ass
 		return fmt.Errorf("external name is not set for Quality Profile %s", profile.Name)
 	}
 
-	var aggregatedErrors []error
-
 	// Phase 1: Deactivate rules that should not be active (in observation but not in spec)
-	deactivateErrors := c.deactivateUnwantedQualityProfileRules(externalName, associations)
-	aggregatedErrors = append(aggregatedErrors, deactivateErrors...)
+	aggregatedErrors := c.deactivateUnwantedQualityProfileRules(externalName, associations)
 
 	// Phase 2: Activate rules that should be active (in spec but not in observation)
 	activateErrors := c.activateMissingQualityProfileRules(externalName, associations)

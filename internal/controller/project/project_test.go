@@ -536,6 +536,67 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				},
 			},
 		},
+		// Late-initialization: spec.Visibility is nil but SonarQube reports "public".
+		// LateInitializeProject should fill in the visibility, so ResourceLateInitialized
+		// must be true on the first reconcile pass.
+		"VisibilityNilInSpec_LateInitializesFromObservation": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name: "test-project",
+					Key:  "test-key",
+					// Visibility intentionally omitted: should be late-initialized to "public"
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:          true,
+					ResourceUpToDate:        true,
+					ResourceLateInitialized: true,
+				},
+			},
+		},
+		// Late-initialization: a link in the spec has no ID, but the observed state
+		// has the matching link with an ID.  LateInitializeProjectLinks should
+		// back-fill the ID, so ResourceLateInitialized must be true.
+		"LinkWithNoID_LateInitializesIDFromObservation": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+					return &sonar.ProjectLinksSearch{
+						Links: []sonar.ProjectLink{
+							{ID: "link-uuid-1", Name: "GitHub Repository", Type: "", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
+						},
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: ptr.To("public"),
+					Links: []v1alpha1.ProjectLinkParameters{
+						// ID is nil: should be back-filled by LateInitializeProjectLinks
+						{Name: "GitHub Repository", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
+					},
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:          true,
+					ResourceUpToDate:        true,
+					ResourceLateInitialized: true,
+				},
+			},
+		},
 	}
 
 	for name, tc := range cases {

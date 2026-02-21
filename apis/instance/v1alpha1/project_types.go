@@ -102,9 +102,10 @@ type ProjectLinkParameters struct {
 
 // ProjectNewCodePeriodParameters represent the parameters of the new code definition of a project.
 type ProjectNewCodePeriodParameters struct {
-	// Type is the type of the new code definition. Can be either "previous_version" or "reference_branch".
+	// Type is the type of the new code definition. Can be either "PREVIOUS_VERSION" or "NUMBER_OF_DAYS" or "REFERENCE_BRANCH" for projects.
+	// Can be "SPECIFIC_ANALYSIS" for branches.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=PREVIOUS_VERSION;NUMBER_OF_DAYS;REFERENCE_BRANCH
+	// +kubebuilder:validation:Enum=PREVIOUS_VERSION;NUMBER_OF_DAYS;REFERENCE_BRANCH;SPECIFIC_ANALYSIS
 	Type string `json:"type"`
 	// Value is the value of the new code definition. If the type is "previous_version", this field should be empty. If the type is "reference_branch", this field should be the name of the reference branch.
 	// +kubebuilder:validation:Optional
