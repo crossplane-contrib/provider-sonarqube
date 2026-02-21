@@ -662,10 +662,10 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 
 		linksUpdateWaitGroup.Add(1)
 
-		go func(linkId string, linkSpec v1alpha1.ProjectLinkParameters) {
+		go func(linkId string, linkSpec v1alpha1.ProjectLinkParameters, deleteLink bool, createLink bool) {
 			defer linksUpdateWaitGroup.Done()
 
-			if linkExists && !linkUpToDate {
+			if deleteLink {
 				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
@@ -674,7 +674,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 				}
 			}
 
-			if !linkUpToDate {
+			if createLink {
 				_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptions(projectId, linkSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
@@ -682,7 +682,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 					errChan <- errors.Wrapf(err, "cannot create Project link %s", linkSpec.Name)
 				}
 			}
-		}(linkObservation.ID, link)
+		}(linkObservation.ID, link, linkExists && !linkUpToDate, !linkUpToDate)
 	}
 
 	linksUpdateWaitGroup.Wait()

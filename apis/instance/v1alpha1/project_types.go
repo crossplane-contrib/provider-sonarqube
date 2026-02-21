@@ -109,7 +109,6 @@ type ProjectNewCodePeriodParameters struct {
 	Type string `json:"type"`
 	// Value is the value of the new code definition. If the type is "previous_version", this field should be empty. If the type is "reference_branch", this field should be the name of the reference branch.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinLength=1
 	Value *string `json:"value,omitempty"`
 }
 

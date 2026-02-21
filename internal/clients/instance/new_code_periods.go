@@ -115,5 +115,9 @@ func GenerateBranchNewCodePeriodObservation(obs *sonar.NewCodePeriod) v1alpha1.P
 
 // LateInitializeProjectNewCodePeriod performs late initialization of the ProjectNewCodePeriodParameters in the ProjectParameters based on the observed new code period from SonarQube.
 func LateInitializeProjectNewCodePeriod(spec *v1alpha1.ProjectNewCodePeriodParameters, observation *v1alpha1.ProjectNewCodePeriodObservation) {
+	if spec == nil || observation == nil {
+		return
+	}
+
 	helpers.AssignIfNil(&spec.Value, observation.Value)
 }

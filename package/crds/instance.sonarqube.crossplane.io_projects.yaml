@@ -79,7 +79,6 @@ spec:
                             If the type is "previous_version", this field should be
                             empty. If the type is "reference_branch", this field should
                             be the name of the reference branch.
-                          minLength: 1
                           type: string
                       required:
                       - type
@@ -160,7 +159,6 @@ spec:
                           If the type is "previous_version", this field should be
                           empty. If the type is "reference_branch", this field should
                           be the name of the reference branch.
-                        minLength: 1
                         type: string
                     required:
                     - type
