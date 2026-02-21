@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -68,11 +69,12 @@ func GenerateProjectLinksSearchOptions(projectId string) *sonar.ProjectLinksSear
 // It updates the ProjectParameters with any missing information from the observed project links.
 func LateInitializeProjectLinks(spec *v1alpha1.ProjectParameters, observation map[string]v1alpha1.ProjectLinkObservation) {
 	// Update the ProjectLinks that do not have an ID in the spec
-	for i, link := range spec.Links {
+	for linkIdx, link := range spec.Links {
 		if link.ID == nil {
 			for _, observedLink := range observation {
 				if link.Name == observedLink.Name && link.URL == observedLink.URL {
-					spec.Links[i].ID = &observedLink.ID
+					// Use ptr.To to create an independent copy of the ID string.
+					spec.Links[linkIdx].ID = ptr.To(observedLink.ID)
 
 					break
 				}

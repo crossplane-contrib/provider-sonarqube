@@ -597,6 +597,43 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				},
 			},
 		},
+		// Regression: when spec.NewCodePeriod.Value is nil but SonarQube returns a value,
+		// LateInitializeProjectNewCodePeriod must back-fill it so ResourceLateInitialized is
+		// true on the first reconcile.  Previously, missing nil-guard + MinLength=1 caused
+		// either a panic or a CRD validation error that triggered an infinite error loop.
+		"SpecWithNewCodePeriod_ValueNil_LateInitializesFromObservation": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				// Override NCP Show to return a non-empty Value so that back-fill is exercised.
+				n.ShowFn = func(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error) {
+					return &sonar.NewCodePeriodsShow{
+						Type:  "NUMBER_OF_DAYS",
+						Value: "30",
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: ptr.To("public"),
+					NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
+						Type: "NUMBER_OF_DAYS",
+						// Value intentionally nil: should be back-filled to "30"
+					},
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:          true,
+					ResourceUpToDate:        true,
+					ResourceLateInitialized: true,
+				},
+			},
+		},
 	}
 
 	for name, tc := range cases {
@@ -1014,6 +1051,39 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 			want: want{
 				update:    managed.ExternalUpdate{},
 				errSubstr: "cannot retrieve quality profile",
+			},
+		},
+		// Regression: previously panicked with nil pointer dereference when
+		// qualityProfile.Id was nil (reference not yet resolved) and the
+		// language was missing from the observation. Must return a descriptive
+		// error instead of crashing.
+		"UpdateQualityProfile_NilId_ReturnsErrorNotPanic": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg := defaultMockClients()
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.Project {
+					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
+						Name: "test-project",
+						Key:  "test-key",
+						QualityProfiles: map[string]v1alpha1.ProjectQualityProfileReference{
+							// Id is nil: simulates an unresolved IdRef.
+							"go": {Id: nil},
+						},
+					})
+					// No observation for "go" → AreProjectQualityProfilesUpToDate
+					// returns false, triggering the update path.
+					proj.Status.AtProvider.QualityProfiles = map[string]v1alpha1.ProjectQualityProfileObservation{}
+
+					return proj
+				}(),
+			},
+			want: want{
+				update:    managed.ExternalUpdate{},
+				errSubstr: "not yet resolved",
 			},
 		},
 	}

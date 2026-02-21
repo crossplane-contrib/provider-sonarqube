@@ -20,6 +20,8 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -100,6 +102,14 @@ func UpdateProjectAttributesObservation(observation *v1alpha1.ProjectObservation
 func LateInitializeProject(spec *v1alpha1.ProjectParameters, observation *v1alpha1.ProjectObservation) {
 	helpers.AssignIfNil(&spec.Visibility, observation.Visibility)
 	LateInitializeProjectLinks(spec, observation.Links)
+	LateInitializeProjectNewCodePeriod(spec.NewCodePeriod, &observation.NewCodePeriod)
+}
+
+// IsProjectLateInitialized checks if the ProjectParameters has been late-initialized based on the observed project from SonarQube.
+func IsProjectLateInitialized(former *v1alpha1.ProjectParameters, current *v1alpha1.ProjectParameters) bool {
+	return !cmp.Equal(former.Visibility, current.Visibility) ||
+		!cmp.Equal(former.Links, current.Links, cmpopts.EquateEmpty()) ||
+		!cmp.Equal(former.NewCodePeriod, current.NewCodePeriod)
 }
 
 // IsProjectUpToDate checks if the observed state of a SonarQube Project is up to date with the desired state specified in the ProjectParameters.
