@@ -20,6 +20,12 @@ spec:
       - example
     # Default branch for the project in SonarQube
     defaultBranch: main
+    # New code definition for the project in SonarQube
+    newCodePeriod:
+      # Type of the new code definition, either previous_version or reference_branch
+      type: NUMBER_OF_DAYS
+      # Value of the new code definition, required if type is reference_branch
+      value: "90"
     # Links to display in the project overview in SonarQube
     links:
       - name: GitHub Repository
