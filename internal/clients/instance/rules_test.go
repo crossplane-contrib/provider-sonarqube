@@ -17,6 +17,8 @@ limitations under the License.
 package instance
 
 import (
+	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
@@ -25,6 +27,53 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
+
+// mockRulesClient is a test-local mock implementation of the RulesClient interface.
+type mockRulesClient struct {
+	SearchFn func(opt *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error)
+}
+
+var errMockNotImplemented = errors.New("not implemented")
+
+func (m *mockRulesClient) App() (*sonar.RulesApp, *http.Response, error) {
+	return nil, nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) Create(_ *sonar.RulesCreateOption) (*sonar.RulesCreate, *http.Response, error) {
+	return nil, nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) Delete(_ *sonar.RulesDeleteOption) (*http.Response, error) {
+	return nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) List(_ *sonar.RulesListOption) (*string, *http.Response, error) {
+	return nil, nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) Repositories(_ *sonar.RulesRepositoriesOption) (*sonar.RulesRepositories, *http.Response, error) {
+	return nil, nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) Search(opt *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+	if m.SearchFn != nil {
+		return m.SearchFn(opt)
+	}
+
+	return nil, nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) Show(_ *sonar.RulesShowOption) (*sonar.RulesShow, *http.Response, error) {
+	return nil, nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) Tags(_ *sonar.RulesTagsOption) (*sonar.RulesTags, *http.Response, error) {
+	return nil, nil, errMockNotImplemented
+}
+
+func (m *mockRulesClient) Update(_ *sonar.RulesUpdateOption) (*sonar.RulesUpdate, *http.Response, error) {
+	return nil, nil, nil
+}
 
 func TestGenerateQualityProfileRulesSearchOption(t *testing.T) {
 	t.Parallel()
@@ -517,6 +566,478 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 
 			if got != tc.want {
 				t.Errorf("IsQualityProfileRuleUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec        *v1alpha1.QualityProfileRuleParameters
+		observation *v1alpha1.QualityProfileRuleObservation
+		want        bool
+	}{
+		"PrioritizedMatchReturnsTrue": {
+			spec: &v1alpha1.QualityProfileRuleParameters{
+				Rule:        "java:S1000",
+				Prioritized: ptr.To(true),
+			},
+			observation: &v1alpha1.QualityProfileRuleObservation{
+				Key:         "java:S1000",
+				Prioritized: true,
+			},
+			want: true,
+		},
+		"PrioritizedMismatchReturnsFalse": {
+			spec: &v1alpha1.QualityProfileRuleParameters{
+				Rule:        "java:S1000",
+				Prioritized: ptr.To(true),
+			},
+			observation: &v1alpha1.QualityProfileRuleObservation{
+				Key:         "java:S1000",
+				Prioritized: false,
+			},
+			want: false,
+		},
+		"ImpactsMatchReturnsTrue": {
+			spec: &v1alpha1.QualityProfileRuleParameters{
+				Rule:    "java:S1000",
+				Impacts: &map[string]string{"SECURITY": "HIGH"},
+			},
+			observation: &v1alpha1.QualityProfileRuleObservation{
+				Key:     "java:S1000",
+				Impacts: []v1alpha1.QualityProfileRuleImpact{{SoftwareQuality: "SECURITY", Severity: "HIGH"}},
+			},
+			want: true,
+		},
+		"ImpactsMismatchReturnsFalse": {
+			spec: &v1alpha1.QualityProfileRuleParameters{
+				Rule:    "java:S1000",
+				Impacts: &map[string]string{"SECURITY": "HIGH"},
+			},
+			observation: &v1alpha1.QualityProfileRuleObservation{
+				Key:     "java:S1000",
+				Impacts: []v1alpha1.QualityProfileRuleImpact{{SoftwareQuality: "SECURITY", Severity: "LOW"}},
+			},
+			want: false,
+		},
+		"SpecImpactsNilObservationHasImpactsReturnsTrue": {
+			spec: &v1alpha1.QualityProfileRuleParameters{
+				Rule: "java:S1000",
+			},
+			observation: &v1alpha1.QualityProfileRuleObservation{
+				Key:     "java:S1000",
+				Impacts: []v1alpha1.QualityProfileRuleImpact{{SoftwareQuality: "SECURITY", Severity: "HIGH"}},
+			},
+			want: true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsQualityProfileRuleUpToDate(tc.spec, tc.observation)
+			if got != tc.want {
+				t.Errorf("IsQualityProfileRuleUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAreQualityProfileRuleImpactsUpToDate(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec        *map[string]string
+		observation []v1alpha1.QualityProfileRuleImpact
+		want        bool
+	}{
+		"NilSpecReturnsTrue": {
+			spec:        nil,
+			observation: []v1alpha1.QualityProfileRuleImpact{{SoftwareQuality: "SECURITY", Severity: "HIGH"}},
+			want:        true,
+		},
+		"EmptySpecEmptyObservationReturnsTrue": {
+			spec:        &map[string]string{},
+			observation: nil,
+			want:        true,
+		},
+		"MatchingImpactsReturnsTrue": {
+			spec: &map[string]string{"SECURITY": "HIGH", "MAINTAINABILITY": "LOW"},
+			observation: []v1alpha1.QualityProfileRuleImpact{
+				{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+				{SoftwareQuality: "MAINTAINABILITY", Severity: "LOW"},
+			},
+			want: true,
+		},
+		"DifferentSeverityReturnsFalse": {
+			spec: &map[string]string{"SECURITY": "HIGH"},
+			observation: []v1alpha1.QualityProfileRuleImpact{
+				{SoftwareQuality: "SECURITY", Severity: "LOW"},
+			},
+			want: false,
+		},
+		"ExtraSpecImpactReturnsFalse": {
+			spec: &map[string]string{"SECURITY": "HIGH", "MAINTAINABILITY": "LOW"},
+			observation: []v1alpha1.QualityProfileRuleImpact{
+				{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+			},
+			want: false,
+		},
+		"ExtraObservationImpactReturnsFalse": {
+			spec: &map[string]string{"SECURITY": "HIGH"},
+			observation: []v1alpha1.QualityProfileRuleImpact{
+				{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+				{SoftwareQuality: "MAINTAINABILITY", Severity: "LOW"},
+			},
+			want: false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := areQualityProfileRuleImpactsUpToDate(tc.spec, tc.observation)
+			if got != tc.want {
+				t.Errorf("areQualityProfileRuleImpactsUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFetchAllQualityProfileRules(t *testing.T) {
+	t.Parallel()
+
+	errSearch := errors.New("search error")
+
+	tests := map[string]struct {
+		rulesClient RulesClient
+		profileKey  string
+		wantErr     bool
+		wantRules   int
+	}{
+		"SinglePageFetchesAllRules": {
+			rulesClient: &mockRulesClient{
+				SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+					return &sonar.RulesSearch{
+						Rules: []sonar.RuleDetails{
+							{Key: "java:S1000", Name: "Rule 1"},
+							{Key: "java:S1001", Name: "Rule 2"},
+						},
+						Paging: sonar.Paging{
+							Total: 2,
+						},
+						Actives: map[string][]sonar.RuleActivation{
+							"java:S1000": {{QProfile: "profile-key", Severity: "MAJOR"}},
+						},
+					}, nil, nil
+				},
+			},
+			profileKey: "profile-key",
+			wantErr:    false,
+			wantRules:  2,
+		},
+		"MultiPageFetchesAllRules": {
+			rulesClient: func() RulesClient {
+				callCount := 0
+
+				return &mockRulesClient{
+					SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+						callCount++
+						if callCount == 1 {
+							return &sonar.RulesSearch{
+								Rules: []sonar.RuleDetails{
+									{Key: "java:S1000", Name: "Rule 1"},
+									{Key: "java:S1001", Name: "Rule 2"},
+								},
+								Paging: sonar.Paging{
+									Total: 3,
+								},
+							}, nil, nil
+						}
+
+						return &sonar.RulesSearch{
+							Rules: []sonar.RuleDetails{
+								{Key: "java:S1002", Name: "Rule 3"},
+							},
+							Paging: sonar.Paging{
+								Total: 3,
+							},
+						}, nil, nil
+					},
+				}
+			}(),
+			profileKey: "profile-key",
+			wantErr:    false,
+			wantRules:  3,
+		},
+		"SearchErrorReturnsError": {
+			rulesClient: &mockRulesClient{
+				SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+					return nil, nil, errSearch
+				},
+			},
+			profileKey: "profile-key",
+			wantErr:    true,
+			wantRules:  0,
+		},
+		"EmptyRulesReturnsEmpty": {
+			rulesClient: &mockRulesClient{
+				SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+					return &sonar.RulesSearch{
+						Rules:  nil,
+						Paging: sonar.Paging{Total: 0},
+					}, nil, nil
+				},
+			},
+			profileKey: "profile-key",
+			wantErr:    false,
+			wantRules:  0,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := FetchAllQualityProfileRules(tc.rulesClient, tc.profileKey)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("FetchAllQualityProfileRules() error = %v, wantErr %v", err, tc.wantErr)
+
+				return
+			}
+
+			if tc.wantErr {
+				return
+			}
+
+			if got == nil {
+				t.Fatal("FetchAllQualityProfileRules() returned nil, want non-nil")
+			}
+
+			if len(got.Rules) != tc.wantRules {
+				t.Errorf("FetchAllQualityProfileRules() returned %d rules, want %d", len(got.Rules), tc.wantRules)
+			}
+		})
+	}
+}
+
+func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		rule              sonar.RuleDetails
+		activatedSettings *ruleActiveSettings
+		want              v1alpha1.QualityProfileRuleObservation
+	}{
+		"NilActivatedSettings": {
+			rule: sonar.RuleDetails{
+				Key:  "java:S1000",
+				Name: "Rule 1",
+			},
+			activatedSettings: nil,
+			want: v1alpha1.QualityProfileRuleObservation{
+				Key:     "java:S1000",
+				Name:    "Rule 1",
+				Impacts: []v1alpha1.QualityProfileRuleImpact{},
+			},
+		},
+		"ActivatedSettingsWithSeverity": {
+			rule: sonar.RuleDetails{
+				Key:      "java:S1000",
+				Name:     "Rule 1",
+				Severity: "MINOR",
+			},
+			activatedSettings: &ruleActiveSettings{
+				Severity: ptr.To("MAJOR"),
+			},
+			want: v1alpha1.QualityProfileRuleObservation{
+				Key:      "java:S1000",
+				Name:     "Rule 1",
+				Severity: "MAJOR",
+				Impacts:  []v1alpha1.QualityProfileRuleImpact{},
+			},
+		},
+		"ActivatedSettingsWithParams": {
+			rule: sonar.RuleDetails{
+				Key:  "java:S1000",
+				Name: "Rule 1",
+			},
+			activatedSettings: &ruleActiveSettings{
+				Params: &map[string]string{"max": "10"},
+			},
+			want: v1alpha1.QualityProfileRuleObservation{
+				Key:        "java:S1000",
+				Name:       "Rule 1",
+				Parameters: map[string]string{"max": "10"},
+				Impacts:    []v1alpha1.QualityProfileRuleImpact{},
+			},
+		},
+		"ActivatedSettingsWithImpacts": {
+			rule: sonar.RuleDetails{
+				Key:  "java:S1000",
+				Name: "Rule 1",
+			},
+			activatedSettings: &ruleActiveSettings{
+				Impacts: []v1alpha1.QualityProfileRuleImpact{
+					{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+				},
+			},
+			want: v1alpha1.QualityProfileRuleObservation{
+				Key:  "java:S1000",
+				Name: "Rule 1",
+				Impacts: []v1alpha1.QualityProfileRuleImpact{
+					{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+				},
+			},
+		},
+		"ActivatedSettingsWithPrioritized": {
+			rule: sonar.RuleDetails{
+				Key:  "java:S1000",
+				Name: "Rule 1",
+			},
+			activatedSettings: &ruleActiveSettings{
+				Prioritized: ptr.To(true),
+			},
+			want: v1alpha1.QualityProfileRuleObservation{
+				Key:         "java:S1000",
+				Name:        "Rule 1",
+				Prioritized: true,
+				Impacts:     []v1alpha1.QualityProfileRuleImpact{},
+			},
+		},
+		"ActivatedSettingsWithAllFields": {
+			rule: sonar.RuleDetails{
+				Key:      "java:S1000",
+				Name:     "Rule 1",
+				Severity: "MINOR",
+			},
+			activatedSettings: &ruleActiveSettings{
+				Severity:    ptr.To("CRITICAL"),
+				Params:      &map[string]string{"max": "10"},
+				Prioritized: ptr.To(true),
+				Impacts: []v1alpha1.QualityProfileRuleImpact{
+					{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+				},
+			},
+			want: v1alpha1.QualityProfileRuleObservation{
+				Key:         "java:S1000",
+				Name:        "Rule 1",
+				Severity:    "CRITICAL",
+				Prioritized: true,
+				Parameters:  map[string]string{"max": "10"},
+				Impacts: []v1alpha1.QualityProfileRuleImpact{
+					{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfileRuleObservation(tc.rule, tc.activatedSettings)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfileRuleObservation() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateQualityProfileRulesObservationWithActives(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		qualityProfileId string
+		rules            *sonar.RulesSearch
+		want             []v1alpha1.QualityProfileRuleObservation
+	}{
+		"RulesWithActivesForProfile": {
+			qualityProfileId: "profile-1",
+			rules: &sonar.RulesSearch{
+				Rules: []sonar.RuleDetails{
+					{Key: "java:S1000", Name: "Rule 1"},
+				},
+				Actives: map[string][]sonar.RuleActivation{
+					"java:S1000": {
+						{
+							QProfile:        "profile-1",
+							Severity:        "MAJOR",
+							PrioritizedRule: true,
+							Params: []sonar.ParamKV{
+								{Key: "max", Value: "10"},
+							},
+							Impacts: []sonar.RuleImpact{
+								{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+							},
+						},
+					},
+				},
+			},
+			want: []v1alpha1.QualityProfileRuleObservation{
+				{
+					Key:         "java:S1000",
+					Name:        "Rule 1",
+					Severity:    "MAJOR",
+					Prioritized: true,
+					Parameters:  map[string]string{"max": "10"},
+					Impacts:     []v1alpha1.QualityProfileRuleImpact{{SoftwareQuality: "SECURITY", Severity: "HIGH"}},
+				},
+			},
+		},
+		"RulesWithActivesForDifferentProfile": {
+			qualityProfileId: "profile-1",
+			rules: &sonar.RulesSearch{
+				Rules: []sonar.RuleDetails{
+					{Key: "java:S1000", Name: "Rule 1"},
+				},
+				Actives: map[string][]sonar.RuleActivation{
+					"java:S1000": {
+						{
+							QProfile: "profile-2",
+							Severity: "MAJOR",
+						},
+					},
+				},
+			},
+			want: []v1alpha1.QualityProfileRuleObservation{
+				{
+					Key:     "java:S1000",
+					Name:    "Rule 1",
+					Impacts: []v1alpha1.QualityProfileRuleImpact{},
+				},
+			},
+		},
+		"RulesWithNoActives": {
+			qualityProfileId: "profile-1",
+			rules: &sonar.RulesSearch{
+				Rules: []sonar.RuleDetails{
+					{Key: "java:S1000", Name: "Rule 1"},
+				},
+				Actives: map[string][]sonar.RuleActivation{},
+			},
+			want: []v1alpha1.QualityProfileRuleObservation{
+				{
+					Key:     "java:S1000",
+					Name:    "Rule 1",
+					Impacts: []v1alpha1.QualityProfileRuleImpact{},
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfileRulesObservation(tc.qualityProfileId, tc.rules)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfileRulesObservation() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

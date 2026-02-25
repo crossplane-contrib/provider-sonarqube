@@ -607,3 +607,74 @@ func TestWereQualityGateConditionsLateInitialized(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateQualityGateGetByProjectOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		projectKey string
+		want       *sonar.QualitygatesGetByProjectOption
+	}{
+		"BasicProjectKey": {
+			projectKey: "my-project",
+			want: &sonar.QualitygatesGetByProjectOption{
+				Project: "my-project",
+			},
+		},
+		"EmptyProjectKey": {
+			projectKey: "",
+			want: &sonar.QualitygatesGetByProjectOption{
+				Project: "",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityGateGetByProjectOptions(tc.projectKey)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityGateGetByProjectOptions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateQualityGateSelectOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		projectKey      string
+		qualityGateName string
+		want            *sonar.QualitygatesSelectOption
+	}{
+		"BasicSelectOption": {
+			projectKey:      "my-project",
+			qualityGateName: "my-gate",
+			want: &sonar.QualitygatesSelectOption{
+				ProjectKey: "my-project",
+				GateName:   "my-gate",
+			},
+		},
+		"EmptyValues": {
+			projectKey:      "",
+			qualityGateName: "",
+			want: &sonar.QualitygatesSelectOption{
+				ProjectKey: "",
+				GateName:   "",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityGateSelectOptions(tc.projectKey, tc.qualityGateName)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityGateSelectOptions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

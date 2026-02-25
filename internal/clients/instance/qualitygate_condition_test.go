@@ -461,6 +461,15 @@ func TestGenerateQualityGateConditionsAssociation(t *testing.T) {
 			},
 			wantKeys: []string{"1", "2", "new:new_metric"},
 		},
+		"SpecWithStaleIDCreatesAssociation": {
+			specs: []v1alpha1.QualityGateConditionParameters{
+				{Id: ptr.To("stale-999"), Metric: "coverage", Error: "80"},
+			},
+			observations: []v1alpha1.QualityGateConditionObservation{
+				{ID: "1", Metric: "coverage", Error: "80"},
+			},
+			wantKeys: []string{"1", "stale-999"},
+		},
 	}
 
 	for name, tc := range tests {

@@ -1052,3 +1052,368 @@ func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateQualityProfileObservation(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		observation *sonar.QualityprofilesShow
+		rules       *sonar.RulesSearch
+		want        v1alpha1.QualityProfileObservation
+	}{
+		"BasicObservation": {
+			observation: &sonar.QualityprofilesShow{
+				Profile: sonar.ShownProfile{
+					ActiveDeprecatedRuleCount: 1,
+					ActiveRuleCount:           10,
+					IsBuiltIn:                 false,
+					IsDefault:                 true,
+					IsInherited:               false,
+					Key:                       "AXqPwMhVHYprcJvnedvY",
+					Language:                  "java",
+					LanguageName:              "Java",
+					Name:                      "my-profile",
+					ProjectCount:              5,
+				},
+			},
+			rules: nil,
+			want: v1alpha1.QualityProfileObservation{
+				ActiveDeprecatedRuleCount: 1,
+				ActiveRuleCount:           10,
+				IsBuiltIn:                 false,
+				IsDefault:                 true,
+				IsInherited:               false,
+				Key:                       "AXqPwMhVHYprcJvnedvY",
+				Language:                  "java",
+				LanguageName:              "Java",
+				Name:                      "my-profile",
+				ProjectCount:              5,
+				Rules:                     []v1alpha1.QualityProfileRuleObservation{},
+			},
+		},
+		"ObservationWithRules": {
+			observation: &sonar.QualityprofilesShow{
+				Profile: sonar.ShownProfile{
+					Key:      "profile-key",
+					Language: "go",
+					Name:     "Go Profile",
+				},
+			},
+			rules: &sonar.RulesSearch{
+				Rules: []sonar.RuleDetails{
+					{Key: "go:S1000", Name: "Rule 1"},
+				},
+			},
+			want: v1alpha1.QualityProfileObservation{
+				Key:      "profile-key",
+				Language: "go",
+				Name:     "Go Profile",
+				Rules: []v1alpha1.QualityProfileRuleObservation{
+					{Key: "go:S1000", Name: "Rule 1", Impacts: []v1alpha1.QualityProfileRuleImpact{}},
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfileObservation(tc.observation, tc.rules)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfileObservation() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateQualityprofilesSetDefaultOption(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		params v1alpha1.QualityProfileParameters
+		want   *sonar.QualityprofilesSetDefaultOption
+	}{
+		"BasicSetDefault": {
+			params: v1alpha1.QualityProfileParameters{
+				Name:     "my-profile",
+				Language: "java",
+			},
+			want: &sonar.QualityprofilesSetDefaultOption{
+				QualityProfile: "my-profile",
+				Language:       "java",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityprofilesSetDefaultOption(tc.params)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityprofilesSetDefaultOption() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateQualityProfilesSearchProjectOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		projectKey string
+		want       *sonar.QualityprofilesSearchOption
+	}{
+		"BasicSearch": {
+			projectKey: "my-project",
+			want: &sonar.QualityprofilesSearchOption{
+				Project: "my-project",
+			},
+		},
+		"EmptyProjectKey": {
+			projectKey: "",
+			want: &sonar.QualityprofilesSearchOption{
+				Project: "",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfilesSearchProjectOptions(tc.projectKey)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfilesSearchProjectOptions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateQualityProfileAddProjectOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		projectKey         string
+		qualityProfileName string
+		language           string
+		want               *sonar.QualityprofilesAddProjectOption
+	}{
+		"BasicAddProject": {
+			projectKey:         "my-project",
+			qualityProfileName: "my-profile",
+			language:           "java",
+			want: &sonar.QualityprofilesAddProjectOption{
+				Project:        "my-project",
+				QualityProfile: "my-profile",
+				Language:       "java",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfileAddProjectOptions(tc.projectKey, tc.qualityProfileName, tc.language)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfileAddProjectOptions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateQualityProfileShowOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		qualityProfileKey string
+		want              *sonar.QualityprofilesShowOption
+	}{
+		"BasicShowOption": {
+			qualityProfileKey: "AXqPwMhVHYprcJvnedvY",
+			want: &sonar.QualityprofilesShowOption{
+				Key: "AXqPwMhVHYprcJvnedvY",
+			},
+		},
+		"EmptyKey": {
+			qualityProfileKey: "",
+			want: &sonar.QualityprofilesShowOption{
+				Key: "",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfileShowOptions(tc.qualityProfileKey)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfileShowOptions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLateInitializeQualityProfileRules(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		associations map[string]QualityProfileRuleAssociation
+		wantUpdated  map[string]QualityProfileRuleAssociation
+	}{
+		"EmptyAssociations": {
+			associations: map[string]QualityProfileRuleAssociation{},
+			wantUpdated:  map[string]QualityProfileRuleAssociation{},
+		},
+		"NilAssociations": {
+			associations: nil,
+			wantUpdated:  nil,
+		},
+		"SpecWithoutObservationSkipped": {
+			associations: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1"},
+					Observation: nil,
+				},
+			},
+			wantUpdated: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1"},
+					Observation: nil,
+				},
+			},
+		},
+		"ObservationWithoutSpecSkipped": {
+			associations: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        nil,
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Severity: "MAJOR"},
+				},
+			},
+			wantUpdated: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        nil,
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Severity: "MAJOR"},
+				},
+			},
+		},
+		"SeverityLateInitialized": {
+			associations: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1"},
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Severity: "MAJOR"},
+				},
+			},
+			wantUpdated: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1", Severity: ptr.To("MAJOR"), Prioritized: ptr.To(false)},
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Severity: "MAJOR"},
+				},
+			},
+		},
+		"PrioritizedLateInitialized": {
+			associations: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1"},
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Prioritized: true},
+				},
+			},
+			wantUpdated: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1", Severity: ptr.To(""), Prioritized: ptr.To(true)},
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Prioritized: true},
+				},
+			},
+		},
+		"ImpactsLateInitialized": {
+			associations: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec: &v1alpha1.QualityProfileRuleParameters{Rule: "rule1"},
+					Observation: &v1alpha1.QualityProfileRuleObservation{
+						Key: "rule1",
+						Impacts: []v1alpha1.QualityProfileRuleImpact{
+							{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+						},
+					},
+				},
+			},
+			wantUpdated: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec: &v1alpha1.QualityProfileRuleParameters{
+						Rule:        "rule1",
+						Severity:    ptr.To(""),
+						Prioritized: ptr.To(false),
+						Impacts:     &map[string]string{"SECURITY": "HIGH"},
+					},
+					Observation: &v1alpha1.QualityProfileRuleObservation{
+						Key: "rule1",
+						Impacts: []v1alpha1.QualityProfileRuleImpact{
+							{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+						},
+					},
+				},
+			},
+		},
+		"ImpactsNotOverwritten": {
+			associations: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec: &v1alpha1.QualityProfileRuleParameters{
+						Rule:    "rule1",
+						Impacts: &map[string]string{"MAINTAINABILITY": "LOW"},
+					},
+					Observation: &v1alpha1.QualityProfileRuleObservation{
+						Key: "rule1",
+						Impacts: []v1alpha1.QualityProfileRuleImpact{
+							{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+						},
+					},
+				},
+			},
+			wantUpdated: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec: &v1alpha1.QualityProfileRuleParameters{
+						Rule:        "rule1",
+						Severity:    ptr.To(""),
+						Prioritized: ptr.To(false),
+						Impacts:     &map[string]string{"MAINTAINABILITY": "LOW"},
+					},
+					Observation: &v1alpha1.QualityProfileRuleObservation{
+						Key: "rule1",
+						Impacts: []v1alpha1.QualityProfileRuleImpact{
+							{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+						},
+					},
+				},
+			},
+		},
+		"EmptyObservationImpactsNotAssigned": {
+			associations: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1"},
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Impacts: []v1alpha1.QualityProfileRuleImpact{}},
+				},
+			},
+			wantUpdated: map[string]QualityProfileRuleAssociation{
+				"rule1": {
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "rule1", Severity: ptr.To(""), Prioritized: ptr.To(false)},
+					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Impacts: []v1alpha1.QualityProfileRuleImpact{}},
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			LateInitializeQualityProfileRules(tc.associations)
+
+			if diff := cmp.Diff(tc.wantUpdated, tc.associations); diff != "" {
+				t.Errorf("LateInitializeQualityProfileRules() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
