@@ -71,8 +71,8 @@ func (m *mockRulesClient) Tags(_ *sonar.RulesTagsOption) (*sonar.RulesTags, *htt
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Update(_ *sonar.RulesUpdateOption) (*sonar.RulesUpdate, *http.Response, error) {
-	return nil, nil, nil
+func (m *mockRulesClient) Update(opt *sonar.RulesUpdateOption) (*sonar.RulesUpdate, *http.Response, error) {
+	return nil, nil, errMockNotImplemented
 }
 
 func TestGenerateQualityProfileRulesSearchOption(t *testing.T) {
