@@ -34,7 +34,10 @@ import (
 
 // BasicAuthArgs is the expected struct that can be passed in the Config.Token field to add support for BasicAuth AuthMethod.
 type BasicAuthArgs struct {
+	// Username is the username for Basic Authentication. It is expected to be stored in a Kubernetes Secret and referenced in the ProviderConfig.
 	Username string `json:"username"`
+	// Password is the password for Basic Authentication. It is expected to be stored in a Kubernetes Secret and referenced in the ProviderConfig.
+	//nolint:gosec // Password has to be passed to the SonarQube client to support Basic Authentication, and this struct is not used for any other purpose.
 	Password string `json:"password"`
 }
 
