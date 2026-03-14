@@ -1,6 +1,6 @@
 module github.com/crossplane/provider-sonarqube
 
-go 1.25.5
+go 1.25.7
 
 tool sigs.k8s.io/controller-tools/cmd/controller-gen
 
@@ -8,7 +8,7 @@ tool github.com/crossplane/crossplane-tools/cmd/angryjet
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/boxboxjason/sonarqube-client-go v1.1.2
+	github.com/boxboxjason/sonarqube-client-go v1.3.0
 	github.com/crossplane/crossplane-runtime/v2 v2.0.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -62,14 +62,14 @@ require (
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/cobra v1.10.2 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
+	go.uber.org/zap v1.27.1 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.33.0 // indirect
