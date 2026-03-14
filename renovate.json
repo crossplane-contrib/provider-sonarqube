@@ -2,5 +2,36 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "labels": [
+    "deps",
+    "source::bot"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "updateInternalDeps": true,
+  "packageRules": [
+    {
+      "groupName": "aggregated-dependencies",
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ]
+    }
+  ],
+  "cloneSubmodules": true,
+  "dependencyDashboard": true,
+  "dependencyDashboardAutoclose": true,
+  "dependencyDashboardLabels": [
+    "deps",
+    "source::bot"
+  ],
+  "semanticCommits": "enabled",
+  "prHourlyLimit": 0,
+  "addLabels": [
+    "deps",
+    "source::bot"
   ]
 }
