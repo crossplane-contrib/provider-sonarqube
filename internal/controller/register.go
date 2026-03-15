@@ -24,6 +24,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/project"
 	"github.com/crossplane/provider-sonarqube/internal/controller/qualitygate"
 	"github.com/crossplane/provider-sonarqube/internal/controller/qualityprofile"
+	"github.com/crossplane/provider-sonarqube/internal/controller/rule"
 	"github.com/crossplane/provider-sonarqube/internal/controller/settings"
 )
 
@@ -36,6 +37,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		qualityprofile.SetupGated,
 		settings.SetupGated,
 		project.SetupGated,
+		rule.SetupGated,
 	} {
 		err := setup(mgr, opts)
 		if err != nil {

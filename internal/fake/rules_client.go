@@ -17,15 +17,12 @@ limitations under the License.
 package fake
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
-
-var errRulesNotImplemented = errors.New("not implemented")
 
 // MockRulesClient is a mock implementation of the RulesClient interface.
 type MockRulesClient struct {
@@ -49,7 +46,7 @@ func (m *MockRulesClient) App() (v *sonar.RulesApp, resp *http.Response, err err
 		return m.AppFn()
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }
 
 // Create implements RulesClient.Create.
@@ -58,7 +55,7 @@ func (m *MockRulesClient) Create(opt *sonar.RulesCreateOption) (v *sonar.RulesCr
 		return m.CreateFn(opt)
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }
 
 // Delete implements RulesClient.Delete.
@@ -67,7 +64,7 @@ func (m *MockRulesClient) Delete(opt *sonar.RulesDeleteOption) (resp *http.Respo
 		return m.DeleteFn(opt)
 	}
 
-	return nil, errRulesNotImplemented
+	return nil, errNotImplemented
 }
 
 // List implements RulesClient.List.
@@ -76,7 +73,7 @@ func (m *MockRulesClient) List(opt *sonar.RulesListOption) (v *string, resp *htt
 		return m.ListFn(opt)
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }
 
 // Repositories implements RulesClient.Repositories.
@@ -85,7 +82,7 @@ func (m *MockRulesClient) Repositories(opt *sonar.RulesRepositoriesOption) (v *s
 		return m.RepositoriesFn(opt)
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }
 
 // Search implements RulesClient.Search.
@@ -94,7 +91,7 @@ func (m *MockRulesClient) Search(opt *sonar.RulesSearchOption) (v *sonar.RulesSe
 		return m.SearchFn(opt)
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }
 
 // Show implements RulesClient.Show.
@@ -103,7 +100,7 @@ func (m *MockRulesClient) Show(opt *sonar.RulesShowOption) (v *sonar.RulesShow, 
 		return m.ShowFn(opt)
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }
 
 // Tags implements RulesClient.Tags.
@@ -112,7 +109,7 @@ func (m *MockRulesClient) Tags(opt *sonar.RulesTagsOption) (v *sonar.RulesTags, 
 		return m.TagsFn(opt)
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }
 
 // Update implements RulesClient.Update.
@@ -121,5 +118,5 @@ func (m *MockRulesClient) Update(opt *sonar.RulesUpdateOption) (v *sonar.RulesUp
 		return m.UpdateFn(opt)
 	}
 
-	return nil, nil, errRulesNotImplemented
+	return nil, nil, errNotImplemented
 }

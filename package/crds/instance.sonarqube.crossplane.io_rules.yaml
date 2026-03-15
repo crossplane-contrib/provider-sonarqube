@@ -1,0 +1,507 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: rules.instance.sonarqube.crossplane.io
+spec:
+  group: instance.sonarqube.crossplane.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - sonarqube
+    kind: Rule
+    listKind: RuleList
+    plural: rules
+    singular: rule
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: A Rule is an example API type.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: A RuleSpec defines the desired state of a Rule.
+            properties:
+              forProvider:
+                description: RuleParameters are the configurable fields of a Rule.
+                properties:
+                  cleanCodeAttribute:
+                    description: CleanCodeAttribute represents the Clean Code Attribute
+                      associated with the rule.
+                    enum:
+                    - CONVENTIONAL
+                    - FORMATTED
+                    - IDENTIFIABLE
+                    - CLEAR
+                    - COMPLETE
+                    - EFFICIENT
+                    - LOGICAL
+                    - DISTINCT
+                    - FOCUSED
+                    - MODULAR
+                    - TESTED
+                    - LAWFUL
+                    - RESPECTFUL
+                    - TRUSTWORTHY
+                    type: string
+                    x-kubernetes-validations:
+                    - message: CleanCodeAttribute is immutable.
+                      rule: self == oldSelf
+                  impacts:
+                    additionalProperties:
+                      type: string
+                    description: 'Impacts is a map of software quality to severity
+                      (e.g., MAINTAINABILITY: HIGH, SECURITY: LOW).'
+                    type: object
+                  key:
+                    description: Key is the unique identifier for the custom rule
+                      (required).
+                    maxLength: 200
+                    minLength: 1
+                    type: string
+                    x-kubernetes-validations:
+                    - message: Key is immutable.
+                      rule: self == oldSelf
+                  markdownDescription:
+                    description: MarkdownDescription is the Markdown-formatted description
+                      of the rule.
+                    minLength: 1
+                    type: string
+                  markdownNote:
+                    description: MarkdownNote is the optional note in Markdown format.
+                    type: string
+                  name:
+                    description: Name is the display name of the rule.
+                    maxLength: 200
+                    minLength: 1
+                    type: string
+                  parameters:
+                    additionalProperties:
+                      description: RuleParameterConfiguration represents the configuration
+                        of a parameter for a rule.
+                      properties:
+                        defaultValue:
+                          description: DefaultValue is the default value of the parameter
+                            if unspecified in implementation.
+                          type: string
+                        htmlDesc:
+                          description: HTMLDesc is the HTML-formatted description
+                            of the parameter.
+                          type: string
+                        type:
+                          description: Type is the data type of the parameter (STRING,
+                            TEXT, BOOLEAN, INTEGER, FLOAT).
+                          enum:
+                          - STRING
+                          - TEXT
+                          - BOOLEAN
+                          - INTEGER
+                          - FLOAT
+                          type: string
+                      type: object
+                    description: Parameters is a map of parameter key to its configuration
+                      for the rule.
+                    type: object
+                  remediationFnBaseEffort:
+                    description: RemediationFnBaseEffort is the base effort of the
+                      remediation function (e.g., '1d').
+                    minLength: 1
+                    type: string
+                  remediationFnType:
+                    description: RemediationFnType is the type of the remediation
+                      function.
+                    enum:
+                    - LINEAR
+                    - CONSTANT
+                    - LINEAR_OFFSET
+                    type: string
+                  remediationFyGapMultiplier:
+                    description: RemediationFyGapMultiplier is the gap multiplier
+                      of the remediation function (e.g., '2min').
+                    minLength: 1
+                    type: string
+                  severity:
+                    description: Severity is the rule severity.
+                    enum:
+                    - INFO
+                    - MINOR
+                    - MAJOR
+                    - CRITICAL
+                    - BLOCKER
+                    type: string
+                  status:
+                    description: Status is the status of the rule.
+                    enum:
+                    - READY
+                    - DEPRECATED
+                    - BETA
+                    type: string
+                  tags:
+                    description: |-
+                      Tags is a list of tags to associate with the rule.
+                      Use empty slice to remove current tags. Tags are not changed if parameter is not set.
+                    items:
+                      type: string
+                    type: array
+                  templateKey:
+                    description: TemplateKey is the key of the template rule from
+                      which to create the custom rule.
+                    maxLength: 200
+                    minLength: 1
+                    type: string
+                    x-kubernetes-validations:
+                    - message: Template Key is immutable.
+                      rule: self == oldSelf
+                  type:
+                    description: Type is the rule type.
+                    enum:
+                    - CODE_SMELL
+                    - BUG
+                    - VULNERABILITY
+                    - SECURITY_HOTSPOT
+                    type: string
+                    x-kubernetes-validations:
+                    - message: Type is immutable.
+                      rule: self == oldSelf
+                required:
+                - key
+                - markdownDescription
+                - name
+                - templateKey
+                type: object
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  kind: ClusterProviderConfig
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  kind:
+                    description: Kind of the referenced object.
+                    type: string
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - forProvider
+            type: object
+          status:
+            description: A RuleStatus represents the observed state of a Rule.
+            properties:
+              atProvider:
+                description: RuleObservation are the observable fields of a Rule.
+                properties:
+                  cleanCodeAttribute:
+                    type: string
+                  cleanCodeAttributeCategory:
+                    type: string
+                  createdAt:
+                    format: date-time
+                    type: string
+                  defaultRemFnBaseEffort:
+                    type: string
+                  defaultRemFnGapMultiplier:
+                    type: string
+                  defaultRemFnType:
+                    type: string
+                  descriptionSections:
+                    items:
+                      description: RuleDescriptionSectionObservation represents a
+                        section of a rule's description.
+                      properties:
+                        content:
+                          description: Content is the HTML content of the section.
+                          type: string
+                        context:
+                          description: Context provides additional context for the
+                            section.
+                          properties:
+                            displayName:
+                              description: DisplayName is the human-readable name
+                                of the context.
+                              type: string
+                            key:
+                              description: Key is the unique identifier of the context.
+                              type: string
+                          required:
+                          - displayName
+                          - key
+                          type: object
+                        key:
+                          description: Key is the unique identifier of the section.
+                          type: string
+                      required:
+                      - content
+                      - context
+                      - key
+                      type: object
+                    type: array
+                  gapDescription:
+                    type: string
+                  htmlDesc:
+                    type: string
+                  htmlNote:
+                    type: string
+                  impacts:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  internalKey:
+                    type: string
+                  isExternal:
+                    type: boolean
+                  isTemplate:
+                    type: boolean
+                  key:
+                    type: string
+                  lang:
+                    type: string
+                  langName:
+                    type: string
+                  mdNote:
+                    type: string
+                  name:
+                    type: string
+                  noteLogin:
+                    type: string
+                  params:
+                    items:
+                      description: RuleParameterObservation represents a parameter
+                        that can be configured for a rule.
+                      properties:
+                        defaultValue:
+                          description: DefaultValue is the default value of the parameter.
+                          type: string
+                        desc:
+                          description: Desc is the plain text description of the parameter.
+                          type: string
+                        htmlDesc:
+                          description: HTMLDesc is the HTML-formatted description
+                            of the parameter.
+                          type: string
+                        key:
+                          description: Key is the unique identifier of the parameter.
+                          type: string
+                        type:
+                          description: Type is the data type of the parameter (STRING,
+                            TEXT, BOOLEAN, INTEGER, FLOAT).
+                          type: string
+                      required:
+                      - defaultValue
+                      - desc
+                      - htmlDesc
+                      - key
+                      - type
+                      type: object
+                    type: array
+                  remFnBaseEffort:
+                    type: string
+                  remFnGapMultiplier:
+                    type: string
+                  remFnOverloaded:
+                    type: boolean
+                  remFnType:
+                    type: string
+                  repo:
+                    type: string
+                  scope:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  sysTags:
+                    items:
+                      type: string
+                    type: array
+                  tags:
+                    items:
+                      type: string
+                    type: array
+                  template:
+                    type: boolean
+                  templateKey:
+                    type: string
+                  type:
+                    type: string
+                  updatedAt:
+                    format: date-time
+                    type: string
+                required:
+                - cleanCodeAttribute
+                - cleanCodeAttributeCategory
+                - createdAt
+                - defaultRemFnBaseEffort
+                - defaultRemFnGapMultiplier
+                - defaultRemFnType
+                - descriptionSections
+                - gapDescription
+                - htmlDesc
+                - htmlNote
+                - impacts
+                - internalKey
+                - isExternal
+                - isTemplate
+                - key
+                - lang
+                - langName
+                - mdNote
+                - name
+                - noteLogin
+                - params
+                - remFnBaseEffort
+                - remFnGapMultiplier
+                - remFnOverloaded
+                - remFnType
+                - repo
+                - scope
+                - severity
+                - status
+                - sysTags
+                - tags
+                - template
+                - templateKey
+                - type
+                - updatedAt
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            required:
+            - atProvider
+            type: object
+        required:
+        - metadata
+        - spec
+        - status
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

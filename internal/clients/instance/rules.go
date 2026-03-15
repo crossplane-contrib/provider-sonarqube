@@ -289,3 +289,308 @@ func areQualityProfileRuleImpactsUpToDate(spec *map[string]string, observation [
 
 	return cmp.Equal(*spec, impactMap, cmpopts.EquateEmpty())
 }
+
+// GenerateRuleCreateOptions generates SonarQube RulesCreateOption based on the provided Rule parameters.
+func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.RulesCreateOption {
+	rulesCreateOptions := &sonar.RulesCreateOption{}
+	if parameters == nil {
+		return rulesCreateOptions
+	}
+
+	helpers.AssignIfNonNil(&rulesCreateOptions.CleanCodeAttribute, parameters.CleanCodeAttribute)
+	rulesCreateOptions.CustomKey = parameters.Key
+	helpers.AssignIfNonNil(&rulesCreateOptions.Impacts, parameters.Impacts)
+	rulesCreateOptions.MarkdownDescription = parameters.MarkdownDescription
+	rulesCreateOptions.Name = parameters.Name
+	rulesCreateOptions.Params = generateRuleParametersOptions(parameters.Parameters)
+	helpers.AssignIfNonNil(&rulesCreateOptions.Severity, parameters.Severity)
+	helpers.AssignIfNonNil(&rulesCreateOptions.Status, parameters.Status)
+	rulesCreateOptions.TemplateKey = parameters.TemplateKey
+	helpers.AssignIfNonNil(&rulesCreateOptions.Type, parameters.Type)
+
+	return rulesCreateOptions
+}
+
+// GenerateRuleUpdateOptions generates SonarQube RulesUpdateOption based on the provided Rule parameters and observation.
+func GenerateRuleUpdateOptions(parameters *v1alpha1.RuleParameters) *sonar.RulesUpdateOption {
+	rulesUpdateOptions := &sonar.RulesUpdateOption{}
+	if parameters == nil {
+		return rulesUpdateOptions
+	}
+
+	helpers.AssignIfNonNil(&rulesUpdateOptions.Impacts, parameters.Impacts)
+	rulesUpdateOptions.Key = parameters.Key
+	rulesUpdateOptions.MarkdownDescription = parameters.MarkdownDescription
+	helpers.AssignIfNonNil(&rulesUpdateOptions.MarkdownNote, parameters.MarkdownNote)
+	rulesUpdateOptions.Name = parameters.Name
+	rulesUpdateOptions.Params = generateRuleParametersOptions(parameters.Parameters)
+	helpers.AssignIfNonNil(&rulesUpdateOptions.RemediationFnBaseEffort, parameters.RemediationFnBaseEffort)
+	helpers.AssignIfNonNil(&rulesUpdateOptions.RemediationFnType, parameters.RemediationFnType)
+	helpers.AssignIfNonNil(&rulesUpdateOptions.RemediationFyGapMultiplier, parameters.RemediationFyGapMultiplier)
+	helpers.AssignIfNonNil(&rulesUpdateOptions.Severity, parameters.Severity)
+	helpers.AssignIfNonNil(&rulesUpdateOptions.Status, parameters.Status)
+	helpers.AssignIfNonNil(&rulesUpdateOptions.Tags, parameters.Tags)
+
+	return rulesUpdateOptions
+}
+
+// generateRuleParametersOptions generates SonarQube RuleParameters based on the provided Rule parameters.
+func generateRuleParametersOptions(spec *map[string]v1alpha1.RuleParameterConfiguration) map[string]string {
+	if spec == nil {
+		return map[string]string{}
+	}
+
+	params := make(map[string]string, len(*spec))
+	for key, config := range *spec {
+		params[key] = config.DefaultValue
+	}
+
+	return params
+}
+
+// GenerateRuleDeleteOptions generates SonarQube RulesDeleteOption based on the provided Rule observation.
+func GenerateRuleDeleteOptions(key string) *sonar.RulesDeleteOption {
+	return &sonar.RulesDeleteOption{
+		Key: key,
+	}
+}
+
+// GenerateRuleGetOptions generates SonarQube RulesShowOption based on the provided Rule observation.
+func GenerateRuleGetOptions(key string) *sonar.RulesShowOption {
+	return &sonar.RulesShowOption{
+		Key: key,
+	}
+}
+
+// GenerateRuleObservation generates the observation for a Rule based on the SonarQube RulesShow response.
+func GenerateRuleObservation(rule *sonar.RulesShow) v1alpha1.RuleObservation {
+	if rule == nil {
+		return v1alpha1.RuleObservation{}
+	}
+
+	return v1alpha1.RuleObservation{
+		Name:                       rule.Rule.Name,
+		Key:                        rule.Rule.Key,
+		CreatedAt:                  helpers.StringToMetaTime(&rule.Rule.CreatedAt),
+		UpdatedAt:                  helpers.StringToMetaTime(&rule.Rule.UpdatedAt),
+		RemFnType:                  rule.Rule.RemFnBaseEffort,
+		RemFnBaseEffort:            rule.Rule.RemFnBaseEffort,
+		RemFnGapMultiplier:         rule.Rule.RemFnGapMultiplier,
+		RemFnOverloaded:            rule.Rule.RemFnOverloaded,
+		HTMLNote:                   rule.Rule.HTMLNote,
+		HTMLDesc:                   rule.Rule.HTMLDesc,
+		MdNote:                     rule.Rule.MdNote,
+		NoteLogin:                  rule.Rule.NoteLogin,
+		CleanCodeAttribute:         rule.Rule.CleanCodeAttribute,
+		CleanCodeAttributeCategory: rule.Rule.CleanCodeAttributeCategory,
+		InternalKey:                rule.Rule.InternalKey,
+		DefaultRemFnBaseEffort:     rule.Rule.DefaultRemFnBaseEffort,
+		DefaultRemFnType:           rule.Rule.DefaultRemFnType,
+		DefaultRemFnGapMultiplier:  rule.Rule.DefaultRemFnGapMultiplier,
+		Language:                   rule.Rule.Lang,
+		LanguageName:               rule.Rule.LangName,
+		GapDescription:             rule.Rule.GapDescription,
+		Repo:                       rule.Rule.Repo,
+		Scope:                      rule.Rule.Scope,
+		Severity:                   rule.Rule.Severity,
+		Status:                     rule.Rule.Status,
+		TemplateKey:                rule.Rule.TemplateKey,
+		Type:                       rule.Rule.Type,
+		Impacts:                    GenerateRuleImpactsObservation(&rule.Rule.Impacts),
+		Tags:                       anySliceToStringSlice(rule.Rule.Tags),
+		SysTags:                    rule.Rule.SysTags,
+		Params:                     GenerateRuleParametersObservation(&rule.Rule.Params),
+		DescriptionSections:        GenerateRuleDescriptionSectionsObservation(&rule.Rule.DescriptionSections),
+		IsTemplate:                 rule.Rule.IsTemplate,
+		IsExternal:                 rule.Rule.IsExternal,
+		Template:                   rule.Rule.Template,
+	}
+}
+
+// GenerateRuleImpactsObservation generates observations for Rule impacts.
+func GenerateRuleImpactsObservation(impacts *[]sonar.RuleImpact) map[string]string {
+	if impacts == nil {
+		return map[string]string{}
+	}
+
+	observations := make(map[string]string)
+	for _, impact := range *impacts {
+		observations[impact.SoftwareQuality] = impact.Severity
+	}
+
+	return observations
+}
+
+// GenerateRuleParametersObservation generates the observation of RuleParameters from the SonarQube Rule Show response.
+func GenerateRuleParametersObservation(rule *[]sonar.RuleParam) []v1alpha1.RuleParameterObservation {
+	if rule == nil {
+		return []v1alpha1.RuleParameterObservation{}
+	}
+
+	observations := make([]v1alpha1.RuleParameterObservation, len(*rule))
+	for i, param := range *rule {
+		observations[i] = v1alpha1.RuleParameterObservation{
+			DefaultValue: param.DefaultValue,
+			HTMLDesc:     param.HTMLDesc,
+			Desc:         param.Desc,
+			Key:          param.Key,
+			Type:         param.Type,
+		}
+	}
+
+	return observations
+}
+
+// GenerateRuleDescriptionSectionsObservation generates the observation of RuleDescriptionsSections from the SonarQube rule Show response.
+func GenerateRuleDescriptionSectionsObservation(sections *[]sonar.RuleDescriptionSection) []v1alpha1.RuleDescriptionSectionObservation {
+	if sections == nil {
+		return []v1alpha1.RuleDescriptionSectionObservation{}
+	}
+
+	observations := make([]v1alpha1.RuleDescriptionSectionObservation, len(*sections))
+	for i, section := range *sections {
+		observations[i] = v1alpha1.RuleDescriptionSectionObservation{
+			Content: section.Content,
+			Key:     section.Key,
+			Context: GenerateRuleDescriptionContextObservation(&section.Context),
+		}
+	}
+
+	return observations
+}
+
+// GenerateRuleDescriptionContextObservation generates the observation of RuleDescriptionContext from the SonarQube rule Show response.
+func GenerateRuleDescriptionContextObservation(context *sonar.RuleDescriptionSectionContext) v1alpha1.RuleDescriptionContextObservation {
+	if context == nil {
+		return v1alpha1.RuleDescriptionContextObservation{}
+	}
+
+	return v1alpha1.RuleDescriptionContextObservation{
+		DisplayName: context.DisplayName,
+		Key:         context.Key,
+	}
+}
+
+// IsRuleUpToDate checks whether the observed Rule is up to date with the desired RuleParameters.
+// Compares rule key, severity (if specified), status (if specified), and parameters (if specified).
+func IsRuleUpToDate(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObservation) bool { //nolint:gocyclo,cyclop // This function is inherently complex due to the number of fields that need to be compared, and breaking it down would reduce readability.
+	if spec == nil {
+		return true
+	}
+
+	if observation == nil {
+		return false
+	}
+
+	return spec.Key == observation.Key &&
+		spec.Name == observation.Name &&
+		spec.TemplateKey == observation.TemplateKey &&
+		helpers.IsComparablePtrEqualComparable(spec.CleanCodeAttribute, observation.CleanCodeAttribute) &&
+		helpers.IsComparableMapPtrEqualComparableMap(spec.Impacts, observation.Impacts) &&
+		helpers.IsComparablePtrEqualComparable(spec.RemediationFnBaseEffort, observation.RemFnBaseEffort) &&
+		helpers.IsComparablePtrEqualComparable(spec.RemediationFnType, observation.RemFnType) &&
+		helpers.IsComparablePtrEqualComparable(spec.RemediationFyGapMultiplier, observation.RemFnGapMultiplier) &&
+		helpers.IsComparablePtrEqualComparable(spec.Severity, observation.Severity) &&
+		helpers.IsComparablePtrEqualComparable(spec.Status, observation.Status) &&
+		helpers.IsComparablePtrEqualComparable(spec.Type, observation.Type) &&
+		helpers.IsComparableSlicePtrEqualComparableSlice(spec.Tags, observation.Tags) &&
+		areRuleParametersUpToDate(spec.Parameters, &observation.Params)
+}
+
+// areRuleParametersUpToDate checks whether the observed Rule parameters are up to date with the desired parameters.
+func areRuleParametersUpToDate(spec *map[string]v1alpha1.RuleParameterConfiguration, observation *[]v1alpha1.RuleParameterObservation) bool {
+	if spec == nil {
+		return true
+	}
+
+	if observation == nil {
+		return false
+	}
+
+	if len(*spec) != len(*observation) {
+		return false
+	}
+
+	// Build a map from observation for easy lookup
+	observationMap := make(map[string]v1alpha1.RuleParameterConfiguration, len(*observation))
+	for _, param := range *observation {
+		observationMap[param.Key] = v1alpha1.RuleParameterConfiguration{
+			DefaultValue: param.DefaultValue,
+			HTMLDesc:     param.HTMLDesc,
+			Type:         param.Type,
+		}
+	}
+
+	return cmp.Equal(*spec, observationMap, cmpopts.EquateEmpty())
+}
+
+// LateInitializeRule fills the empty fields in the RuleParameters with the values from RuleObservation. This is used to update the spec with default values from the API response during late initialization.
+func LateInitializeRule(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObservation) { //nolint:gocyclo,cyclop // complexity comes from guarding each field for non-empty values
+	if spec == nil || observation == nil {
+		return
+	}
+
+	if observation.CleanCodeAttribute != "" {
+		helpers.AssignIfNil(&spec.CleanCodeAttribute, observation.CleanCodeAttribute)
+	}
+
+	if observation.MdNote != "" {
+		helpers.AssignIfNil(&spec.MarkdownNote, observation.MdNote)
+	}
+
+	if observation.RemFnBaseEffort != "" {
+		helpers.AssignIfNil(&spec.RemediationFnBaseEffort, observation.RemFnBaseEffort)
+	}
+
+	if observation.RemFnType != "" {
+		helpers.AssignIfNil(&spec.RemediationFnType, observation.RemFnType)
+	}
+
+	if observation.RemFnGapMultiplier != "" {
+		helpers.AssignIfNil(&spec.RemediationFyGapMultiplier, observation.RemFnGapMultiplier)
+	}
+
+	if observation.Severity != "" {
+		helpers.AssignIfNil(&spec.Severity, observation.Severity)
+	}
+
+	if observation.Status != "" {
+		helpers.AssignIfNil(&spec.Status, observation.Status)
+	}
+
+	if observation.Type != "" {
+		helpers.AssignIfNil(&spec.Type, observation.Type)
+	}
+
+	if spec.Impacts == nil && len(observation.Impacts) != 0 {
+		spec.Impacts = &observation.Impacts
+	}
+
+	if spec.Tags == nil && len(observation.Tags) != 0 {
+		tags := make([]string, len(observation.Tags))
+		copy(tags, observation.Tags)
+
+		spec.Tags = &tags
+	}
+}
+
+// IsRuleLateInitialized checks whether a rule was late initialized by comparing the before and after RuleParameters. It returns true if the only differences between before and after are fields that can be late initialized (i.e., fields that are nil in before and non-nil in after), and false otherwise.
+func IsRuleLateInitialized(before *v1alpha1.RuleParameters, after *v1alpha1.RuleParameters) bool {
+	return !cmp.Equal(before, after, cmpopts.EquateEmpty())
+}
+
+// anySliceToStringSlice safely converts a []any slice to a []string slice, skipping non-string elements.
+func anySliceToStringSlice(anySlice []any) []string {
+	if anySlice == nil {
+		return nil
+	}
+
+	result := make([]string, 0, len(anySlice))
+	for _, v := range anySlice {
+		if s, ok := v.(string); ok {
+			result = append(result, s)
+		}
+	}
+
+	return result
+}

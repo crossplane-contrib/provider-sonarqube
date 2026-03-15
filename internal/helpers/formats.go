@@ -139,7 +139,7 @@ func AnySliceToStringSlice(slice []any) []string {
 
 // AssignIfNonNil assigns a value to a pointer if the reference pointer is not nil.
 // If the reference pointer is nil, it does nothing.
-func AssignIfNonNil[T comparable](ptr *T, ref *T) {
+func AssignIfNonNil[T any](ptr *T, ref *T) {
 	// return early if ptr is nil to avoid dereferencing a nil pointer
 	if ptr == nil {
 		return
