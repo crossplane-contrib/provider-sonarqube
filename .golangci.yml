@@ -74,6 +74,9 @@ linters:
           - staticcheck
         text: "SA3000:"
       - linters:
+          - staticcheck
+        text: "SA1019: mgr.GetEventRecorderFor is deprecated:"
+      - linters:
           - gosec
         text: "G101:"
       - linters:
