@@ -32,14 +32,14 @@ import (
 // ProjectsClient is the interface for interacting with SonarQube Projects API
 // It handles all the operations related to Projects in SonarQube, such as creating, updating, deleting, and retrieving Projects.
 type ProjectsClient interface {
-	BulkDelete(opt *sonar.ProjectsBulkDeleteOption) (*http.Response, error)
-	Create(opt *sonar.ProjectsCreateOption) (*sonar.ProjectsCreate, *http.Response, error)
-	Delete(opt *sonar.ProjectsDeleteOption) (*http.Response, error)
-	Search(opt *sonar.ProjectsSearchOption) (*sonar.ProjectsSearch, *http.Response, error)
-	SearchMyProjects(opt *sonar.ProjectsSearchMyProjectsOption) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
-	SearchMyScannableProjects(opt *sonar.ProjectsSearchMyScannableProjectsOption) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
-	UpdateKey(opt *sonar.ProjectsUpdateKeyOption) (*http.Response, error)
-	UpdateVisibility(opt *sonar.ProjectsUpdateVisibilityOption) (*http.Response, error)
+	BulkDelete(opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error)
+	Create(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error)
+	Delete(opt *sonar.ProjectsDeleteOptions) (*http.Response, error)
+	Search(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error)
+	SearchMyProjects(opt *sonar.ProjectsSearchMyProjectsOptions) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
+	SearchMyScannableProjects(opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
+	UpdateKey(opt *sonar.ProjectsUpdateKeyOptions) (*http.Response, error)
+	UpdateVisibility(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error)
 }
 
 // NewProjectsClient creates a new ProjectsClient with the provided SonarQube client configuration.
@@ -50,8 +50,8 @@ func NewProjectsClient(clientConfig common.Config) ProjectsClient {
 }
 
 // GenerateProjectsCreateOptions generates the options for creating a SonarQube Project based on the provided ProjectParameters.
-func GenerateProjectsCreateOptions(spec v1alpha1.ProjectParameters) *sonar.ProjectsCreateOption {
-	opts := sonar.ProjectsCreateOption{
+func GenerateProjectsCreateOptions(spec v1alpha1.ProjectParameters) *sonar.ProjectsCreateOptions {
+	opts := sonar.ProjectsCreateOptions{
 		Name:    spec.Name,
 		Project: spec.Key,
 	}
@@ -68,8 +68,8 @@ func GenerateProjectsCreateOptions(spec v1alpha1.ProjectParameters) *sonar.Proje
 }
 
 // GenerateProjectDeleteOptions generates the options for deleting a SonarQube Project based on the provided ProjectParameters.
-func GenerateProjectDeleteOptions(projectKey string) *sonar.ProjectsDeleteOption {
-	opts := sonar.ProjectsDeleteOption{
+func GenerateProjectDeleteOptions(projectKey string) *sonar.ProjectsDeleteOptions {
+	opts := sonar.ProjectsDeleteOptions{
 		Project: projectKey,
 	}
 
@@ -77,8 +77,8 @@ func GenerateProjectDeleteOptions(projectKey string) *sonar.ProjectsDeleteOption
 }
 
 // GenerateProjectSearchOptions generates the options for searching a SonarQube Project based on the provided ProjectParameters.
-func GenerateProjectSearchOptions(projectKey string) *sonar.ProjectsSearchOption {
-	opts := sonar.ProjectsSearchOption{
+func GenerateProjectSearchOptions(projectKey string) *sonar.ProjectsSearchOptions {
+	opts := sonar.ProjectsSearchOptions{
 		Projects: []string{projectKey},
 	}
 
@@ -131,8 +131,8 @@ func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.P
 }
 
 // GenerateProjectUpdateVisibilityOptions generates the options for updating the visibility of a SonarQube Project based on the provided project key and desired visibility.
-func GenerateProjectUpdateVisibilityOptions(projectKey string, visibility string) *sonar.ProjectsUpdateVisibilityOption {
-	return &sonar.ProjectsUpdateVisibilityOption{
+func GenerateProjectUpdateVisibilityOptions(projectKey string, visibility string) *sonar.ProjectsUpdateVisibilityOptions {
+	return &sonar.ProjectsUpdateVisibilityOptions{
 		Project:    projectKey,
 		Visibility: visibility,
 	}

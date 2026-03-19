@@ -30,7 +30,7 @@ import (
 
 // mockRulesClient is a test-local mock implementation of the RulesClient interface.
 type mockRulesClient struct {
-	SearchFn func(opt *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error)
+	SearchFn func(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error)
 }
 
 var errMockNotImplemented = errors.New("not implemented")
@@ -39,23 +39,23 @@ func (m *mockRulesClient) App() (*sonar.RulesApp, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Create(_ *sonar.RulesCreateOption) (*sonar.RulesCreate, *http.Response, error) {
+func (m *mockRulesClient) Create(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Delete(_ *sonar.RulesDeleteOption) (*http.Response, error) {
+func (m *mockRulesClient) Delete(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
 	return nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) List(_ *sonar.RulesListOption) (*string, *http.Response, error) {
+func (m *mockRulesClient) List(_ *sonar.RulesListOptions) (*string, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Repositories(_ *sonar.RulesRepositoriesOption) (*sonar.RulesRepositories, *http.Response, error) {
+func (m *mockRulesClient) Repositories(_ *sonar.RulesRepositoriesOptions) (*sonar.RulesRepositories, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Search(opt *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+func (m *mockRulesClient) Search(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -63,15 +63,15 @@ func (m *mockRulesClient) Search(opt *sonar.RulesSearchOption) (*sonar.RulesSear
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Show(_ *sonar.RulesShowOption) (*sonar.RulesShow, *http.Response, error) {
+func (m *mockRulesClient) Show(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Tags(_ *sonar.RulesTagsOption) (*sonar.RulesTags, *http.Response, error) {
+func (m *mockRulesClient) Tags(_ *sonar.RulesTagsOptions) (*sonar.RulesTags, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
-func (m *mockRulesClient) Update(opt *sonar.RulesUpdateOption) (*sonar.RulesUpdate, *http.Response, error) {
+func (m *mockRulesClient) Update(opt *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
@@ -722,7 +722,7 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 	}{
 		"SinglePageFetchesAllRules": {
 			rulesClient: &mockRulesClient{
-				SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+				SearchFn: func(_ *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 					return &sonar.RulesSearch{
 						Rules: []sonar.RuleDetails{
 							{Key: "java:S1000", Name: "Rule 1"},
@@ -746,7 +746,7 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 				callCount := 0
 
 				return &mockRulesClient{
-					SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+					SearchFn: func(_ *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 						callCount++
 						if callCount == 1 {
 							return &sonar.RulesSearch{
@@ -777,7 +777,7 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 		},
 		"SearchErrorReturnsError": {
 			rulesClient: &mockRulesClient{
-				SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+				SearchFn: func(_ *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 					return nil, nil, errSearch
 				},
 			},
@@ -787,7 +787,7 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 		},
 		"EmptyRulesReturnsEmpty": {
 			rulesClient: &mockRulesClient{
-				SearchFn: func(_ *sonar.RulesSearchOption) (*sonar.RulesSearch, *http.Response, error) {
+				SearchFn: func(_ *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 					return &sonar.RulesSearch{
 						Rules:  nil,
 						Paging: sonar.Paging{Total: 0},
@@ -1021,16 +1021,19 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
+		key        string
 		parameters *v1alpha1.RuleParameters
 		wantKey    string
 		wantName   string
 	}{
 		"NilParametersReturnsEmpty": {
+			key:        "",
 			parameters: nil,
 			wantKey:    "",
 			wantName:   "",
 		},
 		"FullParameters": {
+			key: "my:rule",
 			parameters: &v1alpha1.RuleParameters{
 				Key:                        "my:rule",
 				Name:                       "My Rule",
@@ -1052,6 +1055,7 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 			wantName: "My Rule",
 		},
 		"AllNilOptional": {
+			key: "k",
 			parameters: &v1alpha1.RuleParameters{
 				Key:                 "k",
 				Name:                "n",
@@ -1067,7 +1071,7 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateRuleUpdateOptions(tc.parameters)
+			got := GenerateRuleUpdateOptions(tc.key, tc.parameters)
 
 			if got.Key != tc.wantKey {
 				t.Errorf("GenerateRuleUpdateOptions().Key = %v, want %v", got.Key, tc.wantKey)
@@ -1144,14 +1148,16 @@ func TestGenerateRuleObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		rule     *sonar.RulesShow
-		wantKey  string
-		wantName string
+		rule          *sonar.RulesShow
+		wantKey       string
+		wantName      string
+		wantRemFnType string
 	}{
 		"NilRuleReturnsEmpty": {
-			rule:     nil,
-			wantKey:  "",
-			wantName: "",
+			rule:          nil,
+			wantKey:       "",
+			wantName:      "",
+			wantRemFnType: "",
 		},
 		"FullRule": {
 			rule: &sonar.RulesShow{
@@ -1197,8 +1203,9 @@ func TestGenerateRuleObservation(t *testing.T) {
 					},
 				},
 			},
-			wantKey:  "java:S001",
-			wantName: "Test Rule",
+			wantKey:       "java:S001",
+			wantName:      "Test Rule",
+			wantRemFnType: "LINEAR",
 		},
 		"RuleWithNonStringTags": {
 			rule: &sonar.RulesShow{
@@ -1208,8 +1215,9 @@ func TestGenerateRuleObservation(t *testing.T) {
 					Tags: []any{"str-tag", 42, nil, "str2"},
 				},
 			},
-			wantKey:  "java:S002",
-			wantName: "Rule 2",
+			wantKey:       "java:S002",
+			wantName:      "Rule 2",
+			wantRemFnType: "",
 		},
 	}
 
@@ -1225,6 +1233,10 @@ func TestGenerateRuleObservation(t *testing.T) {
 
 			if got.Name != tc.wantName {
 				t.Errorf("GenerateRuleObservation().Name = %v, want %v", got.Name, tc.wantName)
+			}
+
+			if got.RemFnType != tc.wantRemFnType {
+				t.Errorf("GenerateRuleObservation().RemFnType = %v, want %v", got.RemFnType, tc.wantRemFnType)
 			}
 		})
 	}
@@ -1531,17 +1543,32 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 		"DifferentKeyReturnsFalse": {
 			fields: fields{
 				spec: &v1alpha1.RuleParameters{
-					Key:         "java:S001",
+					Key:         "java:custom-rule-1",
 					Name:        "Test",
 					TemplateKey: "t",
 				},
 				observation: &v1alpha1.RuleObservation{
-					Key:         "java:S002",
+					Key:         "java:custom-rule-2",
 					Name:        "Test",
 					TemplateKey: "t",
 				},
 			},
 			want: false,
+		},
+		"UnprefixedSpecKeyMatchesPrefixedObservationKey": {
+			fields: fields{
+				spec: &v1alpha1.RuleParameters{
+					Key:         "custom-rule-1",
+					Name:        "Test",
+					TemplateKey: "t",
+				},
+				observation: &v1alpha1.RuleObservation{
+					Key:         "java:custom-rule-1",
+					Name:        "Test",
+					TemplateKey: "t",
+				},
+			},
+			want: true,
 		},
 		"DifferentNameReturnsFalse": {
 			fields: fields{
@@ -1858,6 +1885,23 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Name:        "n",
 					TemplateKey: "t",
 					Tags:        []string{"tag1", "tag2"},
+				},
+			},
+			want: true,
+		},
+		"MatchingTagsDifferentOrder": {
+			fields: fields{
+				spec: &v1alpha1.RuleParameters{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Tags:        &[]string{"crossplane", "example", "integration"},
+				},
+				observation: &v1alpha1.RuleObservation{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Tags:        []string{"crossplane", "integration", "example"},
 				},
 			},
 			want: true,

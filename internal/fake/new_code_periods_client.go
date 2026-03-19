@@ -26,17 +26,17 @@ import (
 
 // MockNewCodePeriodsClient is a mock implementation of the NewCodePeriodsClient interface.
 type MockNewCodePeriodsClient struct {
-	ListFn  func(opt *sonar.NewCodePeriodsListOption) (*sonar.NewCodePeriodsList, *http.Response, error)
-	SetFn   func(opt *sonar.NewCodePeriodsSetOption) (*http.Response, error)
-	ShowFn  func(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error)
-	UnsetFn func(opt *sonar.NewCodePeriodsUnsetOption) (*http.Response, error)
+	ListFn  func(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error)
+	SetFn   func(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error)
+	ShowFn  func(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error)
+	UnsetFn func(opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error)
 }
 
 // Ensure MockNewCodePeriodsClient implements NewCodePeriodsClient.
 var _ instance.NewCodePeriodsClient = &MockNewCodePeriodsClient{}
 
 // List implements NewCodePeriodsClient.List.
-func (m *MockNewCodePeriodsClient) List(opt *sonar.NewCodePeriodsListOption) (*sonar.NewCodePeriodsList, *http.Response, error) {
+func (m *MockNewCodePeriodsClient) List(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn(opt)
 	}
@@ -45,7 +45,7 @@ func (m *MockNewCodePeriodsClient) List(opt *sonar.NewCodePeriodsListOption) (*s
 }
 
 // Set implements NewCodePeriodsClient.Set.
-func (m *MockNewCodePeriodsClient) Set(opt *sonar.NewCodePeriodsSetOption) (*http.Response, error) {
+func (m *MockNewCodePeriodsClient) Set(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}
@@ -54,7 +54,7 @@ func (m *MockNewCodePeriodsClient) Set(opt *sonar.NewCodePeriodsSetOption) (*htt
 }
 
 // Show implements NewCodePeriodsClient.Show.
-func (m *MockNewCodePeriodsClient) Show(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error) {
+func (m *MockNewCodePeriodsClient) Show(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
 	if m.ShowFn != nil {
 		return m.ShowFn(opt)
 	}
@@ -63,7 +63,7 @@ func (m *MockNewCodePeriodsClient) Show(opt *sonar.NewCodePeriodsShowOption) (*s
 }
 
 // Unset implements NewCodePeriodsClient.Unset.
-func (m *MockNewCodePeriodsClient) Unset(opt *sonar.NewCodePeriodsUnsetOption) (*http.Response, error) {
+func (m *MockNewCodePeriodsClient) Unset(opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error) {
 	if m.UnsetFn != nil {
 		return m.UnsetFn(opt)
 	}

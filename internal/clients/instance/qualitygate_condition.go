@@ -54,8 +54,8 @@ func GenerateQualityGateConditionsObservation(conditions []sonar.QualityGateCond
 }
 
 // GenerateCreateQualityGateConditionOption generates SonarQube QualitygatesCreateConditionOption from QualityGateConditionParameters.
-func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesCreateConditionOption {
-	option := sonar.QualitygatesCreateConditionOption{
+func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesCreateConditionOptions {
+	option := sonar.QualitygatesCreateConditionOptions{
 		GateName: gateName,
 		Error:    params.Error,
 		Metric:   params.Metric,
@@ -68,8 +68,8 @@ func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.Q
 }
 
 // GenerateUpdateQualityGateConditionOption generates SonarQube QualitygatesUpdateConditionOption from QualityGateConditionParameters.
-func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesUpdateConditionOption {
-	option := sonar.QualitygatesUpdateConditionOption{
+func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesUpdateConditionOptions {
+	option := sonar.QualitygatesUpdateConditionOptions{
 		ID:     id,
 		Error:  params.Error,
 		Metric: params.Metric,
@@ -82,8 +82,8 @@ func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.Quality
 }
 
 // GenerateDeleteQualityGateConditionOption generates SonarQube QualitygatesDeleteConditionOption from QualityGateConditionObservation.
-func GenerateDeleteQualityGateConditionOption(id string) *sonar.QualitygatesDeleteConditionOption {
-	return &sonar.QualitygatesDeleteConditionOption{
+func GenerateDeleteQualityGateConditionOption(id string) *sonar.QualitygatesDeleteConditionOptions {
+	return &sonar.QualitygatesDeleteConditionOptions{
 		ID: id,
 	}
 }

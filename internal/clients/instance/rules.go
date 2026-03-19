@@ -18,6 +18,7 @@ package instance
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
@@ -36,14 +37,14 @@ const (
 // RulesClient is the client for SonarQube Rules API.
 type RulesClient interface {
 	App() (v *sonar.RulesApp, resp *http.Response, err error)
-	Create(opt *sonar.RulesCreateOption) (v *sonar.RulesCreate, resp *http.Response, err error)
-	Delete(opt *sonar.RulesDeleteOption) (resp *http.Response, err error)
-	List(opt *sonar.RulesListOption) (v *string, resp *http.Response, err error)
-	Repositories(opt *sonar.RulesRepositoriesOption) (v *sonar.RulesRepositories, resp *http.Response, err error)
-	Search(opt *sonar.RulesSearchOption) (v *sonar.RulesSearch, resp *http.Response, err error)
-	Show(opt *sonar.RulesShowOption) (v *sonar.RulesShow, resp *http.Response, err error)
-	Tags(opt *sonar.RulesTagsOption) (v *sonar.RulesTags, resp *http.Response, err error)
-	Update(opt *sonar.RulesUpdateOption) (v *sonar.RulesUpdate, resp *http.Response, err error)
+	Create(opt *sonar.RulesCreateOptions) (v *sonar.RulesCreate, resp *http.Response, err error)
+	Delete(opt *sonar.RulesDeleteOptions) (resp *http.Response, err error)
+	List(opt *sonar.RulesListOptions) (v *string, resp *http.Response, err error)
+	Repositories(opt *sonar.RulesRepositoriesOptions) (v *sonar.RulesRepositories, resp *http.Response, err error)
+	Search(opt *sonar.RulesSearchOptions) (v *sonar.RulesSearch, resp *http.Response, err error)
+	Show(opt *sonar.RulesShowOptions) (v *sonar.RulesShow, resp *http.Response, err error)
+	Tags(opt *sonar.RulesTagsOptions) (v *sonar.RulesTags, resp *http.Response, err error)
+	Update(opt *sonar.RulesUpdateOptions) (v *sonar.RulesUpdate, resp *http.Response, err error)
 }
 
 // NewRulesClient creates a new RulesClient with the provided SonarQube client configuration.
@@ -55,8 +56,8 @@ func NewRulesClient(clientConfig common.Config) RulesClient {
 
 // GenerateQualityProfileRulesSearchOption generates SonarQube RulesSearchOption for a given quality profile key
 // to fetch activated rules in that quality profile.
-func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesSearchOption {
-	return &sonar.RulesSearchOption{
+func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesSearchOptions {
+	return &sonar.RulesSearchOptions{
 		Qprofile: key,
 		// We want only activated rules in the quality profile
 		Activation: true,
@@ -291,8 +292,8 @@ func areQualityProfileRuleImpactsUpToDate(spec *map[string]string, observation [
 }
 
 // GenerateRuleCreateOptions generates SonarQube RulesCreateOption based on the provided Rule parameters.
-func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.RulesCreateOption {
-	rulesCreateOptions := &sonar.RulesCreateOption{}
+func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.RulesCreateOptions {
+	rulesCreateOptions := &sonar.RulesCreateOptions{}
 	if parameters == nil {
 		return rulesCreateOptions
 	}
@@ -312,14 +313,17 @@ func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.Rules
 }
 
 // GenerateRuleUpdateOptions generates SonarQube RulesUpdateOption based on the provided Rule parameters and observation.
-func GenerateRuleUpdateOptions(parameters *v1alpha1.RuleParameters) *sonar.RulesUpdateOption {
-	rulesUpdateOptions := &sonar.RulesUpdateOption{}
+func GenerateRuleUpdateOptions(key string, parameters *v1alpha1.RuleParameters) *sonar.RulesUpdateOptions {
+	rulesUpdateOptions := &sonar.RulesUpdateOptions{}
 	if parameters == nil {
 		return rulesUpdateOptions
 	}
 
-	helpers.AssignIfNonNil(&rulesUpdateOptions.Impacts, parameters.Impacts)
-	rulesUpdateOptions.Key = parameters.Key
+	if parameters.Impacts != nil && len(*parameters.Impacts) != 0 {
+		helpers.AssignIfNonNil(&rulesUpdateOptions.Impacts, parameters.Impacts)
+	}
+
+	rulesUpdateOptions.Key = key
 	rulesUpdateOptions.MarkdownDescription = parameters.MarkdownDescription
 	helpers.AssignIfNonNil(&rulesUpdateOptions.MarkdownNote, parameters.MarkdownNote)
 	rulesUpdateOptions.Name = parameters.Name
@@ -349,15 +353,15 @@ func generateRuleParametersOptions(spec *map[string]v1alpha1.RuleParameterConfig
 }
 
 // GenerateRuleDeleteOptions generates SonarQube RulesDeleteOption based on the provided Rule observation.
-func GenerateRuleDeleteOptions(key string) *sonar.RulesDeleteOption {
-	return &sonar.RulesDeleteOption{
+func GenerateRuleDeleteOptions(key string) *sonar.RulesDeleteOptions {
+	return &sonar.RulesDeleteOptions{
 		Key: key,
 	}
 }
 
 // GenerateRuleGetOptions generates SonarQube RulesShowOption based on the provided Rule observation.
-func GenerateRuleGetOptions(key string) *sonar.RulesShowOption {
-	return &sonar.RulesShowOption{
+func GenerateRuleGetOptions(key string) *sonar.RulesShowOptions {
+	return &sonar.RulesShowOptions{
 		Key: key,
 	}
 }
@@ -373,7 +377,7 @@ func GenerateRuleObservation(rule *sonar.RulesShow) v1alpha1.RuleObservation {
 		Key:                        rule.Rule.Key,
 		CreatedAt:                  helpers.StringToMetaTime(&rule.Rule.CreatedAt),
 		UpdatedAt:                  helpers.StringToMetaTime(&rule.Rule.UpdatedAt),
-		RemFnType:                  rule.Rule.RemFnBaseEffort,
+		RemFnType:                  rule.Rule.RemFnType,
 		RemFnBaseEffort:            rule.Rule.RemFnBaseEffort,
 		RemFnGapMultiplier:         rule.Rule.RemFnGapMultiplier,
 		RemFnOverloaded:            rule.Rule.RemFnOverloaded,
@@ -482,7 +486,7 @@ func IsRuleUpToDate(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObs
 		return false
 	}
 
-	return spec.Key == observation.Key &&
+	return isRuleKeyUpToDate(spec.Key, observation.Key) &&
 		spec.Name == observation.Name &&
 		spec.TemplateKey == observation.TemplateKey &&
 		helpers.IsComparablePtrEqualComparable(spec.CleanCodeAttribute, observation.CleanCodeAttribute) &&
@@ -493,8 +497,35 @@ func IsRuleUpToDate(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObs
 		helpers.IsComparablePtrEqualComparable(spec.Severity, observation.Severity) &&
 		helpers.IsComparablePtrEqualComparable(spec.Status, observation.Status) &&
 		helpers.IsComparablePtrEqualComparable(spec.Type, observation.Type) &&
-		helpers.IsComparableSlicePtrEqualComparableSlice(spec.Tags, observation.Tags) &&
+		areRuleTagsUpToDate(spec.Tags, observation.Tags) &&
 		areRuleParametersUpToDate(spec.Parameters, &observation.Params)
+}
+
+func isRuleKeyUpToDate(specKey, observationKey string) bool {
+	if specKey == observationKey {
+		return true
+	}
+
+	if specKey == "" || observationKey == "" {
+		return false
+	}
+
+	// For custom rules spec key is unprefixed (custom key), while observation key is repo-prefixed.
+	if strings.Contains(specKey, ":") {
+		return false
+	}
+
+	return strings.HasSuffix(observationKey, ":"+specKey)
+}
+
+func areRuleTagsUpToDate(specTags *[]string, observationTags []string) bool {
+	if specTags == nil {
+		return true
+	}
+
+	return cmp.Equal(*specTags, observationTags, cmpopts.EquateEmpty(), cmpopts.SortSlices(func(a, b string) bool {
+		return a < b
+	}))
 }
 
 // areRuleParametersUpToDate checks whether the observed Rule parameters are up to date with the desired parameters.

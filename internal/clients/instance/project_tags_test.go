@@ -29,12 +29,12 @@ func TestGenerateProjectTagsSetOptions(t *testing.T) {
 	tests := map[string]struct {
 		projectKey string
 		tags       []string
-		want       *sonar.ProjectTagsSetOption
+		want       *sonar.ProjectTagsSetOptions
 	}{
 		"BasicSetOption": {
 			projectKey: "my-project",
 			tags:       []string{"tag1", "tag2"},
-			want: &sonar.ProjectTagsSetOption{
+			want: &sonar.ProjectTagsSetOptions{
 				Project: "my-project",
 				Tags:    []string{"tag1", "tag2"},
 			},
@@ -42,7 +42,7 @@ func TestGenerateProjectTagsSetOptions(t *testing.T) {
 		"EmptyTags": {
 			projectKey: "my-project",
 			tags:       []string{},
-			want: &sonar.ProjectTagsSetOption{
+			want: &sonar.ProjectTagsSetOptions{
 				Project: "my-project",
 				Tags:    []string{},
 			},
@@ -50,7 +50,7 @@ func TestGenerateProjectTagsSetOptions(t *testing.T) {
 		"NilTags": {
 			projectKey: "my-project",
 			tags:       nil,
-			want: &sonar.ProjectTagsSetOption{
+			want: &sonar.ProjectTagsSetOptions{
 				Project: "my-project",
 				Tags:    nil,
 			},
@@ -58,7 +58,7 @@ func TestGenerateProjectTagsSetOptions(t *testing.T) {
 		"SingleTag": {
 			projectKey: "another-project",
 			tags:       []string{"solo"},
-			want: &sonar.ProjectTagsSetOption{
+			want: &sonar.ProjectTagsSetOptions{
 				Project: "another-project",
 				Tags:    []string{"solo"},
 			},
@@ -66,7 +66,7 @@ func TestGenerateProjectTagsSetOptions(t *testing.T) {
 		"EmptyProjectKey": {
 			projectKey: "",
 			tags:       []string{"tag1"},
-			want: &sonar.ProjectTagsSetOption{
+			want: &sonar.ProjectTagsSetOptions{
 				Project: "",
 				Tags:    []string{"tag1"},
 			},

@@ -1,0 +1,68 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Rule
+metadata:
+  name: example-rule
+  namespace: default
+spec:
+  forProvider:
+    # Key of the custom rule to create.
+    # Keep the repository prefix aligned with the template rule repository.
+    key: crossplane-review-comment
+
+    # Display name of the custom rule in SonarQube.
+    name: Crossplane Review Comment Rule
+
+    # Template rule used to create the custom rule.
+    # java:S124 is a stock SonarJava template rule for matching comments with a regular expression.
+    templateKey: java:S124
+
+    # Markdown description shown in SonarQube.
+    markdownDescription: |
+      Flags Java comments that contain review markers so teams can track
+      manual follow-up directly from SonarQube.
+
+    # Optional mutable fields.
+    severity: MAJOR
+    status: READY
+    type: CODE_SMELL
+    markdownNote: |
+      Managed by Crossplane for integration testing and example documentation.
+    tags:
+      - crossplane
+      - example
+      - integration
+
+    # Remediation settings are optional. These are sent on update after the
+    # rule has been created.
+    remediationFnType: CONSTANT_ISSUE
+    remediationFnBaseEffort: 15min
+
+    # Alternative create-time features that are available on this CR:
+    #
+    # cleanCodeAttribute: CONVENTIONAL
+    #
+    # impacts and severity are alternative inputs in SonarQube APIs. For a
+    # single integration-safe manifest this example uses severity.
+    # To exercise impacts instead, remove severity and use a map like:
+    # impacts:
+    #   MAINTAINABILITY: HIGH
+    #
+    # Parameters are template-specific. For java:S124 the template supports
+    # "regularExpression" and "message" parameters. They are commented out
+    # here to keep this manifest broadly applyable across SonarQube setups.
+    # Uncomment and adjust them if your integration environment is meant to
+    # validate template parameter synchronization as well:
+    # parameters:
+    #   regularExpression:
+    #     defaultValue: "(?i).*REVIEW.*"
+    #     htmlDesc: The regular expression
+    #     type: STRING
+    #   message:
+    #     defaultValue: This comment requires review.
+    #     htmlDesc: The issue message
+    #     type: STRING
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

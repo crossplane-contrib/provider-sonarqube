@@ -31,13 +31,13 @@ func TestGenerateQualityGateCreateOptions(t *testing.T) {
 
 	tests := map[string]struct {
 		spec v1alpha1.QualityGateParameters
-		want *sonar.QualitygatesCreateOption
+		want *sonar.QualitygatesCreateOptions
 	}{
 		"BasicCreateOption": {
 			spec: v1alpha1.QualityGateParameters{
 				Name: "my-quality-gate",
 			},
-			want: &sonar.QualitygatesCreateOption{
+			want: &sonar.QualitygatesCreateOptions{
 				Name: "my-quality-gate",
 			},
 		},
@@ -46,7 +46,7 @@ func TestGenerateQualityGateCreateOptions(t *testing.T) {
 				Name:    "default-gate",
 				Default: ptr.To(true),
 			},
-			want: &sonar.QualitygatesCreateOption{
+			want: &sonar.QualitygatesCreateOptions{
 				Name: "default-gate",
 			},
 		},
@@ -613,17 +613,17 @@ func TestGenerateQualityGateGetByProjectOptions(t *testing.T) {
 
 	tests := map[string]struct {
 		projectKey string
-		want       *sonar.QualitygatesGetByProjectOption
+		want       *sonar.QualitygatesGetByProjectOptions
 	}{
 		"BasicProjectKey": {
 			projectKey: "my-project",
-			want: &sonar.QualitygatesGetByProjectOption{
+			want: &sonar.QualitygatesGetByProjectOptions{
 				Project: "my-project",
 			},
 		},
 		"EmptyProjectKey": {
 			projectKey: "",
-			want: &sonar.QualitygatesGetByProjectOption{
+			want: &sonar.QualitygatesGetByProjectOptions{
 				Project: "",
 			},
 		},
@@ -647,12 +647,12 @@ func TestGenerateQualityGateSelectOptions(t *testing.T) {
 	tests := map[string]struct {
 		projectKey      string
 		qualityGateName string
-		want            *sonar.QualitygatesSelectOption
+		want            *sonar.QualitygatesSelectOptions
 	}{
 		"BasicSelectOption": {
 			projectKey:      "my-project",
 			qualityGateName: "my-gate",
-			want: &sonar.QualitygatesSelectOption{
+			want: &sonar.QualitygatesSelectOptions{
 				ProjectKey: "my-project",
 				GateName:   "my-gate",
 			},
@@ -660,7 +660,7 @@ func TestGenerateQualityGateSelectOptions(t *testing.T) {
 		"EmptyValues": {
 			projectKey:      "",
 			qualityGateName: "",
-			want: &sonar.QualitygatesSelectOption{
+			want: &sonar.QualitygatesSelectOptions{
 				ProjectKey: "",
 				GateName:   "",
 			},

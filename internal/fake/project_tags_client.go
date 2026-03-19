@@ -26,15 +26,15 @@ import (
 
 // MockProjectTagsClient is a mock implementation of the ProjectTagsClient interface.
 type MockProjectTagsClient struct {
-	SearchFn func(opt *sonar.ProjectTagsSearchOption) (*sonar.ProjectTagsSearch, *http.Response, error)
-	SetFn    func(opt *sonar.ProjectTagsSetOption) (*http.Response, error)
+	SearchFn func(opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error)
+	SetFn    func(opt *sonar.ProjectTagsSetOptions) (*http.Response, error)
 }
 
 // Ensure MockProjectTagsClient implements ProjectTagsClient.
 var _ instance.ProjectTagsClient = &MockProjectTagsClient{}
 
 // Search implements ProjectTagsClient.Search.
-func (m *MockProjectTagsClient) Search(opt *sonar.ProjectTagsSearchOption) (*sonar.ProjectTagsSearch, *http.Response, error) {
+func (m *MockProjectTagsClient) Search(opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -43,7 +43,7 @@ func (m *MockProjectTagsClient) Search(opt *sonar.ProjectTagsSearchOption) (*son
 }
 
 // Set implements ProjectTagsClient.Set.
-func (m *MockProjectTagsClient) Set(opt *sonar.ProjectTagsSetOption) (*http.Response, error) {
+func (m *MockProjectTagsClient) Set(opt *sonar.ProjectTagsSetOptions) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}

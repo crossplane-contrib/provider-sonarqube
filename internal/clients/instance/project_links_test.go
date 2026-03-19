@@ -26,13 +26,13 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
-func TestGenerateProjectLinksCreateOptions(t *testing.T) {
+func TestGenerateProjectLinksCreateOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectID string
 		link      v1alpha1.ProjectLinkParameters
-		want      *sonar.ProjectLinksCreateOption
+		want      *sonar.ProjectLinksCreateOptions
 	}{
 		"BasicCreateOption": {
 			projectID: "my-project",
@@ -40,7 +40,7 @@ func TestGenerateProjectLinksCreateOptions(t *testing.T) {
 				Name: "homepage",
 				URL:  "https://example.com",
 			},
-			want: &sonar.ProjectLinksCreateOption{
+			want: &sonar.ProjectLinksCreateOptions{
 				ProjectID: "my-project",
 				Name:      "homepage",
 				URL:       "https://example.com",
@@ -53,7 +53,7 @@ func TestGenerateProjectLinksCreateOptions(t *testing.T) {
 				Name: "ci",
 				URL:  "https://ci.example.com",
 			},
-			want: &sonar.ProjectLinksCreateOption{
+			want: &sonar.ProjectLinksCreateOptions{
 				ProjectID: "my-project",
 				Name:      "ci",
 				URL:       "https://ci.example.com",
@@ -65,24 +65,24 @@ func TestGenerateProjectLinksCreateOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectLinksCreateOptions(tc.projectID, tc.link)
+			got := GenerateProjectLinksCreateOptionss(tc.projectID, tc.link)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectLinksCreateOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectLinksCreateOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectLinksDeleteOptions(t *testing.T) {
+func TestGenerateProjectLinksDeleteOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		linkID string
-		want   *sonar.ProjectLinksDeleteOption
+		want   *sonar.ProjectLinksDeleteOptions
 	}{
 		"BasicDeleteOption": {
 			linkID: "link-123",
-			want: &sonar.ProjectLinksDeleteOption{
+			want: &sonar.ProjectLinksDeleteOptions{
 				ID: "link-123",
 			},
 		},
@@ -92,24 +92,24 @@ func TestGenerateProjectLinksDeleteOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectLinksDeleteOptions(tc.linkID)
+			got := GenerateProjectLinksDeleteOptionss(tc.linkID)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectLinksDeleteOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectLinksDeleteOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectLinksSearchOptions(t *testing.T) {
+func TestGenerateProjectLinksSearchOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectID string
-		want      *sonar.ProjectLinksSearchOption
+		want      *sonar.ProjectLinksSearchOptions
 	}{
 		"BasicSearchOption": {
 			projectID: "my-project",
-			want: &sonar.ProjectLinksSearchOption{
+			want: &sonar.ProjectLinksSearchOptions{
 				ProjectID: "my-project",
 			},
 		},
@@ -119,9 +119,9 @@ func TestGenerateProjectLinksSearchOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectLinksSearchOptions(tc.projectID)
+			got := GenerateProjectLinksSearchOptionss(tc.projectID)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectLinksSearchOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectLinksSearchOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

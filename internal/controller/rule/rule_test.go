@@ -147,7 +147,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ShowFailsReturnsError": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				ShowFn: func(_ *sonar.RulesShowOption) (*sonar.RulesShow, *http.Response, error) {
+				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return nil, nil, errRulesNotImplemented
 				},
 			}),
@@ -162,7 +162,7 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveResourceUpToDate": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				ShowFn: func(opt *sonar.RulesShowOption) (*sonar.RulesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
 						Rule: sonar.RuleDetails{
 							Key:         "custom:rule",
@@ -196,7 +196,7 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveResourceNotUpToDate": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				ShowFn: func(_ *sonar.RulesShowOption) (*sonar.RulesShow, *http.Response, error) {
+				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
 						Rule: sonar.RuleDetails{
 							Key:         "custom:rule",
@@ -226,7 +226,7 @@ func TestObserve(t *testing.T) {
 		},
 		"LateInitialization": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				ShowFn: func(_ *sonar.RulesShowOption) (*sonar.RulesShow, *http.Response, error) {
+				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
 						Rule: sonar.RuleDetails{
 							Key:         "custom:rule",
@@ -307,7 +307,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateFails": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				CreateFn: func(_ *sonar.RulesCreateOption) (*sonar.RulesCreate, *http.Response, error) {
+				CreateFn: func(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 					return nil, nil, errRulesNotImplemented
 				},
 			}),
@@ -322,7 +322,7 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreate": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				CreateFn: func(_ *sonar.RulesCreateOption) (*sonar.RulesCreate, *http.Response, error) {
+				CreateFn: func(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 					return &sonar.RulesCreate{
 						Rule: sonar.Rule{Key: "custom:rule"},
 					}, mockHTTPResponse(), nil
@@ -338,7 +338,7 @@ func TestCreate(t *testing.T) {
 		},
 		"ExternalNameSetAfterCreate": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				CreateFn: func(_ *sonar.RulesCreateOption) (*sonar.RulesCreate, *http.Response, error) {
+				CreateFn: func(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 					return &sonar.RulesCreate{
 						Rule: sonar.Rule{Key: "custom:generated-key"},
 					}, mockHTTPResponse(), nil
@@ -401,7 +401,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"UpdateFails": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				UpdateFn: func(_ *sonar.RulesUpdateOption) (*sonar.RulesUpdate, *http.Response, error) {
+				UpdateFn: func(_ *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
 					return nil, nil, errRulesNotImplemented
 				},
 			}),
@@ -416,7 +416,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"SuccessfulUpdate": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				UpdateFn: func(_ *sonar.RulesUpdateOption) (*sonar.RulesUpdate, *http.Response, error) {
+				UpdateFn: func(_ *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
 					return &sonar.RulesUpdate{
 						Rule: sonar.Rule{Key: "custom:rule"},
 					}, mockHTTPResponse(), nil
@@ -480,7 +480,7 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteFails": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				DeleteFn: func(_ *sonar.RulesDeleteOption) (*http.Response, error) {
+				DeleteFn: func(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
 					return nil, errRulesNotImplemented
 				},
 			}),
@@ -492,7 +492,7 @@ func TestDelete(t *testing.T) {
 		},
 		"SuccessfulDelete": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
-				DeleteFn: func(_ *sonar.RulesDeleteOption) (*http.Response, error) {
+				DeleteFn: func(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
 					return mockHTTPResponse(), nil
 				},
 			}),

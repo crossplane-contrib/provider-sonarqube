@@ -30,9 +30,9 @@ import (
 // SettingsClient is the interface for interacting with SonarQube Settings API
 // It handles all the operations related to Settings in SonarQube, such as creating, updating, deleting, and retrieving Settings.
 type SettingsClient interface {
-	Set(opt *sonar.SettingsSetOption) (*http.Response, error)
-	Values(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error)
-	Reset(opt *sonar.SettingsResetOption) (*http.Response, error)
+	Set(opt *sonar.SettingsSetOptions) (*http.Response, error)
+	Values(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error)
+	Reset(opt *sonar.SettingsResetOptions) (*http.Response, error)
 }
 
 // NewSettingsClient creates a new SettingsClient with the provided SonarQube client configuration.
@@ -43,8 +43,8 @@ func NewSettingsClient(clientConfig common.Config) SettingsClient {
 }
 
 // GenerateSettingSetOptions generates the options for the Set API call based on the provided settings parameters and component.
-func GenerateSettingSetOptions(key string, params v1alpha1.SettingParameters, component *string) *sonar.SettingsSetOption {
-	settingsSetOptions := &sonar.SettingsSetOption{
+func GenerateSettingSetOptions(key string, params v1alpha1.SettingParameters, component *string) *sonar.SettingsSetOptions {
+	settingsSetOptions := &sonar.SettingsSetOptions{
 		Key: key,
 	}
 	helpers.AssignIfNonNil(&settingsSetOptions.Value, params.Value)
@@ -65,13 +65,13 @@ func GenerateSettingSetOptions(key string, params v1alpha1.SettingParameters, co
 }
 
 // GenerateSettingsValuesOptions generates the options for the Values API call based on the provided component and keys.
-func GenerateSettingsValuesOptions(params *v1alpha1.SettingsParameters) *sonar.SettingsValuesOption {
+func GenerateSettingsValuesOptions(params *v1alpha1.SettingsParameters) *sonar.SettingsValuesOptions {
 	keys := make([]string, 0, len(params.Settings))
 	for key := range params.Settings {
 		keys = append(keys, key)
 	}
 
-	settingsValuesOptions := &sonar.SettingsValuesOption{
+	settingsValuesOptions := &sonar.SettingsValuesOptions{
 		Keys: keys,
 	}
 	helpers.AssignIfNonNil(&settingsValuesOptions.Component, params.Component)
@@ -80,13 +80,13 @@ func GenerateSettingsValuesOptions(params *v1alpha1.SettingsParameters) *sonar.S
 }
 
 // GenerateSettingsResetOptions generates the options for the Reset API call based on the provided settings parameters and component.
-func GenerateSettingsResetOptions(params v1alpha1.SettingsParameters) *sonar.SettingsResetOption {
+func GenerateSettingsResetOptions(params v1alpha1.SettingsParameters) *sonar.SettingsResetOptions {
 	keys := make([]string, 0, len(params.Settings))
 	for key := range params.Settings {
 		keys = append(keys, key)
 	}
 
-	settingsResetOptions := &sonar.SettingsResetOption{
+	settingsResetOptions := &sonar.SettingsResetOptions{
 		Keys: keys,
 	}
 	helpers.AssignIfNonNil(&settingsResetOptions.Component, params.Component)
@@ -95,8 +95,8 @@ func GenerateSettingsResetOptions(params v1alpha1.SettingsParameters) *sonar.Set
 }
 
 // GenerateSettingsResetOptionsFromList generates the options for the Reset API call based on the provided list of keys and component.
-func GenerateSettingsResetOptionsFromList(keys []string, component *string) *sonar.SettingsResetOption {
-	settingsResetOptions := &sonar.SettingsResetOption{
+func GenerateSettingsResetOptionsFromList(keys []string, component *string) *sonar.SettingsResetOptions {
+	settingsResetOptions := &sonar.SettingsResetOptions{
 		Keys: keys,
 	}
 	helpers.AssignIfNonNil(&settingsResetOptions.Component, component)

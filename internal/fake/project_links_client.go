@@ -26,16 +26,16 @@ import (
 
 // MockProjectLinksClient is a mock implementation of the ProjectLinksClient interface.
 type MockProjectLinksClient struct {
-	CreateFn func(opt *sonar.ProjectLinksCreateOption) (*sonar.ProjectLinksCreate, *http.Response, error)
-	DeleteFn func(opt *sonar.ProjectLinksDeleteOption) (*http.Response, error)
-	SearchFn func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error)
+	CreateFn func(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error)
+	DeleteFn func(opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error)
+	SearchFn func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error)
 }
 
 // Ensure MockProjectLinksClient implements ProjectLinksClient.
 var _ instance.ProjectLinksClient = &MockProjectLinksClient{}
 
 // Create implements ProjectLinksClient.Create.
-func (m *MockProjectLinksClient) Create(opt *sonar.ProjectLinksCreateOption) (*sonar.ProjectLinksCreate, *http.Response, error) {
+func (m *MockProjectLinksClient) Create(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -44,7 +44,7 @@ func (m *MockProjectLinksClient) Create(opt *sonar.ProjectLinksCreateOption) (*s
 }
 
 // Delete implements ProjectLinksClient.Delete.
-func (m *MockProjectLinksClient) Delete(opt *sonar.ProjectLinksDeleteOption) (*http.Response, error) {
+func (m *MockProjectLinksClient) Delete(opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -53,7 +53,7 @@ func (m *MockProjectLinksClient) Delete(opt *sonar.ProjectLinksDeleteOption) (*h
 }
 
 // Search implements ProjectLinksClient.Search.
-func (m *MockProjectLinksClient) Search(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+func (m *MockProjectLinksClient) Search(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}

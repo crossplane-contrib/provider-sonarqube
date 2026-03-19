@@ -102,7 +102,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ShowFailsReturnsNotExists": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return nil, nil, errors.New("api error")
 				},
 			},
@@ -127,7 +127,7 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveResourceExists": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return &sonar.QualitygatesShow{
 						Name:       "test-gate",
 						CaycStatus: "compliant",
@@ -169,7 +169,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ResourceNotUpToDateWhenNamesDiffer": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return &sonar.QualitygatesShow{
 						Name:       "different-name",
 						CaycStatus: "compliant",
@@ -211,7 +211,7 @@ func TestObserve(t *testing.T) {
 		},
 		"LateInitializeDefault": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return &sonar.QualitygatesShow{
 						Name:       "test-gate",
 						CaycStatus: "compliant",
@@ -302,7 +302,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateFails": {
 			client: &fake.MockQualityGatesClient{
-				CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
+				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return nil, nil, errors.New("create error")
 				},
 			},
@@ -324,7 +324,7 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreate": {
 			client: &fake.MockQualityGatesClient{
-				CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
+				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
 						ID:   "gate-123",
 						Name: opt.Name,
@@ -349,7 +349,7 @@ func TestCreate(t *testing.T) {
 		},
 		"ExternalNameSetToSonarQubeName": {
 			client: &fake.MockQualityGatesClient{
-				CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
+				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
 						ID:   "some-generated-id",
 						Name: "MySonarQubeGateName",
@@ -374,13 +374,13 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateWithDefaultTrue": {
 			client: &fake.MockQualityGatesClient{
-				CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
+				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
 						ID:   "gate-123",
 						Name: "my-sonar-gate", // different from k8s resource name to test the fix
 					}, nil, nil
 				},
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOption) (*http.Response, error) {
+				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
 					// Verify the correct SonarQube quality gate name is used, not Kubernetes resource name
 					if opt.Name != "my-sonar-gate" {
 						return nil, errors.New("expected SonarQube gate name but got: " + opt.Name)
@@ -408,13 +408,13 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateWithDefaultTrueButSetDefaultFails": {
 			client: &fake.MockQualityGatesClient{
-				CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
+				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
 						ID:   "gate-123",
 						Name: opt.Name,
 					}, nil, nil
 				},
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOption) (*http.Response, error) {
+				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
 					return nil, errors.New("set default error")
 				},
 			},
@@ -502,7 +502,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"SetAsDefaultWhenRequested": {
 			client: &fake.MockQualityGatesClient{
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOption) (*http.Response, error) {
+				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
 					return mockHTTPResponse(), nil
 				},
 			},
@@ -533,7 +533,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"SetAsDefaultFails": {
 			client: &fake.MockQualityGatesClient{
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOption) (*http.Response, error) {
+				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
 					return nil, errors.New("set default error")
 				},
 			},
@@ -629,7 +629,7 @@ func TestDelete(t *testing.T) {
 		},
 		"SuccessfulDelete": {
 			client: &fake.MockQualityGatesClient{
-				DestroyFn: func(opt *sonar.QualitygatesDestroyOption) (*http.Response, error) {
+				DestroyFn: func(opt *sonar.QualitygatesDestroyOptions) (*http.Response, error) {
 					// Verify the correct external name is used for deletion
 					if opt.Name != "my-sonar-gate" {
 						return nil, errors.New("expected external name 'my-sonar-gate' but got: " + opt.Name)
@@ -659,7 +659,7 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteFails": {
 			client: &fake.MockQualityGatesClient{
-				DestroyFn: func(opt *sonar.QualitygatesDestroyOption) (*http.Response, error) {
+				DestroyFn: func(opt *sonar.QualitygatesDestroyOptions) (*http.Response, error) {
 					return nil, errors.New("delete error")
 				},
 			},
@@ -717,7 +717,7 @@ func TestCreateSetsExternalNameToSonarQubeName(t *testing.T) {
 	t.Parallel()
 
 	client := &fake.MockQualityGatesClient{
-		CreateFn: func(opt *sonar.QualitygatesCreateOption) (*sonar.QualitygatesCreate, *http.Response, error) {
+		CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 			return &sonar.QualitygatesCreate{
 				ID:   "generated-id-12345",
 				Name: "ActualSonarQubeName",
@@ -765,7 +765,7 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 	t.Parallel()
 
 	client := &fake.MockQualityGatesClient{
-		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+		ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
 				Name:       "test-gate",
 				CaycStatus: "compliant",
@@ -837,7 +837,7 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 	t.Parallel()
 
 	client := &fake.MockQualityGatesClient{
-		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+		ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
 				Name:       "test-gate",
 				CaycStatus: "compliant",
@@ -897,7 +897,7 @@ func TestObserveWithStaleConditionId(t *testing.T) {
 	t.Parallel()
 
 	client := &fake.MockQualityGatesClient{
-		ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+		ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 			return &sonar.QualitygatesShow{
 				Name:       "test-gate",
 				CaycStatus: "compliant",
@@ -973,7 +973,7 @@ func TestUpdateWithConditions(t *testing.T) {
 	}{
 		"UpdateWithNewCondition": {
 			client: &fake.MockQualityGatesClient{
-				CreateConditionFn: func(opt *sonar.QualitygatesCreateConditionOption) (*sonar.QualitygatesCreateCondition, *http.Response, error) {
+				CreateConditionFn: func(opt *sonar.QualitygatesCreateConditionOptions) (*sonar.QualitygatesCreateCondition, *http.Response, error) {
 					return &sonar.QualitygatesCreateCondition{
 						ID:     "new-id-123",
 						Metric: opt.Metric,
@@ -1011,7 +1011,7 @@ func TestUpdateWithConditions(t *testing.T) {
 		},
 		"UpdateDeletesOrphanedCondition": {
 			client: &fake.MockQualityGatesClient{
-				DeleteConditionFn: func(opt *sonar.QualitygatesDeleteConditionOption) (*http.Response, error) {
+				DeleteConditionFn: func(opt *sonar.QualitygatesDeleteConditionOptions) (*http.Response, error) {
 					if opt.ID != "orphan-id" {
 						return nil, errors.New("expected to delete orphan-id")
 					}
@@ -1053,7 +1053,7 @@ func TestUpdateWithConditions(t *testing.T) {
 		},
 		"UpdateConditionError": {
 			client: &fake.MockQualityGatesClient{
-				UpdateConditionFn: func(opt *sonar.QualitygatesUpdateConditionOption) (*http.Response, error) {
+				UpdateConditionFn: func(opt *sonar.QualitygatesUpdateConditionOptions) (*http.Response, error) {
 					return nil, errors.New("update error")
 				},
 			},
@@ -1093,7 +1093,7 @@ func TestUpdateWithConditions(t *testing.T) {
 		},
 		"CreateConditionError": {
 			client: &fake.MockQualityGatesClient{
-				CreateConditionFn: func(opt *sonar.QualitygatesCreateConditionOption) (*sonar.QualitygatesCreateCondition, *http.Response, error) {
+				CreateConditionFn: func(opt *sonar.QualitygatesCreateConditionOptions) (*sonar.QualitygatesCreateCondition, *http.Response, error) {
 					return nil, nil, errors.New("create error")
 				},
 			},
@@ -1126,7 +1126,7 @@ func TestUpdateWithConditions(t *testing.T) {
 		},
 		"DeleteConditionError": {
 			client: &fake.MockQualityGatesClient{
-				DeleteConditionFn: func(opt *sonar.QualitygatesDeleteConditionOption) (*http.Response, error) {
+				DeleteConditionFn: func(opt *sonar.QualitygatesDeleteConditionOptions) (*http.Response, error) {
 					return nil, errors.New("delete error")
 				},
 			},
@@ -1203,7 +1203,7 @@ func TestObserveWithConditions(t *testing.T) {
 	}{
 		"ConditionsUpToDate": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return &sonar.QualitygatesShow{
 						Name:       "test-gate",
 						CaycStatus: "compliant",
@@ -1250,7 +1250,7 @@ func TestObserveWithConditions(t *testing.T) {
 		},
 		"ConditionsNotUpToDate": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return &sonar.QualitygatesShow{
 						Name:       "test-gate",
 						CaycStatus: "compliant",
@@ -1297,7 +1297,7 @@ func TestObserveWithConditions(t *testing.T) {
 		},
 		"OrphanedConditionNotUpToDate": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return &sonar.QualitygatesShow{
 						Name:       "test-gate",
 						CaycStatus: "compliant",
@@ -1342,7 +1342,7 @@ func TestObserveWithConditions(t *testing.T) {
 		},
 		"NewConditionNotUpToDate": {
 			client: &fake.MockQualityGatesClient{
-				ShowFn: func(opt *sonar.QualitygatesShowOption) (*sonar.QualitygatesShow, *http.Response, error) {
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
 					return &sonar.QualitygatesShow{
 						Name:       "test-gate",
 						CaycStatus: "compliant",

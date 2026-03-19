@@ -66,7 +66,7 @@ func NewClient(clientConfig Config) *sonar.Client {
 		}
 		// Create SonarQube client with Basic Auth
 		sonarClient, err := sonar.NewClient(
-			&sonar.ClientCreateOption{
+			&sonar.ClientCreateOptions{
 				URL:      &clientConfig.BaseURL,
 				Username: &clientConfig.BasicAuth.Username,
 				Password: &clientConfig.BasicAuth.Password,
@@ -79,7 +79,7 @@ func NewClient(clientConfig Config) *sonar.Client {
 	case PersonalAccessToken:
 		// Create SonarQube client with Personal Access Token
 		sonarClient, err := sonar.NewClient(
-			&sonar.ClientCreateOption{
+			&sonar.ClientCreateOptions{
 				URL:   &clientConfig.BaseURL,
 				Token: &clientConfig.Token,
 			})

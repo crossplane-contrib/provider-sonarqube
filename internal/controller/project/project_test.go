@@ -121,7 +121,7 @@ func defaultMockClients() (*fake.MockProjectsClient, *fake.MockProjectLinksClien
 
 func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksClient, *fake.MockProjectBranchesClient, *fake.MockNewCodePeriodsClient, *fake.MockQualityGatesClient, *fake.MockQualityProfilesClient, *fake.MockProjectTagsClient) {
 	projectsClient := &fake.MockProjectsClient{
-		SearchFn: func(opt *sonar.ProjectsSearchOption) (*sonar.ProjectsSearch, *http.Response, error) {
+		SearchFn: func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 			return &sonar.ProjectsSearch{
 				Components: []sonar.ProjectSearchComponent{
 					{Key: "test-key", Name: "test-project", Visibility: "public", Qualifier: "TRK"},
@@ -130,7 +130,7 @@ func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksC
 		},
 	}
 	branchesClient := &fake.MockProjectBranchesClient{
-		ListFn: func(opt *sonar.ProjectBranchesListOption) (*sonar.ProjectBranchesList, *http.Response, error) {
+		ListFn: func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 			return &sonar.ProjectBranchesList{
 				Branches: []sonar.Branch{
 					{Name: "main", IsMain: true, Type: "LONG"},
@@ -139,27 +139,27 @@ func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksC
 		},
 	}
 	linksClient := &fake.MockProjectLinksClient{
-		SearchFn: func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+		SearchFn: func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 			return &sonar.ProjectLinksSearch{Links: []sonar.ProjectLink{}}, mockHTTPResponse(), nil
 		},
 	}
 	ncpClient := &fake.MockNewCodePeriodsClient{
-		ShowFn: func(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error) {
+		ShowFn: func(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
 			return &sonar.NewCodePeriodsShow{Type: "PREVIOUS_VERSION", Inherited: true}, mockHTTPResponse(), nil
 		},
-		ListFn: func(opt *sonar.NewCodePeriodsListOption) (*sonar.NewCodePeriodsList, *http.Response, error) {
+		ListFn: func(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error) {
 			return &sonar.NewCodePeriodsList{NewCodePeriods: []sonar.NewCodePeriod{}}, mockHTTPResponse(), nil
 		},
 	}
 	qgClient := &fake.MockQualityGatesClient{
-		GetByProjectFn: func(opt *sonar.QualitygatesGetByProjectOption) (*sonar.QualitygatesGetByProject, *http.Response, error) {
+		GetByProjectFn: func(opt *sonar.QualitygatesGetByProjectOptions) (*sonar.QualitygatesGetByProject, *http.Response, error) {
 			return &sonar.QualitygatesGetByProject{
 				QualityGate: sonar.ProjectQualityGate{Name: "Sonar way"},
 			}, mockHTTPResponse(), nil
 		},
 	}
 	qpClient := &fake.MockQualityProfilesClient{
-		SearchFn: func(opt *sonar.QualityprofilesSearchOption) (*sonar.QualityprofilesSearch, *http.Response, error) {
+		SearchFn: func(opt *sonar.QualityprofilesSearchOptions) (*sonar.QualityprofilesSearch, *http.Response, error) {
 			return &sonar.QualityprofilesSearch{
 				Profiles: []sonar.QualityProfile{
 					{Key: "java-profile", Name: "Java Default", Language: "java"},
@@ -225,7 +225,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"SearchFailsReturnsError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.SearchFn = func(opt *sonar.ProjectsSearchOption) (*sonar.ProjectsSearch, *http.Response, error) {
+				p.SearchFn = func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 					return nil, nil, errors.New("api error")
 				}
 
@@ -246,7 +246,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"SearchReturnsEmptyComponentsNoError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.SearchFn = func(opt *sonar.ProjectsSearchOption) (*sonar.ProjectsSearch, *http.Response, error) {
+				p.SearchFn = func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 					return &sonar.ProjectsSearch{Components: []sonar.ProjectSearchComponent{}}, mockHTTPResponse(), nil
 				}
 
@@ -266,7 +266,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"SearchReturnsWrongKeyReturnsNotExists": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.SearchFn = func(opt *sonar.ProjectsSearchOption) (*sonar.ProjectsSearch, *http.Response, error) {
+				p.SearchFn = func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 					return &sonar.ProjectsSearch{
 						Components: []sonar.ProjectSearchComponent{
 							{Key: "other-key", Name: "other"},
@@ -311,7 +311,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"ObserveWithBranchListError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				b.ListFn = func(opt *sonar.ProjectBranchesListOption) (*sonar.ProjectBranchesList, *http.Response, error) {
+				b.ListFn = func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 					return nil, nil, errors.New("branch error")
 				}
 
@@ -332,7 +332,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"ObserveWithLinksSearchError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return nil, nil, errors.New("links error")
 				}
 
@@ -353,7 +353,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"ObserveWithNewCodePeriodShowError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				n.ShowFn = func(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error) {
+				n.ShowFn = func(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
 					return nil, nil, errors.New("ncp error")
 				}
 
@@ -374,7 +374,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"ObserveWithQualityGateError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				q.GetByProjectFn = func(opt *sonar.QualitygatesGetByProjectOption) (*sonar.QualitygatesGetByProject, *http.Response, error) {
+				q.GetByProjectFn = func(opt *sonar.QualitygatesGetByProjectOptions) (*sonar.QualitygatesGetByProject, *http.Response, error) {
 					return nil, nil, errors.New("qg error")
 				}
 
@@ -395,7 +395,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"ObserveWithQualityProfileError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				qp.SearchFn = func(opt *sonar.QualityprofilesSearchOption) (*sonar.QualityprofilesSearch, *http.Response, error) {
+				qp.SearchFn = func(opt *sonar.QualityprofilesSearchOptions) (*sonar.QualityprofilesSearch, *http.Response, error) {
 					return nil, nil, errors.New("qp error")
 				}
 
@@ -416,7 +416,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"ObserveWithNewCodePeriodsListError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				n.ListFn = func(opt *sonar.NewCodePeriodsListOption) (*sonar.NewCodePeriodsList, *http.Response, error) {
+				n.ListFn = func(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error) {
 					return nil, nil, errors.New("ncp list error")
 				}
 
@@ -441,7 +441,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
 				// Override QP search to return many default profiles (like the real cluster)
-				qp.SearchFn = func(opt *sonar.QualityprofilesSearchOption) (*sonar.QualityprofilesSearch, *http.Response, error) {
+				qp.SearchFn = func(opt *sonar.QualityprofilesSearchOptions) (*sonar.QualityprofilesSearch, *http.Response, error) {
 					return &sonar.QualityprofilesSearch{
 						Profiles: []sonar.QualityProfile{
 							{Key: "uuid-1", Name: "Sonar way", Language: "java"},
@@ -476,7 +476,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"SpecWithLinks_ObservationHasMatchingLinks_IsUpToDate": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return &sonar.ProjectLinksSearch{
 						Links: []sonar.ProjectLink{
 							{ID: "link-uuid-1", Name: "GitHub Repository", Type: "", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
@@ -508,7 +508,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"SpecWithLinks_URLChanged_IsNotUpToDate": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return &sonar.ProjectLinksSearch{
 						Links: []sonar.ProjectLink{
 							{ID: "link-uuid-1", Name: "GitHub Repository", URL: "https://github.com/old-url"},
@@ -567,7 +567,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		"LinkWithNoID_LateInitializesIDFromObservation": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return &sonar.ProjectLinksSearch{
 						Links: []sonar.ProjectLink{
 							{ID: "link-uuid-1", Name: "GitHub Repository", Type: "", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
@@ -605,7 +605,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
 				// Override NCP Show to return a non-empty Value so that back-fill is exercised.
-				n.ShowFn = func(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error) {
+				n.ShowFn = func(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
 					return &sonar.NewCodePeriodsShow{
 						Type:  "NUMBER_OF_DAYS",
 						Value: "30",
@@ -697,7 +697,7 @@ func TestCreate(t *testing.T) {
 		"CreateFailsReturnsError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.CreateFn = func(opt *sonar.ProjectsCreateOption) (*sonar.ProjectsCreate, *http.Response, error) {
+				p.CreateFn = func(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error) {
 					return nil, nil, errors.New("create error")
 				}
 
@@ -718,7 +718,7 @@ func TestCreate(t *testing.T) {
 		"SuccessfulCreate": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.CreateFn = func(opt *sonar.ProjectsCreateOption) (*sonar.ProjectsCreate, *http.Response, error) {
+				p.CreateFn = func(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error) {
 					return &sonar.ProjectsCreate{
 						Project: sonar.Project{Key: "test-key"},
 					}, mockHTTPResponse(), nil
@@ -831,7 +831,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateVisibilityFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.UpdateVisibilityFn = func(opt *sonar.ProjectsUpdateVisibilityOption) (*http.Response, error) {
+				p.UpdateVisibilityFn = func(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error) {
 					return nil, errors.New("visibility error")
 				}
 
@@ -858,7 +858,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateTagsFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				tg.SetFn = func(opt *sonar.ProjectTagsSetOption) (*http.Response, error) {
+				tg.SetFn = func(opt *sonar.ProjectTagsSetOptions) (*http.Response, error) {
 					return nil, errors.New("tags error")
 				}
 
@@ -884,7 +884,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateSuccessWithVisibilityChange": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.UpdateVisibilityFn = func(opt *sonar.ProjectsUpdateVisibilityOption) (*http.Response, error) {
+				p.UpdateVisibilityFn = func(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error) {
 					return mockHTTPResponse(), nil
 				}
 
@@ -910,7 +910,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateDefaultBranchFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				b.SetMainFn = func(opt *sonar.ProjectBranchesSetMainOption) (*http.Response, error) {
+				b.SetMainFn = func(opt *sonar.ProjectBranchesSetMainOptions) (*http.Response, error) {
 					return nil, errors.New("branch error")
 				}
 
@@ -937,7 +937,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateQualityGateFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				q.SelectFn = func(opt *sonar.QualitygatesSelectOption) (*http.Response, error) {
+				q.SelectFn = func(opt *sonar.QualitygatesSelectOptions) (*http.Response, error) {
 					return nil, errors.New("qg error")
 				}
 
@@ -964,7 +964,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateNewCodePeriodFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				n.SetFn = func(opt *sonar.NewCodePeriodsSetOption) (*http.Response, error) {
+				n.SetFn = func(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
 					return nil, errors.New("ncp error")
 				}
 
@@ -997,7 +997,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateProjectLinksFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				l.CreateFn = func(opt *sonar.ProjectLinksCreateOption) (*sonar.ProjectLinksCreate, *http.Response, error) {
+				l.CreateFn = func(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error) {
 					return nil, nil, errors.New("link create error")
 				}
 
@@ -1025,7 +1025,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateQualityProfileFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				qp.ShowFn = func(opt *sonar.QualityprofilesShowOption) (*sonar.QualityprofilesShow, *http.Response, error) {
+				qp.ShowFn = func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return nil, nil, errors.New("qp show error")
 				}
 
@@ -1167,7 +1167,7 @@ func TestDelete(t *testing.T) {
 		"DeleteFailsReturnsError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.DeleteFn = func(opt *sonar.ProjectsDeleteOption) (*http.Response, error) {
+				p.DeleteFn = func(opt *sonar.ProjectsDeleteOptions) (*http.Response, error) {
 					return nil, errors.New("delete error")
 				}
 
@@ -1188,7 +1188,7 @@ func TestDelete(t *testing.T) {
 		"SuccessfulDelete": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				p.DeleteFn = func(opt *sonar.ProjectsDeleteOption) (*http.Response, error) {
+				p.DeleteFn = func(opt *sonar.ProjectsDeleteOptions) (*http.Response, error) {
 					return mockHTTPResponse(), nil
 				}
 
@@ -1352,7 +1352,7 @@ func TestObserveNilMapsNeverOccur(t *testing.T) {
 			name: "BranchAPIFailure",
 			buildExt: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				b.ListFn = func(opt *sonar.ProjectBranchesListOption) (*sonar.ProjectBranchesList, *http.Response, error) {
+				b.ListFn = func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 					return nil, nil, errors.New("branch api down")
 				}
 
@@ -1363,7 +1363,7 @@ func TestObserveNilMapsNeverOccur(t *testing.T) {
 			name: "LinksAPIFailure",
 			buildExt: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return nil, nil, errors.New("links api down")
 				}
 
@@ -1374,10 +1374,10 @@ func TestObserveNilMapsNeverOccur(t *testing.T) {
 			name: "BothBranchesAndLinksAPIFailure",
 			buildExt: func() *external {
 				p, l, b, n, q, qp, tg := successfulObserveMocks()
-				b.ListFn = func(opt *sonar.ProjectBranchesListOption) (*sonar.ProjectBranchesList, *http.Response, error) {
+				b.ListFn = func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 					return nil, nil, errors.New("branch api down")
 				}
-				l.SearchFn = func(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error) {
+				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return nil, nil, errors.New("links api down")
 				}
 

@@ -88,8 +88,9 @@ spec:
                       (e.g., MAINTAINABILITY: HIGH, SECURITY: LOW).'
                     type: object
                   key:
-                    description: Key is the unique identifier for the custom rule
-                      (required).
+                    description: |-
+                      Key is the unique identifier for the custom rule (required).
+                      Format must be "language:key" (e.g., "java:S1234").
                     maxLength: 200
                     minLength: 1
                     type: string
@@ -145,8 +146,8 @@ spec:
                     description: RemediationFnType is the type of the remediation
                       function.
                     enum:
+                    - CONSTANT_ISSUE
                     - LINEAR
-                    - CONSTANT
                     - LINEAR_OFFSET
                     type: string
                   remediationFyGapMultiplier:
@@ -299,17 +300,10 @@ spec:
                             key:
                               description: Key is the unique identifier of the context.
                               type: string
-                          required:
-                          - displayName
-                          - key
                           type: object
                         key:
                           description: Key is the unique identifier of the section.
                           type: string
-                      required:
-                      - content
-                      - context
-                      - key
                       type: object
                     type: array
                   gapDescription:
@@ -362,12 +356,6 @@ spec:
                           description: Type is the data type of the parameter (STRING,
                             TEXT, BOOLEAN, INTEGER, FLOAT).
                           type: string
-                      required:
-                      - defaultValue
-                      - desc
-                      - htmlDesc
-                      - key
-                      - type
                       type: object
                     type: array
                   remFnBaseEffort:
@@ -403,42 +391,6 @@ spec:
                   updatedAt:
                     format: date-time
                     type: string
-                required:
-                - cleanCodeAttribute
-                - cleanCodeAttributeCategory
-                - createdAt
-                - defaultRemFnBaseEffort
-                - defaultRemFnGapMultiplier
-                - defaultRemFnType
-                - descriptionSections
-                - gapDescription
-                - htmlDesc
-                - htmlNote
-                - impacts
-                - internalKey
-                - isExternal
-                - isTemplate
-                - key
-                - lang
-                - langName
-                - mdNote
-                - name
-                - noteLogin
-                - params
-                - remFnBaseEffort
-                - remFnGapMultiplier
-                - remFnOverloaded
-                - remFnType
-                - repo
-                - scope
-                - severity
-                - status
-                - sysTags
-                - tags
-                - template
-                - templateKey
-                - type
-                - updatedAt
                 type: object
               conditions:
                 description: Conditions of the resource.
@@ -499,7 +451,6 @@ spec:
         required:
         - metadata
         - spec
-        - status
         type: object
     served: true
     storage: true

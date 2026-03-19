@@ -26,22 +26,22 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
-func TestGenerateProjectBranchesListOptions(t *testing.T) {
+func TestGenerateProjectBranchesListOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectKey string
-		want       *sonar.ProjectBranchesListOption
+		want       *sonar.ProjectBranchesListOptions
 	}{
 		"BasicListOption": {
 			projectKey: "my-project",
-			want: &sonar.ProjectBranchesListOption{
+			want: &sonar.ProjectBranchesListOptions{
 				Project: "my-project",
 			},
 		},
 		"EmptyProjectKey": {
 			projectKey: "",
-			want: &sonar.ProjectBranchesListOption{
+			want: &sonar.ProjectBranchesListOptions{
 				Project: "",
 			},
 		},
@@ -51,26 +51,26 @@ func TestGenerateProjectBranchesListOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectBranchesListOptions(tc.projectKey)
+			got := GenerateProjectBranchesListOptionss(tc.projectKey)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectBranchesListOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectBranchesListOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectBranchesDeleteOptions(t *testing.T) {
+func TestGenerateProjectBranchesDeleteOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectKey string
 		branchKey  string
-		want       *sonar.ProjectBranchesDeleteOption
+		want       *sonar.ProjectBranchesDeleteOptions
 	}{
 		"BasicDeleteOption": {
 			projectKey: "my-project",
 			branchKey:  "feature-branch",
-			want: &sonar.ProjectBranchesDeleteOption{
+			want: &sonar.ProjectBranchesDeleteOptions{
 				Project: "my-project",
 				Branch:  "feature-branch",
 			},
@@ -81,9 +81,9 @@ func TestGenerateProjectBranchesDeleteOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectBranchesDeleteOptions(tc.projectKey, tc.branchKey)
+			got := GenerateProjectBranchesDeleteOptionss(tc.projectKey, tc.branchKey)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectBranchesDeleteOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectBranchesDeleteOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -298,18 +298,18 @@ func TestIsProjectMainBranchUpToDate(t *testing.T) {
 	}
 }
 
-func TestGenerateProjectBranchesSetMainOptions(t *testing.T) {
+func TestGenerateProjectBranchesSetMainOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectKey     string
 		mainBranchName string
-		want           *sonar.ProjectBranchesSetMainOption
+		want           *sonar.ProjectBranchesSetMainOptions
 	}{
 		"BasicSetMainOption": {
 			projectKey:     "my-project",
 			mainBranchName: "main",
-			want: &sonar.ProjectBranchesSetMainOption{
+			want: &sonar.ProjectBranchesSetMainOptions{
 				Project: "my-project",
 				Branch:  "main",
 			},
@@ -320,9 +320,9 @@ func TestGenerateProjectBranchesSetMainOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectBranchesSetMainOptions(tc.projectKey, tc.mainBranchName)
+			got := GenerateProjectBranchesSetMainOptionss(tc.projectKey, tc.mainBranchName)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectBranchesSetMainOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectBranchesSetMainOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

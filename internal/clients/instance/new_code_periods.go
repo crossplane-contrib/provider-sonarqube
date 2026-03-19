@@ -27,10 +27,10 @@ import (
 )
 
 type NewCodePeriodsClient interface {
-	List(opt *sonar.NewCodePeriodsListOption) (*sonar.NewCodePeriodsList, *http.Response, error)
-	Set(opt *sonar.NewCodePeriodsSetOption) (*http.Response, error)
-	Show(opt *sonar.NewCodePeriodsShowOption) (*sonar.NewCodePeriodsShow, *http.Response, error)
-	Unset(opt *sonar.NewCodePeriodsUnsetOption) (*http.Response, error)
+	List(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error)
+	Set(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error)
+	Show(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error)
+	Unset(opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error)
 }
 
 // NewNewCodePeriodsClient creates a new NewCodePeriodsClient with the provided SonarQube client configuration.
@@ -40,18 +40,18 @@ func NewNewCodePeriodsClient(clientConfig common.Config) NewCodePeriodsClient {
 	return newClient.NewCodePeriods
 }
 
-// GenerateNewCodePeriodsShowOptions generates the options for showing the new code period of a SonarQube Project based on the provided project key.
-func GenerateNewCodePeriodsShowOptions(projectKey *string, branch *string) *sonar.NewCodePeriodsShowOption {
-	opts := sonar.NewCodePeriodsShowOption{}
+// GenerateNewCodePeriodsShowOptionss generates the options for showing the new code period of a SonarQube Project based on the provided project key.
+func GenerateNewCodePeriodsShowOptionss(projectKey *string, branch *string) *sonar.NewCodePeriodsShowOptions {
+	opts := sonar.NewCodePeriodsShowOptions{}
 	helpers.AssignIfNonNil(&opts.Project, projectKey)
 	helpers.AssignIfNonNil(&opts.Branch, branch)
 
 	return &opts
 }
 
-// GenerateProjectNewCodePeriodsSetOptions generates the options for setting the new code period of a SonarQube Project based on the provided ProjectParameters.
-func GenerateProjectNewCodePeriodsSetOptions(projectKey string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOption {
-	opts := sonar.NewCodePeriodsSetOption{
+// GenerateProjectNewCodePeriodsSetOptionss generates the options for setting the new code period of a SonarQube Project based on the provided ProjectParameters.
+func GenerateProjectNewCodePeriodsSetOptionss(projectKey string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOptions {
+	opts := sonar.NewCodePeriodsSetOptions{
 		Project: projectKey,
 	}
 	if newCodePeriodParameters != nil {
@@ -62,9 +62,9 @@ func GenerateProjectNewCodePeriodsSetOptions(projectKey string, newCodePeriodPar
 	return &opts
 }
 
-// GenerateBranchNewCodePeriodsSetOptions generates the options for setting the new code period of a SonarQube Project branch based on the provided branch name and ProjectParameters.
-func GenerateBranchNewCodePeriodsSetOptions(projectKey string, branchName string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOption {
-	opts := sonar.NewCodePeriodsSetOption{
+// GenerateBranchNewCodePeriodsSetOptionss generates the options for setting the new code period of a SonarQube Project branch based on the provided branch name and ProjectParameters.
+func GenerateBranchNewCodePeriodsSetOptionss(projectKey string, branchName string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOptions {
+	opts := sonar.NewCodePeriodsSetOptions{
 		Project: projectKey,
 		Branch:  branchName,
 	}
@@ -76,9 +76,9 @@ func GenerateBranchNewCodePeriodsSetOptions(projectKey string, branchName string
 	return &opts
 }
 
-// GenerateProjectNewCodePeriodsListOptions generates the options for listing the new code periods of a SonarQube Project based on the provided project key.
-func GenerateProjectNewCodePeriodsListOptions(projectKey string) *sonar.NewCodePeriodsListOption {
-	return &sonar.NewCodePeriodsListOption{
+// GenerateProjectNewCodePeriodsListOptionss generates the options for listing the new code periods of a SonarQube Project based on the provided project key.
+func GenerateProjectNewCodePeriodsListOptionss(projectKey string) *sonar.NewCodePeriodsListOptions {
+	return &sonar.NewCodePeriodsListOptions{
 		Project: projectKey,
 	}
 }

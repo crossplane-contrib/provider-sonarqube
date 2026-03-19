@@ -129,14 +129,14 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 
 	tests := map[string]struct {
 		params v1alpha1.QualityGateConditionParameters
-		want   *sonar.QualitygatesCreateConditionOption
+		want   *sonar.QualitygatesCreateConditionOptions
 	}{
 		"BasicCondition": {
 			params: v1alpha1.QualityGateConditionParameters{
 				Metric: "coverage",
 				Error:  "80",
 			},
-			want: &sonar.QualitygatesCreateConditionOption{
+			want: &sonar.QualitygatesCreateConditionOptions{
 				GateName: "my-gate",
 				Metric:   "coverage",
 				Error:    "80",
@@ -148,7 +148,7 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 				Error:  "80",
 				Op:     ptr.To("LT"),
 			},
-			want: &sonar.QualitygatesCreateConditionOption{
+			want: &sonar.QualitygatesCreateConditionOptions{
 				GateName: "my-gate",
 				Metric:   "coverage",
 				Error:    "80",
@@ -161,7 +161,7 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 				Error:  "3",
 				Op:     ptr.To("GT"),
 			},
-			want: &sonar.QualitygatesCreateConditionOption{
+			want: &sonar.QualitygatesCreateConditionOptions{
 				GateName: "another-gate",
 				Metric:   "duplicated_lines_density",
 				Error:    "3",
@@ -188,7 +188,7 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 	tests := map[string]struct {
 		id     string
 		params v1alpha1.QualityGateConditionParameters
-		want   *sonar.QualitygatesUpdateConditionOption
+		want   *sonar.QualitygatesUpdateConditionOptions
 	}{
 		"BasicUpdate": {
 			id: "123",
@@ -196,7 +196,7 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 				Metric: "coverage",
 				Error:  "85",
 			},
-			want: &sonar.QualitygatesUpdateConditionOption{
+			want: &sonar.QualitygatesUpdateConditionOptions{
 				ID:     "123",
 				Metric: "coverage",
 				Error:  "85",
@@ -209,7 +209,7 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 				Error:  "5",
 				Op:     ptr.To("GT"),
 			},
-			want: &sonar.QualitygatesUpdateConditionOption{
+			want: &sonar.QualitygatesUpdateConditionOptions{
 				ID:     "456",
 				Metric: "duplicated_lines_density",
 				Error:  "5",
@@ -235,15 +235,15 @@ func TestGenerateDeleteQualityGateConditionOption(t *testing.T) {
 
 	tests := map[string]struct {
 		id   string
-		want *sonar.QualitygatesDeleteConditionOption
+		want *sonar.QualitygatesDeleteConditionOptions
 	}{
 		"BasicDelete": {
 			id:   "123",
-			want: &sonar.QualitygatesDeleteConditionOption{ID: "123"},
+			want: &sonar.QualitygatesDeleteConditionOptions{ID: "123"},
 		},
 		"EmptyID": {
 			id:   "",
-			want: &sonar.QualitygatesDeleteConditionOption{ID: ""},
+			want: &sonar.QualitygatesDeleteConditionOptions{ID: ""},
 		},
 	}
 

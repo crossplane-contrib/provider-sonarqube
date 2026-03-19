@@ -26,30 +26,30 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
-func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
+func TestGenerateNewCodePeriodsShowOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectKey *string
 		branch     *string
-		want       *sonar.NewCodePeriodsShowOption
+		want       *sonar.NewCodePeriodsShowOptions
 	}{
 		"BothNil": {
 			projectKey: nil,
 			branch:     nil,
-			want:       &sonar.NewCodePeriodsShowOption{},
+			want:       &sonar.NewCodePeriodsShowOptions{},
 		},
 		"ProjectKeyOnly": {
 			projectKey: ptr.To("my-project"),
 			branch:     nil,
-			want: &sonar.NewCodePeriodsShowOption{
+			want: &sonar.NewCodePeriodsShowOptions{
 				Project: "my-project",
 			},
 		},
 		"BothSet": {
 			projectKey: ptr.To("my-project"),
 			branch:     ptr.To("main"),
-			want: &sonar.NewCodePeriodsShowOption{
+			want: &sonar.NewCodePeriodsShowOptions{
 				Project: "my-project",
 				Branch:  "main",
 			},
@@ -57,7 +57,7 @@ func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
 		"BranchOnly": {
 			projectKey: nil,
 			branch:     ptr.To("develop"),
-			want: &sonar.NewCodePeriodsShowOption{
+			want: &sonar.NewCodePeriodsShowOptions{
 				Branch: "develop",
 			},
 		},
@@ -67,26 +67,26 @@ func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateNewCodePeriodsShowOptions(tc.projectKey, tc.branch)
+			got := GenerateNewCodePeriodsShowOptionss(tc.projectKey, tc.branch)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateNewCodePeriodsShowOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateNewCodePeriodsShowOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
+func TestGenerateProjectNewCodePeriodsSetOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectKey string
 		params     *v1alpha1.ProjectNewCodePeriodParameters
-		want       *sonar.NewCodePeriodsSetOption
+		want       *sonar.NewCodePeriodsSetOptions
 	}{
 		"NilParams": {
 			projectKey: "my-project",
 			params:     nil,
-			want: &sonar.NewCodePeriodsSetOption{
+			want: &sonar.NewCodePeriodsSetOptions{
 				Project: "my-project",
 			},
 		},
@@ -95,7 +95,7 @@ func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
 			params: &v1alpha1.ProjectNewCodePeriodParameters{
 				Type: "PREVIOUS_VERSION",
 			},
-			want: &sonar.NewCodePeriodsSetOption{
+			want: &sonar.NewCodePeriodsSetOptions{
 				Project: "my-project",
 				Type:    "PREVIOUS_VERSION",
 			},
@@ -106,7 +106,7 @@ func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
 				Type:  "NUMBER_OF_DAYS",
 				Value: ptr.To("30"),
 			},
-			want: &sonar.NewCodePeriodsSetOption{
+			want: &sonar.NewCodePeriodsSetOptions{
 				Project: "my-project",
 				Type:    "NUMBER_OF_DAYS",
 				Value:   "30",
@@ -118,28 +118,28 @@ func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectNewCodePeriodsSetOptions(tc.projectKey, tc.params)
+			got := GenerateProjectNewCodePeriodsSetOptionss(tc.projectKey, tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectNewCodePeriodsSetOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectNewCodePeriodsSetOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateBranchNewCodePeriodsSetOptions(t *testing.T) {
+func TestGenerateBranchNewCodePeriodsSetOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectKey string
 		branchName string
 		params     *v1alpha1.ProjectNewCodePeriodParameters
-		want       *sonar.NewCodePeriodsSetOption
+		want       *sonar.NewCodePeriodsSetOptions
 	}{
 		"NilParams": {
 			projectKey: "my-project",
 			branchName: "main",
 			params:     nil,
-			want: &sonar.NewCodePeriodsSetOption{
+			want: &sonar.NewCodePeriodsSetOptions{
 				Project: "my-project",
 				Branch:  "main",
 			},
@@ -151,7 +151,7 @@ func TestGenerateBranchNewCodePeriodsSetOptions(t *testing.T) {
 				Type:  "REFERENCE_BRANCH",
 				Value: ptr.To("main"),
 			},
-			want: &sonar.NewCodePeriodsSetOption{
+			want: &sonar.NewCodePeriodsSetOptions{
 				Project: "my-project",
 				Branch:  "develop",
 				Type:    "REFERENCE_BRANCH",
@@ -164,30 +164,30 @@ func TestGenerateBranchNewCodePeriodsSetOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateBranchNewCodePeriodsSetOptions(tc.projectKey, tc.branchName, tc.params)
+			got := GenerateBranchNewCodePeriodsSetOptionss(tc.projectKey, tc.branchName, tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateBranchNewCodePeriodsSetOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateBranchNewCodePeriodsSetOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectNewCodePeriodsListOptions(t *testing.T) {
+func TestGenerateProjectNewCodePeriodsListOptionss(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		projectKey string
-		want       *sonar.NewCodePeriodsListOption
+		want       *sonar.NewCodePeriodsListOptions
 	}{
 		"BasicListOption": {
 			projectKey: "my-project",
-			want: &sonar.NewCodePeriodsListOption{
+			want: &sonar.NewCodePeriodsListOptions{
 				Project: "my-project",
 			},
 		},
 		"EmptyProjectKey": {
 			projectKey: "",
-			want: &sonar.NewCodePeriodsListOption{
+			want: &sonar.NewCodePeriodsListOptions{
 				Project: "",
 			},
 		},
@@ -197,9 +197,9 @@ func TestGenerateProjectNewCodePeriodsListOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectNewCodePeriodsListOptions(tc.projectKey)
+			got := GenerateProjectNewCodePeriodsListOptionss(tc.projectKey)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectNewCodePeriodsListOptions() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectNewCodePeriodsListOptionss() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -26,21 +26,21 @@ import (
 
 // MockProjectsClient is a mock implementation of the ProjectsClient interface.
 type MockProjectsClient struct {
-	BulkDeleteFn                func(opt *sonar.ProjectsBulkDeleteOption) (*http.Response, error)
-	CreateFn                    func(opt *sonar.ProjectsCreateOption) (*sonar.ProjectsCreate, *http.Response, error)
-	DeleteFn                    func(opt *sonar.ProjectsDeleteOption) (*http.Response, error)
-	SearchFn                    func(opt *sonar.ProjectsSearchOption) (*sonar.ProjectsSearch, *http.Response, error)
-	SearchMyProjectsFn          func(opt *sonar.ProjectsSearchMyProjectsOption) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
-	SearchMyScannableProjectsFn func(opt *sonar.ProjectsSearchMyScannableProjectsOption) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
-	UpdateKeyFn                 func(opt *sonar.ProjectsUpdateKeyOption) (*http.Response, error)
-	UpdateVisibilityFn          func(opt *sonar.ProjectsUpdateVisibilityOption) (*http.Response, error)
+	BulkDeleteFn                func(opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error)
+	CreateFn                    func(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error)
+	DeleteFn                    func(opt *sonar.ProjectsDeleteOptions) (*http.Response, error)
+	SearchFn                    func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error)
+	SearchMyProjectsFn          func(opt *sonar.ProjectsSearchMyProjectsOptions) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
+	SearchMyScannableProjectsFn func(opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
+	UpdateKeyFn                 func(opt *sonar.ProjectsUpdateKeyOptions) (*http.Response, error)
+	UpdateVisibilityFn          func(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error)
 }
 
 // Ensure MockProjectsClient implements ProjectsClient.
 var _ instance.ProjectsClient = &MockProjectsClient{}
 
 // BulkDelete implements ProjectsClient.BulkDelete.
-func (m *MockProjectsClient) BulkDelete(opt *sonar.ProjectsBulkDeleteOption) (*http.Response, error) {
+func (m *MockProjectsClient) BulkDelete(opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error) {
 	if m.BulkDeleteFn != nil {
 		return m.BulkDeleteFn(opt)
 	}
@@ -49,7 +49,7 @@ func (m *MockProjectsClient) BulkDelete(opt *sonar.ProjectsBulkDeleteOption) (*h
 }
 
 // Create implements ProjectsClient.Create.
-func (m *MockProjectsClient) Create(opt *sonar.ProjectsCreateOption) (*sonar.ProjectsCreate, *http.Response, error) {
+func (m *MockProjectsClient) Create(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -58,7 +58,7 @@ func (m *MockProjectsClient) Create(opt *sonar.ProjectsCreateOption) (*sonar.Pro
 }
 
 // Delete implements ProjectsClient.Delete.
-func (m *MockProjectsClient) Delete(opt *sonar.ProjectsDeleteOption) (*http.Response, error) {
+func (m *MockProjectsClient) Delete(opt *sonar.ProjectsDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -67,7 +67,7 @@ func (m *MockProjectsClient) Delete(opt *sonar.ProjectsDeleteOption) (*http.Resp
 }
 
 // Search implements ProjectsClient.Search.
-func (m *MockProjectsClient) Search(opt *sonar.ProjectsSearchOption) (*sonar.ProjectsSearch, *http.Response, error) {
+func (m *MockProjectsClient) Search(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -76,7 +76,7 @@ func (m *MockProjectsClient) Search(opt *sonar.ProjectsSearchOption) (*sonar.Pro
 }
 
 // SearchMyProjects implements ProjectsClient.SearchMyProjects.
-func (m *MockProjectsClient) SearchMyProjects(opt *sonar.ProjectsSearchMyProjectsOption) (*sonar.ProjectsSearchMyProjects, *http.Response, error) {
+func (m *MockProjectsClient) SearchMyProjects(opt *sonar.ProjectsSearchMyProjectsOptions) (*sonar.ProjectsSearchMyProjects, *http.Response, error) {
 	if m.SearchMyProjectsFn != nil {
 		return m.SearchMyProjectsFn(opt)
 	}
@@ -85,7 +85,7 @@ func (m *MockProjectsClient) SearchMyProjects(opt *sonar.ProjectsSearchMyProject
 }
 
 // SearchMyScannableProjects implements ProjectsClient.SearchMyScannableProjects.
-func (m *MockProjectsClient) SearchMyScannableProjects(opt *sonar.ProjectsSearchMyScannableProjectsOption) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error) {
+func (m *MockProjectsClient) SearchMyScannableProjects(opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error) {
 	if m.SearchMyScannableProjectsFn != nil {
 		return m.SearchMyScannableProjectsFn(opt)
 	}
@@ -94,7 +94,7 @@ func (m *MockProjectsClient) SearchMyScannableProjects(opt *sonar.ProjectsSearch
 }
 
 // UpdateKey implements ProjectsClient.UpdateKey.
-func (m *MockProjectsClient) UpdateKey(opt *sonar.ProjectsUpdateKeyOption) (*http.Response, error) {
+func (m *MockProjectsClient) UpdateKey(opt *sonar.ProjectsUpdateKeyOptions) (*http.Response, error) {
 	if m.UpdateKeyFn != nil {
 		return m.UpdateKeyFn(opt)
 	}
@@ -103,7 +103,7 @@ func (m *MockProjectsClient) UpdateKey(opt *sonar.ProjectsUpdateKeyOption) (*htt
 }
 
 // UpdateVisibility implements ProjectsClient.UpdateVisibility.
-func (m *MockProjectsClient) UpdateVisibility(opt *sonar.ProjectsUpdateVisibilityOption) (*http.Response, error) {
+func (m *MockProjectsClient) UpdateVisibility(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error) {
 	if m.UpdateVisibilityFn != nil {
 		return m.UpdateVisibilityFn(opt)
 	}

@@ -29,16 +29,16 @@ var errSettingsNotImplemented = errors.New("settings operation not implemented")
 
 // MockSettingsClient is a mock implementation of the SettingsClient interface.
 type MockSettingsClient struct {
-	SetFn    func(opt *sonar.SettingsSetOption) (*http.Response, error)
-	ValuesFn func(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error)
-	ResetFn  func(opt *sonar.SettingsResetOption) (*http.Response, error)
+	SetFn    func(opt *sonar.SettingsSetOptions) (*http.Response, error)
+	ValuesFn func(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error)
+	ResetFn  func(opt *sonar.SettingsResetOptions) (*http.Response, error)
 }
 
 // Ensure MockSettingsClient implements SettingsClient.
 var _ instance.SettingsClient = &MockSettingsClient{}
 
 // Set implements SettingsClient.Set.
-func (m *MockSettingsClient) Set(opt *sonar.SettingsSetOption) (*http.Response, error) {
+func (m *MockSettingsClient) Set(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}
@@ -47,7 +47,7 @@ func (m *MockSettingsClient) Set(opt *sonar.SettingsSetOption) (*http.Response, 
 }
 
 // Values implements SettingsClient.Values.
-func (m *MockSettingsClient) Values(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
+func (m *MockSettingsClient) Values(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 	if m.ValuesFn != nil {
 		return m.ValuesFn(opt)
 	}
@@ -56,7 +56,7 @@ func (m *MockSettingsClient) Values(opt *sonar.SettingsValuesOption) (*sonar.Set
 }
 
 // Reset implements SettingsClient.Reset.
-func (m *MockSettingsClient) Reset(opt *sonar.SettingsResetOption) (*http.Response, error) {
+func (m *MockSettingsClient) Reset(opt *sonar.SettingsResetOptions) (*http.Response, error) {
 	if m.ResetFn != nil {
 		return m.ResetFn(opt)
 	}

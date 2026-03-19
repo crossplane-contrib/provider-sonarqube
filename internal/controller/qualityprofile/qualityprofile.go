@@ -181,7 +181,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	}
 
 	// Retrieve the Quality Profile from SonarQube
-	qualityProfile, resp, err := c.qualityProfilesClient.Show(&sonar.QualityprofilesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
+	qualityProfile, resp, err := c.qualityProfilesClient.Show(&sonar.QualityprofilesShowOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Key: externalName,
 	})
 	defer helpers.CloseBody(resp)

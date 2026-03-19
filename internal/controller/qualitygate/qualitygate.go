@@ -176,7 +176,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	}
 
 	// Retrieve the Quality Gate from SonarQube
-	observedQualityGate, resp, err := c.qualityGatesClient.Show(&sonar.QualitygatesShowOption{ //nolint:bodyclose // closed via helpers.CloseBody
+	observedQualityGate, resp, err := c.qualityGatesClient.Show(&sonar.QualitygatesShowOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Name: externalName,
 	})
 	defer helpers.CloseBody(resp)
@@ -235,7 +235,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 	// Set Quality Gate as default if specified in the spec
 	if qualityGate.Spec.ForProvider.Default != nil && *qualityGate.Spec.ForProvider.Default {
-		setDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
+		setDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 			Name: createdQualityGate.Name,
 		})
 		defer helpers.CloseBody(setDefaultResp)
@@ -262,7 +262,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 
 	// Set Quality Gate as default if specified in the spec (idempotent)
 	if qualityGate.Spec.ForProvider.Default != nil && *qualityGate.Spec.ForProvider.Default {
-		updateSetDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOption{ //nolint:bodyclose // closed via helpers.CloseBody
+		updateSetDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 			Name: qualityGate.Spec.ForProvider.Name,
 		})
 		defer helpers.CloseBody(updateSetDefaultResp)
@@ -298,7 +298,7 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 		return managed.ExternalDelete{}, nil
 	}
 
-	destroyResp, err := c.qualityGatesClient.Destroy(&sonar.QualitygatesDestroyOption{ //nolint:bodyclose // closed via helpers.CloseBody
+	destroyResp, err := c.qualityGatesClient.Destroy(&sonar.QualitygatesDestroyOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Name: externalName,
 	})
 	defer helpers.CloseBody(destroyResp)

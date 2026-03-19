@@ -33,7 +33,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		key       string
 		params    v1alpha1.SettingParameters
 		component *string
-		want      *sonar.SettingsSetOption
+		want      *sonar.SettingsSetOptions
 	}{
 		"BasicSetOptionWithValueOnly": {
 			key: "sonar.core.serverBaseURL",
@@ -41,7 +41,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				Value: ptr.To("https://sonarqube.example.com"),
 			},
 			component: nil,
-			want: &sonar.SettingsSetOption{
+			want: &sonar.SettingsSetOptions{
 				Key:   "sonar.core.serverBaseURL",
 				Value: "https://sonarqube.example.com",
 			},
@@ -52,7 +52,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				Value: ptr.To("target/site/jacoco/jacoco.xml"),
 			},
 			component: ptr.To("my-project-key"),
-			want: &sonar.SettingsSetOption{
+			want: &sonar.SettingsSetOptions{
 				Key:       "sonar.coverage.jacoco.xmlReportPaths",
 				Value:     "target/site/jacoco/jacoco.xml",
 				Component: "my-project-key",
@@ -64,7 +64,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
 			},
 			component: nil,
-			want: &sonar.SettingsSetOption{
+			want: &sonar.SettingsSetOptions{
 				Key:    "sonar.exclusions",
 				Values: []string{"**/*.test.js", "**/*.spec.js"},
 			},
@@ -80,7 +80,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				}),
 			},
 			component: nil,
-			want: &sonar.SettingsSetOption{
+			want: &sonar.SettingsSetOptions{
 				Key: "sonar.issue.enforce.multicriteria",
 				FieldValues: sonar.JSONEncodedMap{
 					"1.ruleKey":         "squid:S1134",
@@ -96,7 +96,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				Values: ptr.To([]string{}),
 			},
 			component: nil,
-			want: &sonar.SettingsSetOption{
+			want: &sonar.SettingsSetOptions{
 				Key: "sonar.test.empty",
 			},
 		},
@@ -106,7 +106,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				FieldValues: ptr.To(map[string]string{}),
 			},
 			component: nil,
-			want: &sonar.SettingsSetOption{
+			want: &sonar.SettingsSetOptions{
 				Key: "sonar.test.empty.fields",
 			},
 		},
@@ -121,7 +121,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				}),
 			},
 			component: ptr.To("project-key"),
-			want: &sonar.SettingsSetOption{
+			want: &sonar.SettingsSetOptions{
 				Key:       "sonar.multifield.setting",
 				Value:     "base-value",
 				Values:    []string{"value1", "value2"},
@@ -151,7 +151,7 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 
 	tests := map[string]struct {
 		params *v1alpha1.SettingsParameters
-		want   *sonar.SettingsValuesOption
+		want   *sonar.SettingsValuesOptions
 	}{
 		"BasicValuesOption": {
 			params: &v1alpha1.SettingsParameters{
@@ -161,7 +161,7 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 					},
 				},
 			},
-			want: &sonar.SettingsValuesOption{
+			want: &sonar.SettingsValuesOptions{
 				Keys: []string{"sonar.core.serverBaseURL"},
 			},
 		},
@@ -174,7 +174,7 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 					},
 				},
 			},
-			want: &sonar.SettingsValuesOption{
+			want: &sonar.SettingsValuesOptions{
 				Keys:      []string{"sonar.coverage.jacoco.xmlReportPaths"},
 				Component: "my-project-key",
 			},
@@ -193,7 +193,7 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 					},
 				},
 			},
-			want: &sonar.SettingsValuesOption{
+			want: &sonar.SettingsValuesOptions{
 				Keys: []string{"sonar.core.serverBaseURL", "sonar.exclusions", "sonar.coverage.exclusions"},
 			},
 		},
@@ -238,7 +238,7 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 
 	tests := map[string]struct {
 		params v1alpha1.SettingsParameters
-		want   *sonar.SettingsResetOption
+		want   *sonar.SettingsResetOptions
 	}{
 		"BasicResetOption": {
 			params: v1alpha1.SettingsParameters{
@@ -248,7 +248,7 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 					},
 				},
 			},
-			want: &sonar.SettingsResetOption{
+			want: &sonar.SettingsResetOptions{
 				Keys: []string{"sonar.core.serverBaseURL"},
 			},
 		},
@@ -261,7 +261,7 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 					},
 				},
 			},
-			want: &sonar.SettingsResetOption{
+			want: &sonar.SettingsResetOptions{
 				Keys:      []string{"sonar.coverage.jacoco.xmlReportPaths"},
 				Component: "my-project-key",
 			},
@@ -277,7 +277,7 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 					},
 				},
 			},
-			want: &sonar.SettingsResetOption{
+			want: &sonar.SettingsResetOptions{
 				Keys: []string{"sonar.core.serverBaseURL", "sonar.exclusions"},
 			},
 		},
@@ -323,19 +323,19 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 	tests := map[string]struct {
 		keys      []string
 		component *string
-		want      *sonar.SettingsResetOption
+		want      *sonar.SettingsResetOptions
 	}{
 		"BasicResetFromList": {
 			keys:      []string{"sonar.core.serverBaseURL"},
 			component: nil,
-			want: &sonar.SettingsResetOption{
+			want: &sonar.SettingsResetOptions{
 				Keys: []string{"sonar.core.serverBaseURL"},
 			},
 		},
 		"ResetFromListWithComponent": {
 			keys:      []string{"sonar.coverage.jacoco.xmlReportPaths"},
 			component: ptr.To("my-project-key"),
-			want: &sonar.SettingsResetOption{
+			want: &sonar.SettingsResetOptions{
 				Keys:      []string{"sonar.coverage.jacoco.xmlReportPaths"},
 				Component: "my-project-key",
 			},
@@ -343,7 +343,7 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 		"ResetFromListWithMultipleKeys": {
 			keys:      []string{"sonar.core.serverBaseURL", "sonar.exclusions", "sonar.coverage.exclusions"},
 			component: ptr.To("another-project"),
-			want: &sonar.SettingsResetOption{
+			want: &sonar.SettingsResetOptions{
 				Keys:      []string{"sonar.core.serverBaseURL", "sonar.exclusions", "sonar.coverage.exclusions"},
 				Component: "another-project",
 			},
@@ -351,7 +351,7 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 		"ResetFromListWithEmptyKeys": {
 			keys:      []string{},
 			component: nil,
-			want: &sonar.SettingsResetOption{
+			want: &sonar.SettingsResetOptions{
 				Keys: []string{},
 			},
 		},

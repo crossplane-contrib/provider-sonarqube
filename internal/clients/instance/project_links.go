@@ -28,9 +28,9 @@ import (
 )
 
 type ProjectLinksClient interface {
-	Create(opt *sonar.ProjectLinksCreateOption) (*sonar.ProjectLinksCreate, *http.Response, error)
-	Delete(opt *sonar.ProjectLinksDeleteOption) (*http.Response, error)
-	Search(opt *sonar.ProjectLinksSearchOption) (*sonar.ProjectLinksSearch, *http.Response, error)
+	Create(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error)
+	Delete(opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error)
+	Search(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error)
 }
 
 // NewProjectLinksClient creates a new ProjectLinksClient with the provided SonarQube client configuration.
@@ -40,9 +40,9 @@ func NewProjectLinksClient(clientConfig common.Config) ProjectLinksClient {
 	return newClient.ProjectLinks
 }
 
-// GenerateProjectLinksCreateOptions generates the options for creating a project link based on the provided project ID and ProjectLinkParameters.
-func GenerateProjectLinksCreateOptions(projectId string, link v1alpha1.ProjectLinkParameters) *sonar.ProjectLinksCreateOption {
-	opts := &sonar.ProjectLinksCreateOption{
+// GenerateProjectLinksCreateOptionss generates the options for creating a project link based on the provided project ID and ProjectLinkParameters.
+func GenerateProjectLinksCreateOptionss(projectId string, link v1alpha1.ProjectLinkParameters) *sonar.ProjectLinksCreateOptions {
+	opts := &sonar.ProjectLinksCreateOptions{
 		ProjectID: projectId,
 		Name:      link.Name,
 		URL:       link.URL,
@@ -51,16 +51,16 @@ func GenerateProjectLinksCreateOptions(projectId string, link v1alpha1.ProjectLi
 	return opts
 }
 
-// GenerateProjectLinksDeleteOptions generates the options for deleting a project link based on the provided link ID.
-func GenerateProjectLinksDeleteOptions(linkId string) *sonar.ProjectLinksDeleteOption {
-	return &sonar.ProjectLinksDeleteOption{
+// GenerateProjectLinksDeleteOptionss generates the options for deleting a project link based on the provided link ID.
+func GenerateProjectLinksDeleteOptionss(linkId string) *sonar.ProjectLinksDeleteOptions {
+	return &sonar.ProjectLinksDeleteOptions{
 		ID: linkId,
 	}
 }
 
-// GenerateProjectLinksSearchOptions generates the options for searching project links based on the provided project ID.
-func GenerateProjectLinksSearchOptions(projectId string) *sonar.ProjectLinksSearchOption {
-	return &sonar.ProjectLinksSearchOption{
+// GenerateProjectLinksSearchOptionss generates the options for searching project links based on the provided project ID.
+func GenerateProjectLinksSearchOptionss(projectId string) *sonar.ProjectLinksSearchOptions {
+	return &sonar.ProjectLinksSearchOptions{
 		ProjectID: projectId,
 	}
 }

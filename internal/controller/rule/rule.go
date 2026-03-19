@@ -18,6 +18,7 @@ package rule
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -174,7 +175,19 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get SonarQube Rule")
+		if resp == nil {
+			return managed.ExternalObservation{}, errors.Wrap(err, "failed to get SonarQube Rule: no response received")
+		}
+
+		switch resp.StatusCode {
+		// Not found means the resource does not exist, and bad request likely means the external name is invalid, so we can treat both as non-existent resource
+		case http.StatusNotFound, http.StatusBadRequest:
+			return managed.ExternalObservation{
+				ResourceExists: false,
+			}, nil
+		default:
+			return managed.ExternalObservation{}, errors.Wrap(err, "failed to get SonarQube Rule")
+		}
 	}
 
 	rule.Status.AtProvider = instance.GenerateRuleObservation(ruleShow)
@@ -222,7 +235,13 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New(errNotRule)
 	}
 
-	ruleUpdateOptions := instance.GenerateRuleUpdateOptions(&rule.Spec.ForProvider)
+	// Use external name as the identifier to update the resource
+	externalName := meta.GetExternalName(rule)
+	if externalName == "" {
+		return managed.ExternalUpdate{}, errors.New("cannot update SonarQube Rule without external name")
+	}
+
+	ruleUpdateOptions := instance.GenerateRuleUpdateOptions(externalName, &rule.Spec.ForProvider)
 
 	_, resp, err := c.rulesClient.Update(ruleUpdateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
@@ -255,7 +274,17 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete SonarQube Rule")
+		if resp == nil {
+			return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete SonarQube Rule: no response received")
+		}
+
+		switch resp.StatusCode {
+		// Not found means the resource does not exist, and bad request likely means the external name is invalid, so we can treat both as non-existent resource and consider it deleted
+		case http.StatusNotFound, http.StatusBadRequest:
+			return managed.ExternalDelete{}, nil
+		default:
+			return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete SonarQube Rule")
+		}
 	}
 
 	return managed.ExternalDelete{}, nil

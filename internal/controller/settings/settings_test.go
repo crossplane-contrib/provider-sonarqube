@@ -124,7 +124,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ValuesCallFails": {
 			client: &fake.MockSettingsClient{
-				ValuesFn: func(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
+				ValuesFn: func(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 					return nil, nil, errors.New("api error")
 				},
 			},
@@ -152,7 +152,7 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveResourceExists": {
 			client: &fake.MockSettingsClient{
-				ValuesFn: func(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
+				ValuesFn: func(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 					return &sonar.SettingsValues{
 						Settings: []sonar.SettingValue{
 							{
@@ -190,7 +190,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ResourceNotUpToDateWhenValuesDiffer": {
 			client: &fake.MockSettingsClient{
-				ValuesFn: func(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
+				ValuesFn: func(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 					return &sonar.SettingsValues{
 						Settings: []sonar.SettingValue{
 							{
@@ -227,7 +227,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ResourceNotUpToDateWhenSettingMissing": {
 			client: &fake.MockSettingsClient{
-				ValuesFn: func(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
+				ValuesFn: func(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 					return &sonar.SettingsValues{
 						Settings: []sonar.SettingValue{},
 					}, nil, nil
@@ -260,7 +260,7 @@ func TestObserve(t *testing.T) {
 		},
 		"MultipleSettingsAllUpToDate": {
 			client: &fake.MockSettingsClient{
-				ValuesFn: func(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
+				ValuesFn: func(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 					return &sonar.SettingsValues{
 						Settings: []sonar.SettingValue{
 							{
@@ -320,7 +320,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ObserveWithComponent": {
 			client: &fake.MockSettingsClient{
-				ValuesFn: func(opt *sonar.SettingsValuesOption) (*sonar.SettingsValues, *http.Response, error) {
+				ValuesFn: func(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 					// Verify component is passed correctly
 					if opt.Component != "my-project-key" {
 						return nil, nil, errors.New("expected component to be 'my-project-key'")
@@ -414,7 +414,7 @@ func TestCreate(t *testing.T) {
 		},
 		"SetFailsForSingleSetting": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					return nil, errors.New("api error")
 				},
 			},
@@ -440,7 +440,7 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreateSingleSetting": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					if opt.Key != "sonar.core.serverBaseURL" {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
@@ -474,7 +474,7 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreateMultipleSettings": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					// Accept any valid setting key
 					validKeys := map[string]bool{
 						"sonar.core.serverBaseURL": true,
@@ -512,7 +512,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateWithComponent": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					if opt.Component != "my-project-key" {
 						return nil, errors.New("expected component to be 'my-project-key'")
 					}
@@ -543,7 +543,7 @@ func TestCreate(t *testing.T) {
 		},
 		"PartialFailureReturnsAllErrors": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					// Fail on one specific key
 					if opt.Key == "sonar.exclusions" {
 						return nil, errors.New("api error for exclusions")
@@ -578,7 +578,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateWithFieldValues": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					if opt.Key != "sonar.issue.enforce.multicriteria" {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
@@ -665,7 +665,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"UpdateOutOfDateSetting": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					if opt.Key != "sonar.core.serverBaseURL" {
 						return nil, errors.New("unexpected key: " + opt.Key)
 					}
@@ -708,7 +708,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"NoUpdateWhenAllSettingsUpToDate": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					return nil, errors.New("should not be called when settings are up to date")
 				},
 			},
@@ -743,7 +743,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"ResetSettingsNotInDesiredState": {
 			client: &fake.MockSettingsClient{
-				ResetFn: func(opt *sonar.SettingsResetOption) (*http.Response, error) {
+				ResetFn: func(opt *sonar.SettingsResetOptions) (*http.Response, error) {
 					// Verify that the obsolete setting is being reset
 					found := false
 
@@ -794,7 +794,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"UpdateMultipleOutOfDateSettings": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					validKeys := map[string]bool{
 						"sonar.core.serverBaseURL": true,
 						"sonar.exclusions":         true,
@@ -849,7 +849,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"UpdateFailsForOneSetting": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					if opt.Key == "sonar.exclusions" {
 						return nil, errors.New("api error for exclusions")
 					}
@@ -894,7 +894,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"ResetFailsForObsoleteSettings": {
 			client: &fake.MockSettingsClient{
-				ResetFn: func(opt *sonar.SettingsResetOption) (*http.Response, error) {
+				ResetFn: func(opt *sonar.SettingsResetOptions) (*http.Response, error) {
 					return nil, errors.New("api error during reset")
 				},
 			},
@@ -932,7 +932,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"UpdateWithComponent": {
 			client: &fake.MockSettingsClient{
-				SetFn: func(opt *sonar.SettingsSetOption) (*http.Response, error) {
+				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
 					if opt.Component != "my-project-key" {
 						return nil, errors.New("expected component to be 'my-project-key'")
 					}
@@ -1021,7 +1021,7 @@ func TestDelete(t *testing.T) {
 		},
 		"SuccessfulDelete": {
 			client: &fake.MockSettingsClient{
-				ResetFn: func(opt *sonar.SettingsResetOption) (*http.Response, error) {
+				ResetFn: func(opt *sonar.SettingsResetOptions) (*http.Response, error) {
 					// Verify all settings are being reset
 					expectedKeys := map[string]bool{
 						"sonar.core.serverBaseURL": true,
@@ -1065,7 +1065,7 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteWithComponent": {
 			client: &fake.MockSettingsClient{
-				ResetFn: func(opt *sonar.SettingsResetOption) (*http.Response, error) {
+				ResetFn: func(opt *sonar.SettingsResetOptions) (*http.Response, error) {
 					if opt.Component != "my-project-key" {
 						return nil, errors.New("expected component to be 'my-project-key'")
 					}
@@ -1096,7 +1096,7 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteResetFails": {
 			client: &fake.MockSettingsClient{
-				ResetFn: func(opt *sonar.SettingsResetOption) (*http.Response, error) {
+				ResetFn: func(opt *sonar.SettingsResetOptions) (*http.Response, error) {
 					return nil, errors.New("api error during reset")
 				},
 			},
@@ -1122,7 +1122,7 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteEmptySettings": {
 			client: &fake.MockSettingsClient{
-				ResetFn: func(opt *sonar.SettingsResetOption) (*http.Response, error) {
+				ResetFn: func(opt *sonar.SettingsResetOptions) (*http.Response, error) {
 					if len(opt.Keys) != 0 {
 						return nil, errors.New("expected no keys to reset")
 					}

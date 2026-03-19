@@ -29,39 +29,39 @@ var errQualityProfileNotImplemented = errors.New("not implemented")
 
 // MockQualityProfilesClient is a mock implementation of the QualityProfilesClient interface.
 type MockQualityProfilesClient struct {
-	ActivateRuleFn    func(opt *sonar.QualityprofilesActivateRuleOption) (resp *http.Response, err error)
-	ActivateRulesFn   func(opt *sonar.QualityprofilesActivateRulesOption) (resp *http.Response, err error)
-	AddGroupFn        func(opt *sonar.QualityprofilesAddGroupOption) (resp *http.Response, err error)
-	AddProjectFn      func(opt *sonar.QualityprofilesAddProjectOption) (resp *http.Response, err error)
-	AddUserFn         func(opt *sonar.QualityprofilesAddUserOption) (resp *http.Response, err error)
-	BackupFn          func(opt *sonar.QualityprofilesBackupOption) (v *string, resp *http.Response, err error)
-	ChangeParentFn    func(opt *sonar.QualityprofilesChangeParentOption) (resp *http.Response, err error)
-	ChangelogFn       func(opt *sonar.QualityprofilesChangelogOption) (v *sonar.QualityprofilesChangelog, resp *http.Response, err error)
-	CompareFn         func(opt *sonar.QualityprofilesCompareOption) (v *sonar.QualityprofilesCompare, resp *http.Response, err error)
-	CopyFn            func(opt *sonar.QualityprofilesCopyOption) (v *sonar.QualityprofilesCopy, resp *http.Response, err error)
-	CreateFn          func(opt *sonar.QualityprofilesCreateOption) (v *sonar.QualityprofilesCreate, resp *http.Response, err error)
-	DeactivateRuleFn  func(opt *sonar.QualityprofilesDeactivateRuleOption) (resp *http.Response, err error)
-	DeactivateRulesFn func(opt *sonar.QualityprofilesDeactivateRulesOption) (resp *http.Response, err error)
-	DeleteFn          func(opt *sonar.QualityprofilesDeleteOption) (resp *http.Response, err error)
-	InheritanceFn     func(opt *sonar.QualityprofilesInheritanceOption) (v *sonar.QualityprofilesInheritance, resp *http.Response, err error)
-	ProjectsFn        func(opt *sonar.QualityprofilesProjectsOption) (v *sonar.QualityprofilesProjects, resp *http.Response, err error)
-	RemoveGroupFn     func(opt *sonar.QualityprofilesRemoveGroupOption) (resp *http.Response, err error)
-	RemoveProjectFn   func(opt *sonar.QualityprofilesRemoveProjectOption) (resp *http.Response, err error)
-	RemoveUserFn      func(opt *sonar.QualityprofilesRemoveUserOption) (resp *http.Response, err error)
-	RenameFn          func(opt *sonar.QualityprofilesRenameOption) (resp *http.Response, err error)
-	RestoreFn         func(opt *sonar.QualityprofilesRestoreOption) (resp *http.Response, err error)
-	SearchFn          func(opt *sonar.QualityprofilesSearchOption) (v *sonar.QualityprofilesSearch, resp *http.Response, err error)
-	SearchGroupsFn    func(opt *sonar.QualityprofilesSearchGroupsOption) (v *sonar.QualityprofilesSearchGroups, resp *http.Response, err error)
-	SearchUsersFn     func(opt *sonar.QualityprofilesSearchUsersOption) (v *sonar.QualityprofilesSearchUsers, resp *http.Response, err error)
-	SetDefaultFn      func(opt *sonar.QualityprofilesSetDefaultOption) (resp *http.Response, err error)
-	ShowFn            func(opt *sonar.QualityprofilesShowOption) (v *sonar.QualityprofilesShow, resp *http.Response, err error)
+	ActivateRuleFn    func(opt *sonar.QualityprofilesActivateRuleOptions) (resp *http.Response, err error)
+	ActivateRulesFn   func(opt *sonar.QualityprofilesActivateRulesOptions) (resp *http.Response, err error)
+	AddGroupFn        func(opt *sonar.QualityprofilesAddGroupOptions) (resp *http.Response, err error)
+	AddProjectFn      func(opt *sonar.QualityprofilesAddProjectOptions) (resp *http.Response, err error)
+	AddUserFn         func(opt *sonar.QualityprofilesAddUserOptions) (resp *http.Response, err error)
+	BackupFn          func(opt *sonar.QualityprofilesBackupOptions) (v *string, resp *http.Response, err error)
+	ChangeParentFn    func(opt *sonar.QualityprofilesChangeParentOptions) (resp *http.Response, err error)
+	ChangelogFn       func(opt *sonar.QualityprofilesChangelogOptions) (v *sonar.QualityprofilesChangelog, resp *http.Response, err error)
+	CompareFn         func(opt *sonar.QualityprofilesCompareOptions) (v *sonar.QualityprofilesCompare, resp *http.Response, err error)
+	CopyFn            func(opt *sonar.QualityprofilesCopyOptions) (v *sonar.QualityprofilesCopy, resp *http.Response, err error)
+	CreateFn          func(opt *sonar.QualityprofilesCreateOptions) (v *sonar.QualityprofilesCreate, resp *http.Response, err error)
+	DeactivateRuleFn  func(opt *sonar.QualityprofilesDeactivateRuleOptions) (resp *http.Response, err error)
+	DeactivateRulesFn func(opt *sonar.QualityprofilesDeactivateRulesOptions) (resp *http.Response, err error)
+	DeleteFn          func(opt *sonar.QualityprofilesDeleteOptions) (resp *http.Response, err error)
+	InheritanceFn     func(opt *sonar.QualityprofilesInheritanceOptions) (v *sonar.QualityprofilesInheritance, resp *http.Response, err error)
+	ProjectsFn        func(opt *sonar.QualityprofilesProjectsOptions) (v *sonar.QualityprofilesProjects, resp *http.Response, err error)
+	RemoveGroupFn     func(opt *sonar.QualityprofilesRemoveGroupOptions) (resp *http.Response, err error)
+	RemoveProjectFn   func(opt *sonar.QualityprofilesRemoveProjectOptions) (resp *http.Response, err error)
+	RemoveUserFn      func(opt *sonar.QualityprofilesRemoveUserOptions) (resp *http.Response, err error)
+	RenameFn          func(opt *sonar.QualityprofilesRenameOptions) (resp *http.Response, err error)
+	RestoreFn         func(opt *sonar.QualityprofilesRestoreOptions) (resp *http.Response, err error)
+	SearchFn          func(opt *sonar.QualityprofilesSearchOptions) (v *sonar.QualityprofilesSearch, resp *http.Response, err error)
+	SearchGroupsFn    func(opt *sonar.QualityprofilesSearchGroupsOptions) (v *sonar.QualityprofilesSearchGroups, resp *http.Response, err error)
+	SearchUsersFn     func(opt *sonar.QualityprofilesSearchUsersOptions) (v *sonar.QualityprofilesSearchUsers, resp *http.Response, err error)
+	SetDefaultFn      func(opt *sonar.QualityprofilesSetDefaultOptions) (resp *http.Response, err error)
+	ShowFn            func(opt *sonar.QualityprofilesShowOptions) (v *sonar.QualityprofilesShow, resp *http.Response, err error)
 }
 
 // Ensure MockQualityProfilesClient implements QualityProfilesClient.
 var _ instance.QualityProfilesClient = &MockQualityProfilesClient{}
 
 // ActivateRule implements QualityProfilesClient.ActivateRule.
-func (m *MockQualityProfilesClient) ActivateRule(opt *sonar.QualityprofilesActivateRuleOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) ActivateRule(opt *sonar.QualityprofilesActivateRuleOptions) (resp *http.Response, err error) {
 	if m.ActivateRuleFn != nil {
 		return m.ActivateRuleFn(opt)
 	}
@@ -70,7 +70,7 @@ func (m *MockQualityProfilesClient) ActivateRule(opt *sonar.QualityprofilesActiv
 }
 
 // ActivateRules implements QualityProfilesClient.ActivateRules.
-func (m *MockQualityProfilesClient) ActivateRules(opt *sonar.QualityprofilesActivateRulesOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) ActivateRules(opt *sonar.QualityprofilesActivateRulesOptions) (resp *http.Response, err error) {
 	if m.ActivateRulesFn != nil {
 		return m.ActivateRulesFn(opt)
 	}
@@ -79,7 +79,7 @@ func (m *MockQualityProfilesClient) ActivateRules(opt *sonar.QualityprofilesActi
 }
 
 // AddGroup implements QualityProfilesClient.AddGroup.
-func (m *MockQualityProfilesClient) AddGroup(opt *sonar.QualityprofilesAddGroupOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) AddGroup(opt *sonar.QualityprofilesAddGroupOptions) (resp *http.Response, err error) {
 	if m.AddGroupFn != nil {
 		return m.AddGroupFn(opt)
 	}
@@ -88,7 +88,7 @@ func (m *MockQualityProfilesClient) AddGroup(opt *sonar.QualityprofilesAddGroupO
 }
 
 // AddProject implements QualityProfilesClient.AddProject.
-func (m *MockQualityProfilesClient) AddProject(opt *sonar.QualityprofilesAddProjectOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) AddProject(opt *sonar.QualityprofilesAddProjectOptions) (resp *http.Response, err error) {
 	if m.AddProjectFn != nil {
 		return m.AddProjectFn(opt)
 	}
@@ -97,7 +97,7 @@ func (m *MockQualityProfilesClient) AddProject(opt *sonar.QualityprofilesAddProj
 }
 
 // AddUser implements QualityProfilesClient.AddUser.
-func (m *MockQualityProfilesClient) AddUser(opt *sonar.QualityprofilesAddUserOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) AddUser(opt *sonar.QualityprofilesAddUserOptions) (resp *http.Response, err error) {
 	if m.AddUserFn != nil {
 		return m.AddUserFn(opt)
 	}
@@ -106,7 +106,7 @@ func (m *MockQualityProfilesClient) AddUser(opt *sonar.QualityprofilesAddUserOpt
 }
 
 // Backup implements QualityProfilesClient.Backup.
-func (m *MockQualityProfilesClient) Backup(opt *sonar.QualityprofilesBackupOption) (v *string, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Backup(opt *sonar.QualityprofilesBackupOptions) (v *string, resp *http.Response, err error) {
 	if m.BackupFn != nil {
 		return m.BackupFn(opt)
 	}
@@ -115,7 +115,7 @@ func (m *MockQualityProfilesClient) Backup(opt *sonar.QualityprofilesBackupOptio
 }
 
 // ChangeParent implements QualityProfilesClient.ChangeParent.
-func (m *MockQualityProfilesClient) ChangeParent(opt *sonar.QualityprofilesChangeParentOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) ChangeParent(opt *sonar.QualityprofilesChangeParentOptions) (resp *http.Response, err error) {
 	if m.ChangeParentFn != nil {
 		return m.ChangeParentFn(opt)
 	}
@@ -124,7 +124,7 @@ func (m *MockQualityProfilesClient) ChangeParent(opt *sonar.QualityprofilesChang
 }
 
 // Changelog implements QualityProfilesClient.Changelog.
-func (m *MockQualityProfilesClient) Changelog(opt *sonar.QualityprofilesChangelogOption) (v *sonar.QualityprofilesChangelog, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Changelog(opt *sonar.QualityprofilesChangelogOptions) (v *sonar.QualityprofilesChangelog, resp *http.Response, err error) {
 	if m.ChangelogFn != nil {
 		return m.ChangelogFn(opt)
 	}
@@ -133,7 +133,7 @@ func (m *MockQualityProfilesClient) Changelog(opt *sonar.QualityprofilesChangelo
 }
 
 // Compare implements QualityProfilesClient.Compare.
-func (m *MockQualityProfilesClient) Compare(opt *sonar.QualityprofilesCompareOption) (v *sonar.QualityprofilesCompare, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Compare(opt *sonar.QualityprofilesCompareOptions) (v *sonar.QualityprofilesCompare, resp *http.Response, err error) {
 	if m.CompareFn != nil {
 		return m.CompareFn(opt)
 	}
@@ -142,7 +142,7 @@ func (m *MockQualityProfilesClient) Compare(opt *sonar.QualityprofilesCompareOpt
 }
 
 // Copy implements QualityProfilesClient.Copy.
-func (m *MockQualityProfilesClient) Copy(opt *sonar.QualityprofilesCopyOption) (v *sonar.QualityprofilesCopy, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Copy(opt *sonar.QualityprofilesCopyOptions) (v *sonar.QualityprofilesCopy, resp *http.Response, err error) {
 	if m.CopyFn != nil {
 		return m.CopyFn(opt)
 	}
@@ -151,7 +151,7 @@ func (m *MockQualityProfilesClient) Copy(opt *sonar.QualityprofilesCopyOption) (
 }
 
 // Create implements QualityProfilesClient.Create.
-func (m *MockQualityProfilesClient) Create(opt *sonar.QualityprofilesCreateOption) (v *sonar.QualityprofilesCreate, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Create(opt *sonar.QualityprofilesCreateOptions) (v *sonar.QualityprofilesCreate, resp *http.Response, err error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -160,7 +160,7 @@ func (m *MockQualityProfilesClient) Create(opt *sonar.QualityprofilesCreateOptio
 }
 
 // DeactivateRule implements QualityProfilesClient.DeactivateRule.
-func (m *MockQualityProfilesClient) DeactivateRule(opt *sonar.QualityprofilesDeactivateRuleOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) DeactivateRule(opt *sonar.QualityprofilesDeactivateRuleOptions) (resp *http.Response, err error) {
 	if m.DeactivateRuleFn != nil {
 		return m.DeactivateRuleFn(opt)
 	}
@@ -169,7 +169,7 @@ func (m *MockQualityProfilesClient) DeactivateRule(opt *sonar.QualityprofilesDea
 }
 
 // DeactivateRules implements QualityProfilesClient.DeactivateRules.
-func (m *MockQualityProfilesClient) DeactivateRules(opt *sonar.QualityprofilesDeactivateRulesOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) DeactivateRules(opt *sonar.QualityprofilesDeactivateRulesOptions) (resp *http.Response, err error) {
 	if m.DeactivateRulesFn != nil {
 		return m.DeactivateRulesFn(opt)
 	}
@@ -178,7 +178,7 @@ func (m *MockQualityProfilesClient) DeactivateRules(opt *sonar.QualityprofilesDe
 }
 
 // Delete implements QualityProfilesClient.Delete.
-func (m *MockQualityProfilesClient) Delete(opt *sonar.QualityprofilesDeleteOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Delete(opt *sonar.QualityprofilesDeleteOptions) (resp *http.Response, err error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -187,7 +187,7 @@ func (m *MockQualityProfilesClient) Delete(opt *sonar.QualityprofilesDeleteOptio
 }
 
 // Inheritance implements QualityProfilesClient.Inheritance.
-func (m *MockQualityProfilesClient) Inheritance(opt *sonar.QualityprofilesInheritanceOption) (v *sonar.QualityprofilesInheritance, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Inheritance(opt *sonar.QualityprofilesInheritanceOptions) (v *sonar.QualityprofilesInheritance, resp *http.Response, err error) {
 	if m.InheritanceFn != nil {
 		return m.InheritanceFn(opt)
 	}
@@ -196,7 +196,7 @@ func (m *MockQualityProfilesClient) Inheritance(opt *sonar.QualityprofilesInheri
 }
 
 // Projects implements QualityProfilesClient.Projects.
-func (m *MockQualityProfilesClient) Projects(opt *sonar.QualityprofilesProjectsOption) (v *sonar.QualityprofilesProjects, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Projects(opt *sonar.QualityprofilesProjectsOptions) (v *sonar.QualityprofilesProjects, resp *http.Response, err error) {
 	if m.ProjectsFn != nil {
 		return m.ProjectsFn(opt)
 	}
@@ -205,7 +205,7 @@ func (m *MockQualityProfilesClient) Projects(opt *sonar.QualityprofilesProjectsO
 }
 
 // RemoveGroup implements QualityProfilesClient.RemoveGroup.
-func (m *MockQualityProfilesClient) RemoveGroup(opt *sonar.QualityprofilesRemoveGroupOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) RemoveGroup(opt *sonar.QualityprofilesRemoveGroupOptions) (resp *http.Response, err error) {
 	if m.RemoveGroupFn != nil {
 		return m.RemoveGroupFn(opt)
 	}
@@ -214,7 +214,7 @@ func (m *MockQualityProfilesClient) RemoveGroup(opt *sonar.QualityprofilesRemove
 }
 
 // RemoveProject implements QualityProfilesClient.RemoveProject.
-func (m *MockQualityProfilesClient) RemoveProject(opt *sonar.QualityprofilesRemoveProjectOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) RemoveProject(opt *sonar.QualityprofilesRemoveProjectOptions) (resp *http.Response, err error) {
 	if m.RemoveProjectFn != nil {
 		return m.RemoveProjectFn(opt)
 	}
@@ -223,7 +223,7 @@ func (m *MockQualityProfilesClient) RemoveProject(opt *sonar.QualityprofilesRemo
 }
 
 // RemoveUser implements QualityProfilesClient.RemoveUser.
-func (m *MockQualityProfilesClient) RemoveUser(opt *sonar.QualityprofilesRemoveUserOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) RemoveUser(opt *sonar.QualityprofilesRemoveUserOptions) (resp *http.Response, err error) {
 	if m.RemoveUserFn != nil {
 		return m.RemoveUserFn(opt)
 	}
@@ -232,7 +232,7 @@ func (m *MockQualityProfilesClient) RemoveUser(opt *sonar.QualityprofilesRemoveU
 }
 
 // Rename implements QualityProfilesClient.Rename.
-func (m *MockQualityProfilesClient) Rename(opt *sonar.QualityprofilesRenameOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Rename(opt *sonar.QualityprofilesRenameOptions) (resp *http.Response, err error) {
 	if m.RenameFn != nil {
 		return m.RenameFn(opt)
 	}
@@ -241,7 +241,7 @@ func (m *MockQualityProfilesClient) Rename(opt *sonar.QualityprofilesRenameOptio
 }
 
 // Restore implements QualityProfilesClient.Restore.
-func (m *MockQualityProfilesClient) Restore(opt *sonar.QualityprofilesRestoreOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Restore(opt *sonar.QualityprofilesRestoreOptions) (resp *http.Response, err error) {
 	if m.RestoreFn != nil {
 		return m.RestoreFn(opt)
 	}
@@ -250,7 +250,7 @@ func (m *MockQualityProfilesClient) Restore(opt *sonar.QualityprofilesRestoreOpt
 }
 
 // Search implements QualityProfilesClient.Search.
-func (m *MockQualityProfilesClient) Search(opt *sonar.QualityprofilesSearchOption) (v *sonar.QualityprofilesSearch, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Search(opt *sonar.QualityprofilesSearchOptions) (v *sonar.QualityprofilesSearch, resp *http.Response, err error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -259,7 +259,7 @@ func (m *MockQualityProfilesClient) Search(opt *sonar.QualityprofilesSearchOptio
 }
 
 // SearchGroups implements QualityProfilesClient.SearchGroups.
-func (m *MockQualityProfilesClient) SearchGroups(opt *sonar.QualityprofilesSearchGroupsOption) (v *sonar.QualityprofilesSearchGroups, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) SearchGroups(opt *sonar.QualityprofilesSearchGroupsOptions) (v *sonar.QualityprofilesSearchGroups, resp *http.Response, err error) {
 	if m.SearchGroupsFn != nil {
 		return m.SearchGroupsFn(opt)
 	}
@@ -268,7 +268,7 @@ func (m *MockQualityProfilesClient) SearchGroups(opt *sonar.QualityprofilesSearc
 }
 
 // SearchUsers implements QualityProfilesClient.SearchUsers.
-func (m *MockQualityProfilesClient) SearchUsers(opt *sonar.QualityprofilesSearchUsersOption) (v *sonar.QualityprofilesSearchUsers, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) SearchUsers(opt *sonar.QualityprofilesSearchUsersOptions) (v *sonar.QualityprofilesSearchUsers, resp *http.Response, err error) {
 	if m.SearchUsersFn != nil {
 		return m.SearchUsersFn(opt)
 	}
@@ -277,7 +277,7 @@ func (m *MockQualityProfilesClient) SearchUsers(opt *sonar.QualityprofilesSearch
 }
 
 // SetDefault implements QualityProfilesClient.SetDefault.
-func (m *MockQualityProfilesClient) SetDefault(opt *sonar.QualityprofilesSetDefaultOption) (resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) SetDefault(opt *sonar.QualityprofilesSetDefaultOptions) (resp *http.Response, err error) {
 	if m.SetDefaultFn != nil {
 		return m.SetDefaultFn(opt)
 	}
@@ -286,7 +286,7 @@ func (m *MockQualityProfilesClient) SetDefault(opt *sonar.QualityprofilesSetDefa
 }
 
 // Show implements QualityProfilesClient.Show.
-func (m *MockQualityProfilesClient) Show(opt *sonar.QualityprofilesShowOption) (v *sonar.QualityprofilesShow, resp *http.Response, err error) {
+func (m *MockQualityProfilesClient) Show(opt *sonar.QualityprofilesShowOptions) (v *sonar.QualityprofilesShow, resp *http.Response, err error) {
 	if m.ShowFn != nil {
 		return m.ShowFn(opt)
 	}

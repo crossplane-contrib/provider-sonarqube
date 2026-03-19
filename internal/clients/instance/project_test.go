@@ -31,14 +31,14 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 
 	tests := map[string]struct {
 		spec v1alpha1.ProjectParameters
-		want *sonar.ProjectsCreateOption
+		want *sonar.ProjectsCreateOptions
 	}{
 		"BasicCreateOption": {
 			spec: v1alpha1.ProjectParameters{
 				Name: "test-project",
 				Key:  "test-key",
 			},
-			want: &sonar.ProjectsCreateOption{
+			want: &sonar.ProjectsCreateOptions{
 				Name:    "test-project",
 				Project: "test-key",
 			},
@@ -49,7 +49,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 				Key:        "test-key",
 				Visibility: ptr.To("private"),
 			},
-			want: &sonar.ProjectsCreateOption{
+			want: &sonar.ProjectsCreateOptions{
 				Name:       "test-project",
 				Project:    "test-key",
 				Visibility: "private",
@@ -61,7 +61,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 				Key:           "test-key",
 				DefaultBranch: ptr.To("develop"),
 			},
-			want: &sonar.ProjectsCreateOption{
+			want: &sonar.ProjectsCreateOptions{
 				Name:       "test-project",
 				Project:    "test-key",
 				MainBranch: "develop",
@@ -76,7 +76,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 					Value: ptr.To("30"),
 				},
 			},
-			want: &sonar.ProjectsCreateOption{
+			want: &sonar.ProjectsCreateOptions{
 				Name:                   "test-project",
 				Project:                "test-key",
 				NewCodeDefinitionType:  "NUMBER_OF_DAYS",
@@ -91,7 +91,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 					Type: "PREVIOUS_VERSION",
 				},
 			},
-			want: &sonar.ProjectsCreateOption{
+			want: &sonar.ProjectsCreateOptions{
 				Name:                  "test-project",
 				Project:               "test-key",
 				NewCodeDefinitionType: "PREVIOUS_VERSION",
@@ -108,7 +108,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 					Value: ptr.To("main"),
 				},
 			},
-			want: &sonar.ProjectsCreateOption{
+			want: &sonar.ProjectsCreateOptions{
 				Name:                   "full-project",
 				Project:                "full-key",
 				Visibility:             "public",
@@ -136,11 +136,11 @@ func TestGenerateProjectDeleteOptions(t *testing.T) {
 
 	tests := map[string]struct {
 		projectKey string
-		want       *sonar.ProjectsDeleteOption
+		want       *sonar.ProjectsDeleteOptions
 	}{
 		"BasicDeleteOption": {
 			projectKey: "my-project",
-			want: &sonar.ProjectsDeleteOption{
+			want: &sonar.ProjectsDeleteOptions{
 				Project: "my-project",
 			},
 		},
@@ -163,11 +163,11 @@ func TestGenerateProjectSearchOptions(t *testing.T) {
 
 	tests := map[string]struct {
 		projectKey string
-		want       *sonar.ProjectsSearchOption
+		want       *sonar.ProjectsSearchOptions
 	}{
 		"BasicSearchOption": {
 			projectKey: "my-project",
-			want: &sonar.ProjectsSearchOption{
+			want: &sonar.ProjectsSearchOptions{
 				Projects: []string{"my-project"},
 			},
 		},
@@ -437,12 +437,12 @@ func TestGenerateProjectUpdateVisibilityOptions(t *testing.T) {
 	tests := map[string]struct {
 		projectKey string
 		visibility string
-		want       *sonar.ProjectsUpdateVisibilityOption
+		want       *sonar.ProjectsUpdateVisibilityOptions
 	}{
 		"BasicUpdateVisibility": {
 			projectKey: "my-project",
 			visibility: "private",
-			want: &sonar.ProjectsUpdateVisibilityOption{
+			want: &sonar.ProjectsUpdateVisibilityOptions{
 				Project:    "my-project",
 				Visibility: "private",
 			},

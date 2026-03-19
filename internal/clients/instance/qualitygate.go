@@ -33,27 +33,27 @@ import (
 //
 //nolint:interfacebloat // This interface wraps the SonarQube Quality Gates API which has 21 methods
 type QualityGatesClient interface {
-	AddGroup(opt *sonar.QualitygatesAddGroupOption) (resp *http.Response, err error)
-	AddUser(opt *sonar.QualitygatesAddUserOption) (resp *http.Response, err error)
-	Copy(opt *sonar.QualitygatesCopyOption) (resp *http.Response, err error)
-	Create(opt *sonar.QualitygatesCreateOption) (v *sonar.QualitygatesCreate, resp *http.Response, err error)
-	CreateCondition(opt *sonar.QualitygatesCreateConditionOption) (v *sonar.QualitygatesCreateCondition, resp *http.Response, err error)
-	DeleteCondition(opt *sonar.QualitygatesDeleteConditionOption) (resp *http.Response, err error)
-	Deselect(opt *sonar.QualitygatesDeselectOption) (resp *http.Response, err error)
-	Destroy(opt *sonar.QualitygatesDestroyOption) (resp *http.Response, err error)
-	GetByProject(opt *sonar.QualitygatesGetByProjectOption) (v *sonar.QualitygatesGetByProject, resp *http.Response, err error)
+	AddGroup(opt *sonar.QualitygatesAddGroupOptions) (resp *http.Response, err error)
+	AddUser(opt *sonar.QualitygatesAddUserOptions) (resp *http.Response, err error)
+	Copy(opt *sonar.QualitygatesCopyOptions) (resp *http.Response, err error)
+	Create(opt *sonar.QualitygatesCreateOptions) (v *sonar.QualitygatesCreate, resp *http.Response, err error)
+	CreateCondition(opt *sonar.QualitygatesCreateConditionOptions) (v *sonar.QualitygatesCreateCondition, resp *http.Response, err error)
+	DeleteCondition(opt *sonar.QualitygatesDeleteConditionOptions) (resp *http.Response, err error)
+	Deselect(opt *sonar.QualitygatesDeselectOptions) (resp *http.Response, err error)
+	Destroy(opt *sonar.QualitygatesDestroyOptions) (resp *http.Response, err error)
+	GetByProject(opt *sonar.QualitygatesGetByProjectOptions) (v *sonar.QualitygatesGetByProject, resp *http.Response, err error)
 	List() (v *sonar.QualitygatesList, resp *http.Response, err error)
-	ProjectStatus(opt *sonar.QualitygatesProjectStatusOption) (v *sonar.QualitygatesProjectStatus, resp *http.Response, err error)
-	RemoveGroup(opt *sonar.QualitygatesRemoveGroupOption) (resp *http.Response, err error)
-	RemoveUser(opt *sonar.QualitygatesRemoveUserOption) (resp *http.Response, err error)
-	Rename(opt *sonar.QualitygatesRenameOption) (resp *http.Response, err error)
-	Search(opt *sonar.QualitygatesSearchOption) (v *sonar.QualitygatesSearch, resp *http.Response, err error)
-	SearchGroups(opt *sonar.QualitygatesSearchGroupsOption) (v *sonar.QualitygatesSearchGroups, resp *http.Response, err error)
-	SearchUsers(opt *sonar.QualitygatesSearchUsersOption) (v *sonar.QualitygatesSearchUsers, resp *http.Response, err error)
-	Select(opt *sonar.QualitygatesSelectOption) (resp *http.Response, err error)
-	SetAsDefault(opt *sonar.QualitygatesSetAsDefaultOption) (resp *http.Response, err error)
-	Show(opt *sonar.QualitygatesShowOption) (v *sonar.QualitygatesShow, resp *http.Response, err error)
-	UpdateCondition(opt *sonar.QualitygatesUpdateConditionOption) (resp *http.Response, err error)
+	ProjectStatus(opt *sonar.QualitygatesProjectStatusOptions) (v *sonar.QualitygatesProjectStatus, resp *http.Response, err error)
+	RemoveGroup(opt *sonar.QualitygatesRemoveGroupOptions) (resp *http.Response, err error)
+	RemoveUser(opt *sonar.QualitygatesRemoveUserOptions) (resp *http.Response, err error)
+	Rename(opt *sonar.QualitygatesRenameOptions) (resp *http.Response, err error)
+	Search(opt *sonar.QualitygatesSearchOptions) (v *sonar.QualitygatesSearch, resp *http.Response, err error)
+	SearchGroups(opt *sonar.QualitygatesSearchGroupsOptions) (v *sonar.QualitygatesSearchGroups, resp *http.Response, err error)
+	SearchUsers(opt *sonar.QualitygatesSearchUsersOptions) (v *sonar.QualitygatesSearchUsers, resp *http.Response, err error)
+	Select(opt *sonar.QualitygatesSelectOptions) (resp *http.Response, err error)
+	SetAsDefault(opt *sonar.QualitygatesSetAsDefaultOptions) (resp *http.Response, err error)
+	Show(opt *sonar.QualitygatesShowOptions) (v *sonar.QualitygatesShow, resp *http.Response, err error)
+	UpdateCondition(opt *sonar.QualitygatesUpdateConditionOptions) (resp *http.Response, err error)
 }
 
 // NewQualityGatesClient creates a new QualityGatesClient with the provided SonarQube client configuration.
@@ -64,8 +64,8 @@ func NewQualityGatesClient(clientConfig common.Config) QualityGatesClient {
 }
 
 // GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption from QualityGateParameters.
-func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sonar.QualitygatesCreateOption {
-	return &sonar.QualitygatesCreateOption{
+func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sonar.QualitygatesCreateOptions {
+	return &sonar.QualitygatesCreateOptions{
 		Name: spec.Name,
 	}
 }
@@ -196,15 +196,15 @@ func WereQualityGateConditionsLateInitialized(before, after []v1alpha1.QualityGa
 }
 
 // GenerateQualityGateGetByProjectOptions generates the options for getting a SonarQube Quality Gate by project based on the provided project key.
-func GenerateQualityGateGetByProjectOptions(projectKey string) *sonar.QualitygatesGetByProjectOption {
-	return &sonar.QualitygatesGetByProjectOption{
+func GenerateQualityGateGetByProjectOptions(projectKey string) *sonar.QualitygatesGetByProjectOptions {
+	return &sonar.QualitygatesGetByProjectOptions{
 		Project: projectKey,
 	}
 }
 
 // GenerateQualityGateSelectOptions generates the options for selecting a SonarQube Quality Gate based on the provided quality gate name.
-func GenerateQualityGateSelectOptions(projectKey string, qualityGateName string) *sonar.QualitygatesSelectOption {
-	return &sonar.QualitygatesSelectOption{
+func GenerateQualityGateSelectOptions(projectKey string, qualityGateName string) *sonar.QualitygatesSelectOptions {
+	return &sonar.QualitygatesSelectOptions{
 		ProjectKey: projectKey,
 		GateName:   qualityGateName,
 	}
