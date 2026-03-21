@@ -49,7 +49,7 @@ spec:
     #
     # Parameters are template-specific. For java:S124 the template supports
     # "regularExpression" and "message" parameters. They are commented out
-    # here to keep this manifest broadly applyable across SonarQube setups.
+    # here to keep this manifest broadly applicable across SonarQube setups.
     # Uncomment and adjust them if your integration environment is meant to
     # validate template parameter synchronization as well:
     # parameters:
