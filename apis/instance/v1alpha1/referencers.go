@@ -118,7 +118,7 @@ func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, cli
 	for ruleIdx, profileRule := range qualityProfile.Spec.ForProvider.Rules {
 		currentRuleKey := ""
 		if profileRule.RuleRef == nil && profileRule.RuleSelector == nil {
-			currentRuleKey = profileRule.Rule
+			currentRuleKey = ptr.Deref(profileRule.Rule, "")
 		}
 
 		ruleResponse, ruleErr := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
@@ -133,11 +133,14 @@ func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, cli
 		})
 		if ruleErr != nil {
 			return errors.Wrap(ruleErr, "spec.forProvider.rules.rule")
+		} else if ruleResponse.ResolvedValue == "" {
+			return errors.Errorf("unable to resolve spec.forProvider.rules[%d]: resolved value is empty", ruleIdx)
 		}
 
 		rule := qualityProfile.Spec.ForProvider.Rules[ruleIdx]
 
-		rule.Rule = ruleResponse.ResolvedValue
+		// ptr.To allocates an independent copy per rule, preventing each loop iteration from overwriting pointers stored in previous iterations.
+		rule.Rule = ptr.To(ruleResponse.ResolvedValue)
 		rule.RuleRef = ruleResponse.ResolvedReference
 		qualityProfile.Spec.ForProvider.Rules[ruleIdx] = rule
 	}

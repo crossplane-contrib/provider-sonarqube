@@ -649,7 +649,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
 					"java:S1144": {
-						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "java:S1144"},
+						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
 						Observation: nil,
 						UpToDate:    false,
 					},
@@ -695,7 +695,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
 					"java:S1144": {
-						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "java:S1144", Severity: ptr.To("CRITICAL")},
+						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144"), Severity: ptr.To("CRITICAL")},
 						Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144", Severity: "MAJOR"},
 						UpToDate:    false,
 					},
@@ -726,7 +726,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 						UpToDate:    false,
 					},
 					"java:S1145": {
-						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "java:S1145"},
+						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1145")},
 						Observation: nil,
 						UpToDate:    false,
 					},

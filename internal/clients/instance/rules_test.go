@@ -464,23 +464,23 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 			want:        true,
 		},
 		"NilObservationReturnsFalse": {
-			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "java:S1144"},
+			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
 			observation: nil,
 			want:        false,
 		},
 		"DifferentRuleKeyReturnsFalse": {
-			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "java:S1144"},
+			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
 			observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1145"},
 			want:        false,
 		},
 		"MatchingRuleNoSeverityNoParams": {
-			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: "java:S1144"},
+			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
 			observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144"},
 			want:        true,
 		},
 		"MatchingRuleWithMatchingSeverity": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:     "java:S1144",
+				Rule:     ptr.To("java:S1144"),
 				Severity: ptr.To("MAJOR"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -491,7 +491,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"DifferentSeverityReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:     "java:S1144",
+				Rule:     ptr.To("java:S1144"),
 				Severity: ptr.To("MAJOR"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -502,7 +502,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"MatchingParameters": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       "java:S1144",
+				Rule:       ptr.To("java:S1144"),
 				Parameters: &map[string]string{"max": "10"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -513,7 +513,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"DifferentParametersReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       "java:S1144",
+				Rule:       ptr.To("java:S1144"),
 				Parameters: &map[string]string{"max": "10"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -524,7 +524,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"NilSpecParametersDoesNotCheck": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule: "java:S1144",
+				Rule: ptr.To("java:S1144"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:        "java:S1144",
@@ -534,7 +534,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"EmptySpecParametersMatchesEmptyObservation": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       "java:S1144",
+				Rule:       ptr.To("java:S1144"),
 				Parameters: &map[string]string{},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -545,7 +545,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"AllFieldsMatching": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       "java:S1144",
+				Rule:       ptr.To("java:S1144"),
 				Severity:   ptr.To("CRITICAL"),
 				Parameters: &map[string]string{"max": "15", "min": "5"},
 			},
@@ -581,7 +581,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 	}{
 		"PrioritizedMatchReturnsTrue": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:        "java:S1000",
+				Rule:        ptr.To("java:S1000"),
 				Prioritized: ptr.To(true),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -592,7 +592,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"PrioritizedMismatchReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:        "java:S1000",
+				Rule:        ptr.To("java:S1000"),
 				Prioritized: ptr.To(true),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -603,7 +603,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"ImpactsMatchReturnsTrue": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:    "java:S1000",
+				Rule:    ptr.To("java:S1000"),
 				Impacts: &map[string]string{"SECURITY": "HIGH"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -614,7 +614,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"ImpactsMismatchReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:    "java:S1000",
+				Rule:    ptr.To("java:S1000"),
 				Impacts: &map[string]string{"SECURITY": "HIGH"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -625,7 +625,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"SpecImpactsNilObservationHasImpactsReturnsTrue": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule: "java:S1000",
+				Rule: ptr.To("java:S1000"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:     "java:S1000",
@@ -1820,6 +1820,100 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 			},
 			want: false,
 		},
+		"NonEmptyImpactsTakePrecedenceOverSeverity": {
+			fields: fields{
+				spec: &v1alpha1.RuleParameters{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     &map[string]string{"SECURITY": "HIGH"},
+					Severity:    ptr.To("MAJOR"),
+				},
+				observation: &v1alpha1.RuleObservation{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     map[string]string{"SECURITY": "HIGH"},
+					Severity:    "MINOR",
+				},
+			},
+			want: true,
+		},
+		"NonEmptyImpactsStillFailWhenImpactsDiffer": {
+			fields: fields{
+				spec: &v1alpha1.RuleParameters{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     &map[string]string{"SECURITY": "HIGH"},
+					Severity:    ptr.To("MAJOR"),
+				},
+				observation: &v1alpha1.RuleObservation{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     map[string]string{"SECURITY": "LOW"},
+					Severity:    "MAJOR",
+				},
+			},
+			want: false,
+		},
+		"EmptyImpactsFallbackToSeverity": {
+			fields: fields{
+				spec: &v1alpha1.RuleParameters{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     &map[string]string{},
+					Severity:    ptr.To("MAJOR"),
+				},
+				observation: &v1alpha1.RuleObservation{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     map[string]string{"SECURITY": "LOW"},
+					Severity:    "MAJOR",
+				},
+			},
+			want: true,
+		},
+		"EmptyImpactsFallbackToSeverityMismatchReturnsFalse": {
+			fields: fields{
+				spec: &v1alpha1.RuleParameters{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     &map[string]string{},
+					Severity:    ptr.To("MAJOR"),
+				},
+				observation: &v1alpha1.RuleObservation{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     map[string]string{"SECURITY": "HIGH"},
+					Severity:    "MINOR",
+				},
+			},
+			want: false,
+		},
+		"EmptyImpactsAndNilSeverityIgnoreBoth": {
+			fields: fields{
+				spec: &v1alpha1.RuleParameters{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     &map[string]string{},
+				},
+				observation: &v1alpha1.RuleObservation{
+					Key:         "k",
+					Name:        "n",
+					TemplateKey: "t",
+					Impacts:     map[string]string{"SECURITY": "LOW"},
+					Severity:    "BLOCKER",
+				},
+			},
+			want: true,
+		},
 		"MatchingSeverity": {
 			fields: fields{
 				spec: &v1alpha1.RuleParameters{
@@ -2593,48 +2687,6 @@ func TestGenerateRuleParametersOptions(t *testing.T) {
 				if _, ok := got[key]; !ok {
 					t.Errorf("generateRuleParametersOptions() missing key %q", key)
 				}
-			}
-		})
-	}
-}
-
-func TestAnySliceToStringSlice(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]struct {
-		input []any
-		want  []string
-	}{
-		"NilInputReturnsNil": {
-			input: nil,
-			want:  nil,
-		},
-		"EmptyInput": {
-			input: []any{},
-			want:  []string{},
-		},
-		"AllStrings": {
-			input: []any{"a", "b", "c"},
-			want:  []string{"a", "b", "c"},
-		},
-		"NonStringElementsSkipped": {
-			input: []any{"a", 42, nil, "b", true},
-			want:  []string{"a", "b"},
-		},
-		"AllNonStrings": {
-			input: []any{1, 2, 3},
-			want:  []string{},
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			got := anySliceToStringSlice(tc.input)
-
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("anySliceToStringSlice() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

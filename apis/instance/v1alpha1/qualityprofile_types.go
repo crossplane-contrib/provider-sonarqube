@@ -88,9 +88,9 @@ type QualityProfileRuleParameters struct {
 	// +kubebuilder:validation:Optional
 	Prioritized *bool `json:"prioritized,omitempty"`
 	// Rule is the unique key (identifier) of the rule to be activated in the Quality Profile.
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
-	Rule string `json:"rule"`
+	Rule *string `json:"rule"`
 	// RuleRef is a reference to a Rule to retrieve its id and associate it with the project.
 	// +kubebuilder:validation:Optional
 	RuleRef *xpv1.NamespacedReference `json:"ruleRef,omitempty"`

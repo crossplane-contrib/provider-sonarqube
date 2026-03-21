@@ -398,12 +398,17 @@ func (c *external) activateMissingQualityProfileRules(externalName string, assoc
 		helpers.CloseBody(activateResp)
 
 		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "cannot activate rule %s", ruleSpec.Rule))
+			errs = append(errs, errors.Wrapf(err, "cannot activate rule %s", ptr.Deref(ruleSpec.Rule, "")))
 
 			continue
 		}
 		// Update association to reflect the activation (mark as up to date)
-		associations[ruleSpec.Rule] = instance.QualityProfileRuleAssociation{
+		ruleKey := ptr.Deref(ruleSpec.Rule, "")
+		if ruleKey == "" {
+			continue
+		}
+
+		associations[ruleKey] = instance.QualityProfileRuleAssociation{
 			Spec:        ruleSpec,
 			Observation: nil, // Will be populated on next Observe
 			UpToDate:    true,
@@ -430,12 +435,17 @@ func (c *external) updateOutdatedQualityProfileRules(externalName string, associ
 		helpers.CloseBody(activateResp)
 
 		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "cannot update rule %s", assoc.Spec.Rule))
+			errs = append(errs, errors.Wrapf(err, "cannot update rule %s", ptr.Deref(assoc.Spec.Rule, "")))
 
 			continue
 		}
 		// Update association to reflect the update
-		associations[assoc.Spec.Rule] = instance.QualityProfileRuleAssociation{
+		ruleKey := ptr.Deref(assoc.Spec.Rule, "")
+		if ruleKey == "" {
+			continue
+		}
+
+		associations[ruleKey] = instance.QualityProfileRuleAssociation{
 			Spec:        assoc.Spec,
 			Observation: assoc.Observation,
 			UpToDate:    true,

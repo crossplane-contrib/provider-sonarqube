@@ -166,7 +166,7 @@ func LateInitializeQualityProfile(spec *v1alpha1.QualityProfileParameters, obser
 func GenerateQualityProfileActivateRuleOption(qualityProfileKey string, params v1alpha1.QualityProfileRuleParameters) *sonar.QualityprofilesActivateRuleOptions {
 	activateRulesOption := &sonar.QualityprofilesActivateRuleOptions{
 		Key:             qualityProfileKey,
-		Rule:            params.Rule,
+		Rule:            ptr.Deref(params.Rule, ""),
 		PrioritizedRule: false,
 	}
 
@@ -220,7 +220,11 @@ func GenerateQualityProfileRulesAssociation(specs []v1alpha1.QualityProfileRuleP
 
 	// Then, match specs to observations
 	for idx := range specs {
-		ruleKey := specs[idx].Rule
+		ruleKey := ptr.Deref(specs[idx].Rule, "")
+		if ruleKey == "" {
+			continue
+		}
+
 		if assoc, exists := associations[ruleKey]; exists {
 			// Rule exists in observation - check if up to date
 			assoc.Spec = &specs[idx]
@@ -323,11 +327,21 @@ func WereQualityProfileRulesLateInitialized(original, updated []v1alpha1.Quality
 	// Build a map for quick lookup of original rules
 	originalMap := make(map[string]*v1alpha1.QualityProfileRuleParameters, len(original))
 	for idx := range original {
-		originalMap[original[idx].Rule] = &original[idx]
+		ruleKey := ptr.Deref(original[idx].Rule, "")
+		if ruleKey == "" {
+			continue
+		}
+
+		originalMap[ruleKey] = &original[idx]
 	}
 
 	for idx := range updated {
-		orig, exists := originalMap[updated[idx].Rule]
+		ruleKey := ptr.Deref(updated[idx].Rule, "")
+		if ruleKey == "" {
+			return true
+		}
+
+		orig, exists := originalMap[ruleKey]
 		if !exists {
 			return true
 		}

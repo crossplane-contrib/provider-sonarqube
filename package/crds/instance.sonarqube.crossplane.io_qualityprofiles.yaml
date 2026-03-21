@@ -222,8 +222,6 @@ spec:
                           - CRITICAL
                           - BLOCKER
                           type: string
-                      required:
-                      - rule
                       type: object
                     type: array
                 required:

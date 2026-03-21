@@ -779,6 +779,11 @@ func (in *QualityProfileRuleParameters) DeepCopyInto(out *QualityProfileRulePara
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Rule != nil {
+		in, out := &in.Rule, &out.Rule
+		*out = new(string)
+		**out = **in
+	}
 	if in.RuleRef != nil {
 		in, out := &in.RuleRef, &out.RuleRef
 		*out = new(v1.NamespacedReference)

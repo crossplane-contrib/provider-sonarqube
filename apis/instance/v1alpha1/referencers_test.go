@@ -90,7 +90,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			reason: "When Rule is already set and no ref/selector exists, it is preserved.",
 			profile: func() *QualityProfile {
 				qp := newTestQualityProfile(ns)
-				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{Rule: "go:S100"}}
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{Rule: ptr.To("go:S100")}}
 
 				return qp
 			}(),
@@ -189,7 +189,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			profile: func() *QualityProfile {
 				qp := newTestQualityProfile(ns)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
-					Rule:    "example-rule",
+					Rule:    ptr.To("example-rule"),
 					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
 				}}
 
@@ -211,7 +211,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			profile: func() *QualityProfile {
 				qp := newTestQualityProfile(ns)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{
-					{Rule: "go:S100"},
+					{Rule: ptr.To("go:S100")},
 					{RuleRef: &xpv1.NamespacedReference{Name: "rule-ref-java"}},
 					{RuleSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"team": "sec"}}},
 				}
@@ -282,7 +282,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 					continue
 				}
 
-				if got := tc.profile.Spec.ForProvider.Rules[idx].Rule; got != wantRule {
+				if got := *tc.profile.Spec.ForProvider.Rules[idx].Rule; got != wantRule {
 					t.Errorf("[%s] (%s) Rules[%d].Rule: want %q, got %q", name, tc.reason, idx, wantRule, got)
 				}
 			}

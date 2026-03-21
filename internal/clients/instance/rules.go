@@ -247,7 +247,7 @@ func IsQualityProfileRuleUpToDate(spec *v1alpha1.QualityProfileRuleParameters, o
 	}
 
 	// Rule key must match
-	if spec.Rule != observation.Key {
+	if !helpers.IsComparablePtrEqualComparable(spec.Rule, observation.Key) {
 		return false
 	}
 
@@ -414,7 +414,7 @@ func GenerateRuleObservation(rule *sonar.RulesShow) v1alpha1.RuleObservation {
 		TemplateKey:                rule.Rule.TemplateKey,
 		Type:                       rule.Rule.Type,
 		Impacts:                    GenerateRuleImpactsObservation(&rule.Rule.Impacts),
-		Tags:                       anySliceToStringSlice(rule.Rule.Tags),
+		Tags:                       helpers.AnySliceToStringSlice(rule.Rule.Tags),
 		SysTags:                    rule.Rule.SysTags,
 		Params:                     GenerateRuleParametersObservation(&rule.Rule.Params),
 		DescriptionSections:        GenerateRuleDescriptionSectionsObservation(&rule.Rule.DescriptionSections),
@@ -499,15 +499,21 @@ func IsRuleUpToDate(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObs
 		return false
 	}
 
+	// Keep precedence consistent with create/update behavior:
+	// non-empty impacts takes precedence over severity.
+	impactsAndSeverityUpToDate := helpers.IsComparablePtrEqualComparable(spec.Severity, observation.Severity)
+	if spec.Impacts != nil && len(*spec.Impacts) > 0 {
+		impactsAndSeverityUpToDate = helpers.IsComparableMapPtrEqualComparableMap(spec.Impacts, observation.Impacts)
+	}
+
 	return isRuleKeyUpToDate(spec.Key, observation.Key) &&
 		spec.Name == observation.Name &&
 		spec.TemplateKey == observation.TemplateKey &&
 		helpers.IsComparablePtrEqualComparable(spec.CleanCodeAttribute, observation.CleanCodeAttribute) &&
-		helpers.IsComparableMapPtrEqualComparableMap(spec.Impacts, observation.Impacts) &&
+		impactsAndSeverityUpToDate &&
 		helpers.IsComparablePtrEqualComparable(spec.RemediationFnBaseEffort, observation.RemFnBaseEffort) &&
 		helpers.IsComparablePtrEqualComparable(spec.RemediationFnType, observation.RemFnType) &&
 		helpers.IsComparablePtrEqualComparable(spec.RemediationFyGapMultiplier, observation.RemFnGapMultiplier) &&
-		helpers.IsComparablePtrEqualComparable(spec.Severity, observation.Severity) &&
 		helpers.IsComparablePtrEqualComparable(spec.Status, observation.Status) &&
 		helpers.IsComparablePtrEqualComparable(spec.Type, observation.Type) &&
 		areRuleTagsUpToDate(spec.Tags, observation.Tags) &&
@@ -610,20 +616,4 @@ func LateInitializeRule(spec *v1alpha1.RuleParameters, observation *v1alpha1.Rul
 // IsRuleLateInitialized checks whether a rule was late initialized by comparing the before and after RuleParameters. It returns true if the only differences between before and after are fields that can be late initialized (i.e., fields that are nil in before and non-nil in after), and false otherwise.
 func IsRuleLateInitialized(before *v1alpha1.RuleParameters, after *v1alpha1.RuleParameters) bool {
 	return !cmp.Equal(before, after, cmpopts.EquateEmpty())
-}
-
-// anySliceToStringSlice safely converts a []any slice to a []string slice, skipping non-string elements.
-func anySliceToStringSlice(anySlice []any) []string {
-	if anySlice == nil {
-		return nil
-	}
-
-	result := make([]string, 0, len(anySlice))
-	for _, v := range anySlice {
-		if s, ok := v.(string); ok {
-			result = append(result, s)
-		}
-	}
-
-	return result
 }
