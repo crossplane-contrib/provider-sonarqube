@@ -91,6 +91,12 @@ type QualityProfileRuleParameters struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Rule string `json:"rule"`
+	// RuleRef is a reference to a Rule to retrieve its id and associate it with the project.
+	// +kubebuilder:validation:Optional
+	RuleRef *xpv1.NamespacedReference `json:"ruleRef,omitempty"`
+	// RuleSelector selects reference to a Rule to retrieve its id and associate it with the project.
+	// +kubebuilder:validation:Optional
+	RuleSelector *xpv1.NamespacedSelector `json:"ruleSelector,omitempty"`
 	// Severity. Cannot be used as the same time as 'impacts'.
 	// If used together with 'impacts', 'impacts' will take precedence.
 	// +kubebuilder:validation:Enum=INFO;MINOR;MAJOR;CRITICAL;BLOCKER

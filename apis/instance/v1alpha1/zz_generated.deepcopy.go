@@ -779,6 +779,16 @@ func (in *QualityProfileRuleParameters) DeepCopyInto(out *QualityProfileRulePara
 		*out = new(bool)
 		**out = **in
 	}
+	if in.RuleRef != nil {
+		in, out := &in.RuleRef, &out.RuleRef
+		*out = new(v1.NamespacedReference)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.RuleSelector != nil {
+		in, out := &in.RuleSelector, &out.RuleSelector
+		*out = new(v1.NamespacedSelector)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Severity != nil {
 		in, out := &in.Severity, &out.Severity
 		*out = new(string)

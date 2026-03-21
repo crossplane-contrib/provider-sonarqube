@@ -261,8 +261,8 @@ spec:
                           minLength: 1
                           type: string
                         idRef:
-                          description: QualityProfileIdRef is a reference to a QualityProfile
-                            to retrieve its id and associate it with the project.
+                          description: IdRef is a reference to a QualityProfile to
+                            retrieve its id and associate it with the project.
                           properties:
                             name:
                               description: Name of the referenced object.
@@ -299,9 +299,8 @@ spec:
                           - name
                           type: object
                         idSelector:
-                          description: QualityProfileIdSelector selects reference
-                            to a QualityProfile to retrieve its id and associate it
-                            with the project.
+                          description: IdSelector selects reference to a QualityProfile
+                            to retrieve its id and associate it with the project.
                           properties:
                             matchControllerRef:
                               description: |-

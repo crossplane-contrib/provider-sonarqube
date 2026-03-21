@@ -108,3 +108,39 @@ func (project *Project) ResolveReferences(ctx context.Context, client client.Rea
 
 	return nil
 }
+
+// ResolveReferences parses the references to other custom resources and resolves them to
+// the actual values.
+func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, client client.Reader) error {
+	resolver := reference.NewAPINamespacedResolver(client, qualityProfile)
+
+	// Resolve Rule for each profile rule.
+	for ruleIdx, profileRule := range qualityProfile.Spec.ForProvider.Rules {
+		currentRuleKey := ""
+		if profileRule.RuleRef == nil && profileRule.RuleSelector == nil {
+			currentRuleKey = profileRule.Rule
+		}
+
+		ruleResponse, ruleErr := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
+			CurrentValue: currentRuleKey,
+			Reference:    profileRule.RuleRef,
+			Selector:     profileRule.RuleSelector,
+			To: reference.To{
+				List:    &RuleList{},
+				Managed: &Rule{},
+			},
+			Extract: reference.ExternalName(),
+		})
+		if ruleErr != nil {
+			return errors.Wrap(ruleErr, "spec.forProvider.rules.rule")
+		}
+
+		rule := qualityProfile.Spec.ForProvider.Rules[ruleIdx]
+
+		rule.Rule = ruleResponse.ResolvedValue
+		rule.RuleRef = ruleResponse.ResolvedReference
+		qualityProfile.Spec.ForProvider.Rules[ruleIdx] = rule
+	}
+
+	return nil
+}

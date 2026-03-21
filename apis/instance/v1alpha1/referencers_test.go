@@ -45,8 +45,281 @@ func newTestProject(namespace string) *Project {
 	}
 }
 
+func newTestQualityProfile(namespace string) *QualityProfile {
+	return &QualityProfile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-qualityprofile",
+			Namespace: namespace,
+		},
+		Spec: QualityProfileSpec{
+			ForProvider: QualityProfileParameters{
+				Name:     "Go Quality Profile",
+				Language: "go",
+			},
+		},
+	}
+}
+
 func setExtName(obj metav1.Object, name string) {
 	meta.SetExternalName(obj, name)
+}
+
+func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
+	t.Parallel()
+
+	const ns = "default"
+
+	notFoundRule := kerrors.NewNotFound(
+		schema.GroupResource{Group: "instance.sonarqube.crossplane.io", Resource: "rules"},
+		"wrong-rule-name",
+	)
+
+	cases := map[string]struct {
+		reason    string
+		profile   *QualityProfile
+		client    client.Reader
+		wantRules map[int]string
+		errSubstr string
+	}{
+		"NoRules_NoOp": {
+			reason:  "A quality profile with no rules resolves with no error.",
+			profile: newTestQualityProfile(ns),
+			client:  test.NewMockClient(),
+		},
+		"RuleAlreadySet_NoRefOrSelector_Preserved": {
+			reason: "When Rule is already set and no ref/selector exists, it is preserved.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(ns)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{Rule: "go:S100"}}
+
+				return qp
+			}(),
+			client: test.NewMockClient(),
+			wantRules: map[int]string{
+				0: "go:S100",
+			},
+		},
+		"RuleRef_ResolvesToExternalName": {
+			reason: "RuleRef.Name uses the Kubernetes object name and resolves to external-name.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(ns)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
+					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
+				}}
+
+				return qp
+			}(),
+			client: &test.MockClient{
+				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+					setExtName(obj, "go:S4784")
+
+					return nil
+				}),
+			},
+			wantRules: map[int]string{
+				0: "go:S4784",
+			},
+		},
+		"RuleRef_WithExplicitNamespace": {
+			reason: "An explicit namespace in RuleRef is respected.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(ns)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
+					RuleRef: &xpv1.NamespacedReference{Name: "example-rule", Namespace: ns},
+				}}
+
+				return qp
+			}(),
+			client: &test.MockClient{
+				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+					setExtName(obj, "java:S2386")
+
+					return nil
+				}),
+			},
+			wantRules: map[int]string{
+				0: "java:S2386",
+			},
+		},
+		"RuleRef_WrongName_ReturnsError": {
+			reason: "Using a non-existing Kubernetes rule object name returns not found.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(ns)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
+					RuleRef: &xpv1.NamespacedReference{Name: "sonarqube-rule-key-instead-of-k8s-name"},
+				}}
+
+				return qp
+			}(),
+			client: &test.MockClient{
+				MockGet: test.NewMockGetFn(notFoundRule),
+			},
+			errSubstr: "spec.forProvider.rules.rule",
+		},
+		"RuleSelector_ResolvesToExternalName": {
+			reason: "A selector lists matching Rules and resolves the external-name.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(ns)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
+					RuleSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"language": "go"}},
+				}}
+
+				return qp
+			}(),
+			client: &test.MockClient{
+				MockList: test.NewMockListFn(nil, func(obj client.ObjectList) error {
+					ruleList, ok := obj.(*RuleList)
+					if !ok {
+						return nil
+					}
+
+					r := Rule{ObjectMeta: metav1.ObjectMeta{Name: "example-rule", Namespace: ns}}
+					setExtName(&r, "py:S101")
+					ruleList.Items = []Rule{r}
+
+					return nil
+				}),
+			},
+			wantRules: map[int]string{
+				0: "py:S101",
+			},
+		},
+		"RuleRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
+			reason: "A stale cached Rule value (K8s name) must be overwritten when RuleRef is set.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(ns)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
+					Rule:    "example-rule",
+					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
+				}}
+
+				return qp
+			}(),
+			client: &test.MockClient{
+				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+					setExtName(obj, "ts:S1128")
+
+					return nil
+				}),
+			},
+			wantRules: map[int]string{
+				0: "ts:S1128",
+			},
+		},
+		"MultipleRules_MixedInputs_AllResolvedIndependently": {
+			reason: "Direct, ref and selector based rules are each resolved and retained independently.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(ns)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{
+					{Rule: "go:S100"},
+					{RuleRef: &xpv1.NamespacedReference{Name: "rule-ref-java"}},
+					{RuleSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"team": "sec"}}},
+				}
+
+				return qp
+			}(),
+			client: &test.MockClient{
+				MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
+					if key.Name == "rule-ref-java" {
+						setExtName(obj, "java:S2095")
+
+						return nil
+					}
+
+					return kerrors.NewNotFound(schema.GroupResource{}, key.Name)
+				},
+				MockList: test.NewMockListFn(nil, func(obj client.ObjectList) error {
+					ruleList, ok := obj.(*RuleList)
+					if !ok {
+						return nil
+					}
+
+					r := Rule{ObjectMeta: metav1.ObjectMeta{Name: "selector-rule", Namespace: ns}}
+					setExtName(&r, "java:S1118")
+					ruleList.Items = []Rule{r}
+
+					return nil
+				}),
+			},
+			wantRules: map[int]string{
+				0: "go:S100",
+				1: "java:S2095",
+				2: "java:S1118",
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := tc.profile.ResolveReferences(context.Background(), tc.client)
+
+			if tc.errSubstr != "" {
+				if err == nil {
+					t.Errorf("[%s] (%s) expected error containing %q, got nil", name, tc.reason, tc.errSubstr)
+
+					return
+				}
+
+				if !strings.Contains(err.Error(), tc.errSubstr) {
+					t.Errorf("[%s] (%s) error %q does not contain %q", name, tc.reason, err.Error(), tc.errSubstr)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("[%s] (%s) unexpected error: %v", name, tc.reason, err)
+
+				return
+			}
+
+			for idx, wantRule := range tc.wantRules {
+				if idx >= len(tc.profile.Spec.ForProvider.Rules) {
+					t.Errorf("[%s] (%s) expected rule index %d but only %d rules are present", name, tc.reason, idx, len(tc.profile.Spec.ForProvider.Rules))
+
+					continue
+				}
+
+				if got := tc.profile.Spec.ForProvider.Rules[idx].Rule; got != wantRule {
+					t.Errorf("[%s] (%s) Rules[%d].Rule: want %q, got %q", name, tc.reason, idx, wantRule, got)
+				}
+			}
+		})
+	}
+
+	t.Run("ErrorOnFirstRule_StopsResolution", func(t *testing.T) {
+		t.Parallel()
+
+		qp := newTestQualityProfile(ns)
+		qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{
+			{RuleRef: &xpv1.NamespacedReference{Name: "missing-rule"}},
+			{RuleRef: &xpv1.NamespacedReference{Name: "second-rule"}},
+		}
+
+		callCount := 0
+		c := &test.MockClient{
+			MockGet: func(_ context.Context, _ client.ObjectKey, _ client.Object) error {
+				callCount++
+
+				return notFoundRule
+			},
+		}
+
+		err := qp.ResolveReferences(context.Background(), c)
+		if err == nil {
+			t.Fatal("expected an error but got nil")
+		}
+
+		if !strings.Contains(err.Error(), "spec.forProvider.rules.rule") {
+			t.Fatalf("expected wrapped error path, got %q", err.Error())
+		}
+
+		if callCount != 1 {
+			t.Errorf("expected resolver to stop on first failing rule, got %d calls", callCount)
+		}
+	})
 }
 
 func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestResolveReferences is a complex function with many cases; we allow it to be cognitively complex without breaking it up into smaller functions.

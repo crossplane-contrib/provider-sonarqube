@@ -118,10 +118,10 @@ type ProjectQualityProfileReference struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
 	Id *string `json:"id,omitempty"`
-	// QualityProfileIdRef is a reference to a QualityProfile to retrieve its id and associate it with the project.
+	// IdRef is a reference to a QualityProfile to retrieve its id and associate it with the project.
 	// +kubebuilder:validation:Optional
 	IdRef *xpv1.NamespacedReference `json:"idRef,omitempty"`
-	// QualityProfileIdSelector selects reference to a QualityProfile to retrieve its id and associate it with the project.
+	// IdSelector selects reference to a QualityProfile to retrieve its id and associate it with the project.
 	// +kubebuilder:validation:Optional
 	IdSelector *xpv1.NamespacedSelector `json:"idSelector,omitempty"`
 }
