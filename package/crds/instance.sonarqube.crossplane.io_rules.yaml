@@ -93,7 +93,7 @@ spec:
                       This must be an unprefixed custom key (e.g., "myRule"), not a language-prefixed key like "language:key".
                     maxLength: 200
                     minLength: 1
-                    pattern: ^[a-zA-Z0-9_]+$
+                    pattern: ^[a-zA-Z0-9_-]+$
                     type: string
                     x-kubernetes-validations:
                     - message: Key is immutable.
