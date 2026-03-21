@@ -190,7 +190,14 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 	}
 
+	// SonarQube may still return a rule entry after deletion with status REMOVED.
+	// Treat it as non-existent so Crossplane can finalize deletion.
+	if ruleShow != nil && ruleShow.Rule.Status == "REMOVED" {
+		return managed.ExternalObservation{ResourceExists: false}, nil
+	}
+
 	rule.Status.AtProvider = instance.GenerateRuleObservation(ruleShow)
+	rule.Status.SetConditions(xpv1.Available())
 
 	before := rule.Spec.ForProvider.DeepCopy()
 	instance.LateInitializeRule(&rule.Spec.ForProvider, &rule.Status.AtProvider)
@@ -281,11 +288,15 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		switch resp.StatusCode {
 		// Not found means the resource does not exist, and bad request likely means the external name is invalid, so we can treat both as non-existent resource and consider it deleted
 		case http.StatusNotFound, http.StatusBadRequest:
+			meta.SetExternalName(rule, "")
+
 			return managed.ExternalDelete{}, nil
 		default:
 			return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete SonarQube Rule")
 		}
 	}
+
+	meta.SetExternalName(rule, "")
 
 	return managed.ExternalDelete{}, nil
 }

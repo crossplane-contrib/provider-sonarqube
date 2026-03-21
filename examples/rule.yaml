@@ -23,7 +23,6 @@ spec:
       manual follow-up directly from SonarQube.
 
     # Optional mutable fields.
-    severity: MAJOR
     status: READY
     type: CODE_SMELL
     markdownNote: |

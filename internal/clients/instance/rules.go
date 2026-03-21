@@ -581,20 +581,12 @@ func LateInitializeRule(spec *v1alpha1.RuleParameters, observation *v1alpha1.Rul
 		helpers.AssignIfNil(&spec.RemediationFyGapMultiplier, observation.RemFnGapMultiplier)
 	}
 
-	if observation.Severity != "" {
-		helpers.AssignIfNil(&spec.Severity, observation.Severity)
-	}
-
 	if observation.Status != "" {
 		helpers.AssignIfNil(&spec.Status, observation.Status)
 	}
 
 	if observation.Type != "" {
 		helpers.AssignIfNil(&spec.Type, observation.Type)
-	}
-
-	if spec.Impacts == nil && len(observation.Impacts) != 0 {
-		spec.Impacts = &observation.Impacts
 	}
 
 	if spec.Tags == nil && len(observation.Tags) != 0 {

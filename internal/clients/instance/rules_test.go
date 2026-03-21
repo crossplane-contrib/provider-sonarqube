@@ -2099,7 +2099,7 @@ func TestLateInitializeRule(t *testing.T) { //nolint:gocognit,maintidx // comple
 				}
 			},
 		},
-		"InitializesSeverity": {
+		"DoesNotLateInitializeSeverity": {
 			spec: &v1alpha1.RuleParameters{
 				Key:         "k",
 				Name:        "n",
@@ -2109,8 +2109,8 @@ func TestLateInitializeRule(t *testing.T) { //nolint:gocognit,maintidx // comple
 			checkFn: func(t *testing.T, spec *v1alpha1.RuleParameters) {
 				t.Helper()
 
-				if spec.Severity == nil || *spec.Severity != "MAJOR" {
-					t.Errorf("Expected Severity to be initialized to 'MAJOR', got %v", spec.Severity)
+				if spec.Severity != nil {
+					t.Errorf("Expected Severity to remain nil, got %v", spec.Severity)
 				}
 			},
 		},
@@ -2235,7 +2235,7 @@ func TestLateInitializeRule(t *testing.T) { //nolint:gocognit,maintidx // comple
 				}
 			},
 		},
-		"InitializesImpacts": {
+		"DoesNotLateInitializeImpacts": {
 			spec: &v1alpha1.RuleParameters{
 				Key:         "k",
 				Name:        "n",
@@ -2247,15 +2247,8 @@ func TestLateInitializeRule(t *testing.T) { //nolint:gocognit,maintidx // comple
 			checkFn: func(t *testing.T, spec *v1alpha1.RuleParameters) {
 				t.Helper()
 
-				if spec.Impacts == nil {
-					t.Error("Expected Impacts to be initialized, got nil")
-
-					return
-				}
-
-				imp := *spec.Impacts
-				if imp["SECURITY"] != "HIGH" {
-					t.Errorf("Expected impact SECURITY=HIGH, got %v", imp)
+				if spec.Impacts != nil {
+					t.Errorf("Expected Impacts to remain nil, got %v", *spec.Impacts)
 				}
 			},
 		},

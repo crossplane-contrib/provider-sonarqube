@@ -32,10 +32,12 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
@@ -224,7 +226,26 @@ func TestObserve(t *testing.T) {
 				},
 			},
 		},
-		"LateInitialization": {
+		"RemovedRuleTreatedAsNotExists": {
+			ext: newTestExternalClient(&fake.MockRulesClient{
+				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
+					return &sonar.RulesShow{
+						Rule: sonar.RuleDetails{
+							Key:    "custom:rule",
+							Status: "REMOVED",
+						},
+					}, mockHTTPResponse(), nil
+				},
+			}),
+			args: args{
+				ctx: context.Background(),
+				mg:  newTestRule("custom:rule", minimalRuleSpec()),
+			},
+			want: want{
+				observation: managed.ExternalObservation{ResourceExists: false},
+			},
+		},
+		"NoLateInitializationForSeverity": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
@@ -244,14 +265,14 @@ func TestObserve(t *testing.T) {
 					Name:                "Custom Rule",
 					TemplateKey:         "java:TemplateRule",
 					MarkdownDescription: "desc",
-					// Severity is nil, will be late-initialized
+					// Severity is nil and is intentionally not late-initialized.
 				}),
 			},
 			want: want{
 				observation: managed.ExternalObservation{
 					ResourceExists:          true,
 					ResourceUpToDate:        true,
-					ResourceLateInitialized: true,
+					ResourceLateInitialized: false,
 					ConnectionDetails:       managed.ConnectionDetails{},
 				},
 			},
@@ -523,6 +544,80 @@ func TestDisconnect(t *testing.T) {
 	err := e.Disconnect(context.Background())
 	if err != nil {
 		t.Errorf("Disconnect() returned unexpected error: %v", err)
+	}
+}
+
+func TestObserveSetsReadyCondition(t *testing.T) {
+	t.Parallel()
+
+	r := newTestRule("custom:rule", v1alpha1.RuleParameters{
+		Key:         "custom:rule",
+		Name:        "Custom Rule",
+		TemplateKey: "java:TemplateRule",
+	})
+
+	e := newTestExternalClient(&fake.MockRulesClient{
+		ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
+			return &sonar.RulesShow{Rule: sonar.RuleDetails{
+				Key:         "custom:rule",
+				Name:        "Custom Rule",
+				TemplateKey: "java:TemplateRule",
+			}}, mockHTTPResponse(), nil
+		},
+	})
+
+	_, err := e.Observe(context.Background(), r)
+	if err != nil {
+		t.Fatalf("Observe() unexpected error: %v", err)
+	}
+
+	ready := r.Status.GetCondition(xpv1.TypeReady)
+	if ready.Status != corev1.ConditionTrue {
+		t.Fatalf("Observe() ready status = %s, want %s", ready.Status, corev1.ConditionTrue)
+	}
+
+	if ready.Reason != xpv1.ReasonAvailable {
+		t.Fatalf("Observe() ready reason = %s, want %s", ready.Reason, xpv1.ReasonAvailable)
+	}
+}
+
+func TestDeleteClearsExternalNameWhenDeleted(t *testing.T) {
+	t.Parallel()
+
+	r := newTestRule("custom:rule", minimalRuleSpec())
+	e := newTestExternalClient(&fake.MockRulesClient{
+		DeleteFn: func(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
+			return mockHTTPResponse(), nil
+		},
+	})
+
+	_, err := e.Delete(context.Background(), r)
+	if err != nil {
+		t.Fatalf("Delete() unexpected error: %v", err)
+	}
+
+	if got := meta.GetExternalName(r); got != "" {
+		t.Fatalf("Delete() external name = %q, want empty", got)
+	}
+}
+
+func TestDeleteClearsExternalNameOnNotFound(t *testing.T) {
+	t.Parallel()
+
+	r := newTestRule("custom:rule", minimalRuleSpec())
+	e := newTestExternalClient(&fake.MockRulesClient{
+		DeleteFn: func(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, errors.New("not found")
+		},
+	})
+
+	_, err := e.Delete(context.Background(), r)
+	if err != nil {
+		t.Fatalf("Delete() unexpected error: %v", err)
+	}
+
+	if got := meta.GetExternalName(r); got != "" {
+		t.Fatalf("Delete() external name = %q, want empty", got)
 	}
 }
 
