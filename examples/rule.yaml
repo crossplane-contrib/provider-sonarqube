@@ -6,8 +6,8 @@ metadata:
   namespace: default
 spec:
   forProvider:
-    # Key of the custom rule to create.
-    # Keep the repository prefix aligned with the template rule repository.
+    # Key of the custom rule to create in SonarQube.
+    # This is the unprefixed customKey (do not use a language:rule format here).
     key: crossplane-review-comment
 
     # Display name of the custom rule in SonarQube.

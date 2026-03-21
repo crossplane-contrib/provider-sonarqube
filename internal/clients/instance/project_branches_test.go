@@ -26,7 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
-func TestGenerateProjectBranchesListOptionss(t *testing.T) {
+func TestGenerateProjectBranchesListOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -51,15 +51,15 @@ func TestGenerateProjectBranchesListOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectBranchesListOptionss(tc.projectKey)
+			got := GenerateProjectBranchesListOptions(tc.projectKey)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectBranchesListOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectBranchesListOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectBranchesDeleteOptionss(t *testing.T) {
+func TestGenerateProjectBranchesDeleteOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -81,9 +81,9 @@ func TestGenerateProjectBranchesDeleteOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectBranchesDeleteOptionss(tc.projectKey, tc.branchKey)
+			got := GenerateProjectBranchesDeleteOptions(tc.projectKey, tc.branchKey)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectBranchesDeleteOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectBranchesDeleteOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -298,7 +298,7 @@ func TestIsProjectMainBranchUpToDate(t *testing.T) {
 	}
 }
 
-func TestGenerateProjectBranchesSetMainOptionss(t *testing.T) {
+func TestGenerateProjectBranchesSetMainOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -320,9 +320,9 @@ func TestGenerateProjectBranchesSetMainOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectBranchesSetMainOptionss(tc.projectKey, tc.mainBranchName)
+			got := GenerateProjectBranchesSetMainOptions(tc.projectKey, tc.mainBranchName)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectBranchesSetMainOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectBranchesSetMainOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

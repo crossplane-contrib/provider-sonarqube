@@ -26,7 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
-func TestGenerateNewCodePeriodsShowOptionss(t *testing.T) {
+func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -67,15 +67,15 @@ func TestGenerateNewCodePeriodsShowOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateNewCodePeriodsShowOptionss(tc.projectKey, tc.branch)
+			got := GenerateNewCodePeriodsShowOptions(tc.projectKey, tc.branch)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateNewCodePeriodsShowOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateNewCodePeriodsShowOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectNewCodePeriodsSetOptionss(t *testing.T) {
+func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -118,15 +118,15 @@ func TestGenerateProjectNewCodePeriodsSetOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectNewCodePeriodsSetOptionss(tc.projectKey, tc.params)
+			got := GenerateProjectNewCodePeriodsSetOptions(tc.projectKey, tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectNewCodePeriodsSetOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectNewCodePeriodsSetOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateBranchNewCodePeriodsSetOptionss(t *testing.T) {
+func TestGenerateBranchNewCodePeriodsSetOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -164,15 +164,15 @@ func TestGenerateBranchNewCodePeriodsSetOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateBranchNewCodePeriodsSetOptionss(tc.projectKey, tc.branchName, tc.params)
+			got := GenerateBranchNewCodePeriodsSetOptions(tc.projectKey, tc.branchName, tc.params)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateBranchNewCodePeriodsSetOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateBranchNewCodePeriodsSetOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectNewCodePeriodsListOptionss(t *testing.T) {
+func TestGenerateProjectNewCodePeriodsListOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -197,9 +197,9 @@ func TestGenerateProjectNewCodePeriodsListOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectNewCodePeriodsListOptionss(tc.projectKey)
+			got := GenerateProjectNewCodePeriodsListOptions(tc.projectKey)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectNewCodePeriodsListOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectNewCodePeriodsListOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

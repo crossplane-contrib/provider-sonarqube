@@ -26,7 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
-func TestGenerateProjectLinksCreateOptionss(t *testing.T) {
+func TestGenerateProjectLinksCreateOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -65,15 +65,15 @@ func TestGenerateProjectLinksCreateOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectLinksCreateOptionss(tc.projectID, tc.link)
+			got := GenerateProjectLinksCreateOptions(tc.projectID, tc.link)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectLinksCreateOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectLinksCreateOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectLinksDeleteOptionss(t *testing.T) {
+func TestGenerateProjectLinksDeleteOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -92,15 +92,15 @@ func TestGenerateProjectLinksDeleteOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectLinksDeleteOptionss(tc.linkID)
+			got := GenerateProjectLinksDeleteOptions(tc.linkID)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectLinksDeleteOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectLinksDeleteOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestGenerateProjectLinksSearchOptionss(t *testing.T) {
+func TestGenerateProjectLinksSearchOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -119,9 +119,9 @@ func TestGenerateProjectLinksSearchOptionss(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateProjectLinksSearchOptionss(tc.projectID)
+			got := GenerateProjectLinksSearchOptions(tc.projectID)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateProjectLinksSearchOptionss() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateProjectLinksSearchOptions() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

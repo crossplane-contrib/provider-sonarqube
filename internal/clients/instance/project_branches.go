@@ -42,15 +42,15 @@ func NewProjectBranchesClient(clientConfig common.Config) ProjectBranchesClient 
 	return newClient.ProjectBranches
 }
 
-// GenerateProjectBranchesListOptionss generates the options for listing branches of a SonarQube Project based on the provided project key.
-func GenerateProjectBranchesListOptionss(projectKey string) *sonar.ProjectBranchesListOptions {
+// GenerateProjectBranchesListOptions generates the options for listing branches of a SonarQube Project based on the provided project key.
+func GenerateProjectBranchesListOptions(projectKey string) *sonar.ProjectBranchesListOptions {
 	return &sonar.ProjectBranchesListOptions{
 		Project: projectKey,
 	}
 }
 
-// GenerateProjectBranchesDeleteOptionss generates the options for deleting a branch of a SonarQube Project based on the provided project key and branch key.
-func GenerateProjectBranchesDeleteOptionss(projectKey string, branchKey string) *sonar.ProjectBranchesDeleteOptions {
+// GenerateProjectBranchesDeleteOptions generates the options for deleting a branch of a SonarQube Project based on the provided project key and branch key.
+func GenerateProjectBranchesDeleteOptions(projectKey string, branchKey string) *sonar.ProjectBranchesDeleteOptions {
 	return &sonar.ProjectBranchesDeleteOptions{
 		Project: projectKey,
 		Branch:  branchKey,
@@ -100,8 +100,8 @@ func IsProjectMainBranchUpToDate(observedBranches map[string]v1alpha1.ProjectBra
 	return true
 }
 
-// GenerateProjectBranchesSetMainOptionss generates the options for setting the main branch of a SonarQube Project based on the provided project key and main branch name.
-func GenerateProjectBranchesSetMainOptionss(projectKey string, mainBranchName string) *sonar.ProjectBranchesSetMainOptions {
+// GenerateProjectBranchesSetMainOptions generates the options for setting the main branch of a SonarQube Project based on the provided project key and main branch name.
+func GenerateProjectBranchesSetMainOptions(projectKey string, mainBranchName string) *sonar.ProjectBranchesSetMainOptions {
 	return &sonar.ProjectBranchesSetMainOptions{
 		Project: projectKey,
 		Branch:  mainBranchName,

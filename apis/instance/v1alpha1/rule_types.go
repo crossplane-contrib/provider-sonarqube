@@ -29,8 +29,9 @@ import (
 // RuleParameters are the configurable fields of a Rule.
 type RuleParameters struct {
 	// Key is the unique identifier for the custom rule (required).
-	// Format must be "language:key" (e.g., "java:S1234").
+	// This must be an unprefixed custom key (e.g., "myRule"), not a language-prefixed key like "language:key".
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Key is immutable."
+	// +kubebuilder:validation:Pattern="^[a-zA-Z0-9_]+$"
 	// +kubebuilder:validation:MaxLength=200
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required

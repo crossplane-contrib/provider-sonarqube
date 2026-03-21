@@ -118,7 +118,7 @@ func (c *external) updateDefaultBranch(project *v1alpha1.Project, projectKey str
 		return
 	}
 
-	resp, err := c.projectBranchesClient.SetMain(instance.GenerateProjectBranchesSetMainOptionss(projectKey, *project.Spec.ForProvider.DefaultBranch)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.projectBranchesClient.SetMain(instance.GenerateProjectBranchesSetMainOptions(projectKey, *project.Spec.ForProvider.DefaultBranch)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -140,7 +140,7 @@ func (c *external) updateBranchNewCodePeriods(project *v1alpha1.Project, project
 
 			branchObservation, branchExists := project.Status.AtProvider.Branches[branchName]
 			if branchExists && !instance.IsNewCodePeriodUpToDate(newCodePeriodSpec, &branchObservation.NewCodePeriod) {
-				resp, err := c.projectNewCodePeriodsClient.Set(instance.GenerateBranchNewCodePeriodsSetOptionss(projectKey, branchName, newCodePeriodSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.projectNewCodePeriodsClient.Set(instance.GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName, newCodePeriodSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -172,7 +172,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 			defer linksUpdateWaitGroup.Done()
 
 			if deleteLink {
-				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptionss(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -181,7 +181,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 			}
 
 			if createLink {
-				_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptionss(projectId, linkSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+				_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptions(projectId, linkSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -205,7 +205,7 @@ func (c *external) deleteNonSpecLinks(project *v1alpha1.Project, errChan chan<- 
 			go func(linkName string, linkId string) {
 				defer deleteWaitGroup.Done()
 
-				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptionss(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -235,7 +235,7 @@ func (c *external) updateProjectNewCodePeriod(project *v1alpha1.Project, project
 		return
 	}
 
-	resp, err := c.projectNewCodePeriodsClient.Set(instance.GenerateProjectNewCodePeriodsSetOptionss(projectKey, project.Spec.ForProvider.NewCodePeriod)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.projectNewCodePeriodsClient.Set(instance.GenerateProjectNewCodePeriodsSetOptions(projectKey, project.Spec.ForProvider.NewCodePeriod)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {

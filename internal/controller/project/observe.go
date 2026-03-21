@@ -94,7 +94,7 @@ func (c *external) observeProjectDetails(projectKey string, projectId string) ob
 
 // observeBranches retrieves the project branches from SonarQube and populates the result.
 func (c *external) observeBranches(projectKey string, result *observeResult, mutex *sync.Mutex) {
-	branches, resp, branchErr := c.projectBranchesClient.List(instance.GenerateProjectBranchesListOptionss(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+	branches, resp, branchErr := c.projectBranchesClient.List(instance.GenerateProjectBranchesListOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -119,7 +119,7 @@ func (c *external) observeBranches(projectKey string, result *observeResult, mut
 
 // observeLinks retrieves the project links from SonarQube and populates the result.
 func (c *external) observeLinks(projectId string, result *observeResult, mutex *sync.Mutex) {
-	links, resp, linkErr := c.projectLinksClient.Search(instance.GenerateProjectLinksSearchOptionss(projectId)) //nolint:bodyclose // closed via helpers.CloseBody
+	links, resp, linkErr := c.projectLinksClient.Search(instance.GenerateProjectLinksSearchOptions(projectId)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -136,7 +136,7 @@ func (c *external) observeLinks(projectId string, result *observeResult, mutex *
 
 // observeNewCodePeriods observes the new code periods of the project and populates the result.
 func (c *external) observeNewCodePeriods(projectKey string, result *observeResult, mutex *sync.Mutex) {
-	newCodePeriod, resp, ncErr := c.projectNewCodePeriodsClient.Show(instance.GenerateNewCodePeriodsShowOptionss(&projectKey, nil)) //nolint:bodyclose // closed via helpers.CloseBody
+	newCodePeriod, resp, ncErr := c.projectNewCodePeriodsClient.Show(instance.GenerateNewCodePeriodsShowOptions(&projectKey, nil)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -149,7 +149,7 @@ func (c *external) observeNewCodePeriods(projectKey string, result *observeResul
 
 	mutex.Unlock()
 
-	newCodePeriodsList, ncListResp, ncListErr := c.projectNewCodePeriodsClient.List(instance.GenerateProjectNewCodePeriodsListOptionss(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+	newCodePeriodsList, ncListResp, ncListErr := c.projectNewCodePeriodsClient.List(instance.GenerateProjectNewCodePeriodsListOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(ncListResp)
 
 	mutex.Lock()

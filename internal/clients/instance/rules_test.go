@@ -953,46 +953,114 @@ func TestGenerateRuleCreateOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		parameters *v1alpha1.RuleParameters
-		wantKey    string
-		wantName   string
-		wantTpl    string
+		parameters   *v1alpha1.RuleParameters
+		wantKey      string
+		wantName     string
+		wantTpl      string
+		wantImpacts  map[string]string
+		wantSeverity string
 	}{
 		"NilParametersReturnsEmpty": {
-			parameters: nil,
-			wantKey:    "",
-			wantName:   "",
-			wantTpl:    "",
+			parameters:   nil,
+			wantKey:      "",
+			wantName:     "",
+			wantTpl:      "",
+			wantImpacts:  nil,
+			wantSeverity: "",
 		},
-		"FullParameters": {
+		"OnlySeverityProvided": {
 			parameters: &v1alpha1.RuleParameters{
-				Key:                 "my:rule",
+				Key:                 "my-rule",
 				Name:                "My Rule",
 				TemplateKey:         "java:template",
 				MarkdownDescription: "some description",
-				CleanCodeAttribute:  ptr.To("CLEAR"),
 				Severity:            ptr.To("MAJOR"),
+			},
+			wantKey:      "my-rule",
+			wantName:     "My Rule",
+			wantTpl:      "java:template",
+			wantImpacts:  nil,
+			wantSeverity: "MAJOR",
+		},
+		"OnlyImpactsProvided": {
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "my-rule2",
+				Name:                "My Rule 2",
+				TemplateKey:         "java:template2",
+				MarkdownDescription: "desc2",
+				Impacts:             &map[string]string{"SECURITY": "HIGH"},
+			},
+			wantKey:      "my-rule2",
+			wantName:     "My Rule 2",
+			wantTpl:      "java:template2",
+			wantImpacts:  map[string]string{"SECURITY": "HIGH"},
+			wantSeverity: "", // Severity should not be set when Impacts is provided
+		},
+		"BothImpactsAndSeverityProvidedImpactsPrecedence": {
+			// When both Impacts and Severity are provided, Impacts takes precedence
+			// and Severity is omitted to avoid API errors
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "my-rule3",
+				Name:                "My Rule 3",
+				TemplateKey:         "java:template3",
+				MarkdownDescription: "desc3",
+				Severity:            ptr.To("BLOCKER"),
+				Impacts:             &map[string]string{"RELIABILITY": "MEDIUM"},
+			},
+			wantKey:      "my-rule3",
+			wantName:     "My Rule 3",
+			wantTpl:      "java:template3",
+			wantImpacts:  map[string]string{"RELIABILITY": "MEDIUM"},
+			wantSeverity: "", // Severity should be empty when Impacts is set
+		},
+		"EmptyImpactsMapFallsBackToSeverity": {
+			// Empty Impacts map should fall back to Severity
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "my-rule4",
+				Name:                "My Rule 4",
+				TemplateKey:         "java:template4",
+				MarkdownDescription: "desc4",
+				Severity:            ptr.To("MINOR"),
+				Impacts:             &map[string]string{},
+			},
+			wantKey:      "my-rule4",
+			wantName:     "My Rule 4",
+			wantTpl:      "java:template4",
+			wantImpacts:  nil,
+			wantSeverity: "MINOR",
+		},
+		"FullParametersWithOptionalFields": {
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "full-rule",
+				Name:                "Full Rule",
+				TemplateKey:         "java:full",
+				MarkdownDescription: "full desc",
+				CleanCodeAttribute:  ptr.To("CLEAR"),
 				Status:              ptr.To("READY"),
 				Type:                ptr.To("BUG"),
-				Impacts:             &map[string]string{"SECURITY": "HIGH"},
+				Impacts:             &map[string]string{"SECURITY": "HIGH", "MAINTAINABILITY": "LOW"},
 				Parameters: &map[string]v1alpha1.RuleParameterConfiguration{
 					"param1": {DefaultValue: "val1"},
 				},
 			},
-			wantKey:  "my:rule",
-			wantName: "My Rule",
-			wantTpl:  "java:template",
+			wantKey:      "full-rule",
+			wantName:     "Full Rule",
+			wantTpl:      "java:full",
+			wantImpacts:  map[string]string{"SECURITY": "HIGH", "MAINTAINABILITY": "LOW"},
+			wantSeverity: "",
 		},
 		"NilOptionalFields": {
 			parameters: &v1alpha1.RuleParameters{
-				Key:                 "my:rule2",
-				Name:                "Name2",
-				TemplateKey:         "tpl2",
+				Key:                 "minimal-rule",
+				Name:                "Minimal",
+				TemplateKey:         "tpl",
 				MarkdownDescription: "desc",
 			},
-			wantKey:  "my:rule2",
-			wantName: "Name2",
-			wantTpl:  "tpl2",
+			wantKey:      "minimal-rule",
+			wantName:     "Minimal",
+			wantTpl:      "tpl",
+			wantImpacts:  nil,
+			wantSeverity: "",
 		},
 	}
 
@@ -1013,6 +1081,14 @@ func TestGenerateRuleCreateOptions(t *testing.T) {
 			if got.TemplateKey != tc.wantTpl {
 				t.Errorf("GenerateRuleCreateOptions().TemplateKey = %v, want %v", got.TemplateKey, tc.wantTpl)
 			}
+
+			if !cmp.Equal(got.Impacts, tc.wantImpacts) {
+				t.Errorf("GenerateRuleCreateOptions().Impacts = %v, want %v", got.Impacts, tc.wantImpacts)
+			}
+
+			if got.Severity != tc.wantSeverity {
+				t.Errorf("GenerateRuleCreateOptions().Severity = %v, want %v", got.Severity, tc.wantSeverity)
+			}
 		})
 	}
 }
@@ -1021,38 +1097,104 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		key        string
-		parameters *v1alpha1.RuleParameters
-		wantKey    string
-		wantName   string
+		key          string
+		parameters   *v1alpha1.RuleParameters
+		wantKey      string
+		wantName     string
+		wantImpacts  map[string]string
+		wantSeverity string
 	}{
 		"NilParametersReturnsEmpty": {
-			key:        "",
-			parameters: nil,
-			wantKey:    "",
-			wantName:   "",
+			key:          "",
+			parameters:   nil,
+			wantKey:      "",
+			wantName:     "",
+			wantImpacts:  nil,
+			wantSeverity: "",
+		},
+		"OnlySeverityProvided": {
+			key: "rule-key",
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "rule-key",
+				Name:                "Rule Name",
+				TemplateKey:         "tpl",
+				MarkdownDescription: "desc",
+				Severity:            ptr.To("CRITICAL"),
+			},
+			wantKey:      "rule-key",
+			wantName:     "Rule Name",
+			wantImpacts:  nil,
+			wantSeverity: "CRITICAL",
+		},
+		"OnlyImpactsProvided": {
+			key: "rule-key2",
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "rule-key2",
+				Name:                "Rule 2",
+				TemplateKey:         "tpl2",
+				MarkdownDescription: "desc2",
+				Impacts:             &map[string]string{"MAINTAINABILITY": "MEDIUM"},
+			},
+			wantKey:      "rule-key2",
+			wantName:     "Rule 2",
+			wantImpacts:  map[string]string{"MAINTAINABILITY": "MEDIUM"},
+			wantSeverity: "", // Severity should not be set when Impacts is provided
+		},
+		"BothImpactsAndSeverityProvidedImpactsPrecedence": {
+			// When both Impacts and Severity are provided, Impacts takes precedence
+			// and Severity is omitted to avoid API errors
+			key: "rule-key3",
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "rule-key3",
+				Name:                "Rule 3",
+				TemplateKey:         "tpl3",
+				MarkdownDescription: "desc3",
+				Severity:            ptr.To("BLOCKER"),
+				Impacts:             &map[string]string{"RELIABILITY": "HIGH"},
+			},
+			wantKey:      "rule-key3",
+			wantName:     "Rule 3",
+			wantImpacts:  map[string]string{"RELIABILITY": "HIGH"},
+			wantSeverity: "", // Severity should be empty when Impacts is set
+		},
+		"EmptyImpactsMapFallsBackToSeverity": {
+			// Empty Impacts map should fall back to Severity
+			key: "rule-key4",
+			parameters: &v1alpha1.RuleParameters{
+				Key:                 "rule-key4",
+				Name:                "Rule 4",
+				TemplateKey:         "tpl4",
+				MarkdownDescription: "desc4",
+				Severity:            ptr.To("LOW"),
+				Impacts:             &map[string]string{},
+			},
+			wantKey:      "rule-key4",
+			wantName:     "Rule 4",
+			wantImpacts:  nil,
+			wantSeverity: "LOW",
 		},
 		"FullParameters": {
-			key: "my:rule",
+			key: "full-key",
 			parameters: &v1alpha1.RuleParameters{
-				Key:                        "my:rule",
-				Name:                       "My Rule",
+				Key:                        "full-key",
+				Name:                       "Full Rule",
 				TemplateKey:                "tpl",
-				MarkdownDescription:        "desc",
+				MarkdownDescription:        "full desc",
 				MarkdownNote:               ptr.To("note"),
-				Severity:                   ptr.To("BLOCKER"),
-				Status:                     ptr.To("DEPRECATED"),
+				Status:                     ptr.To("READY"),
 				RemediationFnBaseEffort:    ptr.To("1h"),
 				RemediationFnType:          ptr.To("LINEAR"),
 				RemediationFyGapMultiplier: ptr.To("5min"),
-				Impacts:                    &map[string]string{"MAINTAINABILITY": "LOW"},
+				Impacts:                    &map[string]string{"SECURITY": "MEDIUM"},
 				Tags:                       &[]string{"tag1", "tag2"},
 				Parameters: &map[string]v1alpha1.RuleParameterConfiguration{
 					"p": {DefaultValue: "v"},
 				},
 			},
-			wantKey:  "my:rule",
-			wantName: "My Rule",
+			wantKey:      "full-key",
+			wantName:     "Full Rule",
+			wantImpacts:  map[string]string{"SECURITY": "MEDIUM"},
+			wantSeverity: "",
 		},
 		"AllNilOptional": {
 			key: "k",
@@ -1062,8 +1204,10 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 				TemplateKey:         "t",
 				MarkdownDescription: "d",
 			},
-			wantKey:  "k",
-			wantName: "n",
+			wantKey:      "k",
+			wantName:     "n",
+			wantImpacts:  nil,
+			wantSeverity: "",
 		},
 	}
 
@@ -1079,6 +1223,14 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 
 			if got.Name != tc.wantName {
 				t.Errorf("GenerateRuleUpdateOptions().Name = %v, want %v", got.Name, tc.wantName)
+			}
+
+			if !cmp.Equal(got.Impacts, tc.wantImpacts) {
+				t.Errorf("GenerateRuleUpdateOptions().Impacts = %v, want %v", got.Impacts, tc.wantImpacts)
+			}
+
+			if got.Severity != tc.wantSeverity {
+				t.Errorf("GenerateRuleUpdateOptions().Severity = %v, want %v", got.Severity, tc.wantSeverity)
 			}
 		})
 	}

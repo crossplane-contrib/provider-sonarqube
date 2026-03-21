@@ -292,6 +292,7 @@ func areQualityProfileRuleImpactsUpToDate(spec *map[string]string, observation [
 }
 
 // GenerateRuleCreateOptions generates SonarQube RulesCreateOption based on the provided Rule parameters.
+// Note: Per SonarQube API, impacts and severity are mutually exclusive. If both are provided, impacts takes precedence.
 func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.RulesCreateOptions {
 	rulesCreateOptions := &sonar.RulesCreateOptions{}
 	if parameters == nil {
@@ -300,11 +301,18 @@ func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.Rules
 
 	helpers.AssignIfNonNil(&rulesCreateOptions.CleanCodeAttribute, parameters.CleanCodeAttribute)
 	rulesCreateOptions.CustomKey = parameters.Key
-	helpers.AssignIfNonNil(&rulesCreateOptions.Impacts, parameters.Impacts)
 	rulesCreateOptions.MarkdownDescription = parameters.MarkdownDescription
 	rulesCreateOptions.Name = parameters.Name
 	rulesCreateOptions.Params = generateRuleParametersOptions(parameters.Parameters)
-	helpers.AssignIfNonNil(&rulesCreateOptions.Severity, parameters.Severity)
+	// Per SonarQube API: impacts and severity cannot be used together
+	// If impacts is provided and non-empty, use it; otherwise use severity
+	if parameters.Impacts != nil && len(*parameters.Impacts) > 0 {
+		rulesCreateOptions.Impacts = *parameters.Impacts
+		// Do not set Severity when Impacts is used
+	} else {
+		helpers.AssignIfNonNil(&rulesCreateOptions.Severity, parameters.Severity)
+	}
+
 	helpers.AssignIfNonNil(&rulesCreateOptions.Status, parameters.Status)
 	rulesCreateOptions.TemplateKey = parameters.TemplateKey
 	helpers.AssignIfNonNil(&rulesCreateOptions.Type, parameters.Type)
@@ -313,14 +321,11 @@ func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.Rules
 }
 
 // GenerateRuleUpdateOptions generates SonarQube RulesUpdateOption based on the provided Rule parameters and observation.
+// Note: Per SonarQube API, impacts and severity are mutually exclusive. If both are provided, impacts takes precedence.
 func GenerateRuleUpdateOptions(key string, parameters *v1alpha1.RuleParameters) *sonar.RulesUpdateOptions {
 	rulesUpdateOptions := &sonar.RulesUpdateOptions{}
 	if parameters == nil {
 		return rulesUpdateOptions
-	}
-
-	if parameters.Impacts != nil && len(*parameters.Impacts) != 0 {
-		helpers.AssignIfNonNil(&rulesUpdateOptions.Impacts, parameters.Impacts)
 	}
 
 	rulesUpdateOptions.Key = key
@@ -331,7 +336,15 @@ func GenerateRuleUpdateOptions(key string, parameters *v1alpha1.RuleParameters) 
 	helpers.AssignIfNonNil(&rulesUpdateOptions.RemediationFnBaseEffort, parameters.RemediationFnBaseEffort)
 	helpers.AssignIfNonNil(&rulesUpdateOptions.RemediationFnType, parameters.RemediationFnType)
 	helpers.AssignIfNonNil(&rulesUpdateOptions.RemediationFyGapMultiplier, parameters.RemediationFyGapMultiplier)
-	helpers.AssignIfNonNil(&rulesUpdateOptions.Severity, parameters.Severity)
+	// Per SonarQube API: impacts and severity cannot be used together
+	// If impacts is provided and non-empty, use it; otherwise use severity
+	if parameters.Impacts != nil && len(*parameters.Impacts) > 0 {
+		rulesUpdateOptions.Impacts = *parameters.Impacts
+		// Do not set Severity when Impacts is used
+	} else {
+		helpers.AssignIfNonNil(&rulesUpdateOptions.Severity, parameters.Severity)
+	}
+
 	helpers.AssignIfNonNil(&rulesUpdateOptions.Status, parameters.Status)
 	helpers.AssignIfNonNil(&rulesUpdateOptions.Tags, parameters.Tags)
 
@@ -501,17 +514,14 @@ func IsRuleUpToDate(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObs
 		areRuleParametersUpToDate(spec.Parameters, &observation.Params)
 }
 
+// isRuleKeyUpToDate checks whether the observed rule key is up to date with the desired rule key.
+// The rule key in SonarQube is returned as "language:key" (e.g., "java:S1234"), while the desired rule key in our spec is just the unprefixed key (e.g., "S1234").
 func isRuleKeyUpToDate(specKey, observationKey string) bool {
 	if specKey == observationKey {
 		return true
 	}
 
 	if specKey == "" || observationKey == "" {
-		return false
-	}
-
-	// For custom rules spec key is unprefixed (custom key), while observation key is repo-prefixed.
-	if strings.Contains(specKey, ":") {
 		return false
 	}
 
