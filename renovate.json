@@ -17,7 +17,9 @@
       "matchUpdateTypes": [
         "major",
         "minor",
-        "patch"
+        "patch",
+        "pin",
+        "pinDigest"
       ]
     }
   ],
@@ -33,5 +35,8 @@
   "addLabels": [
     "deps",
     "source::bot"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy"
   ]
 }
