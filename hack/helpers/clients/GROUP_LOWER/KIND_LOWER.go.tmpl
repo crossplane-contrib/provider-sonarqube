@@ -1,0 +1,72 @@
+/*
+Copyright 2026 The Crossplane Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package {{ .Env.GROUP | strings.ToLower }}
+
+import (
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/crossplane/provider-sonarqube/apis/{{ .Env.GROUP | strings.ToLower }}/{{ .Env.APIVERSION | strings.ToLower }}"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+)
+
+// {{ .Env.KIND }}sClient is the interface for interacting with SonarQube {{ .Env.KIND }} API
+// It handles all the operations related to {{ .Env.KIND }}s in SonarQube, such as creating, updating, deleting, and retrieving {{ .Env.KIND }}s.
+type {{ .Env.KIND }}sClient interface {
+	// Define methods for interacting with SonarQube {{ .Env.KIND }} API here
+}
+
+// New{{ .Env.KIND }}sClient creates a new {{ .Env.KIND }}sClient with the provided SonarQube client configuration.
+func New{{ .Env.KIND }}sClient(clientConfig common.Config) {{ .Env.KIND }}sClient {
+	newClient := common.NewClient(clientConfig)
+
+	return newClient.{{ .Env.KIND }}s
+}
+
+// LateInitialize{{ .Env.KIND }} fills the empty fields in the {{ .Env.KIND }} spec with the values from the SonarQube API response.
+// The API response should be the result of a "Get" operation for the {{ .Env.KIND }} resource.
+func LateInitialize{{ .Env.KIND }}(spec *{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Parameters, observation *{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Observation) {
+	if spec == nil || observation == nil {
+		return
+	}
+	// Use the SonarQube API response to fill in any missing fields in the {{ .Env.KIND }} spec.
+	// This typically involves checking if each field in the spec is nil or has a zero value, and if so, assigning it the corresponding value from the API response.
+}
+
+// Is{{ .Env.KIND }}LateInitialized checks if two {{ .Env.KIND }} specs are equal after late initialization. It returns true if the specs are equal, and false if they are not.
+func Is{{ .Env.KIND }}LateInitialized(former, current *{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Parameters) bool {
+	if former == nil || current == nil {
+		return true
+	}
+
+	// Compare the two {{ .Env.KIND }} specs after late initialization. This typically involves using a comparison function that ignores fields that are not relevant for determining if the specs are up to date.
+	return cmp.Equal(former, current, cmpopts.IgnoreFields({{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Parameters{}))
+}
+
+// Is{{ .Env.KIND }}UpToDate checks if the {{ .Env.KIND }} spec is up to date with the SonarQube API response.
+// It returns true if the spec is up to date, and false if it is not.
+func Is{{ .Env.KIND }}UpToDate(spec *{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Parameters, observation *{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Observation) bool {
+	if spec == nil {
+		return true
+	}
+
+	if observation == nil {
+		return false
+	}
+
+	return true
+}

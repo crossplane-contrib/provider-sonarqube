@@ -39,3 +39,19 @@ ${GOMPLATE} < "hack/helpers/apis/GROUP_LOWER/APIVERSION/groupversion_info.go.tmp
 mkdir -p "internal/controller/${kind_lower}"
 ${GOMPLATE} < "hack/helpers/controller/KIND_LOWER/KIND_LOWER.go.tmpl" > "internal/controller/${kind_lower}/${kind_lower}.go"
 ${GOMPLATE} < "hack/helpers/controller/KIND_LOWER/KIND_LOWER_test.go.tmpl" > "internal/controller/${kind_lower}/${kind_lower}_test.go"
+
+mkdir -p "internal/clients/${group_lower}"
+# Skip file if it already exists to avoid overwriting any custom code added by the user.
+if [ ! -f "internal/clients/${group_lower}/${group_lower}.go" ]; then
+  ${GOMPLATE} < "hack/helpers/clients/GROUP_LOWER/KIND_LOWER.go.tmpl" > "internal/clients/${group_lower}/${group_lower}.go"
+else
+  echo "Warning: internal/clients/${group_lower}/${group_lower}.go already exists. Skipping file generation to avoid overwriting any custom code added by the user. Some recommended code may be missing from the file."
+fi
+# Skip file if it already exists to avoid overwriting any custom code added by the user.
+if [ ! -f "internal/clients/${group_lower}/${group_lower}_test.go" ]; then
+  ${GOMPLATE} < "hack/helpers/clients/GROUP_LOWER/KIND_LOWER_test.go.tmpl" > "internal/clients/${group_lower}/${group_lower}_test.go"
+else
+  echo "Warning: internal/clients/${group_lower}/${group_lower}_test.go already exists. Skipping file generation to avoid overwriting any custom code added by the user. Some recommended code may be missing from the file."
+fi
+
+echo "Run 'make generate' to update the generated code with the new type."

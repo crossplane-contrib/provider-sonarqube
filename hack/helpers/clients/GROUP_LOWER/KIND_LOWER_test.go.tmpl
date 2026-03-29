@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package {{ .Env.KIND | strings.ToLower }}
+package {{ .Env.GROUP | strings.ToLower }}
 
 import (
 	"testing"
@@ -28,26 +28,23 @@ import (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-func TestObserve(t *testing.T) {
-	t.Parallel()
-	// Fail because not implemented yet
-	t.Fatal("not implemented yet")
+// TestLateInitialize{{ .Env.KIND }} tests the LateInitialize{{ .Env.KIND }} function.
+func TestLateInitialize{{ .Env.KIND }}(t *testing.T) {
+    t.Parallel()
+    // Fail because not implemented yet
+    t.Fatal("not implemented yet")
 }
 
-func TestCreate(t *testing.T) {
-	t.Parallel()
-	// Fail because not implemented yet
-	t.Fatal("not implemented yet")
+// TestIs{{ .Env.KIND }}LateInitialized tests the Is{{ .Env.KIND }}LateInitialized function.
+func TestIs{{ .Env.KIND }}LateInitialized(t *testing.T) {
+    t.Parallel()
+    // Fail because not implemented yet
+    t.Fatal("not implemented yet")
 }
 
-func TestUpdate(t *testing.T) {
-	t.Parallel()
-	// Fail because not implemented yet
-	t.Fatal("not implemented yet")
-}
-
-func TestDelete(t *testing.T) {
-	t.Parallel()
-	// Fail because not implemented yet
-	t.Fatal("not implemented yet")
+// TestIs{{ .Env.KIND }}UpToDate tests the Is{{ .Env.KIND }}UpToDate function.
+func TestIs{{ .Env.KIND }}UpToDate(t *testing.T) {
+    t.Parallel()
+    // Fail because not implemented yet
+    t.Fatal("not implemented yet")
 }
