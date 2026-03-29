@@ -20,8 +20,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/crossplane/provider-sonarqube/apis/{{ .Env.GROUP | strings.ToLower }}/{{ .Env.APIVERSION | strings.ToLower }}"
-	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"{{ .Env.PROJECT_REPO }}/apis/{{ .Env.GROUP | strings.ToLower }}/{{ .Env.APIVERSION | strings.ToLower }}"
+	"{{ .Env.PROJECT_REPO }}/internal/clients/common"
 )
 
 // {{ .Env.KIND }}sClient is the interface for interacting with SonarQube {{ .Env.KIND }} API
