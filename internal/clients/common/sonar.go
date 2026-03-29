@@ -37,7 +37,7 @@ type BasicAuthArgs struct {
 	// Username is the username for Basic Authentication. It is expected to be stored in a Kubernetes Secret and referenced in the ProviderConfig.
 	Username string `json:"username"`
 	// Password is the password for Basic Authentication. It is expected to be stored in a Kubernetes Secret and referenced in the ProviderConfig.
-	//nolint:gosec // Password has to be passed to the SonarQube client to support Basic Authentication, and this struct is not used for any other purpose.
+	//nolint:gosec // This is a configuration DTO field name, not a hardcoded secret.
 	Password string `json:"password"`
 }
 

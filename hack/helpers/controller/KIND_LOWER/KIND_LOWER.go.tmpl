@@ -118,12 +118,12 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	managedResource, isValid := managedResource.(*{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }})
+	{{ .Env.KIND  | strings.ToLower }}, isValid := managedResource.(*{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }})
 	if !isValid {
 		return nil, errors.New(errNot{{ .Env.KIND }})
 	}
 
-	err := c.usage.Track(ctx, managedResource)
+	err := c.usage.Track(ctx, {{ .Env.KIND  | strings.ToLower }})
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
