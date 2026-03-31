@@ -385,7 +385,8 @@ func computePermissionsDelta(specPermissions *[]string, observedPermissions []st
 }
 
 // getGroupPermissions retrieves the permissions associated with a group from SonarQube. It returns a slice of permission keys and any error encountered during the API call.
-// If the group is not found, it returns an error indicating that the group permissions were not found. If there is an error during the API call, it returns an error wrapping the original error with additional context.
+// If the group is not found after paging through results, it returns an empty slice and nil error.
+// If there is an error during the API call, it returns an error wrapping the original error with additional context.
 func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]string, error) {
 	const maxPageSize = int64(100)
 
