@@ -164,7 +164,7 @@ spec:
                       This field is set by the SonarQube API.
                     type: string
                   managed:
-                    description: Managed indicates if the grou is created and managed
+                    description: Managed indicates if the group is created and managed
                       by SonarQube itself. Managed groups cannot be modified or deleted
                       by users, and are typically used for internal purposes within
                       SonarQube.
