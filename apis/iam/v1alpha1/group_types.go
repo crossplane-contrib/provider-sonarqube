@@ -50,7 +50,7 @@ type GroupObservation struct {
 	Name string `json:"name"`
 	// Description is the description of the Group as observed from SonarQube. This field the actual description of the Group in SonarQube.
 	Description string `json:"description"`
-	// Managed indicates if the grou is created and managed by SonarQube itself. Managed groups cannot be modified or deleted by users, and are typically used for internal purposes within SonarQube.
+	// Managed indicates if the group is created and managed by SonarQube itself. Managed groups cannot be modified or deleted by users, and are typically used for internal purposes within SonarQube.
 	Managed bool `json:"managed"`
 	// Default indicates whether the Group is a default group in SonarQube.
 	Default bool `json:"default"`
