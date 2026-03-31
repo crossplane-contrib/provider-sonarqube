@@ -1,0 +1,20 @@
+---
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: Group
+metadata:
+  name: example-group
+  namespace: default
+spec:
+  forProvider:
+    # Name of the group in SonarQube.
+    name: example-group
+    # Optional description for the group.
+    description: Example group managed by Crossplane
+    # Optional permissions assigned to the group.
+    permissions:
+      - scan
+      - provisioning
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

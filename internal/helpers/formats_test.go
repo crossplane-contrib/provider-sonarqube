@@ -643,3 +643,131 @@ func TestAssignIfNonNil(t *testing.T) {
 		}
 	})
 }
+
+func TestAreStringSlicesEqual(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		a    []string
+		b    []string
+		want bool
+	}{
+		"BothEmpty": {
+			a:    []string{},
+			b:    []string{},
+			want: true,
+		},
+		"SameElementsDifferentOrder": {
+			a:    []string{"a", "b", "c"},
+			b:    []string{"c", "a", "b"},
+			want: true,
+		},
+		"DifferentLengths": {
+			a:    []string{"a", "b"},
+			b:    []string{"a"},
+			want: false,
+		},
+		"DifferentCounts": {
+			a:    []string{"a", "a", "b"},
+			b:    []string{"a", "b", "b"},
+			want: false,
+		},
+		"NegativeCountBranch": {
+			a:    []string{"a", "b"},
+			b:    []string{"a", "a"},
+			want: false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := AreStringSlicesEqual(tc.a, tc.b)
+			if got != tc.want {
+				t.Errorf("AreStringSlicesEqual() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAreStringSlicesEqualDeDuped(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		a    []string
+		b    []string
+		want bool
+	}{
+		"BothEmpty": {
+			a:    []string{},
+			b:    []string{},
+			want: true,
+		},
+		"SameElementsWithDuplicates": {
+			a:    []string{"a", "a", "b"},
+			b:    []string{"b", "a"},
+			want: true,
+		},
+		"DifferentUniqueLengths": {
+			a:    []string{"a", "b"},
+			b:    []string{"a", "b", "c"},
+			want: false,
+		},
+		"MissingElementInSecondSet": {
+			a:    []string{"a", "b"},
+			b:    []string{"a", "c"},
+			want: false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := AreStringSlicesEqualDeDuped(tc.a, tc.b)
+			if got != tc.want {
+				t.Errorf("AreStringSlicesEqualDeDuped() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestNewStringSetFromSlice(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		in   []string
+		want map[string]struct{}
+	}{
+		"EmptyInput": {
+			in:   []string{},
+			want: map[string]struct{}{},
+		},
+		"UniqueValues": {
+			in:   []string{"a", "b", "c"},
+			want: map[string]struct{}{"a": {}, "b": {}, "c": {}},
+		},
+		"WithDuplicates": {
+			in:   []string{"a", "a", "b"},
+			want: map[string]struct{}{"a": {}, "b": {}},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := NewStringSetFromSlice(tc.in)
+			if len(got) != len(tc.want) {
+				t.Fatalf("NewStringSetFromSlice() len = %d, want %d", len(got), len(tc.want))
+			}
+
+			for k := range tc.want {
+				if _, ok := got[k]; !ok {
+					t.Fatalf("NewStringSetFromSlice() missing key %q", k)
+				}
+			}
+		})
+	}
+}

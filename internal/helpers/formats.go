@@ -89,6 +89,60 @@ func IsComparablePtrEqualComparablePtr[T comparable](ptr1 *T, ptr2 *T) bool {
 	return cmp.Equal(*ptr1, *ptr2)
 }
 
+// AreStringSlicesEqual compares two slices of strings for equality, ignoring the order of elements.
+// It returns true if both slices contain the same strings, regardless of their order, and false otherwise.
+func AreStringSlicesEqual(sliceA, sliceB []string) bool {
+	if len(sliceA) != len(sliceB) {
+		return false
+	}
+
+	counts := make(map[string]int, len(sliceA)+len(sliceB))
+	// Count the occurrences of each string in sliceA
+	for _, s := range sliceA {
+		counts[s]++
+	}
+	// Subtract the counts based on the occurrences in sliceB
+	for _, s := range sliceB {
+		counts[s]--
+		if counts[s] < 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// AreStringSlicesEqualDeDuped compares two slices of strings for equality, ignoring the order of elements and duplicates.
+// It returns true if both slices contain the same unique strings, regardless of their order and duplicates, and false otherwise.
+func AreStringSlicesEqualDeDuped(sliceA, sliceB []string) bool {
+	if len(sliceA) == 0 && len(sliceB) == 0 {
+		return true
+	}
+
+	setA := make(map[string]struct{}, len(sliceA))
+	setB := make(map[string]struct{}, len(sliceB))
+	// Add unique strings from sliceA to setA
+	for _, s := range sliceA {
+		setA[s] = struct{}{}
+	}
+	// Add unique strings from sliceB to setB
+	for _, s := range sliceB {
+		setB[s] = struct{}{}
+	}
+	// Compare the sets for equality
+	if len(setA) != len(setB) {
+		return false
+	}
+
+	for s := range setA {
+		if _, exists := setB[s]; !exists {
+			return false
+		}
+	}
+
+	return true
+}
+
 // AssignIfNil assigns the value to the pointer if the pointer is nil.
 func AssignIfNil[T any](ptr **T, val T) {
 	// return early if ptr is nil to avoid dereferencing a nil pointer
@@ -148,4 +202,14 @@ func AssignIfNonNil[T any](ptr *T, ref *T) {
 	if ref != nil {
 		*ptr = *ref
 	}
+}
+
+// NewStringSetFromSlice creates a new set of strings from a slice of strings.
+func NewStringSetFromSlice(slice []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(slice))
+	for _, s := range slice {
+		set[s] = struct{}{}
+	}
+
+	return set
 }

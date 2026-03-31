@@ -20,6 +20,7 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
+	iamv1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	sonarqubev1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
@@ -28,6 +29,7 @@ func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(AddToSchemes,
 		sonarqubev1alpha1.SchemeBuilder.AddToScheme,
+		iamv1alpha1.SchemeBuilder.AddToScheme,
 		v1alpha1.SchemeBuilder.AddToScheme,
 	)
 }

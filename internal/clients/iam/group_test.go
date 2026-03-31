@@ -21,6 +21,7 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -83,7 +84,7 @@ func TestLateInitializeGroup(t *testing.T) {
 		}
 	})
 
-	t.Run("EmptyObservationDescriptionIgnored", func(t *testing.T) {
+	t.Run("EmptyObservationDescriptionInitialized", func(t *testing.T) {
 		t.Parallel()
 
 		spec := &v1alpha1.GroupParameters{Name: "devs"}
@@ -91,8 +92,48 @@ func TestLateInitializeGroup(t *testing.T) {
 
 		LateInitializeGroup(spec, obs)
 
-		if spec.Description != nil {
-			t.Fatalf("LateInitializeGroup() description = %v, want nil", spec.Description)
+		if spec.Description == nil || *spec.Description != "" {
+			t.Fatalf("LateInitializeGroup() description = %v, want empty string pointer", spec.Description)
+		}
+	})
+
+	t.Run("PermissionsInitializedWhenMissing", func(t *testing.T) {
+		t.Parallel()
+
+		spec := &v1alpha1.GroupParameters{Name: "devs"}
+		obs := &v1alpha1.GroupObservation{Permissions: []string{"read", "write"}}
+
+		LateInitializeGroup(spec, obs)
+
+		if spec.Permissions == nil || len(*spec.Permissions) != 2 {
+			t.Fatalf("LateInitializeGroup() permissions = %v, want [\"read\", \"write\"]", spec.Permissions)
+		}
+	})
+
+	t.Run("EmptyPermissionsInitialized", func(t *testing.T) {
+		t.Parallel()
+
+		spec := &v1alpha1.GroupParameters{Name: "devs"}
+		obs := &v1alpha1.GroupObservation{Permissions: []string{}}
+
+		LateInitializeGroup(spec, obs)
+
+		if spec.Permissions == nil || len(*spec.Permissions) != 0 {
+			t.Fatalf("LateInitializeGroup() permissions = %v, want empty slice pointer", spec.Permissions)
+		}
+	})
+
+	t.Run("PermissionsNotOverwrittenWhenPresent", func(t *testing.T) {
+		t.Parallel()
+
+		existing := []string{"write"}
+		spec := &v1alpha1.GroupParameters{Name: "devs", Permissions: &existing}
+		obs := &v1alpha1.GroupObservation{Permissions: []string{"read", "write"}}
+
+		LateInitializeGroup(spec, obs)
+
+		if spec.Permissions == nil || len(*spec.Permissions) != 1 || (*spec.Permissions)[0] != "write" {
+			t.Fatalf("LateInitializeGroup() permissions = %v, want [\"write\"]", spec.Permissions)
 		}
 	})
 }
@@ -112,12 +153,12 @@ func TestIsGroupLateInitialized(t *testing.T) {
 		"NilFormer": {
 			former:  nil,
 			current: &v1alpha1.GroupParameters{Name: "devs"},
-			want:    true,
+			want:    false,
 		},
 		"NilCurrent": {
 			former:  &v1alpha1.GroupParameters{Name: "devs"},
 			current: nil,
-			want:    true,
+			want:    false,
 		},
 		"NoChanges": {
 			former:  &v1alpha1.GroupParameters{Name: "devs", Description: &d1},
@@ -134,8 +175,23 @@ func TestIsGroupLateInitialized(t *testing.T) {
 			current: &v1alpha1.GroupParameters{Name: "devs", Description: &d2},
 			want:    true,
 		},
-	}
 
+		"PermissionsAdded": {
+			former:  &v1alpha1.GroupParameters{Name: "devs"},
+			current: &v1alpha1.GroupParameters{Name: "devs", Permissions: &[]string{"read", "write"}},
+			want:    true,
+		},
+		"EmptyDescriptionNotMeaningful": {
+			former:  &v1alpha1.GroupParameters{Name: "devs", Description: nil},
+			current: &v1alpha1.GroupParameters{Name: "devs", Description: ptr.To("")},
+			want:    false,
+		},
+		"EmptyPermissionsNotMeaningful": {
+			former:  &v1alpha1.GroupParameters{Name: "devs", Permissions: nil},
+			current: &v1alpha1.GroupParameters{Name: "devs", Permissions: ptr.To([]string{})},
+			want:    false,
+		},
+	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -147,11 +203,113 @@ func TestIsGroupLateInitialized(t *testing.T) {
 	}
 }
 
+// TestNewPermissionsClient tests the NewPermissionsClient function.
+func TestNewPermissionsClient(t *testing.T) {
+	t.Parallel()
+
+	client := NewPermissionsClient(common.Config{
+		AuthType: common.PersonalAccessToken,
+		Token:    "token",
+		BaseURL:  "http://localhost:9000",
+	})
+
+	if client == nil {
+		t.Fatal("NewPermissionsClient() expected non-nil client")
+	}
+}
+
+// TestGeneratePermissionsAddGroupOptions tests the GeneratePermissionsAddGroupOptions function.
+func TestGeneratePermissionsAddGroupOptions(t *testing.T) {
+	t.Parallel()
+
+	got := GeneratePermissionsAddGroupOptions("devs", "read")
+	if got == nil {
+		t.Fatal("GeneratePermissionsAddGroupOptions() expected non-nil options")
+	}
+
+	if got.GroupName != "devs" {
+		t.Fatalf("GeneratePermissionsAddGroupOptions() GroupName = %q, want %q", got.GroupName, "devs")
+	}
+
+	if got.Permission != "read" {
+		t.Fatalf("GeneratePermissionsAddGroupOptions() Permission = %q, want %q", got.Permission, "read")
+	}
+}
+
+// TestGeneratePermissionsRemoveGroupOptions tests the GeneratePermissionsRemoveGroupOptions function.
+func TestGeneratePermissionsRemoveGroupOptions(t *testing.T) {
+	t.Parallel()
+
+	got := GeneratePermissionsRemoveGroupOptions("devs", "write")
+	if got == nil {
+		t.Fatal("GeneratePermissionsRemoveGroupOptions() expected non-nil options")
+	}
+
+	if got.GroupName != "devs" {
+		t.Fatalf("GeneratePermissionsRemoveGroupOptions() GroupName = %q, want %q", got.GroupName, "devs")
+	}
+
+	if got.Permission != "write" {
+		t.Fatalf("GeneratePermissionsRemoveGroupOptions() Permission = %q, want %q", got.Permission, "write")
+	}
+}
+
+// TestGeneratePermissionsGroupsOptions tests the GeneratePermissionsGroupsOptions function.
+func TestGeneratePermissionsGroupsOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		groupName  string
+		pagination *sonar.PaginationArgs
+		wantQuery  string
+	}{
+		"WithoutPagination": {
+			groupName:  "devs",
+			pagination: nil,
+			wantQuery:  "devs",
+		},
+		"WithPagination": {
+			groupName: "devs",
+			pagination: &sonar.PaginationArgs{
+				Page:     2,
+				PageSize: 50,
+			},
+			wantQuery: "devs",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GeneratePermissionsGroupsOptions(tc.groupName, tc.pagination)
+			if got == nil {
+				t.Fatal("GeneratePermissionsGroupsOptions() expected non-nil options")
+			}
+
+			if got.Query != tc.wantQuery {
+				t.Fatalf("GeneratePermissionsGroupsOptions() Query = %q, want %q", got.Query, tc.wantQuery)
+			}
+
+			if tc.pagination != nil {
+				if got.Page != tc.pagination.Page {
+					t.Fatalf("GeneratePermissionsGroupsOptions() Page = %d, want %d", got.Page, tc.pagination.Page)
+				}
+
+				if got.PageSize != tc.pagination.PageSize {
+					t.Fatalf("GeneratePermissionsGroupsOptions() PageSize = %d, want %d", got.PageSize, tc.pagination.PageSize)
+				}
+			}
+		})
+	}
+}
+
 // TestIsGroupUpToDate tests the IsGroupUpToDate function.
 func TestIsGroupUpToDate(t *testing.T) {
 	t.Parallel()
 
 	desc := "engineering"
+	perms := []string{"read", "write"}
 
 	cases := map[string]struct {
 		spec *v1alpha1.GroupParameters
@@ -188,6 +346,21 @@ func TestIsGroupUpToDate(t *testing.T) {
 			obs:  &v1alpha1.GroupObservation{Name: "devs", Description: "any"},
 			want: true,
 		},
+		"PermissionsMatch": {
+			spec: &v1alpha1.GroupParameters{Name: "devs", Permissions: &perms},
+			obs:  &v1alpha1.GroupObservation{Name: "devs", Permissions: perms},
+			want: true,
+		},
+		"PermissionsMismatch": {
+			spec: &v1alpha1.GroupParameters{Name: "devs", Permissions: &[]string{"read"}},
+			obs:  &v1alpha1.GroupObservation{Name: "devs", Permissions: perms},
+			want: false,
+		},
+		"NilPermissionsIsUpToDate": {
+			spec: &v1alpha1.GroupParameters{Name: "devs", Permissions: nil},
+			obs:  &v1alpha1.GroupObservation{Name: "devs", Permissions: perms},
+			want: true,
+		},
 	}
 
 	for name, tc := range cases {
@@ -205,6 +378,7 @@ func TestGenerateCreateGroupOptions(t *testing.T) {
 	t.Parallel()
 
 	description := "engineering"
+	permissions := []string{"read", "write"}
 
 	cases := map[string]struct {
 		spec *v1alpha1.GroupParameters
@@ -219,6 +393,10 @@ func TestGenerateCreateGroupOptions(t *testing.T) {
 		},
 		"WithDescription": {
 			spec: &v1alpha1.GroupParameters{Name: "devs", Description: &description},
+			want: "devs",
+		},
+		"WithPermissions": {
+			spec: &v1alpha1.GroupParameters{Name: "devs", Permissions: &permissions},
 			want: "devs",
 		},
 	}
@@ -260,6 +438,7 @@ func TestGenerateUpdateGroupOptions(t *testing.T) {
 	t.Parallel()
 
 	description := "engineering"
+	permissions := []string{"read", "write"}
 
 	cases := map[string]struct {
 		spec *v1alpha1.GroupParameters
@@ -272,6 +451,9 @@ func TestGenerateUpdateGroupOptions(t *testing.T) {
 		},
 		"WithDescription": {
 			spec: &v1alpha1.GroupParameters{Name: "devs", Description: &description},
+		},
+		"WithPermissions": {
+			spec: &v1alpha1.GroupParameters{Name: "devs", Permissions: &permissions},
 		},
 	}
 
@@ -355,5 +537,62 @@ func TestNewGroupsClient(t *testing.T) {
 
 	if client == nil {
 		t.Fatal("NewGroupsClient() expected non-nil client")
+	}
+}
+
+// TestArePermissionsEqual tests the ArePermissionsEqual function.
+func TestArePermissionsEqual(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		spec     *[]string
+		observed []string
+		want     bool
+	}{
+		"NilSpec": {
+			spec:     nil,
+			observed: []string{"read", "write"},
+			want:     true,
+		},
+		"EmptySpec": {
+			spec:     &[]string{},
+			observed: []string{},
+			want:     true,
+		},
+		"EmptyObserved": {
+			spec:     &[]string{"read"},
+			observed: []string{},
+			want:     false,
+		},
+		"MatchingPermissions": {
+			spec:     &[]string{"read", "write"},
+			observed: []string{"read", "write"},
+			want:     true,
+		},
+		"MatchingPermissionsUnordered": {
+			spec:     &[]string{"read", "write"},
+			observed: []string{"write", "read"},
+			want:     true,
+		},
+		"MatchingPermissionsWithDuplicates": {
+			spec:     &[]string{"read", "read", "write"},
+			observed: []string{"read", "write"},
+			want:     true,
+		},
+		"MismatchingPermissions": {
+			spec:     &[]string{"read"},
+			observed: []string{"write"},
+			want:     false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := ArePermissionsEqual(tc.spec, tc.observed); got != tc.want {
+				t.Fatalf("ArePermissionsEqual() = %t, want %t", got, tc.want)
+			}
+		})
 	}
 }

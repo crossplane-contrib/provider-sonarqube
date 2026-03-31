@@ -18,9 +18,14 @@ package group
 
 import (
 	"context"
+	"sync"
 
+	stderrors "errors"
+
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"k8s.io/utils/ptr"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/pkg/errors"
@@ -69,9 +74,8 @@ func Setup(mgr ctrl.Manager, options controller.Options) error {
 
 	opts := []managed.ReconcilerOption{
 		managed.WithExternalConnector(&connector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: iam.NewGroupsClient,
+			kube:  mgr.GetClient(),
+			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
 		managed.WithLogger(options.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(options.PollInterval),
@@ -114,9 +118,8 @@ func Setup(mgr ctrl.Manager, options controller.Options) error {
 // A connector is expected to produce an ExternalClient when its Connect method
 // is called.
 type connector struct {
-	kube         client.Client
-	usage        *resource.ProviderConfigUsageTracker
-	newServiceFn func(config common.Config) iam.GroupsClient
+	kube  client.Client
+	usage *resource.ProviderConfigUsageTracker
 }
 
 // Connect typically produces an ExternalClient by:
@@ -150,16 +153,19 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
-	svc := c.newServiceFn(*config)
-
-	return &external{client: svc}, nil
+	return &external{
+		groupClient:       iam.NewGroupsClient(*config),
+		permissionsClient: iam.NewPermissionsClient(*config),
+	}, nil
 }
 
 // An ExternalClient observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
-	// client is used to interact with SonarQube Group API
-	client iam.GroupsClient
+	// groupClient is used to interact with SonarQube Group API
+	groupClient iam.GroupsClient
+	// permissionsClient is used to interact with SonarQube Permissions API for managing group permissions
+	permissionsClient iam.PermissionsClient
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
@@ -176,7 +182,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	retrievedGroup, resp, err := c.client.FetchGroup(externalName) //nolint:bodyclose // closed via helpers.CloseBody
+	retrievedGroup, resp, err := c.groupClient.FetchGroup(externalName) //nolint:bodyclose // closed via helpers.CloseBody
 	if err != nil {
 		if common.IsResponseNotFound(resp) {
 			return managed.ExternalObservation{
@@ -188,7 +194,17 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 	defer helpers.CloseBody(resp)
 
+	group.SetConditions(xpv1.Available())
+
 	group.Status.AtProvider = iam.GenerateGroupObservation(retrievedGroup)
+
+	// Retrieve the permissions for the group and set it in the observation
+	permissions, err := getGroupPermissions(c.permissionsClient, retrievedGroup.Name)
+	if err != nil {
+		return managed.ExternalObservation{ResourceExists: true}, errors.Wrap(err, "cannot get group permissions")
+	}
+
+	group.Status.AtProvider.Permissions = permissions
 
 	former := group.Spec.ForProvider.DeepCopy()
 	iam.LateInitializeGroup(&group.Spec.ForProvider, &group.Status.AtProvider)
@@ -210,7 +226,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	group.Status.SetConditions(xpv1.Creating())
 
-	createdGroup, resp, err := c.client.CreateGroup(iam.GenerateCreateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	createdGroup, resp, err := c.groupClient.CreateGroup(iam.GenerateCreateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateGroup)
 	}
@@ -238,13 +254,33 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New("cannot update Group without external name")
 	}
 
-	_, resp, err := c.client.UpdateGroup(externalName, iam.GenerateUpdateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	// This must be done before updating permissions, because group name is required to update permissions, and the group name can be updated in the same API call as the description.
+	_, resp, err := c.groupClient.UpdateGroup(externalName, iam.GenerateUpdateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateGroup)
 	}
 	defer helpers.CloseBody(resp)
 
-	return managed.ExternalUpdate{}, nil
+	// Compute permissions delta and update permissions if needed
+	permissionsToAdd, permissionsToRemove := computePermissionsDelta(group.Spec.ForProvider.Permissions, group.Status.AtProvider.Permissions)
+
+	errorsChan := make(chan error, len(permissionsToAdd)+len(permissionsToRemove))
+
+	// Add and remove permissions in parallel using helper functions
+	c.addGroupPermissions(group.Spec.ForProvider.Name, permissionsToAdd, errorsChan)
+	c.removeGroupPermissions(group.Spec.ForProvider.Name, permissionsToRemove, errorsChan)
+
+	close(errorsChan)
+
+	var combinedErrors []error
+
+	for err := range errorsChan {
+		if err != nil {
+			combinedErrors = append(combinedErrors, err)
+		}
+	}
+
+	return managed.ExternalUpdate{}, stderrors.Join(combinedErrors...)
 }
 
 // Delete will delete the external resource if it exists. After deletion, Observe should return ResourceExists=false to indicate that the external resource no longer exists.
@@ -262,7 +298,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	destroyResp, err := c.client.DeleteGroup(externalName) //nolint:bodyclose // closed via helpers.CloseBody
+	destroyResp, err := c.groupClient.DeleteGroup(externalName) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(destroyResp)
 
 	if err != nil {
@@ -274,4 +310,106 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
+}
+
+// addGroupPermissions adds a slice of permissions to a group using parallel goroutines. Each permission is added concurrently,
+// and any errors are sent to the provided error channel.
+func (c *external) addGroupPermissions(groupName string, permissions []string, errChan chan error) {
+	waitGroup := sync.WaitGroup{}
+
+	for _, permission := range permissions {
+		waitGroup.Add(1)
+
+		go func(permission string) {
+			defer waitGroup.Done()
+
+			resp, err := c.permissionsClient.AddGroup(iam.GeneratePermissionsAddGroupOptions(groupName, permission)) //nolint:bodyclose // closed via helpers.CloseBody
+			helpers.CloseBody(resp)
+
+			if err != nil {
+				errChan <- errors.Wrapf(err, "cannot add permission %s to group", permission)
+			}
+		}(permission)
+	}
+
+	waitGroup.Wait()
+}
+
+// removeGroupPermissions removes a slice of permissions from a group using parallel goroutines. Each permission is removed concurrently,
+// and any errors are sent to the provided error channel.
+func (c *external) removeGroupPermissions(groupName string, permissions []string, errChan chan error) {
+	waitGroup := sync.WaitGroup{}
+
+	for _, permission := range permissions {
+		waitGroup.Add(1)
+
+		go func(permission string) {
+			defer waitGroup.Done()
+
+			resp, err := c.permissionsClient.RemoveGroup(iam.GeneratePermissionsRemoveGroupOptions(groupName, permission)) //nolint:bodyclose // closed via helpers.CloseBody
+			helpers.CloseBody(resp)
+
+			if err != nil {
+				errChan <- errors.Wrapf(err, "cannot remove permission %s from group", permission)
+			}
+		}(permission)
+	}
+
+	waitGroup.Wait()
+}
+
+// computePermissionsDelta computes the permissions to add and remove to make the observed permissions match the desired permissions.
+func computePermissionsDelta(specPermissions *[]string, observedPermissions []string) (permissionsToAdd []string, permissionsToRemove []string) {
+	if specPermissions == nil {
+		return nil, nil
+	}
+
+	specPermissionsSet := helpers.NewStringSetFromSlice(*specPermissions)
+	observedPermissionsSet := helpers.NewStringSetFromSlice(observedPermissions)
+
+	for permission := range specPermissionsSet {
+		_, ok := observedPermissionsSet[permission]
+		if !ok {
+			permissionsToAdd = append(permissionsToAdd, permission)
+		}
+	}
+
+	for permission := range observedPermissionsSet {
+		_, ok := specPermissionsSet[permission]
+		if !ok {
+			permissionsToRemove = append(permissionsToRemove, permission)
+		}
+	}
+
+	return permissionsToAdd, permissionsToRemove
+}
+
+// getGroupPermissions retrieves the permissions associated with a group from SonarQube. It returns a slice of permission keys and any error encountered during the API call.
+// If the group is not found, it returns an error indicating that the group permissions were not found. If there is an error during the API call, it returns an error wrapping the original error with additional context.
+func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]string, error) {
+	const maxPageSize = int64(100)
+
+	for page := int64(1); ; page++ {
+		options := iam.GeneratePermissionsGroupsOptions(groupName, ptr.To(sonar.PaginationArgs{
+			Page:     page,
+			PageSize: maxPageSize,
+		}))
+
+		permissions, resp, err := client.Groups(options) //nolint:bodyclose // closed via helpers.CloseBody
+		helpers.CloseBody(resp)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot get group permissions")
+		}
+
+		for _, group := range permissions.Groups {
+			if group.Name == groupName {
+				return group.Permissions, nil
+			}
+		}
+
+		if permissions.Paging.Total <= permissions.Paging.PageIndex*permissions.Paging.PageSize {
+			return []string{}, nil
+		}
+	}
 }

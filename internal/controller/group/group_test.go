@@ -19,6 +19,7 @@ package group
 import (
 	"context"
 	"net/http"
+	"sort"
 	"strings"
 	"testing"
 
@@ -36,11 +37,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
-	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
@@ -120,6 +121,7 @@ func newTestGroup(externalName string, spec v1alpha1.GroupParameters) *v1alpha1.
 	return g
 }
 
+//nolint:goconst // Test readability with explicit literals in table entries.
 func TestObserve(t *testing.T) {
 	t.Parallel()
 
@@ -219,13 +221,25 @@ func TestObserve(t *testing.T) {
 			},
 			want: want{observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: false, ResourceLateInitialized: false, ConnectionDetails: managed.ConnectionDetails{}}},
 		},
+		"SuccessfulObserveEmptyFieldsDoNotLateInitialize": {
+			client: &fake.MockGroupsClient{
+				FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
+					return &sonar.Group{Id: "group-1", Name: "devs", Description: ""}, mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				mg:  newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Description: nil}),
+			},
+			want: want{observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ResourceLateInitialized: false, ConnectionDetails: managed.ConnectionDetails{}}},
+		},
 	}
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			e := &external{client: tc.client}
+			e := &external{groupClient: tc.client, permissionsClient: &fake.MockPermissionsClient{}}
 			got, err := e.Observe(tc.args.ctx, tc.args.mg)
 
 			checkError(t, "Observe", tc.want.errSubstr, err)
@@ -244,11 +258,11 @@ func TestObserve(t *testing.T) {
 		t.Parallel()
 
 		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs"})
-		e := &external{client: &fake.MockGroupsClient{
+		e := &external{groupClient: &fake.MockGroupsClient{
 			FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
 				return &sonar.Group{Id: "group-1", Name: "devs", Description: "engineering", Managed: true, Default: false}, mockHTTPResponse(http.StatusOK), nil
 			},
-		}}
+		}, permissionsClient: &fake.MockPermissionsClient{}}
 
 		_, err := e.Observe(context.Background(), group)
 		if err != nil {
@@ -343,7 +357,7 @@ func TestCreate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			e := &external{client: tc.client}
+			e := &external{groupClient: tc.client, permissionsClient: &fake.MockPermissionsClient{}}
 			got, err := e.Create(tc.args.ctx, tc.args.mg)
 
 			checkError(t, "Create", tc.want.errSubstr, err)
@@ -372,7 +386,7 @@ func TestCreate(t *testing.T) {
 		group := newTestGroup("", v1alpha1.GroupParameters{Name: "devs", Description: &desc})
 
 		called := false
-		e := &external{client: &fake.MockGroupsClient{
+		e := &external{groupClient: &fake.MockGroupsClient{
 			CreateGroupFn: func(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error) {
 				called = true
 
@@ -382,7 +396,7 @@ func TestCreate(t *testing.T) {
 
 				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusCreated), nil
 			},
-		}}
+		}, permissionsClient: &fake.MockPermissionsClient{}}
 
 		_, err := e.Create(context.Background(), group)
 		if err != nil {
@@ -395,7 +409,8 @@ func TestCreate(t *testing.T) {
 	})
 }
 
-func TestUpdate(t *testing.T) {
+//nolint:gocognit // Table-driven test plus focused subtests for permission update branches.
+func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path coverage requires a larger test body.
 	t.Parallel()
 
 	type args struct {
@@ -447,7 +462,7 @@ func TestUpdate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			e := &external{client: tc.client}
+			e := &external{groupClient: tc.client, permissionsClient: &fake.MockPermissionsClient{}}
 			got, err := e.Update(tc.args.ctx, tc.args.mg)
 
 			checkError(t, "Update", tc.want.errSubstr, err)
@@ -468,7 +483,7 @@ func TestUpdate(t *testing.T) {
 		desc := "engineering"
 		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Description: &desc})
 
-		e := &external{client: &fake.MockGroupsClient{
+		e := &external{groupClient: &fake.MockGroupsClient{
 			UpdateGroupFn: func(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
 				if groupID != "group-1" {
 					t.Fatalf("Update() groupID = %q, want %q", groupID, "group-1")
@@ -480,11 +495,117 @@ func TestUpdate(t *testing.T) {
 
 				return &sonar.Group{Id: "group-1"}, mockHTTPResponse(http.StatusOK), nil
 			},
-		}}
+		}, permissionsClient: &fake.MockPermissionsClient{}}
 
 		_, err := e.Update(context.Background(), group)
 		if err != nil {
 			t.Fatalf("Update() unexpected error: %v", err)
+		}
+	})
+
+	t.Run("UpdateAppliesPermissionDelta", func(t *testing.T) {
+		t.Parallel()
+
+		specPermissions := []string{"admin", "provisioning"}
+		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Permissions: &specPermissions})
+		group.Status.AtProvider.Permissions = []string{"admin", "scan"}
+
+		added := false
+		removed := false
+
+		e := &external{
+			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
+				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			permissionsClient: &fake.MockPermissionsClient{
+				AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+					if opt == nil || opt.GroupName != "devs" || opt.Permission != "provisioning" {
+						t.Fatalf("AddGroup() unexpected options: %+v", opt)
+					}
+
+					added = true
+
+					return mockHTTPResponse(http.StatusOK), nil
+				},
+				RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+					if opt == nil || opt.GroupName != "devs" || opt.Permission != "scan" {
+						t.Fatalf("RemoveGroup() unexpected options: %+v", opt)
+					}
+
+					removed = true
+
+					return mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+		}
+
+		_, err := e.Update(context.Background(), group)
+		if err != nil {
+			t.Fatalf("Update() unexpected error: %v", err)
+		}
+
+		if !added {
+			t.Fatal("Update() expected AddGroup to be called")
+		}
+
+		if !removed {
+			t.Fatal("Update() expected RemoveGroup to be called")
+		}
+	})
+
+	t.Run("UpdateReturnsAddPermissionError", func(t *testing.T) {
+		t.Parallel()
+
+		specPermissions := []string{"admin", "provisioning"}
+		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Permissions: &specPermissions})
+		group.Status.AtProvider.Permissions = []string{"admin"}
+
+		e := &external{
+			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
+				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			permissionsClient: &fake.MockPermissionsClient{
+				AddGroupFn: func(_ *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+					return mockHTTPResponse(http.StatusInternalServerError), errors.New("cannot add")
+				},
+			},
+		}
+
+		_, err := e.Update(context.Background(), group)
+		if err == nil {
+			t.Fatal("Update() expected error, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "cannot add permission provisioning to group") {
+			t.Fatalf("Update() error = %q, want contains add permission context", err.Error())
+		}
+	})
+
+	t.Run("UpdateReturnsRemovePermissionError", func(t *testing.T) {
+		t.Parallel()
+
+		specPermissions := []string{"admin"}
+		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Permissions: &specPermissions})
+		group.Status.AtProvider.Permissions = []string{"admin", "scan"}
+
+		e := &external{
+			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
+				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			permissionsClient: &fake.MockPermissionsClient{
+				RemoveGroupFn: func(_ *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+					return mockHTTPResponse(http.StatusInternalServerError), errors.New("cannot remove")
+				},
+			},
+		}
+
+		_, err := e.Update(context.Background(), group)
+		if err == nil {
+			t.Fatal("Update() expected error, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "cannot remove permission scan from group") {
+			t.Fatalf("Update() error = %q, want contains remove permission context", err.Error())
 		}
 	})
 }
@@ -541,7 +662,7 @@ func TestDelete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			e := &external{client: tc.client}
+			e := &external{groupClient: tc.client, permissionsClient: &fake.MockPermissionsClient{}}
 			got, err := e.Delete(tc.args.ctx, tc.args.mg)
 
 			checkError(t, "Delete", tc.want.errSubstr, err)
@@ -560,7 +681,7 @@ func TestDelete(t *testing.T) {
 		t.Parallel()
 
 		called := false
-		e := &external{client: &fake.MockGroupsClient{
+		e := &external{groupClient: &fake.MockGroupsClient{
 			DeleteGroupFn: func(groupID string) (*http.Response, error) {
 				called = true
 
@@ -570,7 +691,7 @@ func TestDelete(t *testing.T) {
 
 				return mockHTTPResponse(http.StatusNoContent), nil
 			},
-		}}
+		}, permissionsClient: &fake.MockPermissionsClient{}}
 
 		_, err := e.Delete(context.Background(), newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs"}))
 		if err != nil {
@@ -586,7 +707,7 @@ func TestDelete(t *testing.T) {
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 
-	e := &external{client: &fake.MockGroupsClient{}}
+	e := &external{groupClient: &fake.MockGroupsClient{}, permissionsClient: &fake.MockPermissionsClient{}}
 
 	err := e.Disconnect(context.Background())
 	if err != nil {
@@ -640,9 +761,8 @@ func TestConnectTrackUsageError(t *testing.T) {
 	}
 
 	c := &connector{
-		kube:         kubeClient,
-		usage:        resource.NewProviderConfigUsageTracker(kubeClient, &apisv1alpha1.ProviderConfigUsage{}),
-		newServiceFn: func(_ common.Config) iam.GroupsClient { return &fake.MockGroupsClient{} },
+		kube:  kubeClient,
+		usage: resource.NewProviderConfigUsageTracker(kubeClient, &apisv1alpha1.ProviderConfigUsage{}),
 	}
 
 	_, err = c.Connect(context.Background(), group)
@@ -687,9 +807,8 @@ func TestConnectGetConfigError(t *testing.T) {
 	group.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "missing-pc", Kind: "ProviderConfig"})
 
 	c := &connector{
-		kube:         kubeClient,
-		usage:        resource.NewProviderConfigUsageTracker(kubeClient, &apisv1alpha1.ProviderConfigUsage{}),
-		newServiceFn: func(_ common.Config) iam.GroupsClient { return &fake.MockGroupsClient{} },
+		kube:  kubeClient,
+		usage: resource.NewProviderConfigUsageTracker(kubeClient, &apisv1alpha1.ProviderConfigUsage{}),
 	}
 
 	_, err = c.Connect(context.Background(), group)
@@ -759,16 +878,9 @@ func TestConnectSuccess(t *testing.T) {
 	}
 	group.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "pc", Kind: "ProviderConfig"})
 
-	var capturedConfig common.Config
-
 	c := &connector{
 		kube:  kubeClient,
 		usage: resource.NewProviderConfigUsageTracker(kubeClient, &apisv1alpha1.ProviderConfigUsage{}),
-		newServiceFn: func(config common.Config) iam.GroupsClient {
-			capturedConfig = config
-
-			return &fake.MockGroupsClient{}
-		},
 	}
 
 	got, err := c.Connect(context.Background(), group)
@@ -778,14 +890,6 @@ func TestConnectSuccess(t *testing.T) {
 
 	if got == nil {
 		t.Fatal("Connect() expected non-nil external client")
-	}
-
-	if capturedConfig.BaseURL != "http://localhost:9000" || capturedConfig.Token != "my-token" {
-		t.Fatalf("Connect() config mismatch: %+v", capturedConfig)
-	}
-
-	if capturedConfig.AuthType != common.PersonalAccessToken {
-		t.Fatalf("Connect() auth type = %q, want %q", capturedConfig.AuthType, common.PersonalAccessToken)
 	}
 
 	if _, ok := got.(*external); !ok {
@@ -819,5 +923,425 @@ func TestSetupGatedRegistersGroupGVK(t *testing.T) {
 
 	if diff := cmp.Diff(v1alpha1.GroupGroupVersionKind, g.gvks[0]); diff != "" {
 		t.Fatalf("SetupGated() GVK mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestComputePermissionsDelta(t *testing.T) {
+	t.Parallel()
+
+	sorted := func(in []string) []string {
+		if in == nil {
+			return nil
+		}
+
+		out := append([]string(nil), in...)
+		sort.Strings(out)
+
+		return out
+	}
+
+	cases := map[string]struct {
+		specPermissions     *[]string
+		observedPermissions []string
+		wantAdd             []string
+		wantRemove          []string
+	}{
+		"NilSpecReturnsNoChanges": {
+			specPermissions:     nil,
+			observedPermissions: []string{"admin"},
+			wantAdd:             nil,
+			wantRemove:          nil,
+		},
+		"IdenticalReturnsNoChanges": {
+			specPermissions:     ptr.To([]string{"admin", "scan"}),
+			observedPermissions: []string{"scan", "admin"},
+			wantAdd:             nil,
+			wantRemove:          nil,
+		},
+		"AddsMissingPermissions": {
+			specPermissions:     ptr.To([]string{"admin", "scan", "provisioning"}),
+			observedPermissions: []string{"admin", "scan"},
+			wantAdd:             []string{"provisioning"},
+			wantRemove:          nil,
+		},
+		"RemovesExtraPermissions": {
+			specPermissions:     ptr.To([]string{"admin"}),
+			observedPermissions: []string{"admin", "scan"},
+			wantAdd:             nil,
+			wantRemove:          []string{"scan"},
+		},
+		"AddsAndRemoves": {
+			specPermissions:     ptr.To([]string{"admin", "provisioning"}),
+			observedPermissions: []string{"admin", "scan"},
+			wantAdd:             []string{"provisioning"},
+			wantRemove:          []string{"scan"},
+		},
+		"EmptySpecRemovesAllObserved": {
+			specPermissions:     ptr.To([]string{}),
+			observedPermissions: []string{"admin", "scan"},
+			wantAdd:             nil,
+			wantRemove:          []string{"admin", "scan"},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			gotAdd, gotRemove := computePermissionsDelta(tc.specPermissions, tc.observedPermissions)
+
+			if diff := cmp.Diff(sorted(tc.wantAdd), sorted(gotAdd)); diff != "" {
+				t.Fatalf("computePermissionsDelta() add mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(sorted(tc.wantRemove), sorted(gotRemove)); diff != "" {
+				t.Fatalf("computePermissionsDelta() remove mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetGroupPermissions(t *testing.T) {
+	t.Parallel()
+
+	sorted := func(in []string) []string {
+		if in == nil {
+			return nil
+		}
+
+		out := append([]string(nil), in...)
+		sort.Strings(out)
+
+		return out
+	}
+
+	cases := map[string]struct {
+		client          iam.PermissionsClient
+		groupName       string
+		wantPermissions []string
+		wantErrSubstr   string
+	}{
+		"ReturnsPermissionsWhenFound": {
+			client: &fake.MockPermissionsClient{GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
+				return &sonar.PermissionsGroups{
+					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"admin", "scan"}}},
+					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 500},
+				}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			groupName:       "devs",
+			wantPermissions: []string{"admin", "scan"},
+		},
+		"ReturnsEmptyWhenNotFound": {
+			client: &fake.MockPermissionsClient{GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
+				return &sonar.PermissionsGroups{
+					Groups: []sonar.PermissionGroup{{Name: "other", Permissions: []string{"admin"}}},
+					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 500},
+				}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			groupName:       "devs",
+			wantPermissions: []string{},
+		},
+		"ReturnsErrorWhenClientFails": {
+			client: &fake.MockPermissionsClient{GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
+				return nil, mockHTTPResponse(http.StatusInternalServerError), errors.New("boom")
+			}},
+			groupName:     "devs",
+			wantErrSubstr: "cannot get group permissions",
+		},
+		"PaginatesUntilGroupFound": {
+			client: &fake.MockPermissionsClient{GroupsFn: func(opt *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
+				if opt.Page == 1 {
+					return &sonar.PermissionsGroups{
+						Groups: []sonar.PermissionGroup{{Name: "other", Permissions: []string{"scan"}}},
+						Paging: sonar.PermissionsPaging{Total: 600, PageIndex: 1, PageSize: 500},
+					}, mockHTTPResponse(http.StatusOK), nil
+				}
+
+				return &sonar.PermissionsGroups{
+					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"provisioning"}}},
+					Paging: sonar.PermissionsPaging{Total: 600, PageIndex: 2, PageSize: 500},
+				}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			groupName:       "devs",
+			wantPermissions: []string{"provisioning"},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := getGroupPermissions(tc.client, tc.groupName)
+			if tc.wantErrSubstr != "" {
+				if err == nil {
+					t.Fatalf("getGroupPermissions() expected error containing %q, got nil", tc.wantErrSubstr)
+				}
+
+				if !strings.Contains(err.Error(), tc.wantErrSubstr) {
+					t.Fatalf("getGroupPermissions() error = %q, want contains %q", err.Error(), tc.wantErrSubstr)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("getGroupPermissions() unexpected error: %v", err)
+			}
+
+			if diff := cmp.Diff(sorted(tc.wantPermissions), sorted(got)); diff != "" {
+				t.Fatalf("getGroupPermissions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+func TestAddGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driven test with deeply nested anonymous functions.
+	t.Parallel()
+
+	cases := map[string]struct {
+		permissions         []string
+		clientFn            func() iam.PermissionsClient
+		wantErrSubstr       string
+		wantCallCount       int
+		wantCallPermissions []string
+	}{
+		"EmptyPermissions": {
+			permissions: []string{},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{}
+			},
+			wantCallCount: 0,
+		},
+		"SinglePermission": {
+			permissions: []string{"provisioning"},
+			clientFn: func() iam.PermissionsClient {
+				callCount := 0
+
+				return &fake.MockPermissionsClient{
+					AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+						callCount++
+
+						if opt.Permission != "provisioning" {
+							t.Fatalf("AddGroup() permission = %q, want %q", opt.Permission, "provisioning")
+						}
+
+						return mockHTTPResponse(http.StatusOK), nil
+					},
+				}
+			},
+			wantCallCount: 1,
+		},
+		"MultiplePermissions": {
+			permissions: []string{"provisioning", "admin", "scan"},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{
+					AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+						if opt == nil {
+							t.Fatal("AddGroup() expected non-nil options")
+						}
+
+						return mockHTTPResponse(http.StatusOK), nil
+					},
+				}
+			},
+			wantCallCount: 3,
+		},
+		"PermissionAddError": {
+			permissions: []string{"provisioning"},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{
+					AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+						return mockHTTPResponse(http.StatusInternalServerError), errors.New("server error")
+					},
+				}
+			},
+			wantErrSubstr: "cannot add permission provisioning to group",
+		},
+		"MultipleWithOneError": {
+			permissions: []string{"provisioning", "admin"},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{
+					AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+						if opt.Permission == "admin" {
+							return mockHTTPResponse(http.StatusInternalServerError), errors.New("admin error")
+						}
+
+						return mockHTTPResponse(http.StatusOK), nil
+					},
+				}
+			},
+			wantErrSubstr: "cannot add permission admin to group",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			client := tc.clientFn()
+			errChan := make(chan error, len(tc.permissions))
+			e := &external{groupClient: &fake.MockGroupsClient{}, permissionsClient: client}
+
+			e.addGroupPermissions("devs", tc.permissions, errChan)
+			close(errChan)
+
+			var errs []error
+
+			for err := range errChan {
+				if err != nil {
+					errs = append(errs, err)
+				}
+			}
+
+			if tc.wantErrSubstr != "" {
+				if len(errs) == 0 {
+					t.Fatalf("addGroupPermissions() expected error containing %q, got nil", tc.wantErrSubstr)
+				}
+
+				found := false
+
+				for _, err := range errs {
+					if strings.Contains(err.Error(), tc.wantErrSubstr) {
+						found = true
+
+						break
+					}
+				}
+
+				if !found {
+					t.Fatalf("addGroupPermissions() errors = %v, want one containing %q", errs, tc.wantErrSubstr)
+				}
+
+				return
+			}
+
+			if len(errs) > 0 {
+				t.Fatalf("addGroupPermissions() unexpected errors: %v", errs)
+			}
+		})
+	}
+}
+
+func TestRemoveGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driven test with deeply nested anonymous functions.
+	t.Parallel()
+
+	cases := map[string]struct {
+		permissions   []string
+		clientFn      func() iam.PermissionsClient
+		wantErrSubstr string
+		wantCallCount int
+	}{
+		"EmptyPermissions": {
+			permissions: []string{},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{}
+			},
+			wantCallCount: 0,
+		},
+		"SinglePermission": {
+			permissions: []string{"provisioning"},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{
+					RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+						if opt.Permission != "provisioning" {
+							t.Fatalf("RemoveGroup() permission = %q, want %q", opt.Permission, "provisioning")
+						}
+
+						return mockHTTPResponse(http.StatusOK), nil
+					},
+				}
+			},
+			wantCallCount: 1,
+		},
+		"MultiplePermissions": {
+			permissions: []string{"provisioning", "admin", "scan"},
+			clientFn: func() iam.PermissionsClient {
+				callCount := 0
+
+				return &fake.MockPermissionsClient{
+					RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+						callCount++
+						if callCount > 3 {
+							t.Fatalf("RemoveGroup() called too many times: %d", callCount)
+						}
+
+						return mockHTTPResponse(http.StatusOK), nil
+					},
+				}
+			},
+			wantCallCount: 3,
+		},
+		"PermissionRemoveError": {
+			permissions: []string{"provisioning"},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{
+					RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+						return mockHTTPResponse(http.StatusInternalServerError), errors.New("server error")
+					},
+				}
+			},
+			wantErrSubstr: "cannot remove permission provisioning from group",
+		},
+		"MultipleWithOneError": {
+			permissions: []string{"provisioning", "admin"},
+			clientFn: func() iam.PermissionsClient {
+				return &fake.MockPermissionsClient{
+					RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+						if opt.Permission == "admin" {
+							return mockHTTPResponse(http.StatusInternalServerError), errors.New("admin revoke error")
+						}
+
+						return mockHTTPResponse(http.StatusOK), nil
+					},
+				}
+			},
+			wantErrSubstr: "cannot remove permission admin from group",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			client := tc.clientFn()
+			errChan := make(chan error, len(tc.permissions))
+			e := &external{groupClient: &fake.MockGroupsClient{}, permissionsClient: client}
+
+			e.removeGroupPermissions("devs", tc.permissions, errChan)
+			close(errChan)
+
+			var errs []error
+
+			for err := range errChan {
+				if err != nil {
+					errs = append(errs, err)
+				}
+			}
+
+			if tc.wantErrSubstr != "" {
+				if len(errs) == 0 {
+					t.Fatalf("removeGroupPermissions() expected error containing %q, got nil", tc.wantErrSubstr)
+				}
+
+				found := false
+
+				for _, err := range errs {
+					if strings.Contains(err.Error(), tc.wantErrSubstr) {
+						found = true
+
+						break
+					}
+				}
+
+				if !found {
+					t.Fatalf("removeGroupPermissions() errors = %v, want one containing %q", errs, tc.wantErrSubstr)
+				}
+
+				return
+			}
+
+			if len(errs) > 0 {
+				t.Fatalf("removeGroupPermissions() unexpected errors: %v", errs)
+			}
+		})
 	}
 }

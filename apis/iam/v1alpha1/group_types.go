@@ -30,11 +30,16 @@ import (
 type GroupParameters struct {
 	// Name of the Group. This is a required field and must be unique across all Groups in SonarQube.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MinLength=3
 	Name string `json:"name"`
 	// Description of the Group. This is an optional field that provides additional information about the Group.
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description,omitempty"`
+	// Permissions is a list of permissions to be assigned to the Group. This is an optional field that specifies the permissions the Group should have in SonarQube.
+	// Allowed values are "admin", "gateadmin", "profileadmin", "provisioning", "scan", "applicationcreator", "portfoliocreator"
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:items:Enum=admin;gateadmin;profileadmin;provisioning;scan;applicationcreator;portfoliocreator
+	Permissions *[]string `json:"permissions,omitempty"`
 }
 
 // GroupObservation are the observable fields of a Group.
@@ -49,6 +54,8 @@ type GroupObservation struct {
 	Managed bool `json:"managed"`
 	// Default indicates whether the Group is a default group in SonarQube.
 	Default bool `json:"default"`
+	// Permissions is a list of permissions assigned to the Group as observed from SonarQube. This field reflects the actual permissions the Group has in SonarQube.
+	Permissions []string `json:"permissions"`
 }
 
 // A GroupSpec defines the desired state of a Group.

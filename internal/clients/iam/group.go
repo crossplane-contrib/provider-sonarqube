@@ -54,17 +54,32 @@ func LateInitializeGroup(spec *v1alpha1.GroupParameters, observation *v1alpha1.G
 	}
 
 	helpers.AssignIfNil(&spec.Description, observation.Description)
+
+	helpers.AssignIfNil(&spec.Permissions, observation.Permissions)
 }
 
 // IsGroupLateInitialized checks if two Group specs are equal after late initialization. It returns true if the specs are equal, and false if they are not.
+//
+//nolint:gocyclo,cyclop // This function intentionally encodes late-init semantics in one place.
 func IsGroupLateInitialized(former, current *v1alpha1.GroupParameters) bool {
 	if former == nil || current == nil {
-		return true
+		return false
 	}
 
-	// Compare the two Group specs after late initialization.
-	return former.Name != current.Name ||
-		!helpers.IsComparablePtrEqualComparablePtr(former.Description, current.Description)
+	nameChanged := former.Name != current.Name
+
+	descriptionChanged := !helpers.IsComparablePtrEqualComparablePtr(former.Description, current.Description)
+	if former.Description == nil && current.Description != nil && *current.Description == "" {
+		descriptionChanged = false
+	}
+
+	permissionsChanged := (former.Permissions == nil && current.Permissions != nil) ||
+		(former.Permissions != nil && current.Permissions != nil && !ArePermissionsEqual(former.Permissions, *current.Permissions))
+	if former.Permissions == nil && current.Permissions != nil && len(*current.Permissions) == 0 {
+		permissionsChanged = false
+	}
+
+	return nameChanged || descriptionChanged || permissionsChanged
 }
 
 // IsGroupUpToDate checks if the Group spec is up to date with the SonarQube API response.
@@ -79,7 +94,8 @@ func IsGroupUpToDate(spec *v1alpha1.GroupParameters, observation *v1alpha1.Group
 	}
 
 	return spec.Name == observation.Name &&
-		helpers.IsComparablePtrEqualComparable(spec.Description, observation.Description)
+		helpers.IsComparablePtrEqualComparable(spec.Description, observation.Description) &&
+		ArePermissionsEqual(spec.Permissions, observation.Permissions)
 }
 
 // GenerateCreateGroupOptions generates the SonarQube API options for creating a Group based on the Group spec.

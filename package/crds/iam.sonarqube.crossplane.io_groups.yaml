@@ -66,8 +66,23 @@ spec:
                   name:
                     description: Name of the Group. This is a required field and must
                       be unique across all Groups in SonarQube.
-                    minLength: 1
+                    minLength: 3
                     type: string
+                  permissions:
+                    description: |-
+                      Permissions is a list of permissions to be assigned to the Group. This is an optional field that specifies the permissions the Group should have in SonarQube.
+                      Allowed values are "admin", "gateadmin", "profileadmin", "provisioning", "scan", "applicationcreator", "portfoliocreator"
+                    items:
+                      enum:
+                      - admin
+                      - gateadmin
+                      - profileadmin
+                      - provisioning
+                      - scan
+                      - applicationcreator
+                      - portfoliocreator
+                      type: string
+                    type: array
                 required:
                 - name
                 type: object
@@ -158,12 +173,20 @@ spec:
                     description: Name is the name of the Group as observed from SonarQube.
                       Reflects the actual name of the Group in SonarQube.
                     type: string
+                  permissions:
+                    description: Permissions is a list of permissions assigned to
+                      the Group as observed from SonarQube. This field reflects the
+                      actual permissions the Group has in SonarQube.
+                    items:
+                      type: string
+                    type: array
                 required:
                 - default
                 - description
                 - id
                 - managed
                 - name
+                - permissions
                 type: object
               conditions:
                 description: Conditions of the resource.
