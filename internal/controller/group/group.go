@@ -201,7 +201,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// Retrieve the permissions for the group and set it in the observation
 	permissions, err := getGroupPermissions(c.permissionsClient, retrievedGroup.Name)
 	if err != nil {
-		return managed.ExternalObservation{ResourceExists: true}, errors.Wrap(err, "cannot get group permissions")
+		return managed.ExternalObservation{ResourceExists: true}, errors.Wrapf(err, "group %s", retrievedGroup.Name)
 	}
 
 	group.Status.AtProvider.Permissions = permissions
@@ -409,6 +409,7 @@ func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]stri
 		if permissions.Paging.PageSize == 0 {
 			return nil, errors.New("received zero PageSize in permissions response from SonarQube")
 		}
+
 		if permissions == nil {
 			return nil, errors.New("received nil permissions response from SonarQube")
 		}
@@ -416,6 +417,7 @@ func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]stri
 		if permissions.Paging.PageSize == 0 {
 			return nil, errors.New("received zero PageSize in permissions response from SonarQube")
 		}
+
 		for _, group := range permissions.Groups {
 			if group.Name == groupName {
 				return group.Permissions, nil
