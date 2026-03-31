@@ -409,6 +409,13 @@ func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]stri
 		if permissions.Paging.PageSize == 0 {
 			return nil, errors.New("received zero PageSize in permissions response from SonarQube")
 		}
+		if permissions == nil {
+			return nil, errors.New("received nil permissions response from SonarQube")
+		}
+
+		if permissions.Paging.PageSize == 0 {
+			return nil, errors.New("received zero PageSize in permissions response from SonarQube")
+		}
 		for _, group := range permissions.Groups {
 			if group.Name == groupName {
 				return group.Permissions, nil
