@@ -94,6 +94,7 @@ type RuleParameters struct {
 	Type *string `json:"type,omitempty"`
 	// Tags is a list of tags to associate with the rule.
 	// Use empty slice to remove current tags. Tags are not changed if parameter is not set.
+	// +kubebuilder:validation:Optional
 	Tags *[]string `json:"tags,omitempty"`
 }
 

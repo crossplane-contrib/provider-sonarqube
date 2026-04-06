@@ -1,0 +1,39 @@
+---
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: PermissionsTemplate
+metadata:
+  name: example-permissions-template
+  namespace: default
+spec:
+  forProvider:
+    # Name of the template in SonarQube.
+    name: example-permissions-template
+
+    # Optional template metadata.
+    description: Permissions template managed by Crossplane
+    projectKeyPattern: "example-.*"
+    default: false
+
+    # Permissions applied to the project creator.
+    creatorPermissions:
+      - admin
+      - scan
+
+    # Explicit user permissions.
+    userPermissions:
+      - login: BoxBoxJason
+        permissions:
+          - admin
+          - scan
+
+    # Explicit group permissions.
+    # This group can be created from examples/iam/group.yaml.
+    groupPermissions:
+      - name: sonar-users
+        permissions:
+          - codeviewer
+          - scan
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

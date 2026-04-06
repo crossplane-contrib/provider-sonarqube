@@ -8,7 +8,7 @@ tool github.com/crossplane/crossplane-tools/cmd/angryjet
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/boxboxjason/sonarqube-client-go v1.4.0
+	github.com/boxboxjason/sonarqube-client-go v1.4.2
 	github.com/crossplane/crossplane-runtime/v2 v2.2.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
