@@ -201,6 +201,7 @@ func TestApplyTemplatePermissions(t *testing.T) {
 
 	e := &external{}
 	calls := make([]string, 0, 4)
+
 	var callsMutex sync.Mutex
 
 	err := e.applyTemplatePermissions(
@@ -208,6 +209,7 @@ func TestApplyTemplatePermissions(t *testing.T) {
 		[]string{"remove-a"},
 		func(permission string) error {
 			callsMutex.Lock()
+
 			calls = append(calls, "add:"+permission)
 			callsMutex.Unlock()
 
@@ -215,6 +217,7 @@ func TestApplyTemplatePermissions(t *testing.T) {
 		},
 		func(permission string) error {
 			callsMutex.Lock()
+
 			calls = append(calls, "remove:"+permission)
 			callsMutex.Unlock()
 
@@ -278,12 +281,15 @@ func TestBaseFieldsAndDefaultHelpers(t *testing.T) {
 func TestGroupUserCreatorReconciliation(t *testing.T) {
 	t.Parallel()
 
-	var groupAdds, groupRemoves, userAdds, userRemoves, creatorAdds, creatorRemoves []string
-	var resultMutex sync.Mutex
+	var (
+		groupAdds, groupRemoves, userAdds, userRemoves, creatorAdds, creatorRemoves []string
+		resultMutex                                                                 sync.Mutex
+	)
 
 	e := &external{client: &fake.MockPermissionsTemplatesClient{
 		AddGroupFn: func(opt *sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error) {
 			resultMutex.Lock()
+
 			groupAdds = append(groupAdds, opt.GroupName+":"+opt.Permission)
 			resultMutex.Unlock()
 
@@ -291,6 +297,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 		},
 		RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupFromTemplateOptions) (*http.Response, error) {
 			resultMutex.Lock()
+
 			groupRemoves = append(groupRemoves, opt.GroupName+":"+opt.Permission)
 			resultMutex.Unlock()
 
@@ -298,6 +305,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 		},
 		AddUserFn: func(opt *sonar.PermissionsAddUserToTemplateOptions) (*http.Response, error) {
 			resultMutex.Lock()
+
 			userAdds = append(userAdds, opt.Login+":"+opt.Permission)
 			resultMutex.Unlock()
 
@@ -305,6 +313,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 		},
 		RemoveUserFn: func(opt *sonar.PermissionsRemoveUserFromTemplateOptions) (*http.Response, error) {
 			resultMutex.Lock()
+
 			userRemoves = append(userRemoves, opt.Login+":"+opt.Permission)
 			resultMutex.Unlock()
 
@@ -312,6 +321,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 		},
 		AddProjectCreatorFn: func(opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error) {
 			resultMutex.Lock()
+
 			creatorAdds = append(creatorAdds, opt.Permission)
 			resultMutex.Unlock()
 
@@ -319,6 +329,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 		},
 		RemoveProjectCreatorFn: func(opt *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions) (*http.Response, error) {
 			resultMutex.Lock()
+
 			creatorRemoves = append(creatorRemoves, opt.Permission)
 			resultMutex.Unlock()
 
