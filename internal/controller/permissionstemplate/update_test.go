@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
@@ -200,17 +201,22 @@ func TestApplyTemplatePermissions(t *testing.T) {
 
 	e := &external{}
 	calls := make([]string, 0, 4)
+	var callsMutex sync.Mutex
 
 	err := e.applyTemplatePermissions(
 		[]string{"add-a", "add-b"},
 		[]string{"remove-a"},
 		func(permission string) error {
+			callsMutex.Lock()
 			calls = append(calls, "add:"+permission)
+			callsMutex.Unlock()
 
 			return nil
 		},
 		func(permission string) error {
+			callsMutex.Lock()
 			calls = append(calls, "remove:"+permission)
+			callsMutex.Unlock()
 
 			return nil
 		},
@@ -273,35 +279,48 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 	t.Parallel()
 
 	var groupAdds, groupRemoves, userAdds, userRemoves, creatorAdds, creatorRemoves []string
+	var resultMutex sync.Mutex
 
 	e := &external{client: &fake.MockPermissionsTemplatesClient{
 		AddGroupFn: func(opt *sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error) {
+			resultMutex.Lock()
 			groupAdds = append(groupAdds, opt.GroupName+":"+opt.Permission)
+			resultMutex.Unlock()
 
 			return mockHTTPResponse(), nil
 		},
 		RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupFromTemplateOptions) (*http.Response, error) {
+			resultMutex.Lock()
 			groupRemoves = append(groupRemoves, opt.GroupName+":"+opt.Permission)
+			resultMutex.Unlock()
 
 			return mockHTTPResponse(), nil
 		},
 		AddUserFn: func(opt *sonar.PermissionsAddUserToTemplateOptions) (*http.Response, error) {
+			resultMutex.Lock()
 			userAdds = append(userAdds, opt.Login+":"+opt.Permission)
+			resultMutex.Unlock()
 
 			return mockHTTPResponse(), nil
 		},
 		RemoveUserFn: func(opt *sonar.PermissionsRemoveUserFromTemplateOptions) (*http.Response, error) {
+			resultMutex.Lock()
 			userRemoves = append(userRemoves, opt.Login+":"+opt.Permission)
+			resultMutex.Unlock()
 
 			return mockHTTPResponse(), nil
 		},
 		AddProjectCreatorFn: func(opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error) {
+			resultMutex.Lock()
 			creatorAdds = append(creatorAdds, opt.Permission)
+			resultMutex.Unlock()
 
 			return mockHTTPResponse(), nil
 		},
 		RemoveProjectCreatorFn: func(opt *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions) (*http.Response, error) {
+			resultMutex.Lock()
 			creatorRemoves = append(creatorRemoves, opt.Permission)
+			resultMutex.Unlock()
 
 			return mockHTTPResponse(), nil
 		},
