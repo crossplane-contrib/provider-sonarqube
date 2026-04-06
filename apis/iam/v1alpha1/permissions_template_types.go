@@ -71,12 +71,12 @@ type PermissionsTemplateGroupParameters struct {
 	// Name is the name of the group in SonarQube.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// Permissions is a list of permissions assigned to the group. An empty list means that the group will be associated with the PermissionsTemplate but will not have any permissions.
 	// Allowed values are "admin", "codeviewer", "issueadmin", "securityhotspotadmin", "scan", "user"
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:items:Enum=admin;codeviewer;issueadmin;securityhotspotadmin;scan;user
-	Permissions *[]string `json:"permissions"`
+	Permissions *[]string `json:"permissions,omitempty"`
 }
 
 // PermissionsTemplateObservation are the observable fields of a PermissionsTemplate.

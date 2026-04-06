@@ -169,10 +169,10 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	creationOptions := iam.GeneratePermissionsTemplateCreationOptions(&permissionsTemplate.Spec.ForProvider)
 
 	createdTemplate, resp, err := c.client.CreateTemplate(creationOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, "failed to create PermissionsTemplate")
 	}
-	defer helpers.CloseBody(resp)
 
 	meta.SetExternalName(permissionsTemplate, createdTemplate.PermissionTemplate.ID)
 
