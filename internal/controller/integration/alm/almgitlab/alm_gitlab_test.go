@@ -198,6 +198,24 @@ func TestObserve(t *testing.T) {
 			}()},
 			want: want{observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: false, ResourceLateInitialized: false, ConnectionDetails: managed.ConnectionDetails{}}},
 		},
+		"MissingSavedTokenKeyDoesNotFailObserve": {
+			objects: []runtime.Object{
+				tokenSecret("pat-secret", "default", "token", "pat-value"),
+				tokenSecret("connection-secret", "default", "other-key", "value"),
+			},
+			settingsClient: &fake.MockALMSettingsGitLabClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
+				return &sonar.AlmSettingsListDefinitions{Gitlab: []sonar.GitlabDefinition{{Key: testExternalName, URL: testGitLabURL}}}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			args: args{ctx: context.Background(), mg: func() resource.Managed {
+				alm := newTestALMGitLab(testExternalName, tokenRef)
+				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
+				alm.Status.AtProvider.Key = testExternalName
+				alm.Status.AtProvider.URL = testGitLabURL
+
+				return alm
+			}()},
+			want: want{observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: false, ResourceLateInitialized: false, ConnectionDetails: managed.ConnectionDetails{}}},
+		},
 		"SuccessfulObserveUpToDate": {
 			objects: []runtime.Object{
 				tokenSecret("pat-secret", "default", "token", "pat-value"),
@@ -636,6 +654,17 @@ func TestGetSavedAPIToken(t *testing.T) {
 			alm: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "missing"})
+
+				return alm
+			}(),
+			wantToken: "",
+			wantError: "",
+		},
+		"MissingSecretKeyReturnsEmptyToken": {
+			objects: []runtime.Object{tokenSecret("connection-secret", "default", "other-key", "value")},
+			alm: func() *v1alpha1.ALMGitLab {
+				alm := newTestALMGitLab(testExternalName, tokenRef)
+				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 
 				return alm
 			}(),

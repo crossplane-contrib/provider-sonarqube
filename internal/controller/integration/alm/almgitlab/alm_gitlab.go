@@ -352,7 +352,7 @@ func (c *external) getSavedAPIToken(ctx context.Context, almGitlab *v1alpha1.ALM
 
 	pat, err := common.GetTokenValueFromLocalSecretReference(ctx, c.kubeClient, almGitlab, ref, connectionDetailTokenKey)
 	if err != nil {
-		if strings.Contains(err.Error(), common.ErrSecretNotFound) {
+		if strings.Contains(err.Error(), common.ErrSecretNotFound) || strings.Contains(err.Error(), common.ErrSecretKeyNotFound) {
 			return "", nil
 		}
 
