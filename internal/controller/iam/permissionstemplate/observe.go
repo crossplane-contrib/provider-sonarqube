@@ -167,7 +167,7 @@ func (c *external) observePermissionsTemplate(templateID *string, templateName *
 
 // searchPermissionsTemplate scans template pages using the provided query and returns the first matching template.
 func (c *external) searchPermissionsTemplate(query string, match func(template sonar.PermissionTemplate) bool) (sonar.PermissionTemplate, bool, error) {
-	const maxPageSize = int64(100)
+	const maxPageSize = int64(500)
 
 	defaultTemplatesIds := make(map[string]struct{})
 
