@@ -74,7 +74,8 @@ func IsALMLateInitialized(former, current *v1alpha1.ALMCommonParameters) bool {
 		return true
 	}
 
-	return false
+	return former.URL != current.URL ||
+		former.Key != current.Key
 }
 
 // GenerateALMDeleteOptions generates the options for deleting an ALM resource in SonarQube API based on the external name of the resource.
