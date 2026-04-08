@@ -21,13 +21,14 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/crossplane/provider-sonarqube/internal/controller/config"
-	"github.com/crossplane/provider-sonarqube/internal/controller/group"
-	"github.com/crossplane/provider-sonarqube/internal/controller/permissionstemplate"
-	"github.com/crossplane/provider-sonarqube/internal/controller/project"
-	"github.com/crossplane/provider-sonarqube/internal/controller/qualitygate"
-	"github.com/crossplane/provider-sonarqube/internal/controller/qualityprofile"
-	"github.com/crossplane/provider-sonarqube/internal/controller/rule"
-	"github.com/crossplane/provider-sonarqube/internal/controller/settings"
+	"github.com/crossplane/provider-sonarqube/internal/controller/iam/group"
+	"github.com/crossplane/provider-sonarqube/internal/controller/iam/permissionstemplate"
+	"github.com/crossplane/provider-sonarqube/internal/controller/instance/project"
+	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualitygate"
+	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualityprofile"
+	"github.com/crossplane/provider-sonarqube/internal/controller/instance/rule"
+	"github.com/crossplane/provider-sonarqube/internal/controller/instance/settings"
+	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
 )
 
 // SetupGated creates all SonarQube controllers with safe-start support and adds them to
@@ -42,6 +43,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		rule.SetupGated,
 		group.SetupGated,
 		permissionstemplate.SetupGated,
+		almgitlab.SetupGated,
 	} {
 		err := setup(mgr, opts)
 		if err != nil {

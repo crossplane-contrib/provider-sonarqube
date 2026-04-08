@@ -36,9 +36,9 @@ ${GOMPLATE} < "hack/helpers/apis/GROUP_LOWER/APIVERSION/KIND_LOWER_types.go.tmpl
 ${GOMPLATE} < "hack/helpers/apis/GROUP_LOWER/APIVERSION/doc.go.tmpl" > "apis/${group_lower}/${APIVERSION}/doc.go"
 ${GOMPLATE} < "hack/helpers/apis/GROUP_LOWER/APIVERSION/groupversion_info.go.tmpl" > "apis/${group_lower}/${APIVERSION}/groupversion_info.go"
 
-mkdir -p "internal/controller/${kind_lower}"
-${GOMPLATE} < "hack/helpers/controller/KIND_LOWER/KIND_LOWER.go.tmpl" > "internal/controller/${kind_lower}/${kind_lower}.go"
-${GOMPLATE} < "hack/helpers/controller/KIND_LOWER/KIND_LOWER_test.go.tmpl" > "internal/controller/${kind_lower}/${kind_lower}_test.go"
+mkdir -p "internal/controller/${group_lower}/${kind_lower}"
+${GOMPLATE} < "hack/helpers/controller/KIND_LOWER/KIND_LOWER.go.tmpl" > "internal/controller/${group_lower}/${kind_lower}/${kind_lower}.go"
+${GOMPLATE} < "hack/helpers/controller/KIND_LOWER/KIND_LOWER_test.go.tmpl" > "internal/controller/${group_lower}/${kind_lower}/${kind_lower}_test.go"
 
 mkdir -p "internal/clients/${group_lower}"
 # Skip file if it already exists to avoid overwriting any custom code added by the user.

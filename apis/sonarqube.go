@@ -22,6 +22,7 @@ import (
 
 	iamv1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	integrationv1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	sonarqubev1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
 
@@ -30,6 +31,7 @@ func init() {
 	AddToSchemes = append(AddToSchemes,
 		sonarqubev1alpha1.SchemeBuilder.AddToScheme,
 		iamv1alpha1.SchemeBuilder.AddToScheme,
+		integrationv1alpha1.SchemeBuilder.AddToScheme,
 		v1alpha1.SchemeBuilder.AddToScheme,
 	)
 }
