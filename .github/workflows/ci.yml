@@ -8,6 +8,10 @@ on:
   pull_request: {}
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   # Common versions
   GO_VERSION: "1.25.8"
@@ -251,5 +255,7 @@ jobs:
           path: _output/**
 
       - name: Publish Artifacts
-        if: env.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR != ''
+        if: github.event_name != 'pull_request'
+        env:
+          XPKG_REG_ORGS: ${{ env.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR != '' && 'xpkg.upbound.io/crossplane ghcr.io/crossplane-contrib' || 'ghcr.io/crossplane-contrib' }}
         run: make publish BRANCH_NAME=${GITHUB_REF##*/}
