@@ -100,7 +100,7 @@ func TestIsALMGitLabLateInitialized(t *testing.T) {
 			current: &v1alpha1.ALMGitLabParameters{
 				ALMCommonParameters: v1alpha1.ALMCommonParameters{URL: "https://gitlab-alt.example.com", Key: "gitlab-main"},
 			},
-			want: false,
+			want: true,
 		},
 	}
 

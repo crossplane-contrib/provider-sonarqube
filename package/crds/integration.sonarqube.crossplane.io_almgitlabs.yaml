@@ -34,7 +34,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A ALMGitLab is an example API type.
+        description: An ALMGitLab is a managed resource that represents a SonarQube
+          ALM integration for GitLab.
         properties:
           apiVersion:
             description: |-

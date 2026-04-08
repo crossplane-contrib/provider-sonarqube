@@ -122,10 +122,10 @@ func TestIsALMLateInitialized(t *testing.T) {
 			current: &v1alpha1.ALMCommonParameters{URL: "https://gitlab.example.com", Key: "gitlab-main"},
 			want:    false,
 		},
-		"ChangesIgnored": {
+		"ChangesOccurred": {
 			former:  &v1alpha1.ALMCommonParameters{URL: "https://gitlab.example.com", Key: "gitlab-main"},
 			current: &v1alpha1.ALMCommonParameters{URL: "https://other.example.com", Key: "other"},
-			want:    false,
+			want:    true,
 		},
 	}
 
