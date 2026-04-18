@@ -304,6 +304,45 @@ func TestGeneratePermissionsGroupsOptions(t *testing.T) {
 	}
 }
 
+func TestGenerateGroupCreateMembershipOptions(t *testing.T) {
+	t.Parallel()
+
+	got := GenerateGroupCreateMembershipOptions("group-1", "user-1")
+	if got.GroupId != "group-1" || got.UserId != "user-1" {
+		t.Fatalf("GenerateGroupCreateMembershipOptions() = %+v", got)
+	}
+}
+
+func TestGenerateGroupSearchMembershipsOptions(t *testing.T) {
+	t.Parallel()
+
+	groupID := "group-1"
+	userID := "user-1"
+	pagination := &sonar.PaginationParamsV2{PageIndex: 2, PageSize: 50}
+
+	got := GenerateGroupSearchMembershipsOptions(&groupID, &userID, pagination)
+	if got.GroupId != groupID || got.UserId != userID {
+		t.Fatalf("GenerateGroupSearchMembershipsOptions() ids mismatch: %+v", got)
+	}
+
+	if got.PageIndex != 2 || got.PageSize != 50 {
+		t.Fatalf("GenerateGroupSearchMembershipsOptions() pagination mismatch: %+v", got.PaginationParamsV2)
+	}
+}
+
+func TestGenerateGroupMembershipObservation(t *testing.T) {
+	t.Parallel()
+
+	if got := GenerateGroupMembershipObservation(nil); got != nil {
+		t.Fatalf("GenerateGroupMembershipObservation(nil) = %v, want nil", got)
+	}
+
+	memberships := []sonar.GroupMembership{{GroupId: "g1", Id: "m1"}, {GroupId: "g2", Id: "m2"}}
+	if diff := cmp.Diff(map[string]string{"g1": "m1", "g2": "m2"}, GenerateGroupMembershipObservation(&memberships)); diff != "" {
+		t.Fatalf("GenerateGroupMembershipObservation() mismatch (-want +got):\n%s", diff)
+	}
+}
+
 // TestIsGroupUpToDate tests the IsGroupUpToDate function.
 func TestIsGroupUpToDate(t *testing.T) {
 	t.Parallel()

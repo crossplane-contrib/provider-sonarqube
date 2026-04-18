@@ -462,13 +462,32 @@ func TestCreatePermissionsTemplateGroupMapping(t *testing.T) {
 
 	specPermissions := []string{"scan"}
 	spec := &[]v1alpha1.PermissionsTemplateGroupParameters{{Name: "", Permissions: &specPermissions}, {Name: "devs", Permissions: &specPermissions}, {Name: "qa", Permissions: &[]string{}}}
-	observation := &[]v1alpha1.PermissionsTemplateGroupObservation{{Name: "devs", Permissions: []string{"scan"}}, {Name: "qa", Permissions: []string{}}, {Name: "other", Permissions: []string{}}}
+	observation := &[]v1alpha1.PermissionsTemplateGroupObservation{{Name: "devs", Permissions: []string{"scan"}}, {Name: "qa", Permissions: []string{}}, {Name: "other", Permissions: []string{"admin"}}}
 
 	got := CreatePermissionsTemplateGroupMapping(spec, observation)
 	want := map[string][2]int{
-		"devs": {1, 0},
-		"qa":   {2, 1},
+		"devs":  {1, 0},
+		"qa":    {2, 1},
+		"other": {-1, 2},
 	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("CreatePermissionsTemplateGroupMapping() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestCreatePermissionsTemplateGroupMappingSkipsEmptyObservedEntries(t *testing.T) {
+	t.Parallel()
+
+	specPermissions := []string{"scan"}
+	spec := &[]v1alpha1.PermissionsTemplateGroupParameters{{Name: "devs", Permissions: &specPermissions}}
+	observation := &[]v1alpha1.PermissionsTemplateGroupObservation{
+		{Name: "", Permissions: []string{"scan"}},
+		{Name: "ghost", Permissions: []string{}},
+	}
+
+	got := CreatePermissionsTemplateGroupMapping(spec, observation)
+	want := map[string][2]int{"devs": {0, -1}}
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("CreatePermissionsTemplateGroupMapping() mismatch (-want +got):\n%s", diff)

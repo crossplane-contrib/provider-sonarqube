@@ -141,3 +141,36 @@ func GenerateGroupObservation(group *sonar.Group) v1alpha1.GroupObservation {
 		Default:     group.Default,
 	}
 }
+
+// GenerateGroupCreateMembershipOptions generates the SonarQube API options for creating a group membership based on the group ID and user ID.
+func GenerateGroupCreateMembershipOptions(groupID, userID string) sonar.AuthorizationsCreateGroupMembershipOptions {
+	return sonar.AuthorizationsCreateGroupMembershipOptions{
+		GroupId: groupID,
+		UserId:  userID,
+	}
+}
+
+// GenerateGroupSearchMembershipsOptions generates the SonarQube API options for searching group memberships based on the group ID.
+func GenerateGroupSearchMembershipsOptions(groupID, userID *string, pagination *sonar.PaginationParamsV2) sonar.AuthorizationsSearchGroupMembershipsOptions {
+	options := sonar.AuthorizationsSearchGroupMembershipsOptions{}
+
+	helpers.AssignIfNonNil(&options.GroupId, groupID)
+	helpers.AssignIfNonNil(&options.UserId, userID)
+	helpers.AssignIfNonNil(&options.PaginationParamsV2, pagination)
+
+	return options
+}
+
+// GenerateGroupMembershipObservation generates a map of group ID to membership ID from the SonarQube API response for group memberships.
+func GenerateGroupMembershipObservation(memberships *[]sonar.GroupMembership) map[string]string {
+	if memberships == nil {
+		return nil
+	}
+
+	membershipMap := make(map[string]string)
+	for _, membership := range *memberships {
+		membershipMap[membership.GroupId] = membership.Id
+	}
+
+	return membershipMap
+}
