@@ -170,7 +170,7 @@ jobs:
         run: make modules.download modules.check
 
       - name: Run Unit Tests
-        run: make -j2 test
+        run: make test
 
       - name: Publish Unit Test Coverage
         uses: codecov/codecov-action@v6
@@ -244,7 +244,7 @@ jobs:
         run: make modules.download modules.check
 
       - name: Build Artifacts
-        run: make -j2 build.all
+        run: make build.all
         env:
           # We're using docker buildx, which doesn't actually load the images it
           # builds by default. Specifying --load does so.

@@ -40,7 +40,7 @@ jobs:
 
       - name: Promote Artifacts in S3 and Docker Hub
         if: env.AWS_USR != '' && env.DOCKER_USR != ''
-        run: make -j2 promote BRANCH_NAME=${GITHUB_REF##*/}
+        run: make promote BRANCH_NAME=${GITHUB_REF##*/}
         env:
           VERSION: ${{ github.event.inputs.version }}
           CHANNEL: ${{ github.event.inputs.channel }}
