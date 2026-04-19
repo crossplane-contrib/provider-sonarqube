@@ -18,9 +18,7 @@ package user
 
 import (
 	"context"
-	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -35,6 +33,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
+
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -148,10 +148,9 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	newClient := common.NewClient(*config)
 
 	return &external{
-		kube:          c.kube,
-		usersClient:   newClient.V2.UsersManagement,
-		groupsClient:  newClient.V2.Authorizations,
-		usersv1Client: newClient.Users,
+		kube:         c.kube,
+		usersClient:  newClient.V2.UsersManagement,
+		groupsClient: newClient.V2.Authorizations,
 	}, nil
 }
 
@@ -164,12 +163,6 @@ type external struct {
 	usersClient iam.UsersClient
 	// groupsClient is used to interact with the SonarQube API for group management, which is necessary for reconciling user group memberships.
 	groupsClient iam.GroupsClient
-	// usersv1Client is used for password changes that are still handled by the v1 endpoint.
-	usersv1Client passwordClient
-}
-
-type passwordClient interface {
-	ChangePassword(opt *sonar.UsersChangePasswordOptions) (*http.Response, error)
 }
 
 // Create is responsible for creating the external resource based on the desired state of the managed resource.
@@ -200,14 +193,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	meta.SetExternalName(userResource, created.Id)
-	userResource.Status.AtProvider = iam.GenerateUserObservation(created)
 
-	err = c.reconcileGroupMemberships(userResource, created.Id)
-	if err != nil {
-		return result, err
-	}
-
-	if ptr.Deref(userResource.Spec.ForProvider.Local, false) && ptr.Deref(userResource.Spec.ForProvider.PasswordManaged, false) && password != nil {
+	if ptr.Deref(userResource.Spec.ForProvider.Local, false) && password != nil {
 		result.ConnectionDetails = managed.ConnectionDetails{
 			passwordKey: []byte(*password),
 		}

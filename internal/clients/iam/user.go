@@ -50,9 +50,6 @@ func LateInitializeUser(spec *v1alpha1.UserParameters, observation *v1alpha1.Use
 
 	helpers.AssignIfNil(&spec.Email, observation.Email)
 	helpers.AssignIfNil(&spec.Local, observation.Local)
-	helpers.AssignIfNil(&spec.ExternalId, observation.ExternalId)
-	helpers.AssignIfNil(&spec.ExternalLogin, observation.ExternalLogin)
-	helpers.AssignIfNil(&spec.ExternalProvider, observation.ExternalProvider)
 
 	if spec.ScmAccounts == nil && len(observation.ScmAccounts) > 0 {
 		accounts := append([]string(nil), observation.ScmAccounts...)
@@ -70,14 +67,11 @@ func IsUserLateInitialized(former, current *v1alpha1.UserParameters) bool {
 		former.Name != current.Name ||
 		!helpers.IsComparablePtrEqualComparablePtr(former.Email, current.Email) ||
 		!helpers.IsComparablePtrEqualComparablePtr(former.Local, current.Local) ||
-		!helpers.IsComparablePtrEqualComparablePtr(former.ExternalId, current.ExternalId) ||
-		!helpers.IsComparablePtrEqualComparablePtr(former.ExternalLogin, current.ExternalLogin) ||
-		!helpers.IsComparablePtrEqualComparablePtr(former.ExternalProvider, current.ExternalProvider) ||
 		!AreUserScmAccountsUpToDate(former.ScmAccounts, current.ScmAccounts)
 }
 
 // IsUserUpToDate checks if the User spec is up to date with the SonarQube API response.
-func IsUserUpToDate(spec *v1alpha1.UserParameters, observation *v1alpha1.UserObservation) bool { //nolint:cyclop,gocyclo // Multiple chained evaluations are necessary here
+func IsUserUpToDate(spec *v1alpha1.UserParameters, observation *v1alpha1.UserObservation) bool {
 	if spec == nil {
 		return true
 	}
@@ -90,9 +84,6 @@ func IsUserUpToDate(spec *v1alpha1.UserParameters, observation *v1alpha1.UserObs
 		spec.Name == observation.Name &&
 		helpers.IsComparablePtrEqualComparablePtr(spec.Email, &observation.Email) &&
 		helpers.IsComparablePtrEqualComparablePtr(spec.Local, &observation.Local) &&
-		helpers.IsComparablePtrEqualComparablePtr(spec.ExternalId, &observation.ExternalId) &&
-		helpers.IsComparablePtrEqualComparablePtr(spec.ExternalLogin, &observation.ExternalLogin) &&
-		helpers.IsComparablePtrEqualComparablePtr(spec.ExternalProvider, &observation.ExternalProvider) &&
 		AreUserScmAccountsUpToDate(spec.ScmAccounts, &observation.ScmAccounts) &&
 		AreUserGroupsUpToDate(spec.Groups, &observation.Groups)
 }

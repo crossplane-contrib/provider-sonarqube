@@ -23,7 +23,6 @@ import (
 
 	stderrors "errors"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -35,14 +34,14 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-const updateErrorCapacity = 3
-
 // Update is responsible for updating the external resource to match the desired state of the managed resource.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
+func (c *external) Update(_ context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
+	const updateErrorCapacity = 2
+
 	result := managed.ExternalUpdate{}
 	errs := make([]error, 0, updateErrorCapacity)
 
-	userResource, ok := mg.(*v1alpha1.User)
+	userResource, ok := managedResource.(*v1alpha1.User)
 	if !ok {
 		return result, errors.New(errNotUser)
 	}
@@ -57,14 +56,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		errs = append(errs, err)
 	}
 
-	connectionDetails, err := c.updateUserPasswordIfRequired(ctx, userResource)
-	if err != nil {
-		errs = append(errs, err)
-	} else if len(connectionDetails) > 0 {
-		result.ConnectionDetails = connectionDetails
-	}
-
-	err = c.reconcileGroupMemberships(userResource, externalName)
+	_, err = c.reconcileGroupMemberships(userResource, externalName)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -84,44 +76,11 @@ func (c *external) updateUserFields(userResource *v1alpha1.User, externalName st
 	return nil
 }
 
-// updateUserPasswordIfRequired updates the User's password if it is locally managed and has changed. It returns the new password in connection details if an update was performed.
-func (c *external) updateUserPasswordIfRequired(ctx context.Context, userResource *v1alpha1.User) (managed.ConnectionDetails, error) {
-	if !ptr.Deref(userResource.Spec.ForProvider.Local, false) || !ptr.Deref(userResource.Spec.ForProvider.PasswordManaged, false) {
-		return managed.ConnectionDetails{}, nil
-	}
-
-	password, err := c.passwordFromSecret(ctx, userResource)
-	if err != nil {
-		return nil, err
-	}
-
-	savedPassword, err := c.getSavedPassword(ctx, userResource)
-	if err != nil {
-		return nil, err
-	}
-
-	if password == nil || *password == savedPassword {
-		return managed.ConnectionDetails{}, nil
-	}
-
-	resp, err := c.usersv1Client.ChangePassword(&sonar.UsersChangePasswordOptions{ //nolint:bodyclose // closed via helpers.CloseBody
-		Login:            userResource.Spec.ForProvider.Login,
-		Password:         *password,
-		PreviousPassword: savedPassword,
-	})
-	defer helpers.CloseBody(resp)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot update User password")
-	}
-
-	return managed.ConnectionDetails{passwordKey: []byte(*password)}, nil
-}
-
 // reconcileGroupMemberships ensures that the User's group memberships in SonarQube match the desired state specified in the User resource. It calculates the necessary additions and removals of group memberships and performs the required API calls to reconcile the state. The User's observed group memberships are updated in the status after reconciliation.
-func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, externalName string) error {
+func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, externalName string) (map[string]string, error) {
 	if userResource.Spec.ForProvider.Groups == nil {
-		return nil
+		//nolint:nilnil // nil groups indicates "no-op" to callers.
+		return nil, nil
 	}
 
 	desiredGroups := desiredGroupIDs(userResource.Spec.ForProvider.Groups)
@@ -135,7 +94,7 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 		defer helpers.CloseBody(resp)
 
 		if err != nil {
-			return errors.Wrapf(err, "cannot add User to Group %s", groupID)
+			return nil, errors.Wrapf(err, "cannot add User to Group %s", groupID)
 		}
 
 		membershipID := ""
@@ -151,7 +110,7 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 		defer helpers.CloseBody(resp)
 
 		if err != nil {
-			return errors.Wrapf(err, "cannot remove user membership %s", groupMembershipID)
+			return nil, errors.Wrapf(err, "cannot remove user membership %s", groupMembershipID)
 		}
 	}
 
@@ -162,9 +121,7 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 		}
 	}
 
-	userResource.Status.AtProvider.Groups = updatedGroups
-
-	return nil
+	return updatedGroups, nil
 }
 
 // desiredGroupIDs extracts the desired group IDs from the UserGroupsParameters. It filters out any nil or empty group IDs, returning a slice of valid group IDs that the user should be a member of.

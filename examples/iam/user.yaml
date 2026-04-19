@@ -1,0 +1,56 @@
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: example-user
+  namespace: default
+spec:
+  forProvider:
+    # Required core identity fields.
+    login: example.user
+    name: Example User
+
+    # Optional profile and identity fields.
+    email: example.user@example.com
+    local: true
+
+    # Optional deactivation behavior.
+    anonymize: true
+
+    passwordSecretRef:
+      name: example-user-password
+      namespace: default
+      key: password
+
+    # Optional SCM account associations.
+    scmAccounts:
+      - github:example-user
+      - gitlab:example-user
+      - bitbucket:example-user
+
+    # Group associations can use direct IDs and references.
+    groups:
+      # Resolve from Group metadata.name -> crossplane.io/external-name.
+      # This references the Group example in examples/iam/group.yaml.
+      - groupIdRef:
+          name: example-group
+      # Directly specify the group ID (This is for instance "sonar-users" group on my sonarqube).
+      - groupId: a1b88cc1-2cc0-493f-8494-d17ef9a7345c
+
+  # Optional: where composed connection details are published.
+  writeConnectionSecretToRef:
+    name: example-user-conn
+
+  # This references the ProviderConfig example in examples/providerconfig.yaml.
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-user-password
+  namespace: default
+type: Opaque
+stringData:
+  password: example-123

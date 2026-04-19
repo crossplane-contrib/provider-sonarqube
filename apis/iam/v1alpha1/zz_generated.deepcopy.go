@@ -573,11 +573,6 @@ func (in *UserParameters) DeepCopyInto(out *UserParameters) {
 		*out = new(v1.SecretKeySelector)
 		**out = **in
 	}
-	if in.PasswordManaged != nil {
-		in, out := &in.PasswordManaged, &out.PasswordManaged
-		*out = new(bool)
-		**out = **in
-	}
 	if in.ScmAccounts != nil {
 		in, out := &in.ScmAccounts, &out.ScmAccounts
 		*out = new([]string)

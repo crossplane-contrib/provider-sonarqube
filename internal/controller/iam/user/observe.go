@@ -18,7 +18,6 @@ package user
 
 import (
 	"context"
-	"strings"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
@@ -57,6 +56,11 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 
 		return managed.ExternalObservation{}, errors.Wrap(err, "cannot observe User")
+	}
+
+	// Consider deactivated users as non-existent, as SonarQube does not provide a way to reactivate them and they cannot be updated. They can only be deleted and recreated if needed.
+	if user == nil || !user.Active {
+		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
 	userResource.Status.AtProvider = iam.GenerateUserObservation(user)
@@ -99,25 +103,6 @@ func (c *external) passwordFromSecret(ctx context.Context, userResource *v1alpha
 	}
 
 	return password, nil
-}
-
-// getSavedPassword retrieves the saved password from the connection secret referenced in the User resource's spec. It returns an empty string if the reference is not set or if there is an error retrieving the token.
-func (c *external) getSavedPassword(ctx context.Context, user *v1alpha1.User) (string, error) {
-	ref := user.GetWriteConnectionSecretToReference()
-	if ref == nil || ref.Name == "" {
-		return "", nil
-	}
-
-	password, err := common.GetTokenValueFromLocalSecretReference(ctx, c.kube, user, ref, passwordKey)
-	if err != nil {
-		if strings.Contains(err.Error(), common.ErrSecretNotFound) || strings.Contains(err.Error(), common.ErrSecretKeyNotFound) {
-			return "", nil
-		}
-
-		return "", errors.Wrap(err, "cannot get saved password from connection secret")
-	}
-
-	return ptr.Deref(password, ""), nil
 }
 
 // getUserGroupsObservation retrieves the groups that the user belongs to from the SonarQube API. It handles pagination to ensure all groups are retrieved, and returns a map of group IDs to group names for efficient lookup.

@@ -25,12 +25,8 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
@@ -126,30 +122,10 @@ func TestObserve(t *testing.T) {
 	})
 }
 
-func TestGetSavedPasswordAndMembershipObservationErrors(t *testing.T) {
+func TestMembershipObservationErrors(t *testing.T) {
 	t.Parallel()
 
-	scheme := runtime.NewScheme()
-
-	err := corev1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatalf("AddToScheme(corev1) = %v", err)
-	}
-
-	kube := fakekube.NewClientBuilder().WithScheme(scheme).Build()
-	user := newUserWithSpec(v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice"})
-	user.Spec.WriteConnectionSecretToReference = &xpv1.LocalSecretReference{Name: "missing"}
-
-	savedPassword, err := (&external{kube: kube}).getSavedPassword(context.Background(), user)
-	if err != nil {
-		t.Fatalf("getSavedPassword() unexpected error: %v", err)
-	}
-
-	if savedPassword != "" {
-		t.Fatalf("getSavedPassword() = %q, want empty", savedPassword)
-	}
-
-	_, err = (&external{groupsClient: &sonarfake.MockGroupsClient{SearchGroupMembershipsFn: func(_ *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error) {
+	_, err := (&external{groupsClient: &sonarfake.MockGroupsClient{SearchGroupMembershipsFn: func(_ *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error) {
 		return nil, &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader(""))}, errors.New("boom")
 	}}}).getUserGroupsObservation(testUserID)
 	if err == nil || !strings.Contains(err.Error(), "cannot fetch user groups") {

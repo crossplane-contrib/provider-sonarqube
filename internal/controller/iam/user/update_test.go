@@ -25,20 +25,14 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
-//nolint:gocognit // Extensive scenario coverage for core update logic.
 func TestUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -60,59 +54,28 @@ func TestUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("updates fields, password and group memberships", func(t *testing.T) {
+	t.Run("updates fields and group memberships", func(t *testing.T) {
 		t.Parallel()
-
-		scheme := runtime.NewScheme()
-
-		err := corev1.AddToScheme(scheme)
-		if err != nil {
-			t.Fatalf("AddToScheme(corev1) = %v", err)
-		}
-
-		kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(
-			&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "default"}, Data: map[string][]byte{"password": []byte("new-password")}},
-			&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "conn", Namespace: "default"}, Data: map[string][]byte{passwordKey: []byte("old-password")}},
-		).Build()
 
 		desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("ops")}}
 		user := newUserWithSpec(v1alpha1.UserParameters{
-			Login:             testUserLogin,
-			Name:              "Alice Updated",
-			Groups:            &desiredGroups,
-			Local:             ptr.To(true),
-			PasswordManaged:   ptr.To(true),
-			PasswordSecretRef: &xpv1.SecretKeySelector{Key: "password", SecretReference: xpv1.SecretReference{Name: "pwd", Namespace: "default"}},
+			Login:  testUserLogin,
+			Name:   "Alice Updated",
+			Groups: &desiredGroups,
 		})
-		user.Spec.WriteConnectionSecretToReference = &xpv1.LocalSecretReference{Name: "conn"}
 		user.Status.AtProvider.Groups = map[string]string{"devs": "membership-devs"}
 		meta.SetExternalName(user, testUserID)
 
 		createdMemberships := []string{}
 		deletedMemberships := []string{}
-		passwordChangeCalls := 0
 
 		updated, err := (&external{
-			kube: kube,
 			usersClient: &sonarfake.MockUsersClient{UpdateFn: func(userID string, opt *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error) {
 				if userID != testUserID || opt.Name != "Alice Updated" {
 					t.Fatalf("Update() got id=%q opt=%+v", userID, opt)
 				}
 
 				return &sonar.UserV2{Id: testUserID, Login: testUserLogin, Name: "Alice Updated", Active: true}, &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil
-			}},
-			usersv1Client: &mockPasswordClient{changePasswordFn: func(opt *sonar.UsersChangePasswordOptions) (*http.Response, error) {
-				passwordChangeCalls++
-
-				if opt.Login != testUserLogin {
-					t.Fatalf("ChangePassword() login = %q, want %s", opt.Login, testUserLogin)
-				}
-
-				if opt.PreviousPassword != "old-password" || opt.Password != "new-password" {
-					t.Fatalf("ChangePassword() got %+v", opt)
-				}
-
-				return &http.Response{StatusCode: http.StatusNoContent, Body: io.NopCloser(strings.NewReader(""))}, nil
 			}},
 			groupsClient: &sonarfake.MockGroupsClient{
 				CreateGroupMembershipFn: func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error) {
@@ -132,10 +95,6 @@ func TestUpdate(t *testing.T) {
 			t.Fatalf("Update() error = %v", err)
 		}
 
-		if passwordChangeCalls != 1 {
-			t.Fatalf("Update() password change calls = %d, want 1", passwordChangeCalls)
-		}
-
 		if diff := cmp.Diff([]string{"ops"}, createdMemberships); diff != "" {
 			t.Fatalf("Update() created memberships mismatch (-want +got):\n%s", diff)
 		}
@@ -144,12 +103,12 @@ func TestUpdate(t *testing.T) {
 			t.Fatalf("Update() deleted memberships mismatch (-want +got):\n%s", diff)
 		}
 
-		if diff := cmp.Diff(map[string]string{"ops": "membership-ops"}, user.Status.AtProvider.Groups); diff != "" {
-			t.Fatalf("Update() status groups mismatch (-want +got):\n%s", diff)
+		if diff := cmp.Diff(map[string]string{"devs": "membership-devs"}, user.Status.AtProvider.Groups); diff != "" {
+			t.Fatalf("Update() should not mutate status groups (-want +got):\n%s", diff)
 		}
 
-		if string(updated.ConnectionDetails[passwordKey]) != "new-password" {
-			t.Fatalf("Update() password connection detail missing: %v", updated.ConnectionDetails)
+		if len(updated.ConnectionDetails) != 0 {
+			t.Fatalf("Update() connection details = %v, want empty", updated.ConnectionDetails)
 		}
 	})
 }
@@ -180,59 +139,32 @@ func TestDesiredGroupIDs(t *testing.T) {
 	}
 }
 
-//nolint:wsl_v5 // Focused branch coverage for update/password edge-cases.
-func TestUpdatePasswordAndFieldFailures(t *testing.T) {
+func TestUpdateAggregatesFieldAndGroupErrors(t *testing.T) {
 	t.Parallel()
 
-	user := newUserWithSpec(v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice", Local: ptr.To(true), PasswordManaged: ptr.To(true)})
+	desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("ops")}}
+	user := newUserWithSpec(v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice", Groups: &desiredGroups})
 	meta.SetExternalName(user, testUserID)
 
-	_, err := (&external{usersClient: &sonarfake.MockUsersClient{UpdateFn: func(_ string, _ *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error) {
-		return nil, &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader(""))}, errors.New("update failed")
-	}}}).Update(context.Background(), user)
-	if err == nil || !strings.Contains(err.Error(), "cannot update User") {
-		t.Fatalf("Update() field error = %v", err)
-	}
-
-	scheme := runtime.NewScheme()
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatalf("AddToScheme(corev1) = %v", err)
-	}
-	kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(
-		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "default"}, Data: map[string][]byte{"password": []byte("same")}},
-		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "conn", Namespace: "default"}, Data: map[string][]byte{passwordKey: []byte("same")}},
-	).Build()
-
-	user = newUserWithSpec(v1alpha1.UserParameters{
-		Login:             testUserLogin,
-		Name:              "Alice",
-		Local:             ptr.To(true),
-		PasswordManaged:   ptr.To(true),
-		PasswordSecretRef: &xpv1.SecretKeySelector{Key: "password", SecretReference: xpv1.SecretReference{Name: "pwd", Namespace: "default"}},
-	})
-	user.Spec.WriteConnectionSecretToReference = &xpv1.LocalSecretReference{Name: "conn"}
-	meta.SetExternalName(user, testUserID)
-
-	called := false
 	updated, err := (&external{
-		kube: kube,
 		usersClient: &sonarfake.MockUsersClient{UpdateFn: func(_ string, _ *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error) {
-			return &sonar.UserV2{Id: testUserID, Login: testUserLogin, Name: "Alice"}, &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil
+			return nil, &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader(""))}, errors.New("update failed")
 		}},
-		usersv1Client: &mockPasswordClient{changePasswordFn: func(_ *sonar.UsersChangePasswordOptions) (*http.Response, error) {
-			called = true
-
-			return &http.Response{StatusCode: http.StatusNoContent, Body: io.NopCloser(strings.NewReader(""))}, nil
+		groupsClient: &sonarfake.MockGroupsClient{CreateGroupMembershipFn: func(_ *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error) {
+			return nil, &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader(""))}, errors.New("group update failed")
 		}},
 	}).Update(context.Background(), user)
-	if err != nil {
-		t.Fatalf("Update() unexpected error: %v", err)
+	if err == nil {
+		t.Fatal("Update() expected error, got nil")
 	}
-	if called {
-		t.Fatal("Update() should not call ChangePassword when password is unchanged")
+
+	for _, expected := range []string{"cannot update User", "cannot add User to Group ops"} {
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("Update() error = %v, missing %q", err, expected)
+		}
 	}
+
 	if len(updated.ConnectionDetails) != 0 {
-		t.Fatalf("Update() connection details = %v, want empty", updated.ConnectionDetails)
+		t.Fatalf("Update() connection details should be empty: %v", updated.ConnectionDetails)
 	}
 }

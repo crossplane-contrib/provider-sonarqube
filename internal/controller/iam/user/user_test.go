@@ -70,18 +70,6 @@ func (m *mockGate) Set(_ schema.GroupVersionKind, _ bool) bool {
 	return false
 }
 
-type mockPasswordClient struct {
-	changePasswordFn func(opt *sonar.UsersChangePasswordOptions) (*http.Response, error)
-}
-
-func (m *mockPasswordClient) ChangePassword(opt *sonar.UsersChangePasswordOptions) (*http.Response, error) {
-	if m.changePasswordFn != nil {
-		return m.changePasswordFn(opt)
-	}
-
-	return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody}, nil
-}
-
 func newUserWithSpec(spec v1alpha1.UserParameters) *v1alpha1.User {
 	return &v1alpha1.User{
 		ObjectMeta: metav1.ObjectMeta{
@@ -92,7 +80,6 @@ func newUserWithSpec(spec v1alpha1.UserParameters) *v1alpha1.User {
 	}
 }
 
-//nolint:noinlineerr,nlreturn // Explicit test setup is clearer than helper indirection here.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -116,7 +103,7 @@ func TestCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("creates user and memberships", func(t *testing.T) {
+	t.Run("creates user", func(t *testing.T) {
 		t.Parallel()
 
 		desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("devs")}, {GroupId: ptr.To("ops")}, {GroupId: nil}}
@@ -140,6 +127,7 @@ func TestCreate(t *testing.T) {
 			}},
 			groupsClient: &sonarfake.MockGroupsClient{CreateGroupMembershipFn: func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error) {
 				createdMemberships[opt.GroupId] = "m-" + opt.GroupId
+
 				return &sonar.GroupMembership{Id: "m-" + opt.GroupId, GroupId: opt.GroupId, UserId: opt.UserId}, &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(""))}, nil
 			}},
 		}).Create(context.Background(), user)
@@ -155,29 +143,30 @@ func TestCreate(t *testing.T) {
 			t.Fatalf("Create() external name = %q, want %s", meta.GetExternalName(user), testUserID)
 		}
 
-		if diff := cmp.Diff(map[string]string{"devs": "m-devs", "ops": "m-ops"}, user.Status.AtProvider.Groups); diff != "" {
-			t.Fatalf("Create() groups mismatch (-want +got):\n%s", diff)
+		if user.Status.AtProvider.Groups != nil {
+			t.Fatalf("Create() should not mutate status groups, got %v", user.Status.AtProvider.Groups)
 		}
 
-		if len(createdMemberships) != 2 {
-			t.Fatalf("Create() memberships created = %d, want 2", len(createdMemberships))
+		if len(createdMemberships) != 0 {
+			t.Fatalf("Create() memberships created = %d, want 0", len(createdMemberships))
 		}
 	})
 
-	t.Run("password managed writes connection details", func(t *testing.T) {
+	t.Run("local user writes connection details", func(t *testing.T) {
 		t.Parallel()
 
 		scheme := runtime.NewScheme()
-		if err := corev1.AddToScheme(scheme); err != nil {
+
+		err := corev1.AddToScheme(scheme)
+		if err != nil {
 			t.Fatalf("AddToScheme(corev1) = %v", err)
 		}
 
 		kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "default"}, Data: map[string][]byte{"password": []byte("super-secret")}}).Build()
 		user := newUserWithSpec(v1alpha1.UserParameters{
-			Login:           testUserLogin,
-			Name:            "Alice",
-			Local:           ptr.To(true),
-			PasswordManaged: ptr.To(true),
+			Login: testUserLogin,
+			Name:  "Alice",
+			Local: ptr.To(true),
 			PasswordSecretRef: &xpv1.SecretKeySelector{Key: "password", SecretReference: xpv1.SecretReference{
 				Name:      "pwd",
 				Namespace: "default",
