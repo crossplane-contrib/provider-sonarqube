@@ -176,6 +176,27 @@ kubectl wait "provider.pkg.crossplane.io/${PACKAGE_NAME}" --for=condition=health
 echo_step "configuring in-cluster SonarQube and ClusterProviderConfig"
 KUBECTL="${KUBECTL}" "${projectdir}/cluster/local/sonarqube_setup.sh"
 
+echo_step "running e2e Go suite"
+e2e_pf_port="${E2E_SONARQUBE_PORT:-9000}"
+"${KUBECTL}" port-forward -n default service/sonarqube "${e2e_pf_port}:9000" >/dev/null 2>&1 &
+e2e_pf_pid=$!
+# Wait for the port-forward to bind.
+for _ in $(seq 1 30); do
+  if curl -sf -o /dev/null "http://localhost:${e2e_pf_port}/api/system/status"; then
+    break
+  fi
+  sleep 1
+done
+e2e_token="$("${KUBECTL}" get secret -n default sonarqube-credentials -o jsonpath='{.data.token}' | base64 -d)"
+e2e_status=0
+SONARQUBE_URL="http://localhost:${e2e_pf_port}/api" \
+SONARQUBE_TOKEN="${e2e_token}" \
+make -C "${projectdir}" e2e.test || e2e_status=$?
+kill "${e2e_pf_pid}" 2>/dev/null || true
+if [ "${e2e_status}" -ne 0 ]; then
+  echo_error "e2e Go suite failed (exit ${e2e_status})"
+fi
+
 echo_step "uninstalling ${PROJECT_NAME}"
 
 echo "${INSTALL_YAML}" | "${KUBECTL}" delete -f -

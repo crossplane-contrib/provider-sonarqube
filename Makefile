@@ -61,6 +61,15 @@ test-integration: $(KIND) $(KUBECTL) $(CROSSPLANE_CLI) $(HELM3)
 	@KIND_NODE_IMAGE_TAG=${KIND_NODE_IMAGE_TAG} $(ROOT_DIR)/cluster/local/integration_tests.sh || $(FAIL)
 	@$(OK) integration tests passed
 
+# Run the Go e2e suite against an already-provisioned cluster.
+# Expects SONARQUBE_URL and SONARQUBE_TOKEN to be exported by the caller;
+# cluster/local/integration_tests.sh sets these up around its invocation.
+E2E_TEST_TIMEOUT ?= 30m
+e2e.test:
+	@$(INFO) running e2e Go suite (-tags=e2e)
+	@go test -tags=e2e -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
+	@$(OK) e2e Go suite passed
+
 # Update the submodules, such as the common build scripts.
 submodules:
 	@git submodule sync
@@ -104,7 +113,7 @@ dev-clean: $(KIND) $(KUBECTL)
 	@$(INFO) Deleting kind cluster
 	@$(KIND) delete cluster --name=$(PROJECT_NAME)-dev
 
-.PHONY: submodules fallthrough test-integration run dev dev-clean
+.PHONY: submodules fallthrough test-integration e2e.run e2e.test run dev dev-clean
 
 # ====================================================================================
 # Special Targets
