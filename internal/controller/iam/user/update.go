@@ -19,7 +19,7 @@ package user
 import (
 	"context"
 	"fmt"
-	"maps"
+	"sync"
 
 	stderrors "errors"
 
@@ -39,7 +39,6 @@ func (c *external) Update(_ context.Context, managedResource resource.Managed) (
 	const updateErrorCapacity = 2
 
 	result := managed.ExternalUpdate{}
-	errs := make([]error, 0, updateErrorCapacity)
 
 	userResource, ok := managedResource.(*v1alpha1.User)
 	if !ok {
@@ -51,17 +50,32 @@ func (c *external) Update(_ context.Context, managedResource resource.Managed) (
 		return result, fmt.Errorf(errExternalNameNotSet, userResource.Name)
 	}
 
-	err := c.updateUserFields(userResource, externalName)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	updateWaitGroup := sync.WaitGroup{}
+	errorSlice := make([]error, 0, updateErrorCapacity)
+	errorSliceMutex := sync.Mutex{}
 
-	_, err = c.reconcileGroupMemberships(userResource, externalName)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	updateWaitGroup.Go(func() {
+		err := c.updateUserFields(userResource, externalName)
+		if err != nil {
+			errorSliceMutex.Lock()
 
-	return result, stderrors.Join(errs...)
+			errorSlice = append(errorSlice, err)
+			errorSliceMutex.Unlock()
+		}
+	})
+
+	updateWaitGroup.Go(func() {
+		err := c.reconcileGroupMemberships(userResource, externalName)
+		if err != nil {
+			errorSliceMutex.Lock()
+
+			errorSlice = append(errorSlice, err)
+			errorSliceMutex.Unlock()
+		}
+	})
+	updateWaitGroup.Wait()
+
+	return result, stderrors.Join(errorSlice...)
 }
 
 // updateUserFields updates the mutable fields of the User resource. It does not handle password or group membership updates.
@@ -76,51 +90,64 @@ func (c *external) updateUserFields(userResource *v1alpha1.User, externalName st
 	return nil
 }
 
-// reconcileGroupMemberships ensures that the User's group memberships in SonarQube match the desired state specified in the User resource. It calculates the necessary additions and removals of group memberships and performs the required API calls to reconcile the state. The User's observed group memberships are updated in the status after reconciliation.
-func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, externalName string) (map[string]string, error) {
+// reconcileGroupMemberships ensures that the User's group memberships in SonarQube match the desired state specified in the User resource. It calculates the necessary additions and removals of group memberships and performs the required API calls to reconcile the state.
+func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, externalName string) error {
 	if userResource.Spec.ForProvider.Groups == nil {
-		//nolint:nilnil // nil groups indicates "no-op" to callers.
-		return nil, nil
+		return nil
 	}
 
 	desiredGroups := desiredGroupIDs(userResource.Spec.ForProvider.Groups)
 	toAdd, toRemove := buildGroupsDiff(desiredGroups, userResource.Status.AtProvider.Groups)
 
-	updatedGroups := make(map[string]string, len(userResource.Status.AtProvider.Groups))
-	maps.Copy(updatedGroups, userResource.Status.AtProvider.Groups)
+	membershipsWaitGroup := sync.WaitGroup{}
+	membershipsWaitGroup.Add(len(toAdd) + len(toRemove))
+	errorSlice := make([]error, 0, len(toAdd)+len(toRemove))
+	errorSliceMutex := sync.Mutex{}
 
 	for _, groupID := range toAdd {
-		created, resp, err := c.groupsClient.CreateGroupMembership(ptr.To(iam.GenerateGroupCreateMembershipOptions(groupID, externalName))) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(resp)
+		go func(groupID string) {
+			defer membershipsWaitGroup.Done()
 
-		if err != nil {
-			return nil, errors.Wrapf(err, "cannot add User to Group %s", groupID)
-		}
+			created, resp, err := c.groupsClient.CreateGroupMembership(ptr.To(iam.GenerateGroupCreateMembershipOptions(groupID, externalName))) //nolint:bodyclose // closed via helpers.CloseBody
+			defer helpers.CloseBody(resp)
 
-		if created == nil || created.Id == "" {
-			return nil, fmt.Errorf("cannot add User to Group %s: create group membership returned empty membership ID", groupID)
-		}
+			if err != nil {
+				errorSliceMutex.Lock()
 
-		updatedGroups[groupID] = created.Id
+				errorSlice = append(errorSlice, errors.Wrapf(err, "cannot add User to Group %s", groupID))
+				errorSliceMutex.Unlock()
+
+				return
+			}
+
+			if created == nil || created.Id == "" {
+				errorSliceMutex.Lock()
+
+				errorSlice = append(errorSlice, fmt.Errorf("cannot add User to Group %s: create group membership returned empty membership ID", groupID))
+				errorSliceMutex.Unlock()
+			}
+		}(groupID)
 	}
 
 	for _, groupMembershipID := range toRemove {
-		resp, err := c.groupsClient.DeleteGroupMembership(groupMembershipID) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(resp)
+		go func(groupMembershipID string) {
+			defer membershipsWaitGroup.Done()
 
-		if err != nil {
-			return nil, errors.Wrapf(err, "cannot remove user membership %s", groupMembershipID)
-		}
+			resp, err := c.groupsClient.DeleteGroupMembership(groupMembershipID) //nolint:bodyclose // closed via helpers.CloseBody
+			helpers.CloseBody(resp)
+
+			if err != nil {
+				errorSliceMutex.Lock()
+
+				errorSlice = append(errorSlice, errors.Wrapf(err, "cannot remove user membership %s", groupMembershipID))
+				errorSliceMutex.Unlock()
+			}
+		}(groupMembershipID)
 	}
 
-	toRemoveSet := helpers.NewStringSetFromSlice(toRemove)
-	for groupID, membershipID := range updatedGroups {
-		if _, remove := toRemoveSet[membershipID]; remove {
-			delete(updatedGroups, groupID)
-		}
-	}
+	membershipsWaitGroup.Wait()
 
-	return updatedGroups, nil
+	return stderrors.Join(errorSlice...)
 }
 
 // desiredGroupIDs extracts the desired group IDs from the UserGroupsParameters. It filters out any nil or empty group IDs, returning a slice of valid group IDs that the user should be a member of.
