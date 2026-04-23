@@ -96,13 +96,11 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot add User to Group %s", groupID)
 		}
-
-		membershipID := ""
-		if created != nil {
-			membershipID = created.Id
+		if created == nil || created.Id == "" {
+			return nil, fmt.Errorf("cannot add User to Group %s: create group membership returned empty membership ID", groupID)
 		}
 
-		updatedGroups[groupID] = membershipID
+		updatedGroups[groupID] = created.Id
 	}
 
 	for _, groupMembershipID := range toRemove {
