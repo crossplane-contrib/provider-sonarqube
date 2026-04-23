@@ -118,7 +118,7 @@ func (c *external) getUserGroupsObservation(userID string) (map[string]string, e
 		options := iam.GenerateGroupSearchMembershipsOptions(nil, &userID, pagination)
 
 		foundMembership, resp, err := c.groupsClient.SearchGroupMemberships(&options) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(resp)
+		helpers.CloseBody(resp)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot fetch user groups")
