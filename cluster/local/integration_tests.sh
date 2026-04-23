@@ -173,6 +173,9 @@ echo_step "waiting for provider to be installed"
 
 kubectl wait "provider.pkg.crossplane.io/${PACKAGE_NAME}" --for=condition=healthy --timeout=180s
 
+echo_step "configuring in-cluster SonarQube and ClusterProviderConfig"
+KUBECTL="${KUBECTL}" "${projectdir}/cluster/local/sonarqube_setup.sh"
+
 echo_step "uninstalling ${PROJECT_NAME}"
 
 echo "${INSTALL_YAML}" | "${KUBECTL}" delete -f -

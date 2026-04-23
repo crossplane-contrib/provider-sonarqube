@@ -55,7 +55,18 @@ Before opening a pull request, run `make reviewable`. If your change affects beh
 
 ## E2E Testing Flow
 
-The integration flow is driven by `make test-integration` or `make e2e.run`. It creates a kind cluster, applies the provider CRDs, and runs `cluster/local/integration_tests.sh`.
+The integration flow is driven by `make test-integration` or `make e2e.run`. It creates a kind cluster, installs Crossplane and the provider, then bootstraps an in-cluster SonarQube instance via `cluster/local/sonarqube_setup.sh` (Deployment + Service in the `default` namespace, plus a `Secret` and a `ClusterProviderConfig` named `e2e` wired to it). Provider pods reach SonarQube at `http://sonarqube.default.svc.cluster.local:9000/api`.
+
+While the integration script is running you can inspect the in-cluster instance with:
+
+```shell
+kubectl logs deployment/sonarqube
+kubectl port-forward svc/sonarqube 9000:9000   # then browse http://localhost:9000
+```
+
+The setup script is idempotent and can be re-run against a live cluster. Cluster teardown (driven by the script's exit trap) destroys the SonarQube Pod along with everything else.
+
+For ad-hoc local exploration outside KIND, the standalone `make sonarqube.start` / `make sonarqube.stop` targets bring up SonarQube directly on the host via Docker or Podman.
 
 For controller development, `make dev` starts a local kind cluster and runs the provider against it. Use `make dev-clean` to remove that cluster when you are done.
 
