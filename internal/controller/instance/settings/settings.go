@@ -178,6 +178,8 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	observation := instance.GenerateSettingsObservation(sonarSettings)
 	settings.Status.AtProvider = observation
 
+	settings.SetConditions(xpv1.Available())
+
 	return managed.ExternalObservation{
 		ResourceExists:   true,
 		ResourceUpToDate: instance.AreSettingsUpToDate(settings.Spec.ForProvider, observation),
