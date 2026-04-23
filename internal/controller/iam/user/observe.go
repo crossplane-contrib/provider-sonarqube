@@ -124,6 +124,10 @@ func (c *external) getUserGroupsObservation(userID string) (map[string]string, e
 			return nil, errors.Wrap(err, "cannot fetch user groups")
 		}
 
+		if foundMembership == nil || foundMembership.GroupMemberships == nil {
+			break
+		}
+
 		allGroups = append(allGroups, foundMembership.GroupMemberships...)
 
 		if pagination.PageIndex*pagination.PageSize >= foundMembership.Page.Total {
