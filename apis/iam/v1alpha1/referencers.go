@@ -69,7 +69,7 @@ func (user *User) ResolveReferences(ctx context.Context, client client.Reader) e
 			return errors.Errorf("unable to resolve spec.forProvider.groups[%d]: resolved value is empty", groupIdx)
 		}
 
-		group := (*user.Spec.ForProvider.Groups)[groupIdx]
+		group := userGroup
 		group.GroupId = ptr.To(groupResponse.ResolvedValue)
 		group.GroupIdRef = groupResponse.ResolvedReference
 		(*user.Spec.ForProvider.Groups)[groupIdx] = group
