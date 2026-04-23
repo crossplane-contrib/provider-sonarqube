@@ -105,7 +105,7 @@ func (c *external) passwordFromSecret(ctx context.Context, userResource *v1alpha
 	return password, nil
 }
 
-// getUserGroupsObservation retrieves the groups that the user belongs to from the SonarQube API. It handles pagination to ensure all groups are retrieved, and returns a map of group IDs to group names for efficient lookup.
+// getUserGroupsObservation retrieves the groups that the user belongs to from the SonarQube API. It handles pagination to ensure all groups are retrieved, and returns a map of group IDs to membership IDs for efficient lookup.
 func (c *external) getUserGroupsObservation(userID string) (map[string]string, error) {
 	var allGroups []sonar.GroupMembership
 
