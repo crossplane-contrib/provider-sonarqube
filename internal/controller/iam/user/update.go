@@ -134,7 +134,7 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 			defer membershipsWaitGroup.Done()
 
 			resp, err := c.groupsClient.DeleteGroupMembership(groupMembershipID) //nolint:bodyclose // closed via helpers.CloseBody
-			helpers.CloseBody(resp)
+			defer helpers.CloseBody(resp)
 
 			if err != nil {
 				errorSliceMutex.Lock()
