@@ -19,13 +19,11 @@ limitations under the License.
 package instance_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	instancev1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -38,13 +36,6 @@ import (
 // Not run in parallel: concurrent global-scope Settings tests would write
 // to the same SonarQube instance and race each other. One global settings
 // test per run is the safe upper bound.
-//
-// NOTE: this test asserts on Synced=True only — the Settings controller
-// currently does not call SetConditions(xpv1.Available()), so Ready stays
-// Unknown forever. Once that controller bug is fixed, switch the wait to
-// CreateAndWaitForReady and add e2e.AssertReady. See provider source at
-// internal/controller/instance/settings/settings.go (only Creating() and
-// Deleting() are set today; Available() is missing).
 func TestSettingsGlobalScalar(t *testing.T) {
 	f := e2e.New(t)
 	const (
@@ -70,25 +61,8 @@ func TestSettingsGlobalScalar(t *testing.T) {
 		},
 	}
 
-	// Settings never reaches Ready=True today (see TODO above), so create
-	// the resource and poll for Synced=True instead of using
-	// CreateAndWaitForReady.
-	f.Apply(t, settings)
-	t.Cleanup(func() {
-		f.Delete(t, settings)
-		_ = f.WaitForDeletion(context.Background(), settings, e2e.DefaultDeleteTimeout)
-	})
-
-	deadline := time.Now().Add(2 * time.Minute)
-	for time.Now().Before(deadline) {
-		if err := f.Kube.Get(context.Background(), kubeKey(settings), settings); err != nil {
-			t.Fatalf("get %s: %v", settings.Name, err)
-		}
-		if settings.GetCondition(xpv1.TypeSynced).Status == corev1.ConditionTrue {
-			break
-		}
-		time.Sleep(2 * time.Second)
-	}
+	f.CreateAndWaitForReady(t, settings, 2*time.Minute)
+	e2e.AssertReady(t, settings)
 	e2e.AssertSynced(t, settings)
 
 	got, err := f.FetchSettingValue("", settingKey)

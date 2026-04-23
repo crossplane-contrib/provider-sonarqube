@@ -142,3 +142,55 @@ func (f *Framework) FetchSettingValue(component, key string) (*sonar.SettingValu
 	}
 	return nil, nil //nolint:nilnil // intentional
 }
+
+// FetchUser returns the SonarQube user with the given ID, or (nil, nil)
+// if no such user exists. The provider stores the user ID in the
+// external-name annotation, so the typical lookup is
+// f.FetchUser(meta.GetExternalName(user)).
+func (f *Framework) FetchUser(id string) (*sonar.UserV2, error) {
+	u, resp, err := f.Sonar.V2.UsersManagement.Fetch(id)
+	defer helpers.CloseBody(resp)
+	if common.IsResponseNotFound(resp) {
+		return nil, nil //nolint:nilnil // intentional
+	}
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+// FindPermissionsTemplate returns the permissions template whose name
+// exactly matches name, or (nil, nil) if no such template exists.
+func (f *Framework) FindPermissionsTemplate(name string) (*sonar.PermissionTemplate, error) {
+	res, resp, err := f.Sonar.Permissions.SearchTemplates(&sonar.PermissionsSearchTemplatesOptions{Query: name})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.PermissionTemplates {
+		if res.PermissionTemplates[i].Name == name {
+			return &res.PermissionTemplates[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional
+}
+
+// GroupPermissions returns the global permissions assigned to the named
+// group. Returns an empty (non-nil) slice when SonarQube knows the group
+// but it has no global permissions, and an error when the group is unknown
+// or the API call fails.
+func (f *Framework) GroupPermissions(groupName string) ([]string, error) {
+	res, resp, err := f.Sonar.Permissions.Groups(&sonar.PermissionsGroupsOptions{Query: groupName})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.Groups {
+		if res.Groups[i].Name == groupName {
+			perms := make([]string, len(res.Groups[i].Permissions))
+			copy(perms, res.Groups[i].Permissions)
+			return perms, nil
+		}
+	}
+	return []string{}, nil
+}
