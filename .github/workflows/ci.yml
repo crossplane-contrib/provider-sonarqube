@@ -183,6 +183,7 @@ jobs:
     needs: [detect-noop, lint, unit-tests]
     if: needs.detect-noop.outputs.noop != 'true'
     timeout-minutes: 30
+    environment: pr-validation
 
     env:
       # Skip the integration script's own kind teardown trap so the
