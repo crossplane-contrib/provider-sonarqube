@@ -178,6 +178,100 @@ jobs:
           flags: unittests
           files: _output/tests/linux_amd64/coverage.txt
 
+  e2e-tests:
+    runs-on: ubuntu-24.04
+    needs: [detect-noop, lint, unit-tests]
+    if: needs.detect-noop.outputs.noop != 'true'
+    timeout-minutes: 30
+
+    env:
+      # Skip the integration script's own kind teardown trap so the
+      # collect-diagnostics step can read logs out of the cluster on
+      # failure. The runner is ephemeral, so leaving the cluster running
+      # is harmless; the explicit teardown step below cleans it up.
+      skipcleanup: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Fetch History
+        run: git fetch --prune --unshallow
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Find the Go Build Cache
+        id: go
+        run: echo "cachedir=$(make go.cachedir)" >> $GITHUB_ENV
+
+      - name: Cache the Go Build Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.cachedir }}
+          key: ${{ runner.os }}-build-e2e-tests-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-build-e2e-tests-
+
+      - name: Cache Go Dependencies
+        uses: actions/cache@v5
+        with:
+          path: .work/pkg
+          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-pkg-
+
+      - name: Download Go Modules
+        run: make modules.download modules.check
+
+      - name: Pre-pull SonarQube image
+        # Pull the (~1.4 GB) SonarQube community image once on the host so
+        # KIND's `kind load docker-image` (run later by sonarqube_setup.sh
+        # via the in-cluster Pod) doesn't re-pull it during the slow path.
+        run: docker pull docker.io/library/sonarqube:community
+
+      - name: Build provider artifacts
+        run: make build
+        env:
+          BUILD_ARGS: "--load"
+
+      - name: Run e2e suite
+        run: make e2e.run
+
+      - name: Collect diagnostics on failure
+        if: failure()
+        run: |
+          set +e
+          mkdir -p _output/e2e-logs
+          for cluster in $(kind get clusters 2>/dev/null); do
+            ctx="kind-$cluster"
+            echo "--- $cluster ---"
+            kubectl --context "$ctx" get all -A > "_output/e2e-logs/${cluster}-get-all.txt" 2>&1
+            kubectl --context "$ctx" describe pods -A > "_output/e2e-logs/${cluster}-describe-pods.txt" 2>&1
+            kubectl --context "$ctx" describe managed > "_output/e2e-logs/${cluster}-describe-managed.txt" 2>&1
+            kubectl --context "$ctx" logs -n default deployment/sonarqube --tail=-1 > "_output/e2e-logs/${cluster}-sonarqube.log" 2>&1
+            kubectl --context "$ctx" logs -n crossplane-system -l pkg.crossplane.io/provider=provider-sonarqube --tail=-1 > "_output/e2e-logs/${cluster}-provider.log" 2>&1
+            kubectl --context "$ctx" logs -n crossplane-system deployment/crossplane --tail=-1 > "_output/e2e-logs/${cluster}-crossplane.log" 2>&1
+          done
+          ls -la _output/e2e-logs/
+
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-logs
+          path: _output/e2e-logs/
+          if-no-files-found: ignore
+
+      - name: Tear down kind clusters
+        if: always()
+        run: |
+          for cluster in $(kind get clusters 2>/dev/null); do
+            kind delete cluster --name "$cluster" || true
+          done
+
   publish-artifacts:
     runs-on: ubuntu-24.04
     needs: detect-noop

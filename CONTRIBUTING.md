@@ -70,11 +70,14 @@ For ad-hoc local exploration outside KIND, the standalone `make sonarqube.start`
 
 For controller development, `make dev` starts a local kind cluster and runs the provider against it. Use `make dev-clean` to remove that cluster when you are done.
 
+`make e2e.run` also runs in CI on every pull request (`e2e-tests` job in `.github/workflows/ci.yml`). PRs that change the provider runtime, the integration script, or anything under `internal/test/e2e/` should be exercised locally with `make e2e.run` before pushing — the CI run is ~15 minutes on a warm cache and the local cycle is faster to iterate on.
+
 ## CI
 
-The CI workflow currently runs these high-level checks:
+The CI workflow runs these high-level checks on every pull request:
 
 * linting
 * a diff check to keep generated artifacts in sync
 * unit tests with coverage publication
+* the e2e suite via `make e2e.run` (logs from a failing run are uploaded as the `e2e-logs` artifact)
 * artifact publishing for tagged and branch builds
