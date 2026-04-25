@@ -227,12 +227,6 @@ jobs:
       - name: Download Go Modules
         run: make modules.download modules.check
 
-      - name: Pre-pull SonarQube image
-        # Pull the (~1.4 GB) SonarQube community image once on the host so
-        # KIND's `kind load docker-image` (run later by sonarqube_setup.sh
-        # via the in-cluster Pod) doesn't re-pull it during the slow path.
-        run: docker pull docker.io/library/sonarqube:community
-
       - name: Build provider artifacts
         run: make build
         env:

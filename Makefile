@@ -26,6 +26,14 @@ GOLANGCILINT_VERSION = 2.10.1
 # ====================================================================================
 # Setup Kubernetes tools
 
+# Use Helm 3. Without this the k8s_tools machinery defaults to Helm 2 and
+# cluster/local/integration_tests.sh fails on `helm repo add`/`helm install`.
+USE_HELM := true
+
+# Default kindest/node tag. KIND v0.23.0 (the submodule's pinned version)
+# supports kindest/node tags up to v1.30.0. Override via env if needed.
+KIND_NODE_IMAGE_TAG ?= v1.30.0
+
 -include build/makelib/k8s_tools.mk
 
 # ====================================================================================
@@ -44,6 +52,25 @@ XPKG_REG_ORGS_NO_PROMOTE ?= xpkg.upbound.io/crossplane ghcr.io/crossplane-contri
 XPKGS = provider-sonarqube
 -include build/makelib/xpkg.mk
 
+# ====================================================================================
+# Setup Local Development & E2E
+
+# Pin the kind cluster name used by both controlplane.up and
+# local.xpkg.deploy.provider.* so cluster/local/integration_tests.sh and
+# the build submodule agree on which cluster to deploy into. The default
+# in the submodule is "local-dev"; we want a build-id-tagged name so
+# parallel CI runs do not collide.
+KIND_CLUSTER_NAME ?= $(BUILD_REGISTRY)-inttests
+
+# Pin the Crossplane chart version. The submodule's controlplane.up runs
+# `helm install ... --version $(CROSSPLANE_VERSION)`, which fails with
+# "flag needs an argument" when CROSSPLANE_VERSION is empty. Pinning here
+# also keeps e2e runs reproducible.
+CROSSPLANE_VERSION ?= 2.2.1
+
+-include build/makelib/controlplane.mk
+-include build/makelib/local.xpkg.mk
+
 # NOTE(hasheddan): we force image building to happen prior to xpkg build so that
 # we ensure image is present in daemon.
 xpkg.build.provider-sonarqube: do.build.images
@@ -56,9 +83,9 @@ fallthrough: submodules
 e2e.run: test-integration
 
 # Run integration tests.
-test-integration: $(KIND) $(KUBECTL) $(CROSSPLANE_CLI) $(HELM3)
+test-integration: $(KIND) $(KUBECTL) $(CROSSPLANE_CLI) $(HELM)
 	@$(INFO) running integration tests using kind $(KIND_VERSION)
-	@KIND_NODE_IMAGE_TAG=${KIND_NODE_IMAGE_TAG} $(ROOT_DIR)/cluster/local/integration_tests.sh || $(FAIL)
+	@KIND_NODE_IMAGE_TAG=$(KIND_NODE_IMAGE_TAG) $(ROOT_DIR)/cluster/local/integration_tests.sh || $(FAIL)
 	@$(OK) integration tests passed
 
 # Run the Go e2e suite against an already-provisioned cluster.
@@ -66,7 +93,7 @@ test-integration: $(KIND) $(KUBECTL) $(CROSSPLANE_CLI) $(HELM3)
 # cluster/local/integration_tests.sh sets these up around its invocation.
 E2E_TEST_TIMEOUT ?= 30m
 e2e.test:
-	@$(INFO) running e2e Go suite (-tags=e2e)
+	@$(INFO) running e2e Go suite with build tag e2e
 	@go test -tags=e2e -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
 	@$(OK) e2e Go suite passed
 

@@ -3,175 +3,107 @@ set -e
 
 # setting up colors
 BLU='\033[0;34m'
-YLW='\033[0;33m'
 GRN='\033[0;32m'
 RED='\033[0;31m'
 NOC='\033[0m' # No Color
-echo_info(){
-    printf "\n${BLU}%s${NOC}" "$1"
-}
 echo_step(){
     printf "\n${BLU}>>>>>>> %s${NOC}\n" "$1"
 }
-echo_sub_step(){
-    printf "\n${BLU}>>> %s${NOC}\n" "$1"
-}
-
-echo_step_completed(){
-    printf "${GRN} [✔]${NOC}"
-}
-
 echo_success(){
     printf "\n${GRN}%s${NOC}\n" "$1"
 }
-echo_warn(){
-    printf "\n${YLW}%s${NOC}" "$1"
-}
 echo_error(){
-    printf "\n${RED}%s${NOC}" "$1"
+    printf "\n${RED}%s${NOC}\n" "$1"
     exit 1
 }
 
-
-# The name of your provider. Many provider Makefiles override this value.
 PACKAGE_NAME="provider-sonarqube"
-
-
-# ------------------------------
 projectdir="$( cd "$( dirname "${BASH_SOURCE[0]}")"/../.. && pwd )"
 
-# get the build environment variables from the special build.vars target in the main makefile
-eval $(make --no-print-directory -C ${projectdir} build.vars)
+# Pull tool paths and project metadata from the build submodule.
+eval "$(make --no-print-directory -C "${projectdir}" build.vars)"
 
-# ------------------------------
+# build/makelib/local.xpkg.mk and controlplane.mk default to KIND_CLUSTER_NAME=local-dev.
+# Use a build-id-tagged name so concurrent runs (CI parallelism) do not collide.
+KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-${BUILD_REGISTRY:-build}-inttests}"
+export KIND_CLUSTER_NAME
 
-SAFEHOSTARCH="${SAFEHOSTARCH:-amd64}"
-BUILD_IMAGE="${BUILD_REGISTRY}/${PROJECT_NAME}-${SAFEHOSTARCH}"
-PACKAGE_IMAGE="crossplane.io/inttests/${PROJECT_NAME}:${VERSION}"
-CONTROLLER_IMAGE="${BUILD_REGISTRY}/${PROJECT_NAME}-controller-${SAFEHOSTARCH}"
-
-version_tag="$(cat ${projectdir}/_output/version)"
-# tag as latest version to load into kind cluster
-PACKAGE_CONTROLLER_IMAGE="${DOCKER_REGISTRY}/${PROJECT_NAME}-controller:${VERSION}"
-K8S_CLUSTER="${K8S_CLUSTER:-${BUILD_REGISTRY}-inttests}"
-
-CROSSPLANE_NAMESPACE="crossplane-system"
-
-# cleanup on exit
-if [ "$skipcleanup" != true ]; then
-  function cleanup {
-    echo_step "Cleaning up..."
-    export KUBECONFIG=
-    "${KIND}" delete cluster --name="${K8S_CLUSTER}"
+# cleanup on exit unless skipcleanup is set.
+if [ "${skipcleanup}" != "true" ]; then
+  cleanup() {
+    echo_step "cleaning up controlplane"
+    "${KIND}" delete cluster --name="${KIND_CLUSTER_NAME}" || true
   }
-
   trap cleanup EXIT
 fi
 
-# setup package cache
-echo_step "setting up local package cache"
-CACHE_PATH="${projectdir}/.work/inttest-package-cache"
-mkdir -p "${CACHE_PATH}"
-echo "created cache dir at ${CACHE_PATH}"
-docker tag "${BUILD_IMAGE}" "${PACKAGE_IMAGE}"
-"${UP}" xpkg xp-extract --from-daemon "${PACKAGE_IMAGE}" -o "${CACHE_PATH}/${PACKAGE_NAME}.gz" && chmod 644 "${CACHE_PATH}/${PACKAGE_NAME}.gz"
+if [ ! -f "${OUTPUT_DIR}/xpkg/${PLATFORM}/${PACKAGE_NAME}-${VERSION}.xpkg" ]; then
+    echo_error "xpkg not built — run 'make build' first"
+fi
 
-# create kind cluster with extra mounts
-KIND_NODE_IMAGE="kindest/node:${KIND_NODE_IMAGE_TAG}"
-echo_step "creating k8s cluster using kind ${KIND_VERSION} and node image ${KIND_NODE_IMAGE}"
-KIND_CONFIG="$( cat <<EOF
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-  extraMounts:
-  - hostPath: "${CACHE_PATH}/"
-    containerPath: /cache
-EOF
-)"
-echo "${KIND_CONFIG}" | "${KIND}" create cluster --name="${K8S_CLUSTER}" --wait=5m --image="${KIND_NODE_IMAGE}" --config=-
+echo_step "creating kind controlplane and installing crossplane"
+make -C "${projectdir}" controlplane.up
 
-# tag controller image and load it into kind cluster
-docker tag "${CONTROLLER_IMAGE}" "${PACKAGE_CONTROLLER_IMAGE}"
-"${KIND}" load docker-image "${PACKAGE_CONTROLLER_IMAGE}" --name="${K8S_CLUSTER}"
+echo_step "loading SonarQube image into kind cluster"
+docker pull docker.io/library/sonarqube:community
+"${KIND}" load docker-image docker.io/library/sonarqube:community --name="${KIND_CLUSTER_NAME}"
 
-echo_step "create crossplane-system namespace"
-"${KUBECTL}" create ns crossplane-system
+echo_step "deploying ${PACKAGE_NAME} provider package"
+# local.xpkg.deploy.provider.<name> patches Crossplane with a dev sidecar,
+# extracts each xpkg into the cache under the cache key Crossplane >=2.2
+# expects (xpkg.crossplane.internal/dev/<name>@<digest>), kubectl-cps the
+# cache into the sidecar, loads the controller image into kind, and
+# creates a Provider + DeploymentRuntimeConfig wired to the local image.
+# See build/makelib/local.xpkg.mk.
+make -C "${projectdir}" "local.xpkg.deploy.provider.${PACKAGE_NAME}"
 
-echo_step "create persistent volume and claim for mounting package-cache"
-PV_YAML="$( cat <<EOF
-apiVersion: v1
-kind: PersistentVolume
+echo_step "granting provider service account permission to watch CRDs"
+# The package declares the `safe-start` capability, which makes each
+# controller wait for its CRD before starting. Crossplane's auto-generated
+# system ClusterRole for the provider does not include CRD list/watch, so
+# the safe-start gate would otherwise crash-loop the provider with a
+# Forbidden error from controller-runtime's CRD informer. Bind the
+# auto-created provider ServiceAccount to a small extra ClusterRole that
+# closes that gap.
+echo "waiting for provider service account to be created"
+provider_sa=""
+for _ in $(seq 1 60); do
+    provider_sa="$("${KUBECTL}" get sa -n crossplane-system -o name 2>/dev/null | grep "${PACKAGE_NAME}" | head -1 | sed 's|^serviceaccount/||')"
+    if [ -n "${provider_sa}" ]; then
+        break
+    fi
+    sleep 2
+done
+if [ -z "${provider_sa}" ]; then
+    echo_error "provider service account did not appear within 120s"
+fi
+echo "binding ServiceAccount ${provider_sa} to CRD watch role"
+"${KUBECTL}" apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: package-cache
-  labels:
-    type: local
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 5Mi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "/cache"
-EOF
-)"
-echo "${PV_YAML}" | "${KUBECTL}" create -f -
-
-PVC_YAML="$( cat <<EOF
-apiVersion: v1
-kind: PersistentVolumeClaim
+  name: ${PACKAGE_NAME}-crd-watcher
+rules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
-  name: package-cache
-  namespace: crossplane-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeName: package-cache
-  storageClassName: manual
-  resources:
-    requests:
-      storage: 1Mi
+  name: ${PACKAGE_NAME}-crd-watcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ${PACKAGE_NAME}-crd-watcher
+subjects:
+  - kind: ServiceAccount
+    name: ${provider_sa}
+    namespace: crossplane-system
 EOF
-)"
-echo "${PVC_YAML}" | "${KUBECTL}" create -f -
 
-# install crossplane from stable channel
-echo_step "installing crossplane from stable channel"
-"${HELM3}" repo add crossplane-stable https://charts.crossplane.io/stable/
-chart_version="$("${HELM3}" search repo crossplane-stable/crossplane | awk 'FNR == 2 {print $2}')"
-echo_info "using crossplane version ${chart_version}"
-echo
-# we replace empty dir with our PVC so that the /cache dir in the kind node
-# container is exposed to the crossplane pod
-"${HELM3}" install crossplane --namespace crossplane-system crossplane-stable/crossplane --version ${chart_version} --wait --set packageCache.pvc=package-cache
-
-# ----------- integration tests
-echo_step "--- INTEGRATION TESTS ---"
-
-# install package
-echo_step "installing ${PROJECT_NAME} into \"${CROSSPLANE_NAMESPACE}\" namespace"
-
-INSTALL_YAML="$( cat <<EOF
-apiVersion: pkg.crossplane.io/v1
-kind: Provider
-metadata:
-  name: "${PACKAGE_NAME}"
-spec:
-  package: "${PACKAGE_NAME}"
-  packagePullPolicy: Never
-EOF
-)"
-
-echo "${INSTALL_YAML}" | "${KUBECTL}" apply -f -
-
-# printing the cache dir contents can be useful for troubleshooting failures
-echo_step "check kind node cache dir contents"
-docker exec "${K8S_CLUSTER}-control-plane" ls -la /cache
-
-echo_step "waiting for provider to be installed"
-
-kubectl wait "provider.pkg.crossplane.io/${PACKAGE_NAME}" --for=condition=healthy --timeout=180s
+echo_step "waiting for provider to become healthy"
+"${KUBECTL}" wait "provider.pkg.crossplane.io/${PACKAGE_NAME}" --for=condition=healthy --timeout=300s
 
 echo_step "configuring in-cluster SonarQube and ClusterProviderConfig"
 KUBECTL="${KUBECTL}" "${projectdir}/cluster/local/sonarqube_setup.sh"
@@ -196,22 +128,5 @@ kill "${e2e_pf_pid}" 2>/dev/null || true
 if [ "${e2e_status}" -ne 0 ]; then
   echo_error "e2e Go suite failed (exit ${e2e_status})"
 fi
-
-echo_step "uninstalling ${PROJECT_NAME}"
-
-echo "${INSTALL_YAML}" | "${KUBECTL}" delete -f -
-
-# check pods deleted
-timeout=60
-current=0
-step=3
-while [[ $(kubectl get providerrevision.pkg.crossplane.io -o name | wc -l) != "0" ]]; do
-  echo "waiting for provider to be deleted for another $step seconds"
-  current=$current+$step
-  if ! [[ $timeout > $current ]]; then
-    echo_error "timeout of ${timeout}s has been reached"
-  fi
-  sleep $step;
-done
 
 echo_success "Integration tests succeeded!"
