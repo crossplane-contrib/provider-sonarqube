@@ -403,7 +403,7 @@ func GeneratePermissionsTemplateUserObservation(user *sonar.TemplateUser) *v1alp
 // GeneratePermissionsTemplateAddGroupPermissionOptions generates the options
 // for adding a group permission to a PermissionsTemplate based on the provided
 // template ID, group name and permission.
-func GeneratePermissionsTemplateAddGroupPermissionOptions(templateID string, groupName string, permission string) *sonar.PermissionsAddGroupToTemplateOptions {
+func GeneratePermissionsTemplateAddGroupPermissionOptions(templateID, groupName, permission string) *sonar.PermissionsAddGroupToTemplateOptions {
 	return &sonar.PermissionsAddGroupToTemplateOptions{
 		TemplateID: templateID,
 		GroupName:  groupName,
@@ -414,7 +414,7 @@ func GeneratePermissionsTemplateAddGroupPermissionOptions(templateID string, gro
 // GeneratePermissionsTemplateRemoveGroupPermissionOptions generates the options
 // for removing a group permission from a PermissionsTemplate based on the
 // provided template ID, group name and permission.
-func GeneratePermissionsTemplateRemoveGroupPermissionOptions(templateID string, groupName string, permission string) *sonar.PermissionsRemoveGroupFromTemplateOptions {
+func GeneratePermissionsTemplateRemoveGroupPermissionOptions(templateID, groupName, permission string) *sonar.PermissionsRemoveGroupFromTemplateOptions {
 	return &sonar.PermissionsRemoveGroupFromTemplateOptions{
 		TemplateID: templateID,
 		GroupName:  groupName,
@@ -425,7 +425,7 @@ func GeneratePermissionsTemplateRemoveGroupPermissionOptions(templateID string, 
 // GeneratePermissionsTemplateAddUserPermissionOptions generates the options for
 // adding a user permission to a PermissionsTemplate based on the provided
 // template ID, user login and permission.
-func GeneratePermissionsTemplateAddUserPermissionOptions(templateID string, userLogin string, permission string) *sonar.PermissionsAddUserToTemplateOptions {
+func GeneratePermissionsTemplateAddUserPermissionOptions(templateID, userLogin, permission string) *sonar.PermissionsAddUserToTemplateOptions {
 	return &sonar.PermissionsAddUserToTemplateOptions{
 		TemplateID: templateID,
 		Login:      userLogin,
@@ -436,7 +436,7 @@ func GeneratePermissionsTemplateAddUserPermissionOptions(templateID string, user
 // GeneratePermissionsTemplateRemoveUserPermissionOptions generates the options
 // for removing a user permission from a PermissionsTemplate based on the
 // provided template ID, user login and permission.
-func GeneratePermissionsTemplateRemoveUserPermissionOptions(templateID string, userLogin string, permission string) *sonar.PermissionsRemoveUserFromTemplateOptions {
+func GeneratePermissionsTemplateRemoveUserPermissionOptions(templateID, userLogin, permission string) *sonar.PermissionsRemoveUserFromTemplateOptions {
 	return &sonar.PermissionsRemoveUserFromTemplateOptions{
 		TemplateID: templateID,
 		Login:      userLogin,
@@ -444,14 +444,14 @@ func GeneratePermissionsTemplateRemoveUserPermissionOptions(templateID string, u
 	}
 }
 
-func GeneratePermissionsTemplateAddCreatorPermissionOptions(templateID string, permission string) *sonar.PermissionsAddProjectCreatorToTemplateOptions {
+func GeneratePermissionsTemplateAddCreatorPermissionOptions(templateID, permission string) *sonar.PermissionsAddProjectCreatorToTemplateOptions {
 	return &sonar.PermissionsAddProjectCreatorToTemplateOptions{
 		TemplateID: templateID,
 		Permission: permission,
 	}
 }
 
-func GeneratePermissionsTemplateRemoveCreatorPermissionOptions(templateID string, permission string) *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions {
+func GeneratePermissionsTemplateRemoveCreatorPermissionOptions(templateID, permission string) *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions {
 	return &sonar.PermissionsRemoveProjectCreatorFromTemplateOptions{
 		TemplateID: templateID,
 		Permission: permission,

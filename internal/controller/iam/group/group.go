@@ -367,7 +367,7 @@ func (c *external) removeGroupPermissions(groupName string, permissions []string
 
 // computePermissionsDelta computes the permissions to add and remove to
 // make the observed permissions match the desired permissions.
-func computePermissionsDelta(specPermissions *[]string, observedPermissions []string) (permissionsToAdd []string, permissionsToRemove []string) {
+func computePermissionsDelta(specPermissions *[]string, observedPermissions []string) (permissionsToAdd, permissionsToRemove []string) {
 	if specPermissions == nil {
 		return nil, nil
 	}

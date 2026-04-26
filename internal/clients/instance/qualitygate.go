@@ -225,7 +225,7 @@ func GenerateQualityGateGetByProjectOptions(projectKey string) *sonar.Qualitygat
 
 // GenerateQualityGateSelectOptions generates the options for selecting a
 // SonarQube Quality Gate based on the provided quality gate name.
-func GenerateQualityGateSelectOptions(projectKey string, qualityGateName string) *sonar.QualitygatesSelectOptions {
+func GenerateQualityGateSelectOptions(projectKey, qualityGateName string) *sonar.QualitygatesSelectOptions {
 	return &sonar.QualitygatesSelectOptions{
 		ProjectKey: projectKey,
 		GateName:   qualityGateName,

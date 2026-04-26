@@ -55,7 +55,7 @@ func GenerateProjectBranchesListOptions(projectKey string) *sonar.ProjectBranche
 // GenerateProjectBranchesDeleteOptions generates the options for deleting a
 // branch of a SonarQube Project based on the provided project key
 // and branch key.
-func GenerateProjectBranchesDeleteOptions(projectKey string, branchKey string) *sonar.ProjectBranchesDeleteOptions {
+func GenerateProjectBranchesDeleteOptions(projectKey, branchKey string) *sonar.ProjectBranchesDeleteOptions {
 	return &sonar.ProjectBranchesDeleteOptions{
 		Project: projectKey,
 		Branch:  branchKey,
@@ -113,7 +113,7 @@ func IsProjectMainBranchUpToDate(observedBranches map[string]v1alpha1.ProjectBra
 // GenerateProjectBranchesSetMainOptions generates the options for setting
 // the main branch of a SonarQube Project based on the provided
 // project key and main branch name.
-func GenerateProjectBranchesSetMainOptions(projectKey string, mainBranchName string) *sonar.ProjectBranchesSetMainOptions {
+func GenerateProjectBranchesSetMainOptions(projectKey, mainBranchName string) *sonar.ProjectBranchesSetMainOptions {
 	return &sonar.ProjectBranchesSetMainOptions{
 		Project: projectKey,
 		Branch:  mainBranchName,

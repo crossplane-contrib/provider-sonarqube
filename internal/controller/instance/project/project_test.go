@@ -53,7 +53,7 @@ func mockHTTPResponse() *http.Response {
 // checkError is a helper to compare errors.
 // If wantSubstr is not empty, it checks that the actual error message contains
 // wantSubstr.
-func checkError(t *testing.T, method string, wantErr error, gotErr error) {
+func checkError(t *testing.T, method string, wantErr, gotErr error) {
 	t.Helper()
 
 	if wantErr == nil && gotErr == nil {

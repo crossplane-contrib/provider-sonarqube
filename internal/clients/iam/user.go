@@ -94,7 +94,7 @@ func IsUserUpToDate(spec *v1alpha1.UserParameters, observation *v1alpha1.UserObs
 
 // AreUserScmAccountsUpToDate checks if the User's SCM accounts are up to date
 // with the SonarQube API response.
-func AreUserScmAccountsUpToDate(spec *[]string, observation *[]string) bool {
+func AreUserScmAccountsUpToDate(spec, observation *[]string) bool {
 	if spec == nil {
 		return true
 	}

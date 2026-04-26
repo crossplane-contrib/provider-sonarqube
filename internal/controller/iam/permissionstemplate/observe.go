@@ -154,7 +154,7 @@ func (c *external) observeTemplatePermissions(templateID string) ([]v1alpha1.Per
 // (preferred) or by name.
 // ID lookup scans paginated templates without a query because SonarQube
 // query filtering is name-oriented.
-func (c *external) observePermissionsTemplate(templateID *string, templateName *string) (sonar.PermissionTemplate, bool, error) {
+func (c *external) observePermissionsTemplate(templateID, templateName *string) (sonar.PermissionTemplate, bool, error) {
 	if templateID == nil && templateName == nil {
 		return sonar.PermissionTemplate{}, false, pkgerrors.New("either id or name must be provided to search for PermissionsTemplate")
 	}
@@ -207,7 +207,7 @@ func (c *external) searchPermissionsTemplate(query string, match func(template s
 }
 
 // getTemplateSearchString chooses the best search key for template lookup.
-func getTemplateSearchString(templateID *string, templateName *string) (string, error) {
+func getTemplateSearchString(templateID, templateName *string) (string, error) {
 	if templateID == nil && templateName == nil {
 		return "", pkgerrors.New("either id or name must be provided to search for PermissionsTemplate")
 	}
@@ -221,7 +221,7 @@ func getTemplateSearchString(templateID *string, templateName *string) (string, 
 
 // findMatchingTemplate returns the first template matching the
 // provided id or name.
-func findMatchingTemplate(templates []sonar.PermissionTemplate, defaultTemplatesIDs map[string]struct{}, templateID *string, templateName *string) (sonar.PermissionTemplate, bool, bool) {
+func findMatchingTemplate(templates []sonar.PermissionTemplate, defaultTemplatesIDs map[string]struct{}, templateID, templateName *string) (sonar.PermissionTemplate, bool, bool) {
 	for _, template := range templates {
 		if (templateID != nil && template.ID != *templateID) || (templateName != nil && template.Name != *templateName) {
 			continue

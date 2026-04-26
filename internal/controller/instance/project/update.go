@@ -29,7 +29,7 @@ import (
 
 // updateProjectConcurrently launches all project update operations
 // concurrently and collects errors.
-func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectKey string, projectId string) []error {
+func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectKey, projectId string) []error {
 	waitGr := sync.WaitGroup{}
 	errChan := make(chan error)
 

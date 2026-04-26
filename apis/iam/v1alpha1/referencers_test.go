@@ -53,7 +53,7 @@ func setExtName(obj metav1.Object, name string) {
 
 const testNamespace = "default"
 
-func TestUserResolveReferences(t *testing.T) {
+func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
 	t.Parallel()
 
 	cases := map[string]struct {

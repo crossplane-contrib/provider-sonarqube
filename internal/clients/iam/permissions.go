@@ -41,7 +41,7 @@ func NewPermissionsClient(clientConfig common.Config) PermissionsClient {
 
 // GeneratePermissionsAddGroupOptions generates the options for adding
 // a group to a permission in SonarQube based on the provided parameters.
-func GeneratePermissionsAddGroupOptions(groupName string, permission string) *sonar.PermissionsAddGroupOptions {
+func GeneratePermissionsAddGroupOptions(groupName, permission string) *sonar.PermissionsAddGroupOptions {
 	return &sonar.PermissionsAddGroupOptions{
 		Permission: permission,
 		GroupName:  groupName,
@@ -50,7 +50,7 @@ func GeneratePermissionsAddGroupOptions(groupName string, permission string) *so
 
 // GeneratePermissionsRemoveGroupOptions generates the options for removing
 // a group from a permission in SonarQube based on the provided parameters.
-func GeneratePermissionsRemoveGroupOptions(groupName string, permission string) *sonar.PermissionsRemoveGroupOptions {
+func GeneratePermissionsRemoveGroupOptions(groupName, permission string) *sonar.PermissionsRemoveGroupOptions {
 	return &sonar.PermissionsRemoveGroupOptions{
 		Permission: permission,
 		GroupName:  groupName,

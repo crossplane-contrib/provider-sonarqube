@@ -34,8 +34,9 @@ linters:
       eval-const-expressions: true
     gocritic:
       enable-all: true
-      # enabled-tags:
-      #   - performance
+      disabled-checks:
+        - ptrToRefParam
+        - tooManyResultsChecker
       settings:
         captLocal:
           paramsOnly: true

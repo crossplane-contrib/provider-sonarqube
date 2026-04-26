@@ -56,7 +56,7 @@ func mockHTTPResponse() *http.Response {
 	}
 }
 
-func checkError(t *testing.T, method string, wantErr string, gotErr error) {
+func checkError(t *testing.T, method, wantErr string, gotErr error) {
 	t.Helper()
 
 	if wantErr == "" && gotErr == nil {

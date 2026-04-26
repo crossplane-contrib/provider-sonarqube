@@ -201,7 +201,7 @@ func GenerateQualityProfileActivateRuleOption(qualityProfileKey string, params v
 
 // GenerateQualityProfileDeactivateRuleOption generates SonarQube
 // QualityprofilesDeactivateRuleOption from rule key.
-func GenerateQualityProfileDeactivateRuleOption(qualityProfileKey string, ruleKey string) *sonar.QualityprofilesDeactivateRuleOptions {
+func GenerateQualityProfileDeactivateRuleOption(qualityProfileKey, ruleKey string) *sonar.QualityprofilesDeactivateRuleOptions {
 	return &sonar.QualityprofilesDeactivateRuleOptions{
 		Key:  qualityProfileKey,
 		Rule: ruleKey,
@@ -393,7 +393,7 @@ func GenerateQualityProfilesSearchProjectOptions(projectKey string) *sonar.Quali
 // GenerateQualityProfileAddProjectOptions generates the options
 // for adding a SonarQube Quality Profile to a project based on the provided
 // project key, quality profile name, and language.
-func GenerateQualityProfileAddProjectOptions(projectKey string, qualityProfileName string, language string) *sonar.QualityprofilesAddProjectOptions {
+func GenerateQualityProfileAddProjectOptions(projectKey, qualityProfileName, language string) *sonar.QualityprofilesAddProjectOptions {
 	return &sonar.QualityprofilesAddProjectOptions{
 		Project:        projectKey,
 		QualityProfile: qualityProfileName,

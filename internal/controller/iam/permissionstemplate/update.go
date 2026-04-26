@@ -153,7 +153,7 @@ func (c *external) setTemplateAsDefaultIfNeeded(templateID string, permissionsTe
 
 // applyTemplatePermissions applies add and remove permission
 // operations concurrently.
-func (c *external) applyTemplatePermissions(addPermissions []string, removePermissions []string, addFn func(permission string) error, removeFn func(permission string) error) error {
+func (c *external) applyTemplatePermissions(addPermissions, removePermissions []string, addFn, removeFn func(permission string) error) error {
 	var (
 		permissionsWaitGroup sync.WaitGroup
 		aggregatedErrors     []error
@@ -354,7 +354,7 @@ func (c *external) updatePermissionsTemplateSubject(
 // based on the spec and observation.
 // It returns two slices,
 // one with the permissions to add and one with the permissions to remove.
-func (c *external) computePermissionsDiff(specPermissions []string, obsPermissions []string) (permissionsToAdd []string, permissionsToRemove []string) {
+func (c *external) computePermissionsDiff(specPermissions, obsPermissions []string) (permissionsToAdd, permissionsToRemove []string) {
 	specPerms := helpers.NewStringSetFromSlice(specPermissions)
 	obsPerms := helpers.NewStringSetFromSlice(obsPermissions)
 

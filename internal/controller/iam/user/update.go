@@ -182,7 +182,7 @@ func desiredGroupIDs(groups *[]v1alpha1.UserGroupsParameters) []string {
 // removed from (present in observed but not in desired).
 // This function is used to determine the necessary changes to reconcile
 // the user's group memberships with the desired state.
-func buildGroupsDiff(desired []string, observed map[string]string) (toAdd []string, toRemove []string) {
+func buildGroupsDiff(desired []string, observed map[string]string) (toAdd, toRemove []string) {
 	desiredSet := helpers.NewStringSetFromSlice(desired)
 
 	for groupId := range desiredSet {

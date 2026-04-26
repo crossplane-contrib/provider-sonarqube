@@ -358,7 +358,7 @@ func (c *external) deleteUnwantedQualityGateConditions(qualityGateConditionAssoc
 		}
 
 		deleteResponse, err := c.qualityGatesClient.DeleteCondition(instance.GenerateDeleteQualityGateConditionOption(conditionObservation.ID)) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(deleteResponse)
+		helpers.CloseBody(deleteResponse)
 
 		if err != nil {
 			return errors.Wrapf(err, "cannot delete SonarQube Quality Gate Condition with ID %s", conditionObservation.ID)
@@ -391,7 +391,7 @@ func (c *external) createMissingQualityGateConditions(externalName string, quali
 		}
 
 		qualityGateCondition, createResponse, err := c.qualityGatesClient.CreateCondition(instance.GenerateCreateQualityGateConditionOption(externalName, *conditionSpec)) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(createResponse)
+		helpers.CloseBody(createResponse)
 
 		if err != nil {
 			return errors.Wrapf(err, "cannot create SonarQube Quality Gate Condition for Quality Gate %s", externalName)
@@ -426,7 +426,7 @@ func (c *external) updateOutdatedQualityGateConditions(qualityGateConditionAssoc
 		}
 
 		updateResponse, err := c.qualityGatesClient.UpdateCondition(instance.GenerateUpdateQualityGateConditionOption(association.Observation.ID, *association.Spec)) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(updateResponse)
+		helpers.CloseBody(updateResponse)
 
 		if err != nil {
 			return errors.Wrapf(err, "cannot update SonarQube Quality Gate Condition with ID %s", *association.Spec.Id)

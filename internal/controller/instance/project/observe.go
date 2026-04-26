@@ -60,7 +60,7 @@ func (c *external) observeProjectExistence(projectKey string, observation *v1alp
 
 // observeProjectDetails makes all observation API calls concurrently and
 // returns the results.
-func (c *external) observeProjectDetails(projectKey string, projectId string) observeResult {
+func (c *external) observeProjectDetails(projectKey, projectId string) observeResult {
 	var (
 		result observeResult
 		mutex  sync.Mutex

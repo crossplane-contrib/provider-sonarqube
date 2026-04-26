@@ -43,7 +43,7 @@ func NewNewCodePeriodsClient(clientConfig common.Config) NewCodePeriodsClient {
 
 // GenerateNewCodePeriodsShowOptions generates the options for showing the new
 // code period of a SonarQube Project based on the provided project key.
-func GenerateNewCodePeriodsShowOptions(projectKey *string, branch *string) *sonar.NewCodePeriodsShowOptions {
+func GenerateNewCodePeriodsShowOptions(projectKey, branch *string) *sonar.NewCodePeriodsShowOptions {
 	opts := sonar.NewCodePeriodsShowOptions{}
 	helpers.AssignIfNonNil(&opts.Project, projectKey)
 	helpers.AssignIfNonNil(&opts.Branch, branch)
@@ -69,7 +69,7 @@ func GenerateProjectNewCodePeriodsSetOptions(projectKey string, newCodePeriodPar
 // GenerateBranchNewCodePeriodsSetOptions generates the options for setting the
 // new code period of a SonarQube Project branch based on the provided branch
 // name and ProjectParameters.
-func GenerateBranchNewCodePeriodsSetOptions(projectKey string, branchName string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOptions {
+func GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOptions {
 	opts := sonar.NewCodePeriodsSetOptions{
 		Project: projectKey,
 		Branch:  branchName,

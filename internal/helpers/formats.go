@@ -82,7 +82,7 @@ func IsComparableMapPtrEqualComparableMap[K comparable, V comparable](ptr *map[K
 // If both pointers are nil, it returns true.
 // If one pointer is nil and the other is not, it returns false.
 // Otherwise, it dereferences both pointers and compares their values.
-func IsComparablePtrEqualComparablePtr[T comparable](ptr1 *T, ptr2 *T) bool {
+func IsComparablePtrEqualComparablePtr[T comparable](ptr1, ptr2 *T) bool {
 	// if both pointers are nil, consider them equal
 	if ptr1 == nil && ptr2 == nil {
 		return true
@@ -206,7 +206,7 @@ func AnySliceToStringSlice(slice []any) []string {
 // AssignIfNonNil assigns a value to a pointer if the reference
 // pointer is not nil.
 // If the reference pointer is nil, it does nothing.
-func AssignIfNonNil[T any](ptr *T, ref *T) {
+func AssignIfNonNil[T any](ptr, ref *T) {
 	// return early if ptr is nil to avoid dereferencing a nil pointer
 	if ptr == nil {
 		return

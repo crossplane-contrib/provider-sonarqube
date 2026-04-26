@@ -651,6 +651,6 @@ func LateInitializeRule(spec *v1alpha1.RuleParameters, observation *v1alpha1.Rul
 // that can be late initialized
 // (i.e., fields that are nil in before and non-nil in after),
 // and false otherwise.
-func IsRuleLateInitialized(before *v1alpha1.RuleParameters, after *v1alpha1.RuleParameters) bool {
+func IsRuleLateInitialized(before, after *v1alpha1.RuleParameters) bool {
 	return !cmp.Equal(before, after, cmpopts.EquateEmpty())
 }

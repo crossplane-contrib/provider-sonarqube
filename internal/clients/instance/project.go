@@ -115,7 +115,7 @@ func LateInitializeProject(spec *v1alpha1.ProjectParameters, observation *v1alph
 
 // IsProjectLateInitialized checks if the ProjectParameters has been
 // late-initialized based on the observed project from SonarQube.
-func IsProjectLateInitialized(former *v1alpha1.ProjectParameters, current *v1alpha1.ProjectParameters) bool {
+func IsProjectLateInitialized(former, current *v1alpha1.ProjectParameters) bool {
 	return !cmp.Equal(former.Visibility, current.Visibility) ||
 		!cmp.Equal(former.Links, current.Links, cmpopts.EquateEmpty()) ||
 		!cmp.Equal(former.NewCodePeriod, current.NewCodePeriod)
@@ -143,7 +143,7 @@ func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.P
 // GenerateProjectUpdateVisibilityOptions generates the options for updating the
 // visibility of a SonarQube Project based on the provided project key and
 // desired visibility.
-func GenerateProjectUpdateVisibilityOptions(projectKey string, visibility string) *sonar.ProjectsUpdateVisibilityOptions {
+func GenerateProjectUpdateVisibilityOptions(projectKey, visibility string) *sonar.ProjectsUpdateVisibilityOptions {
 	return &sonar.ProjectsUpdateVisibilityOptions{
 		Project:    projectKey,
 		Visibility: visibility,
