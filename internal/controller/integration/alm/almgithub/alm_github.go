@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package almgithub provides a controller for ALMGitHub resources.
 package almgithub
 
 import (
@@ -45,14 +46,21 @@ import (
 )
 
 const (
+	// errNotALMGitHub indicates managed resource is not ALMGitHub.
 	errNotALMGitHub = "managed resource is not a ALMGitHub custom resource"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
 
+	// errExternalNameNotSet indicates external name is not set.
 	errExternalNameNotSet = "external name is not set for ALMGitHub resource %s"
 
-	connectionDetailClientSecretKey  = "clientSecret"
-	connectionDetailPrivateKeyKey    = "privateKey"
+	// connectionDetailClientSecretKey is the client secret key.
+	connectionDetailClientSecretKey = "clientSecret"
+	// connectionDetailPrivateKeyKey is the private key key.
+	connectionDetailPrivateKeyKey = "privateKey"
+	// connectionDetailWebhookSecretKey is the webhook secret key.
 	connectionDetailWebhookSecretKey = "webhookSecret"
 )
 
@@ -69,6 +77,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	return nil
 }
 
+// Setup adds a controller that reconciles ALMGitHub managed resources.
 func Setup(mgr ctrl.Manager, options controller.Options) error {
 	name := managed.ControllerName(v1alpha1.ALMGitHubGroupKind)
 
@@ -338,6 +347,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect closes the external client connection.
 func (c *external) Disconnect(_ context.Context) error {
 	return nil
 }
@@ -375,6 +385,7 @@ func (c *external) getSavedSecrets(ctx context.Context, almGitHub *v1alpha1.ALMG
 	return clientSecret, privateKey, webhookSecret, nil
 }
 
+// getRequiredSecrets retrieves GitHub App secrets from secret references.
 func (c *external) getRequiredSecrets(ctx context.Context, almGitHub *v1alpha1.ALMGitHub) (clientSecret, privateKey string, err error) {
 	clientSecretVal, clientSecretErr := common.GetTokenValueFromLocalSecret(ctx, c.kubeClient, almGitHub, almGitHub.Spec.ForProvider.ClientSecretRef)
 
@@ -401,6 +412,7 @@ func (c *external) getRequiredSecrets(ctx context.Context, almGitHub *v1alpha1.A
 	return *clientSecretVal, *privateKeyVal, nil
 }
 
+// getWebhookSecret retrieves the webhook secret from secret references.
 func (c *external) getWebhookSecret(ctx context.Context, almGitHub *v1alpha1.ALMGitHub) (string, error) {
 	if almGitHub.Spec.ForProvider.WebhookSecretRef == nil {
 		return "", nil

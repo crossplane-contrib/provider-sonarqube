@@ -80,6 +80,8 @@ spec:
                     description: Groups is the desired set of group ids the user should
                       belong to.
                     items:
+                      description: UserGroupsParameters specifies group membership
+                        for a user.
                       properties:
                         groupId:
                           description: GroupId is the unique identifier of the group

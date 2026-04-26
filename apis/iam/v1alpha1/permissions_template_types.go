@@ -180,6 +180,7 @@ var (
 	PermissionsTemplateGroupVersionKind = SchemeGroupVersion.WithKind(PermissionsTemplateKind)
 )
 
+// init registers the PermissionsTemplate resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&PermissionsTemplate{}, &PermissionsTemplateList{})
 }

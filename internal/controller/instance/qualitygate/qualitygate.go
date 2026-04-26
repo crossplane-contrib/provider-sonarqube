@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package qualitygate provides a controller for QualityGate resources.
 package qualitygate
 
 import (
@@ -46,13 +47,19 @@ import (
 )
 
 const (
+	// errNotQualityGate indicates managed resource is not QualityGate.
 	errNotQualityGate = "managed resource is not a QualityGate custom resource"
-	errTrackPCUsage   = "cannot track ProviderConfig usage"
-	errGetPC          = "cannot get ProviderConfig"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
+	errTrackPCUsage = "cannot track ProviderConfig usage"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
 
-	errCreateQualityGate  = "cannot create SonarQube Quality Gate"
+	// errCreateQualityGate indicates QualityGate creation failed.
+	errCreateQualityGate = "cannot create SonarQube Quality Gate"
+	// errDefaultQualityGate indicates setting default failed.
 	errDefaultQualityGate = "cannot set SonarQube Quality Gate as default"
-	errDeleteQualityGate  = "cannot delete SonarQube Quality Gate"
+	// errDeleteQualityGate indicates QualityGate deletion failed.
+	errDeleteQualityGate = "cannot delete SonarQube Quality Gate"
 )
 
 // SetupGated adds a controller that reconciles QualityGate managed resources
@@ -68,6 +75,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	return nil
 }
 
+// Setup adds a controller that reconciles QualityGate managed resources.
 func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	name := managed.ControllerName(v1alpha1.QualityGateGroupKind)
 
@@ -154,8 +162,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	return &external{qualityGatesClient: svc}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the ExternalClient interface for QualityGate resources.
 type external struct {
 	// qualityGatesClient is used to interact with SonarQube Quality Gates API
 	qualityGatesClient instance.QualityGatesClient
@@ -312,6 +319,7 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect closes the external client connection.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }

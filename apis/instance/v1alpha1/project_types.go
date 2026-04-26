@@ -274,6 +274,7 @@ var (
 	ProjectGroupVersionKind = SchemeGroupVersion.WithKind(ProjectKind)
 )
 
+// init registers the Project resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&Project{}, &ProjectList{})
 }

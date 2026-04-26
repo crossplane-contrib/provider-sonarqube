@@ -34,8 +34,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A ALMGitHub is a managed resource that represents a SonarQube
-          ALM integration for GitHub.
+        description: |-
+          A ALMGitHub is a managed resource that represents a SonarQube ALM integration
+          for GitHub.
         properties:
           apiVersion:
             description: |-

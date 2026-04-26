@@ -251,6 +251,8 @@ func (c *external) updatePermissionsTemplateGroups(templateID string, specGroups
 	)
 }
 
+// updatePermissionsTemplateUsers updates users in a permissions template.
+//
 //nolint:dupl // Group and user reconciliation intentionally share the same control flow with different API endpoints.
 func (c *external) updatePermissionsTemplateUsers(templateID string, specUsers *[]v1alpha1.PermissionsTemplateUserParameters, observationUsers *[]v1alpha1.PermissionsTemplateUserObservation) error {
 	if specUsers == nil || observationUsers == nil {

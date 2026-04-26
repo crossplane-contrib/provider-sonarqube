@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateQualityGateCreateOptions tests generating create options.
 func TestGenerateQualityGateCreateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -64,6 +65,7 @@ func TestGenerateQualityGateCreateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityGateObservation tests generating gate observation.
 func TestGenerateQualityGateObservation(t *testing.T) {
 	t.Parallel()
 
@@ -167,6 +169,7 @@ func TestGenerateQualityGateObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityGateActionsObservation tests actions observation.
 func TestGenerateQualityGateActionsObservation(t *testing.T) {
 	t.Parallel()
 
@@ -224,6 +227,7 @@ func TestGenerateQualityGateActionsObservation(t *testing.T) {
 	}
 }
 
+// TestIsQualityGateUpToDate tests checking gate up to date.
 func TestIsQualityGateUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -311,6 +315,7 @@ func TestIsQualityGateUpToDate(t *testing.T) {
 	}
 }
 
+// TestLateInitializeQualityGate tests late initialization of gate.
 func TestLateInitializeQualityGate(t *testing.T) {
 	t.Parallel()
 
@@ -534,6 +539,7 @@ func TestLateInitializeQualityGate(t *testing.T) {
 	}
 }
 
+// TestWereQualityGateConditionsLateInitialized tests late init conditions.
 func TestWereQualityGateConditionsLateInitialized(t *testing.T) {
 	t.Parallel()
 
@@ -608,6 +614,7 @@ func TestWereQualityGateConditionsLateInitialized(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityGateGetByProjectOptions tests generate by project.
 func TestGenerateQualityGateGetByProjectOptions(t *testing.T) {
 	t.Parallel()
 
@@ -641,6 +648,7 @@ func TestGenerateQualityGateGetByProjectOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityGateSelectOptions tests generate select options.
 func TestGenerateQualityGateSelectOptions(t *testing.T) {
 	t.Parallel()
 

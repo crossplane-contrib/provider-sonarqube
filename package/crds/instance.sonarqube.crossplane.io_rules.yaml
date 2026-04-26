@@ -113,8 +113,9 @@ spec:
                     type: string
                   parameters:
                     additionalProperties:
-                      description: RuleParameterConfiguration represents the configuration
-                        of a parameter for a rule.
+                      description: |-
+                        RuleParameterConfiguration represents the configuration of a parameter
+                        for a rule.
                       properties:
                         defaultValue:
                           description: DefaultValue is the default value of the parameter
@@ -284,8 +285,9 @@ spec:
                     type: string
                   descriptionSections:
                     items:
-                      description: RuleDescriptionSectionObservation represents a
-                        section of a rule's description.
+                      description: |-
+                        RuleDescriptionSectionObservation represents a section of a rule's
+                        description.
                       properties:
                         content:
                           description: Content is the HTML content of the section.
@@ -337,8 +339,9 @@ spec:
                     type: string
                   params:
                     items:
-                      description: RuleParameterObservation represents a parameter
-                        that can be configured for a rule.
+                      description: |-
+                        RuleParameterObservation represents a parameter that can be configured
+                        for a rule.
                       properties:
                         defaultValue:
                           description: DefaultValue is the default value of the parameter.

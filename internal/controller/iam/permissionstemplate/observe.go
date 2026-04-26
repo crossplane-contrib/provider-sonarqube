@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package permissionstemplate handles permissions template
+// observation and management.
 package permissionstemplate
 
 import (
@@ -34,9 +36,11 @@ import (
 )
 
 const (
+	// permissionsTemplateNotFound is the error message when template is not found.
 	permissionsTemplateNotFound = "PermissionsTemplate not found"
 )
 
+// errPermissionsTemplateNotFound is returned when a template is not found.
 var errPermissionsTemplateNotFound = errors.New(permissionsTemplateNotFound)
 
 // Observe observes the external resource and returns an ExternalObservation.

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package qualityprofile provides a controller for QualityProfile resources.
 package qualityprofile
 
 import (
@@ -47,15 +48,23 @@ import (
 )
 
 const (
+	// errNotQualityProfile indicates managed resource is not QualityProfile.
 	errNotQualityProfile = "managed resource is not a QualityProfile custom resource"
-	errTrackPCUsage      = "cannot track ProviderConfig usage"
-	errGetPC             = "cannot get ProviderConfig"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
+	errTrackPCUsage = "cannot track ProviderConfig usage"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
 
-	errCreateQualityProfile  = "cannot create SonarQube Quality Profile"
+	// errCreateQualityProfile indicates QualityProfile creation failed.
+	errCreateQualityProfile = "cannot create SonarQube Quality Profile"
+	// errDefaultQualityProfile indicates setting default failed.
 	errDefaultQualityProfile = "cannot set SonarQube Quality Profile as default"
-	errUpdateQualityProfile  = "cannot update SonarQube Quality Profile"
-	errDeleteQualityProfile  = "cannot delete SonarQube Quality Profile"
-	errShowQualityProfile    = "cannot get SonarQube Quality Profile"
+	// errUpdateQualityProfile indicates QualityProfile update failed.
+	errUpdateQualityProfile = "cannot update SonarQube Quality Profile"
+	// errDeleteQualityProfile indicates QualityProfile deletion failed.
+	errDeleteQualityProfile = "cannot delete SonarQube Quality Profile"
+	// errShowQualityProfile indicates retrieving QualityProfile failed.
+	errShowQualityProfile = "cannot get SonarQube Quality Profile"
 )
 
 // SetupGated adds a controller that reconciles QualityProfile
@@ -71,6 +80,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	return nil
 }
 
+// Setup adds a controller that reconciles QualityProfile managed resources.
 func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	name := managed.ControllerName(v1alpha1.QualityProfileGroupKind)
 
@@ -324,10 +334,12 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect closes the external client connection.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
 
+// syncQualityProfileRules syncs QualityProfile rules with associations.
 func (c *external) syncQualityProfileRules(profile *v1alpha1.QualityProfile, associations map[string]instance.QualityProfileRuleAssociation) error {
 	if len(associations) == 0 {
 		return nil

@@ -22,6 +22,7 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 )
 
+// TestIsALMUpToDate tests the IsALMUpToDate function.
 func TestIsALMUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -83,6 +84,7 @@ func TestIsALMUpToDate(t *testing.T) {
 	}
 }
 
+// TestLateInitializeALM tests the LateInitializeALM function.
 func TestLateInitializeALM(t *testing.T) {
 	t.Parallel()
 
@@ -99,6 +101,7 @@ func TestLateInitializeALM(t *testing.T) {
 	}
 }
 
+// TestIsALMLateInitialized tests the IsALMLateInitialized function.
 func TestIsALMLateInitialized(t *testing.T) {
 	t.Parallel()
 
@@ -140,6 +143,7 @@ func TestIsALMLateInitialized(t *testing.T) {
 	}
 }
 
+// TestGenerateALMDeleteOptions tests the GenerateALMDeleteOptions function.
 func TestGenerateALMDeleteOptions(t *testing.T) {
 	t.Parallel()
 

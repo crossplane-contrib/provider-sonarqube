@@ -36,13 +36,16 @@ import (
 )
 
 const (
+	// projectVisibilityPublic is a test project visibility.
 	projectVisibilityPublic = "public"
 )
 
+// notProject is a type for testing non-Project resources.
 type notProject struct {
 	resource.Managed
 }
 
+// mockHTTPResponse returns a mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -77,6 +80,7 @@ func checkError(t *testing.T, method string, wantErr, gotErr error) {
 	}
 }
 
+// newTestProject creates a test Project resource.
 func newTestProject(externalName string, spec v1alpha1.ProjectParameters) *v1alpha1.Project {
 	proj := &v1alpha1.Project{
 		ObjectMeta: metav1.ObjectMeta{
@@ -94,6 +98,7 @@ func newTestProject(externalName string, spec v1alpha1.ProjectParameters) *v1alp
 	return proj
 }
 
+// newTestExternalClient creates a test external client with mock clients.
 func newTestExternalClient(
 	projectsClient *fake.MockProjectsClient,
 	projectLinksClient *fake.MockProjectLinksClient,
@@ -114,6 +119,7 @@ func newTestExternalClient(
 	}
 }
 
+// defaultMockClients returns default mock clients for testing.
 func defaultMockClients() (*fake.MockProjectsClient, *fake.MockProjectLinksClient, *fake.MockProjectBranchesClient, *fake.MockNewCodePeriodsClient, *fake.MockQualityGatesClient, *fake.MockQualityProfilesClient, *fake.MockProjectTagsClient) {
 	return &fake.MockProjectsClient{},
 		&fake.MockProjectLinksClient{},
@@ -124,6 +130,7 @@ func defaultMockClients() (*fake.MockProjectsClient, *fake.MockProjectLinksClien
 		&fake.MockProjectTagsClient{}
 }
 
+// successfulObserveMocks returns mock clients for successful observe tests.
 func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksClient, *fake.MockProjectBranchesClient, *fake.MockNewCodePeriodsClient, *fake.MockQualityGatesClient, *fake.MockQualityProfilesClient, *fake.MockProjectTagsClient) {
 	projectsClient := &fake.MockProjectsClient{
 		SearchFn: func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
@@ -177,6 +184,7 @@ func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksC
 	return projectsClient, linksClient, branchesClient, ncpClient, qgClient, qpClient, tagsClient
 }
 
+// TestObserve tests the Observe method.
 func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with many cases
 	t.Parallel()
 
@@ -666,6 +674,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 	}
 }
 
+// TestCreate tests the Create method.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -760,6 +769,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// TestUpdate tests the Update method.
 func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many cases
 	t.Parallel()
 
@@ -1118,6 +1128,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 	}
 }
 
+// TestDelete tests the Delete method.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
@@ -1228,6 +1239,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+// TestDisconnect tests the Disconnect method.
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 

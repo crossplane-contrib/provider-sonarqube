@@ -32,6 +32,7 @@ import (
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+// TestObserve tests the Observe method.
 func TestObserve(t *testing.T) {
 	t.Parallel()
 
@@ -122,6 +123,7 @@ func TestObserve(t *testing.T) {
 	})
 }
 
+// TestMembershipObservationErrors tests membership observation error handling.
 func TestMembershipObservationErrors(t *testing.T) {
 	t.Parallel()
 

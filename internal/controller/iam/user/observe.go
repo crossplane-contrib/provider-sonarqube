@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package user handles user observation and management.
 package user
 
 import (
@@ -33,6 +34,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
+// defaultMembershipPageSize is the default page size for membership queries.
 const defaultMembershipPageSize = 500
 
 // Observe is responsible for observing the external resource and

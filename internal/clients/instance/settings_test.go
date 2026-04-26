@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateSettingSetOptions tests generating set options.
 func TestGenerateSettingSetOptions(t *testing.T) {
 	t.Parallel()
 
@@ -146,6 +147,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateSettingsValuesOptions tests generating values options.
 func TestGenerateSettingsValuesOptions(t *testing.T) {
 	t.Parallel()
 
@@ -233,6 +235,7 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateSettingsResetOptions tests generating reset options.
 func TestGenerateSettingsResetOptions(t *testing.T) {
 	t.Parallel()
 
@@ -317,6 +320,7 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateSettingsResetOptionsFromList tests reset options from list.
 func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 	t.Parallel()
 
@@ -369,6 +373,7 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 	}
 }
 
+// TestGenerateSettingObservation tests generating setting observation.
 func TestGenerateSettingObservation(t *testing.T) {
 	t.Parallel()
 
@@ -466,6 +471,7 @@ func TestGenerateSettingObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateSettingsObservation tests generating observations.
 func TestGenerateSettingsObservation(t *testing.T) {
 	t.Parallel()
 
@@ -542,6 +548,7 @@ func TestGenerateSettingsObservation(t *testing.T) {
 	}
 }
 
+// TestIsSettingUpToDate tests checking setting up to date.
 func TestIsSettingUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -677,6 +684,7 @@ func TestIsSettingUpToDate(t *testing.T) {
 	}
 }
 
+// TestAreSettingsUpToDate tests checking settings up to date.
 func TestAreSettingsUpToDate(t *testing.T) {
 	t.Parallel()
 

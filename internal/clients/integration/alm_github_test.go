@@ -26,14 +26,22 @@ import (
 )
 
 const (
+	// githubClientID is the test GitHub client ID.
 	githubClientID = "Iv1.abc"
-	githubALMName  = "github-main"
-	githubALMURL   = "https://api.github.com"
-	githubAppID    = "123456"
-	clientSecret   = "client-secret"
-	privateKey     = "private-key"
-	webhookSecret  = "webhook-secret"
-	mutatedValue   = "mutated"
+	// githubALMName is the test GitHub ALM name.
+	githubALMName = "github-main"
+	// githubALMURL is the test GitHub ALM URL.
+	githubALMURL = "https://api.github.com"
+	// githubAppID is the test GitHub app ID.
+	githubAppID = "123456"
+	// clientSecret is the test client secret.
+	clientSecret = "client-secret"
+	// privateKey is the test private key.
+	privateKey = "private-key"
+	// webhookSecret is the test webhook secret.
+	webhookSecret = "webhook-secret"
+	// mutatedValue is a test value for mutation checking.
+	mutatedValue = "mutated"
 )
 
 // Unlike many Kubernetes projects Crossplane does not use third party testing
@@ -44,6 +52,7 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
+// TestLateInitializeALMGitHub tests late initialization of GitHub ALM.
 func TestLateInitializeALMGitHub(t *testing.T) {
 	t.Parallel()
 
@@ -80,6 +89,7 @@ func TestLateInitializeALMGitHub(t *testing.T) {
 	})
 }
 
+// TestIsALMGitHubLateInitialized tests detecting late initialization.
 func TestIsALMGitHubLateInitialized(t *testing.T) {
 	t.Parallel()
 
@@ -131,6 +141,7 @@ func TestIsALMGitHubLateInitialized(t *testing.T) {
 	}
 }
 
+// TestIsALMGitHubUpToDate tests checking GitHub ALM up-to-date status.
 func TestIsALMGitHubUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -231,6 +242,7 @@ func TestIsALMGitHubUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateALMGitHubCreateOptions tests GitHub ALM creation options.
 func TestGenerateALMGitHubCreateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -252,6 +264,7 @@ func TestGenerateALMGitHubCreateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateALMGitHubUpdateOptions tests GitHub ALM update options.
 func TestGenerateALMGitHubUpdateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -296,6 +309,7 @@ func TestGenerateALMGitHubUpdateOptions(t *testing.T) {
 	}
 }
 
+// TestFindGitHubALMDefinitionByKey tests finding GitHub ALM definitions by key.
 func TestFindGitHubALMDefinitionByKey(t *testing.T) {
 	t.Parallel()
 
@@ -343,6 +357,7 @@ func TestFindGitHubALMDefinitionByKey(t *testing.T) {
 	})
 }
 
+// TestGenerateALMGitHubObservation tests generating GitHub ALM observations.
 func TestGenerateALMGitHubObservation(t *testing.T) {
 	t.Parallel()
 
@@ -372,6 +387,7 @@ func TestGenerateALMGitHubObservation(t *testing.T) {
 	})
 }
 
+// TestGitHubClientConstructors tests creating GitHub client instances.
 func TestGitHubClientConstructors(t *testing.T) {
 	t.Parallel()
 

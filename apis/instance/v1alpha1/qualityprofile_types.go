@@ -118,6 +118,8 @@ type QualityProfileRuleObservation struct {
 	Prioritized bool                       `json:"prioritized"`
 }
 
+// QualityProfileRuleImpact represents the impact of a rule
+// on software quality.
 type QualityProfileRuleImpact struct {
 	Severity        string `json:"severity,omitempty"`
 	SoftwareQuality string `json:"softwareQuality,omitempty"`
@@ -172,6 +174,7 @@ var (
 	QualityProfileGroupVersionKind = SchemeGroupVersion.WithKind(QualityProfileKind)
 )
 
+// init registers the QualityProfile resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&QualityProfile{}, &QualityProfileList{})
 }

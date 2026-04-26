@@ -64,8 +64,9 @@ spec:
                     description: Conditions is the list of conditions associated with
                       the Quality Gate.
                     items:
-                      description: QualityGateConditionParameters are the configurable
-                        fields of a QualityGateCondition.
+                      description: |-
+                        QualityGateConditionParameters are the configurable fields of a
+                        QualityGateCondition.
                       properties:
                         error:
                           description: Error is the Condition error threshold
@@ -236,8 +237,9 @@ spec:
                     description: Conditions represents the list of conditions associated
                       with the Quality Gate.
                     items:
-                      description: QualityGateConditionObservation are the observable
-                        fields of a QualityGateCondition.
+                      description: |-
+                        QualityGateConditionObservation are the observable fields of a
+                        QualityGateCondition.
                       properties:
                         error:
                           description: Error is the Condition error threshold

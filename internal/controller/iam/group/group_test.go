@@ -47,9 +47,12 @@ import (
 )
 
 const (
+	// provisioningPerm is the provisioning permission for testing.
 	provisioningPerm = "provisioning"
-	adminPerm        = "admin"
-	scanPerm         = "scan"
+	// adminPerm is the admin permission for testing.
+	adminPerm = "admin"
+	// scanPerm is the scan permission for testing.
+	scanPerm = "scan"
 )
 
 // Unlike many Kubernetes projects Crossplane does not use third party testing
@@ -60,26 +63,31 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
+// notGroup is a test type that is not a Group.
 type notGroup struct {
 	resource.Managed
 }
 
+// mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
 	callback   func()
 	gvks       []schema.GroupVersionKind
 }
 
+// Register registers a callback with the mock gate.
 func (m *mockGate) Register(callback func(), gvks ...schema.GroupVersionKind) {
 	m.registered = true
 	m.callback = callback
 	m.gvks = append(m.gvks, gvks...)
 }
 
+// Set sets a feature gate status in the mock.
 func (m *mockGate) Set(_ schema.GroupVersionKind, _ bool) bool {
 	return false
 }
 
+// mockHTTPResponse creates a mock HTTP response with the given status code.
 func mockHTTPResponse(statusCode int) *http.Response {
 	return &http.Response{
 		StatusCode: statusCode,
@@ -87,6 +95,7 @@ func mockHTTPResponse(statusCode int) *http.Response {
 	}
 }
 
+// checkError checks if an error matches expectations.
 func checkError(t *testing.T, method, wantErrSubstr string, gotErr error) {
 	t.Helper()
 
@@ -111,6 +120,7 @@ func checkError(t *testing.T, method, wantErrSubstr string, gotErr error) {
 	}
 }
 
+// newTestGroup creates a test Group resource.
 func newTestGroup(externalName string, spec v1alpha1.GroupParameters) *v1alpha1.Group {
 	g := &v1alpha1.Group{
 		ObjectMeta: metav1.ObjectMeta{
@@ -127,6 +137,8 @@ func newTestGroup(externalName string, spec v1alpha1.GroupParameters) *v1alpha1.
 	return g
 }
 
+// TestObserve tests observing Group resource state.
+//
 //nolint:goconst // Test readability with explicit literals in table entries.
 func TestObserve(t *testing.T) {
 	t.Parallel()
@@ -281,6 +293,7 @@ func TestObserve(t *testing.T) {
 	})
 }
 
+// TestCreate tests creating a Group resource.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -415,6 +428,8 @@ func TestCreate(t *testing.T) {
 	})
 }
 
+// TestUpdate tests updating a Group resource.
+//
 //nolint:gocognit // Table-driven test plus focused subtests for permission update branches.
 func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path coverage requires a larger test body.
 	t.Parallel()
@@ -616,6 +631,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 	})
 }
 
+// TestDelete tests deleting a Group resource.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
@@ -710,6 +726,7 @@ func TestDelete(t *testing.T) {
 	})
 }
 
+// TestDisconnect tests disconnecting a Group resource.
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 
@@ -721,6 +738,7 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
+// TestConnectTypeAssertion tests Connect with invalid resource type.
 func TestConnectTypeAssertion(t *testing.T) {
 	t.Parallel()
 
@@ -736,6 +754,7 @@ func TestConnectTypeAssertion(t *testing.T) {
 	}
 }
 
+// TestConnectTrackUsageError tests Connect when tracking usage fails.
 func TestConnectTrackUsageError(t *testing.T) {
 	t.Parallel()
 
@@ -781,6 +800,7 @@ func TestConnectTrackUsageError(t *testing.T) {
 	}
 }
 
+// TestConnectGetConfigError tests Connect when getting config fails.
 func TestConnectGetConfigError(t *testing.T) {
 	t.Parallel()
 
@@ -827,6 +847,7 @@ func TestConnectGetConfigError(t *testing.T) {
 	}
 }
 
+// TestConnectSuccess tests successful connection to a Group resource.
 func TestConnectSuccess(t *testing.T) {
 	t.Parallel()
 
@@ -903,6 +924,8 @@ func TestConnectSuccess(t *testing.T) {
 	}
 }
 
+// TestSetupGatedRegistersGroupGVK tests that SetupGated
+// registers the Group GVK.
 func TestSetupGatedRegistersGroupGVK(t *testing.T) {
 	t.Parallel()
 
@@ -932,6 +955,8 @@ func TestSetupGatedRegistersGroupGVK(t *testing.T) {
 	}
 }
 
+// TestComputePermissionsDelta tests computing the difference
+// between desired and observed permissions.
 func TestComputePermissionsDelta(t *testing.T) {
 	t.Parallel()
 
@@ -1007,6 +1032,7 @@ func TestComputePermissionsDelta(t *testing.T) {
 	}
 }
 
+// TestGetGroupPermissions tests retrieving Group permissions.
 func TestGetGroupPermissions(t *testing.T) {
 	t.Parallel()
 
@@ -1100,6 +1126,8 @@ func TestGetGroupPermissions(t *testing.T) {
 		})
 	}
 }
+
+// TestAddGroupPermissions tests adding permissions to a Group.
 func TestAddGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driven test with deeply nested anonymous functions.
 	t.Parallel()
 
@@ -1227,6 +1255,7 @@ func TestAddGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driv
 	}
 }
 
+// TestRemoveGroupPermissions tests removing permissions from a Group.
 func TestRemoveGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driven test with deeply nested anonymous functions.
 	t.Parallel()
 

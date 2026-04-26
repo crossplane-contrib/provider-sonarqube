@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateProjectBranchesListOptions tests generating list options.
 func TestGenerateProjectBranchesListOptions(t *testing.T) {
 	t.Parallel()
 
@@ -59,6 +60,7 @@ func TestGenerateProjectBranchesListOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectBranchesDeleteOptions tests generating delete options.
 func TestGenerateProjectBranchesDeleteOptions(t *testing.T) {
 	t.Parallel()
 
@@ -89,6 +91,7 @@ func TestGenerateProjectBranchesDeleteOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateBranchesObservations tests generating branch observations.
 func TestGenerateBranchesObservations(t *testing.T) {
 	t.Parallel()
 
@@ -178,6 +181,7 @@ func TestGenerateBranchesObservations(t *testing.T) {
 	}
 }
 
+// TestAreProjectBranchesUpToDate tests checking branches up to date.
 func TestAreProjectBranchesUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -249,6 +253,7 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 	}
 }
 
+// TestIsProjectMainBranchUpToDate tests checking main branch up to date.
 func TestIsProjectMainBranchUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -298,6 +303,7 @@ func TestIsProjectMainBranchUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectBranchesSetMainOptions tests generating set main options.
 func TestGenerateProjectBranchesSetMainOptions(t *testing.T) {
 	t.Parallel()
 

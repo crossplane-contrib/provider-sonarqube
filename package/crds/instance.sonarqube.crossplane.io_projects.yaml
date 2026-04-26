@@ -61,8 +61,9 @@ spec:
                 properties:
                   branches:
                     additionalProperties:
-                      description: ProjectNewCodePeriodParameters represent the parameters
-                        of the new code definition of a project.
+                      description: |-
+                        ProjectNewCodePeriodParameters represent the parameters of the
+                        new code definition of a project.
                       properties:
                         type:
                           description: |-
@@ -108,8 +109,9 @@ spec:
                   links:
                     description: Links are the list of links associated with the project.
                     items:
-                      description: ProjectLinkParameters represent the parameters
-                        of a link associated with a project.
+                      description: |-
+                        ProjectLinkParameters represent the parameters of a link
+                        associated with a project.
                       properties:
                         id:
                           description: ID is the unique identifier of the link. This
@@ -252,8 +254,9 @@ spec:
                     type: object
                   qualityProfiles:
                     additionalProperties:
-                      description: ProjectQualityProfileReference represent the reference
-                        to a quality profile to be associated with the project.
+                      description: |-
+                        ProjectQualityProfileReference represent the reference to a quality profile
+                        to be associated with the project.
                       properties:
                         id:
                           description: Id is the name of the quality profile to be
@@ -429,8 +432,9 @@ spec:
                 properties:
                   branches:
                     additionalProperties:
-                      description: ProjectBranchObservation represent the observed
-                        state of a branch of a project.
+                      description: |-
+                        ProjectBranchObservation represent the observed state of a
+                        branch of a project.
                       properties:
                         analysisDate:
                           description: AnalysisDate is the date of the last analysis.
@@ -504,8 +508,9 @@ spec:
                     type: string
                   links:
                     additionalProperties:
-                      description: ProjectLinkObservation represent the observed state
-                        of a link associated with a project.
+                      description: |-
+                        ProjectLinkObservation represent the observed state of a link associated with
+                        a project.
                       properties:
                         id:
                           description: ID is the unique identifier of the link.
@@ -565,8 +570,9 @@ spec:
                     type: string
                   qualityProfiles:
                     additionalProperties:
-                      description: ProjectQualityProfileObservation represent the
-                        observed state of a quality profile associated with a project.
+                      description: |-
+                        ProjectQualityProfileObservation represent the observed state of a
+                        quality profile associated with a project.
                       properties:
                         id:
                           description: Id is the unique identifier of the quality

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package main runs the SonarQube provider controller.
 package main
 
 import (
@@ -48,6 +49,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/version"
 )
 
+// main runs the SonarQube provider controller.
+//
 //nolint:funlen,mnd,nlreturn,varnamelen // Default crossplane template main function, which is expected to be long and have many variables
 func main() {
 	var (

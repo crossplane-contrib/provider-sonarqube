@@ -87,6 +87,7 @@ var (
 	ALMGitLabGroupVersionKind = SchemeGroupVersion.WithKind(ALMGitLabKind)
 )
 
+// init registers the ALMGitLab resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&ALMGitLab{}, &ALMGitLabList{})
 }

@@ -111,6 +111,7 @@ var (
 	GroupGroupVersionKind = SchemeGroupVersion.WithKind(GroupKind)
 )
 
+// init registers the Group resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&Group{}, &GroupList{})
 }

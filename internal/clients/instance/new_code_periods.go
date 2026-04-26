@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package instance provides clients for managing SonarQube instance resources.
 package instance
 
 import (
@@ -26,6 +27,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
+// NewCodePeriodsClient is the interface for managing new code periods
+// in SonarQube projects.
 type NewCodePeriodsClient interface {
 	List(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error)
 	Set(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error)

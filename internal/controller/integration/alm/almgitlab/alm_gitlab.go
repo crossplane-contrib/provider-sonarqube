@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package almgitlab provides a controller for ALMGitLab resources.
 package almgitlab
 
 import (
@@ -45,12 +46,17 @@ import (
 )
 
 const (
+	// errNotALMGitLab indicates managed resource is not ALMGitLab.
 	errNotALMGitLab = "managed resource is not a ALMGitLab custom resource"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
 
+	// errExternalNameNotSet indicates external name is not set.
 	errExternalNameNotSet = "external name is not set for ALMGitLab resource %s"
 
+	// connectionDetailTokenKey is the token key.
 	connectionDetailTokenKey = "token"
 )
 
@@ -68,6 +74,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	return nil
 }
 
+// Setup adds a controller that reconciles ALMGitLab managed resources.
 func Setup(mgr ctrl.Manager, options controller.Options) error {
 	name := managed.ControllerName(v1alpha1.ALMGitLabGroupKind)
 
@@ -357,6 +364,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect closes the external client connection.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }

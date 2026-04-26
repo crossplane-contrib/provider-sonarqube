@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateProjectLinksCreateOptions tests generating create options.
 func TestGenerateProjectLinksCreateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -73,6 +74,7 @@ func TestGenerateProjectLinksCreateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectLinksDeleteOptions tests generating delete options.
 func TestGenerateProjectLinksDeleteOptions(t *testing.T) {
 	t.Parallel()
 
@@ -100,6 +102,7 @@ func TestGenerateProjectLinksDeleteOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectLinksSearchOptions tests generating search options.
 func TestGenerateProjectLinksSearchOptions(t *testing.T) {
 	t.Parallel()
 
@@ -127,6 +130,7 @@ func TestGenerateProjectLinksSearchOptions(t *testing.T) {
 	}
 }
 
+// TestLateInitializeProjectLinks tests late initialization of links.
 func TestLateInitializeProjectLinks(t *testing.T) {
 	t.Parallel()
 
@@ -207,6 +211,7 @@ func TestLateInitializeProjectLinks(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectLinksObservations tests generating observations.
 func TestGenerateProjectLinksObservations(t *testing.T) {
 	t.Parallel()
 
@@ -264,6 +269,7 @@ func TestGenerateProjectLinksObservations(t *testing.T) {
 	}
 }
 
+// TestAreProjectLinksUpToDate tests checking links up to date.
 func TestAreProjectLinksUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -325,6 +331,7 @@ func TestAreProjectLinksUpToDate(t *testing.T) {
 	}
 }
 
+// TestIsProjectLinkUpToDate tests checking link up to date.
 func TestIsProjectLinkUpToDate(t *testing.T) {
 	t.Parallel()
 

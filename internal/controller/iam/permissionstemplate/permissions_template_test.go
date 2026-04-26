@@ -35,30 +35,37 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+// notPermissionsTemplate is a type for testing non-PermissionsTemplate
+// resources.
 type notPermissionsTemplate struct {
 	resource.Managed
 }
 
+// mockGate is a mock implementation of a gate for testing.
 type mockGate struct {
 	registered bool
 	callback   func()
 	gvks       []schema.GroupVersionKind
 }
 
+// Register registers a callback for a GroupVersionKind.
 func (m *mockGate) Register(callback func(), gvks ...schema.GroupVersionKind) {
 	m.registered = true
 	m.callback = callback
 	m.gvks = append(m.gvks, gvks...)
 }
 
+// Set sets whether a GroupVersionKind is enabled.
 func (m *mockGate) Set(_ schema.GroupVersionKind, _ bool) bool {
 	return false
 }
 
+// mockHTTPResponse returns a mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
 	return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}
 }
 
+// newPermissionsTemplate creates a test PermissionsTemplate resource.
 func newPermissionsTemplate(name string) *v1alpha1.PermissionsTemplate {
 	return &v1alpha1.PermissionsTemplate{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
@@ -68,18 +75,21 @@ func newPermissionsTemplate(name string) *v1alpha1.PermissionsTemplate {
 	}
 }
 
+// withExternalName sets the external name on a PermissionsTemplate.
 func withExternalName(template *v1alpha1.PermissionsTemplate, externalName string) *v1alpha1.PermissionsTemplate {
 	meta.SetExternalName(template, externalName)
 
 	return template
 }
 
+// stringSlice creates a pointer to a string slice.
 func stringSlice(values ...string) *[]string {
 	copied := append([]string(nil), values...)
 
 	return &copied
 }
 
+// TestSetupGatedRegistersPermissionsTemplateGVK tests SetupGated registers GVK.
 func TestSetupGatedRegistersPermissionsTemplateGVK(t *testing.T) {
 	t.Parallel()
 
@@ -109,6 +119,7 @@ func TestSetupGatedRegistersPermissionsTemplateGVK(t *testing.T) {
 	}
 }
 
+// TestCreate tests the Create method.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -176,6 +187,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// TestDelete tests the Delete method.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 

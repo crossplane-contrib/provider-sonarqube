@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateQualityGateConditionObservation tests generating observations.
 func TestGenerateQualityGateConditionObservation(t *testing.T) {
 	t.Parallel()
 
@@ -79,6 +80,7 @@ func TestGenerateQualityGateConditionObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityGateConditionsObservation tests conditions observations.
 func TestGenerateQualityGateConditionsObservation(t *testing.T) {
 	t.Parallel()
 
@@ -124,6 +126,7 @@ func TestGenerateQualityGateConditionsObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateCreateQualityGateConditionOption tests generating create options.
 func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 	t.Parallel()
 
@@ -182,6 +185,7 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 	}
 }
 
+// TestGenerateUpdateQualityGateConditionOption tests generating update options.
 func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 	t.Parallel()
 
@@ -230,6 +234,7 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 	}
 }
 
+// TestGenerateDeleteQualityGateConditionOption tests generating delete options.
 func TestGenerateDeleteQualityGateConditionOption(t *testing.T) {
 	t.Parallel()
 
@@ -259,6 +264,7 @@ func TestGenerateDeleteQualityGateConditionOption(t *testing.T) {
 	}
 }
 
+// TestIsQualityGateConditionUpToDate tests checking condition up to date.
 func TestIsQualityGateConditionUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -354,6 +360,7 @@ func TestIsQualityGateConditionUpToDate(t *testing.T) {
 	}
 }
 
+// TestLateInitializeQualityGateCondition tests late init of conditions.
 func TestLateInitializeQualityGateCondition(t *testing.T) {
 	t.Parallel()
 
@@ -413,6 +420,7 @@ func TestLateInitializeQualityGateCondition(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityGateConditionsAssociation tests association generation.
 func TestGenerateQualityGateConditionsAssociation(t *testing.T) {
 	t.Parallel()
 
@@ -490,6 +498,7 @@ func TestGenerateQualityGateConditionsAssociation(t *testing.T) {
 	}
 }
 
+// TestAreQualityGateConditionsUpToDate tests checking conditions up to date.
 func TestAreQualityGateConditionsUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -539,6 +548,7 @@ func TestAreQualityGateConditionsUpToDate(t *testing.T) {
 	}
 }
 
+// TestFindNonExistingQualityGateConditions tests finding non-existing.
 func TestFindNonExistingQualityGateConditions(t *testing.T) {
 	t.Parallel()
 
@@ -595,6 +605,7 @@ func TestFindNonExistingQualityGateConditions(t *testing.T) {
 	}
 }
 
+// TestFindMissingQualityGateConditions tests finding missing conditions.
 func TestFindMissingQualityGateConditions(t *testing.T) {
 	t.Parallel()
 
@@ -651,6 +662,7 @@ func TestFindMissingQualityGateConditions(t *testing.T) {
 	}
 }
 
+// TestFindNotUpToDateQualityGateConditions tests finding not up to date.
 func TestFindNotUpToDateQualityGateConditions(t *testing.T) {
 	t.Parallel()
 
@@ -716,6 +728,8 @@ func TestFindNotUpToDateQualityGateConditions(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityGateConditionObservationFromCreate tests
+// creation observations.
 func TestGenerateQualityGateConditionObservationFromCreate(t *testing.T) {
 	t.Parallel()
 

@@ -43,10 +43,12 @@ import (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
+// notQualityProfile is a type for testing non-QualityProfile resources.
 type notQualityProfile struct {
 	resource.Managed
 }
 
+// errComparer compares errors by their message.
 func errComparer(a, b error) bool {
 	if a == nil && b == nil {
 		return true
@@ -59,6 +61,7 @@ func errComparer(a, b error) bool {
 	return a.Error() == b.Error()
 }
 
+// mockHTTPResponse returns a mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -66,6 +69,7 @@ func mockHTTPResponse() *http.Response {
 	}
 }
 
+// TestObserve tests the Observe method.
 func TestObserve(t *testing.T) {
 	t.Parallel()
 
@@ -330,6 +334,7 @@ func TestObserve(t *testing.T) {
 	}
 }
 
+// TestCreate tests the Create method.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -473,6 +478,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// TestDelete tests the Delete method.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
@@ -604,6 +610,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+// TestSyncQualityProfileRules tests syncQualityProfileRules.
 func TestSyncQualityProfileRules(t *testing.T) {
 	t.Parallel()
 

@@ -44,12 +44,18 @@ import (
 )
 
 const (
-	errNotUser            = "managed resource is not a User custom resource"
-	errTrackPCUsage       = "cannot track ProviderConfig usage"
-	errGetPC              = "cannot get ProviderConfig"
+	// errNotUser indicates managed resource is not a User.
+	errNotUser = "managed resource is not a User custom resource"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
+	errTrackPCUsage = "cannot track ProviderConfig usage"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
+	// errExternalNameNotSet indicates external name is not set.
 	errExternalNameNotSet = "external name is not set for User resource %s"
-	errNoUserID           = "created User has empty ID"
+	// errNoUserID indicates created User has empty ID.
+	errNoUserID = "created User has empty ID"
 
+	// passwordKey is the password key for secrets.
 	passwordKey = "password"
 )
 
@@ -233,6 +239,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect closes the external client connection.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }

@@ -31,6 +31,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+// newFakeClient creates a fake Kubernetes client for testing.
 func newFakeClient(objs ...runtime.Object) client.Client {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
@@ -48,6 +49,7 @@ func newFakeClient(objs ...runtime.Object) client.Client {
 		Build()
 }
 
+// TestGetTokenValueFromSecret tests retrieving token values from secrets.
 func TestGetTokenValueFromSecret(t *testing.T) {
 	t.Parallel()
 
@@ -181,6 +183,7 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 	}
 }
 
+// TestGetTokenValueFromLocalSecret tests retrieving token values from local.
 func TestGetTokenValueFromLocalSecret(t *testing.T) {
 	t.Parallel()
 
@@ -301,6 +304,7 @@ func containsString(s, substr string) bool {
 		(s != "" && substr != "" && findSubstring(s, substr)))
 }
 
+// findSubstring checks if a substring exists in a string.
 func findSubstring(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {

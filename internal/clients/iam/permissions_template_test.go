@@ -29,13 +29,19 @@ import (
 )
 
 const (
+	// permissionsTemplateID is the test permissions template ID.
 	permissionsTemplateID = "template-id"
-	permissionScan        = "scan"
-	templateNameA         = "template-a"
-	templateDescription   = "desc"
-	projectKeyPattern     = "proj-.*"
+	// permissionScan is the scan permission for testing.
+	permissionScan = "scan"
+	// templateNameA is the name of test template A.
+	templateNameA = "template-a"
+	// templateDescription is the description of the test template.
+	templateDescription = "desc"
+	// projectKeyPattern is the project key pattern for testing.
+	projectKeyPattern = "proj-.*"
 )
 
+// TestLateInitializePermissionsTemplate tests template late initialization.
 func TestLateInitializePermissionsTemplate(t *testing.T) {
 	t.Parallel()
 
@@ -102,6 +108,7 @@ func TestLateInitializePermissionsTemplate(t *testing.T) {
 	}
 }
 
+// TestIsPermissionsTemplateLateInitialized tests detecting late initialization.
 func TestIsPermissionsTemplateLateInitialized(t *testing.T) {
 	t.Parallel()
 
@@ -185,6 +192,7 @@ func TestIsPermissionsTemplateLateInitialized(t *testing.T) {
 	}
 }
 
+// TestIsPermissionsTemplateUpToDate tests template up-to-date status.
 func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -295,6 +303,7 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 	}
 }
 
+// TestArePermissionsTemplateBaseFieldsUpToDate tests base fields up-to-date.
 func TestArePermissionsTemplateBaseFieldsUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -353,6 +362,7 @@ func TestArePermissionsTemplateBaseFieldsUpToDate(t *testing.T) {
 	}
 }
 
+// TestGeneratePermissionsTemplateSearchOptions tests generating search options.
 func TestGeneratePermissionsTemplateSearchOptions(t *testing.T) {
 	t.Parallel()
 
@@ -375,6 +385,7 @@ func TestGeneratePermissionsTemplateSearchOptions(t *testing.T) {
 	}
 }
 
+// TestGeneratePermissionsTemplateUpdateOptions tests generating update options.
 func TestGeneratePermissionsTemplateUpdateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -402,6 +413,7 @@ func TestGeneratePermissionsTemplateUpdateOptions(t *testing.T) {
 	}
 }
 
+// TestArePermissionsTemplateGroupsUpToDate tests group permissions up-to-date.
 func TestArePermissionsTemplateGroupsUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -460,6 +472,7 @@ func TestArePermissionsTemplateGroupsUpToDate(t *testing.T) {
 	}
 }
 
+// TestCreatePermissionsTemplateGroupMapping tests group permission mappings.
 func TestCreatePermissionsTemplateGroupMapping(t *testing.T) {
 	t.Parallel()
 
@@ -479,6 +492,8 @@ func TestCreatePermissionsTemplateGroupMapping(t *testing.T) {
 	}
 }
 
+// TestCreatePermissionsTemplateGroupMappingSkipsEmptyObservedEntries
+// tests skipping empty groups.
 func TestCreatePermissionsTemplateGroupMappingSkipsEmptyObservedEntries(t *testing.T) {
 	t.Parallel()
 
@@ -497,6 +512,7 @@ func TestCreatePermissionsTemplateGroupMappingSkipsEmptyObservedEntries(t *testi
 	}
 }
 
+// TestArePermissionsTemplateUsersUpToDate tests user permissions up-to-date.
 func TestArePermissionsTemplateUsersUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -554,6 +570,7 @@ func TestArePermissionsTemplateUsersUpToDate(t *testing.T) {
 	}
 }
 
+// TestCreatePermissionsTemplateUserMapping tests user mappings.
 func TestCreatePermissionsTemplateUserMapping(t *testing.T) {
 	t.Parallel()
 
@@ -572,6 +589,7 @@ func TestCreatePermissionsTemplateUserMapping(t *testing.T) {
 	}
 }
 
+// TestGeneratePermissionsTemplateOptions tests template options.
 func TestGeneratePermissionsTemplateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -633,6 +651,7 @@ func TestGeneratePermissionsTemplateOptions(t *testing.T) {
 	}
 }
 
+// TestUpdatePermissionsTemplateObservation tests template observation updates.
 func TestUpdatePermissionsTemplateObservation(t *testing.T) {
 	t.Parallel()
 
@@ -668,6 +687,7 @@ func TestUpdatePermissionsTemplateObservation(t *testing.T) {
 	}
 }
 
+// TestGeneratePermissionsTemplateObservations tests template observations.
 func TestGeneratePermissionsTemplateObservations(t *testing.T) {
 	t.Parallel()
 
@@ -716,6 +736,7 @@ func TestGeneratePermissionsTemplateObservations(t *testing.T) {
 	})
 }
 
+// TestNewPermissionsTemplatesClient tests creating a new client.
 func TestNewPermissionsTemplatesClient(t *testing.T) {
 	t.Parallel()
 

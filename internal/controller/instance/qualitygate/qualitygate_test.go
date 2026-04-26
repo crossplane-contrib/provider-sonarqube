@@ -36,8 +36,10 @@ import (
 )
 
 const (
+	// myQualityGateName is a test quality gate name.
 	myQualityGateName = "my-sonar-gate"
-	myConditionID     = "cond-id-123"
+	// myConditionID is a test condition ID.
+	myConditionID = "cond-id-123"
 )
 
 // Unlike many Kubernetes projects Crossplane does not use third party testing
@@ -48,6 +50,7 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
+// notQualityGate is a type for testing non-QualityGate resources.
 type notQualityGate struct {
 	resource.Managed
 }
@@ -60,6 +63,7 @@ func mockHTTPResponse() *http.Response {
 	}
 }
 
+// TestObserve tests the Observe method.
 func TestObserve(t *testing.T) {
 	t.Parallel()
 
@@ -276,6 +280,7 @@ func TestObserve(t *testing.T) {
 	}
 }
 
+// TestCreate tests the Create method.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -460,6 +465,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// TestUpdate tests the Update method.
 func TestUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -587,6 +593,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+// TestDelete tests the Delete method.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
@@ -707,6 +714,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+// TestDisconnect tests the Disconnect method.
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 
@@ -718,6 +726,8 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
+// TestCreateSetsExternalNameToSonarQubeName tests external name is set
+// to SonarQube name on create.
 func TestCreateSetsExternalNameToSonarQubeName(t *testing.T) {
 	t.Parallel()
 
@@ -766,6 +776,8 @@ func errComparer(a, b error) bool {
 	return a.Error() == b.Error()
 }
 
+// TestObserveLateInitializesConditionIds tests Observe late initializes
+// condition IDs.
 func TestObserveLateInitializesConditionIds(t *testing.T) {
 	t.Parallel()
 
@@ -838,6 +850,8 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 	}
 }
 
+// TestObserveWithExistingConditionIds tests Observe with existing
+// condition IDs.
 func TestObserveWithExistingConditionIds(t *testing.T) {
 	t.Parallel()
 
@@ -898,6 +912,7 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 	}
 }
 
+// TestObserveWithStaleConditionId tests Observe with stale condition ID.
 func TestObserveWithStaleConditionId(t *testing.T) {
 	t.Parallel()
 
@@ -958,6 +973,7 @@ func TestObserveWithStaleConditionId(t *testing.T) {
 	}
 }
 
+// TestUpdateWithConditions tests Update with conditions.
 func TestUpdateWithConditions(t *testing.T) {
 	t.Parallel()
 
@@ -1188,6 +1204,7 @@ func TestUpdateWithConditions(t *testing.T) {
 	}
 }
 
+// TestObserveWithConditions tests Observe with conditions.
 func TestObserveWithConditions(t *testing.T) {
 	t.Parallel()
 

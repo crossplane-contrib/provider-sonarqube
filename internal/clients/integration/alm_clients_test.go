@@ -22,6 +22,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
+// TestALMClientConstructors tests ALM client constructors.
 func TestALMClientConstructors(t *testing.T) {
 	t.Parallel()
 

@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateCreateQualityProfileOption tests creation options.
 func TestGenerateCreateQualityProfileOption(t *testing.T) {
 	t.Parallel()
 
@@ -68,6 +69,7 @@ func TestGenerateCreateQualityProfileOption(t *testing.T) {
 	}
 }
 
+// TestGenerateDeleteQualityProfileOption tests deletion options.
 func TestGenerateDeleteQualityProfileOption(t *testing.T) {
 	t.Parallel()
 
@@ -99,6 +101,7 @@ func TestGenerateDeleteQualityProfileOption(t *testing.T) {
 	}
 }
 
+// TestGenerateRenameQualityProfileOption tests rename options.
 func TestGenerateRenameQualityProfileOption(t *testing.T) {
 	t.Parallel()
 
@@ -132,6 +135,7 @@ func TestGenerateRenameQualityProfileOption(t *testing.T) {
 	}
 }
 
+// TestIsQualityProfileUpToDate tests quality profile up-to-date status.
 func TestIsQualityProfileUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -268,6 +272,7 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileRulesAssociation tests rule associations.
 func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
 	t.Parallel()
 
@@ -366,6 +371,7 @@ func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
 	}
 }
 
+// TestFindNonExistingQualityProfileRules tests finding non-existing rules.
 func TestFindNonExistingQualityProfileRules(t *testing.T) {
 	t.Parallel()
 
@@ -436,6 +442,7 @@ func TestFindNonExistingQualityProfileRules(t *testing.T) {
 	}
 }
 
+// TestFindMissingQualityProfileRules tests finding missing rules.
 func TestFindMissingQualityProfileRules(t *testing.T) {
 	t.Parallel()
 
@@ -506,6 +513,7 @@ func TestFindMissingQualityProfileRules(t *testing.T) {
 	}
 }
 
+// TestFindNotUpToDateQualityProfileRules tests finding out-of-date rules.
 func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 	t.Parallel()
 
@@ -592,6 +600,7 @@ func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 	}
 }
 
+// TestAreQualityProfileRulesUpToDate tests checking all rules are up-to-date.
 func TestAreQualityProfileRulesUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -638,6 +647,7 @@ func TestAreQualityProfileRulesUpToDate(t *testing.T) {
 	}
 }
 
+// TestWereQualityProfileRulesLateInitialized tests rule late init detection.
 func TestWereQualityProfileRulesLateInitialized(t *testing.T) {
 	t.Parallel()
 
@@ -711,6 +721,7 @@ func TestWereQualityProfileRulesLateInitialized(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileActivateRuleOption tests rule activation options.
 func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 	t.Parallel()
 
@@ -823,6 +834,7 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileDeactivateRuleOption tests deactivation options.
 func TestGenerateQualityProfileDeactivateRuleOption(t *testing.T) {
 	t.Parallel()
 
@@ -853,6 +865,7 @@ func TestGenerateQualityProfileDeactivateRuleOption(t *testing.T) {
 	}
 }
 
+// TestLateInitializeQualityProfile tests quality profile late initialization.
 func TestLateInitializeQualityProfile(t *testing.T) {
 	t.Parallel()
 
@@ -902,6 +915,8 @@ func TestLateInitializeQualityProfile(t *testing.T) {
 // observation is keyed by language (not by profile UUID) so that
 // AreProjectQualityProfilesUpToDate can look up profiles via the
 // language key used in the spec.
+// TestGenerateQualityProfilesSearchProjectObservation tests
+// project observation.
 func TestGenerateQualityProfilesSearchProjectObservation(t *testing.T) {
 	t.Parallel()
 
@@ -969,6 +984,8 @@ func TestGenerateQualityProfilesSearchProjectObservation(t *testing.T) {
 // infinite reconcile loops:
 //   - empty spec + non-empty observation must be considered up to date
 //   - observation may have more entries than spec (default built-in profiles)
+//
+// TestAreProjectQualityProfilesUpToDate tests project profiles up-to-date.
 func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -1055,6 +1072,7 @@ func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileObservation tests profile observations.
 func TestGenerateQualityProfileObservation(t *testing.T) {
 	t.Parallel()
 
@@ -1129,6 +1147,7 @@ func TestGenerateQualityProfileObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityprofilesSetDefaultOption tests set default options.
 func TestGenerateQualityprofilesSetDefaultOption(t *testing.T) {
 	t.Parallel()
 
@@ -1160,6 +1179,7 @@ func TestGenerateQualityprofilesSetDefaultOption(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfilesSearchProjectOptions tests search options.
 func TestGenerateQualityProfilesSearchProjectOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1193,6 +1213,8 @@ func TestGenerateQualityProfilesSearchProjectOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileAddProjectOptions tests generating
+// add project options.
 func TestGenerateQualityProfileAddProjectOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1226,6 +1248,7 @@ func TestGenerateQualityProfileAddProjectOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileShowOptions tests generating show profile options.
 func TestGenerateQualityProfileShowOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1259,6 +1282,8 @@ func TestGenerateQualityProfileShowOptions(t *testing.T) {
 	}
 }
 
+// TestLateInitializeQualityProfileRules tests late initializing
+// quality profile rules.
 func TestLateInitializeQualityProfileRules(t *testing.T) {
 	t.Parallel()
 

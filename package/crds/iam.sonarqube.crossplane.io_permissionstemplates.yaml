@@ -58,8 +58,9 @@ spec:
               PermissionsTemplate.
             properties:
               forProvider:
-                description: PermissionsTemplateParameters are the configurable fields
-                  of a PermissionsTemplate.
+                description: |-
+                  PermissionsTemplateParameters are the configurable fields of a
+                  PermissionsTemplate.
                 properties:
                   creatorPermissions:
                     description: CreatorPermissions is a list of permissions that
@@ -92,9 +93,9 @@ spec:
                       This is an optional field that allows you to specify group-specific
                       permissions for the PermissionsTemplate.
                     items:
-                      description: PermissionsTemplateGroupParameters is a struct
-                        that represents the permissions assigned to a group in a SonarQube
-                        Permission Template.
+                      description: |-
+                        PermissionsTemplateGroupParameters is a struct that represents the
+                        permissions assigned to a group in a SonarQube Permission Template.
                       properties:
                         name:
                           description: Name is the name of the group in SonarQube.
@@ -135,9 +136,9 @@ spec:
                       This is an optional field that allows you to specify user-specific
                       permissions for the PermissionsTemplate.
                     items:
-                      description: PermissionsTemplateUserParameters is a struct that
-                        represents the permissions assigned to a user in a SonarQube
-                        Permission Template.
+                      description: |-
+                        PermissionsTemplateUserParameters is a struct that represents the permissions
+                        assigned to a user in a SonarQube Permission Template.
                       properties:
                         login:
                           description: Login is the unique identifier of the user
@@ -226,12 +227,14 @@ spec:
             - forProvider
             type: object
           status:
-            description: A PermissionsTemplateStatus represents the observed state
-              of a PermissionsTemplate.
+            description: |-
+              A PermissionsTemplateStatus represents the observed state of a
+              PermissionsTemplate.
             properties:
               atProvider:
-                description: PermissionsTemplateObservation are the observable fields
-                  of a PermissionsTemplate.
+                description: |-
+                  PermissionsTemplateObservation are the observable fields of a
+                  PermissionsTemplate.
                 properties:
                   createdAt:
                     description: CreatedAt is the timestamp when the PermissionsTemplate
@@ -263,11 +266,11 @@ spec:
                       This reflects the actual group-specific permissions for the
                       PermissionsTemplate in SonarQube.
                     items:
-                      description: PermissionsTemplateGroupObservation is a struct
-                        that represents the observed state of a group in a SonarQube
-                        Permission Template. It contains the actual name of the group
-                        and the permissions assigned to it as observed from the SonarQube
-                        API response.
+                      description: |-
+                        PermissionsTemplateGroupObservation is a struct that represents the observed
+                        state of a group in a SonarQube Permission Template.
+                        It contains the actual name of the group and the permissions assigned to it
+                        as observed from the SonarQube API response.
                       properties:
                         name:
                           description: Name is the name of the group in SonarQube.
@@ -313,9 +316,9 @@ spec:
                       This reflects the actual user-specific permissions for the PermissionsTemplate
                       in SonarQube.
                     items:
-                      description: PermissionsTemplateUserObservation is a struct
-                        that represents the observed permissions for a user in a SonarQube
-                        Permission Template.
+                      description: |-
+                        PermissionsTemplateUserObservation is a struct that represents
+                        the observed permissions for a user in a SonarQube Permission Template.
                       properties:
                         login:
                           description: Login is the unique identifier of the user

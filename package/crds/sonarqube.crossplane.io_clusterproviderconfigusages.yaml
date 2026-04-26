@@ -34,8 +34,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ClusterProviderConfigUsage indicates that a resource is using
-          a ClusterProviderConfig.
+        description: |-
+          ClusterProviderConfigUsage indicates that a resource is using a
+          ClusterProviderConfig.
         properties:
           apiVersion:
             description: |-

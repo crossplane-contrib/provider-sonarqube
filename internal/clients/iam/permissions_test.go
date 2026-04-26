@@ -25,11 +25,13 @@ import (
 )
 
 const (
+	// testGroupName is a test constant for group names.
 	testGroupName = "devs"
 )
 
 // permissionScan is defined in permissions_template_test.go as permissionScan
 
+// TestPermissionsNewClient tests creating a new permissions client.
 func TestPermissionsNewClient(t *testing.T) {
 	t.Parallel()
 
@@ -62,6 +64,7 @@ func TestPermissionsNewClient(t *testing.T) {
 	})
 }
 
+// TestPermissionsGenerateAddGroupOptions tests generating add group options.
 func TestPermissionsGenerateAddGroupOptions(t *testing.T) {
 	t.Parallel()
 
@@ -92,6 +95,8 @@ func TestPermissionsGenerateAddGroupOptions(t *testing.T) {
 	})
 }
 
+// TestPermissionsGenerateRemoveGroupOptions tests generating
+// remove group options.
 func TestPermissionsGenerateRemoveGroupOptions(t *testing.T) {
 	t.Parallel()
 
@@ -122,6 +127,7 @@ func TestPermissionsGenerateRemoveGroupOptions(t *testing.T) {
 	})
 }
 
+// TestPermissionsGenerateGroupsOptions tests generating groups options.
 func TestPermissionsGenerateGroupsOptions(t *testing.T) {
 	t.Parallel()
 
@@ -173,6 +179,7 @@ func TestPermissionsGenerateGroupsOptions(t *testing.T) {
 	})
 }
 
+// TestPermissionsAreEqual tests checking if permissions are equal.
 func TestPermissionsAreEqual(t *testing.T) {
 	t.Parallel()
 

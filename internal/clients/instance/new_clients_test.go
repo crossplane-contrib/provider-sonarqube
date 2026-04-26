@@ -22,6 +22,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
+// newTestConfig creates a test configuration with a personal access token.
 func newTestConfig() common.Config {
 	return common.Config{
 		AuthType: common.PersonalAccessToken,
@@ -30,6 +31,7 @@ func newTestConfig() common.Config {
 	}
 }
 
+// newBasicAuthTestConfig creates a test configuration with basic auth.
 func newBasicAuthTestConfig() common.Config {
 	return common.Config{
 		AuthType: common.BasicAuth,
@@ -41,6 +43,7 @@ func newBasicAuthTestConfig() common.Config {
 	}
 }
 
+// TestNewProjectsClient tests creating a new projects client.
 func TestNewProjectsClient(t *testing.T) {
 	t.Parallel()
 
@@ -67,6 +70,7 @@ func TestNewProjectsClient(t *testing.T) {
 	}
 }
 
+// TestNewProjectBranchesClient tests creating a new project branches client.
 func TestNewProjectBranchesClient(t *testing.T) {
 	t.Parallel()
 
@@ -93,6 +97,7 @@ func TestNewProjectBranchesClient(t *testing.T) {
 	}
 }
 
+// TestNewProjectLinksClient tests creating a new project links client.
 func TestNewProjectLinksClient(t *testing.T) {
 	t.Parallel()
 
@@ -119,6 +124,7 @@ func TestNewProjectLinksClient(t *testing.T) {
 	}
 }
 
+// TestNewProjectTagsClient tests creating a new project tags client.
 func TestNewProjectTagsClient(t *testing.T) {
 	t.Parallel()
 
@@ -145,6 +151,7 @@ func TestNewProjectTagsClient(t *testing.T) {
 	}
 }
 
+// TestNewQualityGatesClient tests creating a new quality gates client.
 func TestNewQualityGatesClient(t *testing.T) {
 	t.Parallel()
 
@@ -171,6 +178,7 @@ func TestNewQualityGatesClient(t *testing.T) {
 	}
 }
 
+// TestNewQualityProfilesClient tests creating a new quality profiles client.
 func TestNewQualityProfilesClient(t *testing.T) {
 	t.Parallel()
 
@@ -197,6 +205,7 @@ func TestNewQualityProfilesClient(t *testing.T) {
 	}
 }
 
+// TestNewRulesClient tests creating a new rules client.
 func TestNewRulesClient(t *testing.T) {
 	t.Parallel()
 
@@ -223,6 +232,7 @@ func TestNewRulesClient(t *testing.T) {
 	}
 }
 
+// TestNewSettingsClient tests creating a new settings client.
 func TestNewSettingsClient(t *testing.T) {
 	t.Parallel()
 
@@ -249,6 +259,7 @@ func TestNewSettingsClient(t *testing.T) {
 	}
 }
 
+// TestNewNewCodePeriodsClient tests creating a new code periods client.
 func TestNewNewCodePeriodsClient(t *testing.T) {
 	t.Parallel()
 

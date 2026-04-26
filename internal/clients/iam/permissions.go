@@ -25,6 +25,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
+// PermissionsClient is the interface for managing resource permissions
+// in SonarQube.
 type PermissionsClient interface {
 	AddGroup(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error)
 	Groups(opt *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error)

@@ -444,6 +444,8 @@ func GeneratePermissionsTemplateRemoveUserPermissionOptions(templateID, userLogi
 	}
 }
 
+// GeneratePermissionsTemplateAddCreatorPermissionOptions creates options
+// for adding a permission to a template creator.
 func GeneratePermissionsTemplateAddCreatorPermissionOptions(templateID, permission string) *sonar.PermissionsAddProjectCreatorToTemplateOptions {
 	return &sonar.PermissionsAddProjectCreatorToTemplateOptions{
 		TemplateID: templateID,
@@ -451,6 +453,8 @@ func GeneratePermissionsTemplateAddCreatorPermissionOptions(templateID, permissi
 	}
 }
 
+// GeneratePermissionsTemplateRemoveCreatorPermissionOptions creates options
+// for removing a permission from a template creator.
 func GeneratePermissionsTemplateRemoveCreatorPermissionOptions(templateID, permission string) *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions {
 	return &sonar.PermissionsRemoveProjectCreatorFromTemplateOptions{
 		TemplateID: templateID,
@@ -458,6 +462,8 @@ func GeneratePermissionsTemplateRemoveCreatorPermissionOptions(templateID, permi
 	}
 }
 
+// lenDereferencedStringSlice returns the length of a dereferenced
+// string slice or 0 if nil.
 func lenDereferencedStringSlice(values *[]string) int {
 	if values == nil {
 		return 0

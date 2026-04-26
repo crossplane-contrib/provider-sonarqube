@@ -68,6 +68,7 @@ type UserParameters struct {
 	Anonymize *bool `json:"anonymize,omitempty"`
 }
 
+// UserGroupsParameters specifies group membership for a user.
 type UserGroupsParameters struct {
 	// GroupId is the unique identifier of the group in SonarQube.
 	// +kubebuilder:validation:Optional
@@ -163,6 +164,7 @@ var (
 	UserGroupVersionKind = SchemeGroupVersion.WithKind(UserKind)
 )
 
+// init registers the User resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&User{}, &UserList{})
 }

@@ -27,12 +27,17 @@ import (
 )
 
 const (
-	original   = "original"
-	testStr1   = "testStr1"
-	string3    = "string3"
+	// original is the original string value.
+	original = "original"
+	// testStr1 is the first test string value.
+	testStr1 = "testStr1"
+	// string3 is the third test string value.
+	string3 = "string3"
+	// testNewStr is the new test string value.
 	testNewStr = "testNewStr"
 )
 
+// TestIsComparablePtrEqualComparable tests pointer equality with values.
 func TestIsComparablePtrEqualComparable(t *testing.T) {
 	t.Parallel()
 
@@ -80,6 +85,7 @@ func TestIsComparablePtrEqualComparable(t *testing.T) {
 	}
 }
 
+// TestIsComparablePtrEqualComparableInt tests pointer equality with integers.
 func TestIsComparablePtrEqualComparableInt(t *testing.T) {
 	t.Parallel()
 
@@ -122,6 +128,7 @@ func TestIsComparablePtrEqualComparableInt(t *testing.T) {
 	}
 }
 
+// TestIsComparablePtrEqualComparablePtr tests pointer equality with pointers.
 func TestIsComparablePtrEqualComparablePtr(t *testing.T) {
 	t.Parallel()
 
@@ -174,6 +181,7 @@ func TestIsComparablePtrEqualComparablePtr(t *testing.T) {
 	}
 }
 
+// TestIsComparablePtrEqualComparablePtrInt tests integer pointer equality.
 func TestIsComparablePtrEqualComparablePtrInt(t *testing.T) {
 	t.Parallel()
 
@@ -221,6 +229,7 @@ func TestIsComparablePtrEqualComparablePtrInt(t *testing.T) {
 	}
 }
 
+// TestAssignIfNil tests assigning values to nil pointers.
 func TestAssignIfNil(t *testing.T) {
 	t.Parallel()
 
@@ -313,6 +322,7 @@ func TestAssignIfNil(t *testing.T) {
 	})
 }
 
+// TestCloseBody tests closing HTTP response bodies.
 func TestCloseBody(t *testing.T) {
 	t.Parallel()
 
@@ -343,6 +353,7 @@ func TestCloseBody(t *testing.T) {
 	})
 }
 
+// TestTimeToMetaTime tests converting [time.Time] to MetaTime.
 func TestTimeToMetaTime(t *testing.T) {
 	t.Parallel()
 
@@ -371,6 +382,7 @@ func TestTimeToMetaTime(t *testing.T) {
 	})
 }
 
+// TestStringToMetaTime tests converting RFC3339 strings to MetaTime.
 func TestStringToMetaTime(t *testing.T) {
 	t.Parallel()
 
@@ -411,6 +423,7 @@ func TestStringToMetaTime(t *testing.T) {
 	})
 }
 
+// TestAnySliceToStringSlice tests converting any slice to string slice.
 func TestAnySliceToStringSlice(t *testing.T) {
 	t.Parallel()
 
@@ -475,6 +488,8 @@ func TestAnySliceToStringSlice(t *testing.T) {
 		}
 	})
 }
+
+// TestIsComparableSlicePtrEqualComparableSlice tests slice pointer equality.
 func TestIsComparableSlicePtrEqualComparableSlice(t *testing.T) {
 	t.Parallel()
 
@@ -522,6 +537,7 @@ func TestIsComparableSlicePtrEqualComparableSlice(t *testing.T) {
 	}
 }
 
+// TestIsComparableMapPtrEqualComparableMap tests map pointer equality.
 func TestIsComparableMapPtrEqualComparableMap(t *testing.T) {
 	t.Parallel()
 
@@ -574,6 +590,7 @@ func TestIsComparableMapPtrEqualComparableMap(t *testing.T) {
 	}
 }
 
+// TestAssignIfNonNil tests assigning values from non-nil pointers.
 func TestAssignIfNonNil(t *testing.T) {
 	t.Parallel()
 
@@ -649,6 +666,7 @@ func TestAssignIfNonNil(t *testing.T) {
 	})
 }
 
+// TestAreStringSlicesEqual tests equality of string slices regardless of order.
 func TestAreStringSlicesEqual(t *testing.T) {
 	t.Parallel()
 
@@ -696,6 +714,7 @@ func TestAreStringSlicesEqual(t *testing.T) {
 	}
 }
 
+// TestAreStringSlicesEqualDeDuped tests equality of deduplicated string slices.
 func TestAreStringSlicesEqualDeDuped(t *testing.T) {
 	t.Parallel()
 
@@ -738,6 +757,7 @@ func TestAreStringSlicesEqualDeDuped(t *testing.T) {
 	}
 }
 
+// TestNewStringSetFromSlice tests creating a set from a string slice.
 func TestNewStringSetFromSlice(t *testing.T) {
 	t.Parallel()
 

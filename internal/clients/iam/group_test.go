@@ -28,11 +28,16 @@ import (
 )
 
 const (
+	// lateInitCustomDesc is a test constant for custom descriptions.
 	lateInitCustomDesc = "custom"
-	lateInitWritePerm  = "write"
-	lateInitGroupID    = "group-1"
-	lateInitUserID     = "user-1"
-	lateInitGroupDesc  = "engineering"
+	// lateInitWritePerm is a test constant for write permissions.
+	lateInitWritePerm = "write"
+	// lateInitGroupID is a test constant for group IDs.
+	lateInitGroupID = "group-1"
+	// lateInitUserID is a test constant for user IDs.
+	lateInitUserID = "user-1"
+	// lateInitGroupDesc is a test constant for group descriptions.
+	lateInitGroupDesc = "engineering"
 )
 
 // Unlike many Kubernetes projects Crossplane does not use third party testing
@@ -314,6 +319,7 @@ func TestGeneratePermissionsGroupsOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateGroupCreateMembershipOptions tests creating membership options.
 func TestGenerateGroupCreateMembershipOptions(t *testing.T) {
 	t.Parallel()
 
@@ -323,6 +329,7 @@ func TestGenerateGroupCreateMembershipOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateGroupSearchMembershipsOptions tests searching membership options.
 func TestGenerateGroupSearchMembershipsOptions(t *testing.T) {
 	t.Parallel()
 
@@ -340,6 +347,8 @@ func TestGenerateGroupSearchMembershipsOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateGroupMembershipObservation tests generating
+// membership observations.
 func TestGenerateGroupMembershipObservation(t *testing.T) {
 	t.Parallel()
 
@@ -423,6 +432,7 @@ func TestIsGroupUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateCreateGroupOptions tests creating group creation options.
 func TestGenerateCreateGroupOptions(t *testing.T) {
 	t.Parallel()
 
@@ -483,6 +493,7 @@ func TestGenerateCreateGroupOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateUpdateGroupOptions tests creating group update options.
 func TestGenerateUpdateGroupOptions(t *testing.T) {
 	t.Parallel()
 
@@ -534,6 +545,7 @@ func TestGenerateUpdateGroupOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateGroupObservation tests generating group observations.
 func TestGenerateGroupObservation(t *testing.T) {
 	t.Parallel()
 
@@ -575,6 +587,7 @@ func TestGenerateGroupObservation(t *testing.T) {
 	}
 }
 
+// TestNewGroupsClient tests creating a new groups client.
 func TestNewGroupsClient(t *testing.T) {
 	t.Parallel()
 

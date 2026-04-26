@@ -34,6 +34,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
 
+// newSonarTestClient creates a fake Kubernetes client for SonarQube testing.
 func newSonarTestClient(objs ...client.Object) client.Client {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
@@ -46,6 +47,7 @@ func newSonarTestClient(objs ...client.Object) client.Client {
 		Build()
 }
 
+// TestNewClient tests creating a new SonarQube client.
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
@@ -132,6 +134,7 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
+// TestDetermineAuthType tests authentication type determination.
 func TestDetermineAuthType(t *testing.T) {
 	t.Parallel()
 
@@ -345,6 +348,7 @@ func TestDetermineAuthType(t *testing.T) {
 	}
 }
 
+// TestGetConfigNonModernManaged tests getting config from non-modern managed.
 func TestGetConfigNonModernManaged(t *testing.T) {
 	t.Parallel()
 
@@ -360,6 +364,7 @@ func TestGetConfigNonModernManaged(t *testing.T) {
 	}
 }
 
+// getConfigTestCase holds test case data for config retrieval tests.
 type getConfigTestCase struct {
 	managed     *fake.ModernManaged
 	setupClient func() client.Client
@@ -368,6 +373,7 @@ type getConfigTestCase struct {
 	wantConfig  *Config
 }
 
+// runGetConfigTests runs a suite of config retrieval tests.
 func runGetConfigTests(t *testing.T, tests map[string]getConfigTestCase) {
 	t.Helper()
 
@@ -401,6 +407,7 @@ func runGetConfigTests(t *testing.T, tests map[string]getConfigTestCase) {
 	}
 }
 
+// TestGetConfigModernManagedRefErrors tests config retrieval ref errors.
 func TestGetConfigModernManagedRefErrors(t *testing.T) {
 	t.Parallel()
 
@@ -484,6 +491,7 @@ func TestGetConfigModernManagedRefErrors(t *testing.T) {
 	runGetConfigTests(t, tests)
 }
 
+// TestGetConfigModernManagedAuthErrors tests config retrieval auth errors.
 func TestGetConfigModernManagedAuthErrors(t *testing.T) {
 	t.Parallel()
 
@@ -678,6 +686,7 @@ func TestGetConfigModernManagedAuthErrors(t *testing.T) {
 	runGetConfigTests(t, tests)
 }
 
+// TestGetConfigModernManagedSuccess tests successful config retrieval.
 func TestGetConfigModernManagedSuccess(t *testing.T) {
 	t.Parallel()
 

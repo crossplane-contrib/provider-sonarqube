@@ -36,6 +36,8 @@ type ProviderCredentials struct {
 	Source xpv1.CredentialsSource `json:"source"`
 }
 
+// ProviderConfigSpec defines the configuration for the
+// SonarQube provider.
 type ProviderConfigSpec struct {
 	// BaseURL of the SonarQube instance.
 	// +kubebuilder:validation:Required

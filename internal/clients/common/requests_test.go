@@ -21,6 +21,7 @@ import (
 	"testing"
 )
 
+// TestIsResponseNotFound tests detecting not-found HTTP responses.
 func TestIsResponseNotFound(t *testing.T) {
 	t.Parallel()
 

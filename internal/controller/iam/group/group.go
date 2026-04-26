@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package group provides a controller for Group resources.
 package group
 
 import (
@@ -47,13 +48,21 @@ import (
 )
 
 const (
-	errNotGroup     = "managed resource is not a Group custom resource"
+	// errNotGroup indicates managed resource is not a Group.
+	errNotGroup = "managed resource is not a Group custom resource"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
-	errNoGroupID    = "created Group has empty ID"
-	errDeleteGroup  = "cannot delete Group"
-	errUpdateGroup  = "cannot update Group"
-	errCreateGroup  = "cannot create Group"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
+	// errNoGroupID indicates created Group has empty ID.
+	errNoGroupID = "created Group has empty ID"
+	// errDeleteGroup indicates Group deletion failed.
+	errDeleteGroup = "cannot delete Group"
+	// errUpdateGroup indicates Group update failed.
+	errUpdateGroup = "cannot update Group"
+	// errCreateGroup indicates Group creation failed.
+	errCreateGroup = "cannot create Group"
+	// errObserveGroup indicates Group observation failed.
 	errObserveGroup = "cannot observe Group"
 )
 
@@ -70,6 +79,7 @@ func SetupGated(mgr ctrl.Manager, options controller.Options) error {
 	return nil
 }
 
+// Setup adds a controller that reconciles Group managed resources.
 func Setup(mgr ctrl.Manager, options controller.Options) error {
 	name := managed.ControllerName(v1alpha1.GroupGroupKind)
 
@@ -168,6 +178,7 @@ type external struct {
 	permissionsClient iam.PermissionsClient
 }
 
+// Observe observes the external Group resource.
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
 	group, ok := mg.(*v1alpha1.Group)
 	if !ok {
@@ -313,6 +324,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect closes the external client connection.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }

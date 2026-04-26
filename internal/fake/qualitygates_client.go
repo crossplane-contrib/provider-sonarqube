@@ -25,6 +25,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
 
+// errNotImplemented indicates function is not implemented.
 var errNotImplemented = errors.New("mock function not implemented")
 
 // MockQualityGatesClient is a mock implementation of the

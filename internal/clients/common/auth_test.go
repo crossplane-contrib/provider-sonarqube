@@ -20,6 +20,7 @@ import (
 	"testing"
 )
 
+// TestAuthTypeConstants tests authentication type constant values.
 func TestAuthTypeConstants(t *testing.T) {
 	t.Parallel()
 

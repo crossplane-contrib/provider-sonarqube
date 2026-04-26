@@ -127,6 +127,7 @@ var (
 	SettingsGroupVersionKind = SchemeGroupVersion.WithKind(SettingsKind)
 )
 
+// init registers the Settings resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&Settings{}, &SettingsList{})
 }

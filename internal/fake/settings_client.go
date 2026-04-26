@@ -25,6 +25,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
 
+// errSettingsNotImplemented indicates settings operation is not implemented.
 var errSettingsNotImplemented = errors.New("settings operation not implemented")
 
 // MockSettingsClient is a mock implementation of the SettingsClient interface.

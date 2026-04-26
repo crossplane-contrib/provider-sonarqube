@@ -32,6 +32,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 )
 
+// newTestUser creates a test User resource.
 func newTestUser(namespace string) *User {
 	return &User{
 		ObjectMeta: metav1.ObjectMeta{
@@ -47,12 +48,15 @@ func newTestUser(namespace string) *User {
 	}
 }
 
+// setExtName sets the external name on a Kubernetes object.
 func setExtName(obj metav1.Object, name string) {
 	meta.SetExternalName(obj, name)
 }
 
+// testNamespace is the test namespace for resources.
 const testNamespace = "default"
 
+// TestUserResolveReferences tests reference resolution for User resources.
 func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
 	t.Parallel()
 
@@ -259,6 +263,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 	}
 }
 
+// TestUserResolveReferences_StopsOnFirstError tests error stopping behavior.
 func TestUserResolveReferences_StopsOnFirstError(t *testing.T) {
 	t.Parallel()
 

@@ -36,9 +36,11 @@ import (
 )
 
 const (
+	// templateNameA is a test template name.
 	templateNameA = "template-a"
 )
 
+// TestUpdate tests the Update method.
 func TestUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -168,6 +170,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+// TestComputePermissionsDiff tests computePermissionsDiff function.
 func TestComputePermissionsDiff(t *testing.T) {
 	t.Parallel()
 
@@ -200,6 +203,7 @@ func TestComputePermissionsDiff(t *testing.T) {
 	}
 }
 
+// TestApplyTemplatePermissions tests applyTemplatePermissions function.
 func TestApplyTemplatePermissions(t *testing.T) {
 	t.Parallel()
 
@@ -249,6 +253,7 @@ func TestApplyTemplatePermissions(t *testing.T) {
 	}
 }
 
+// TestBaseFieldsAndDefaultHelpers tests base fields and default helpers.
 func TestBaseFieldsAndDefaultHelpers(t *testing.T) {
 	t.Parallel()
 
@@ -282,6 +287,8 @@ func TestBaseFieldsAndDefaultHelpers(t *testing.T) {
 	}
 }
 
+// TestGroupUserCreatorReconciliation tests group, user, and creator
+// reconciliation.
 func TestGroupUserCreatorReconciliation(t *testing.T) {
 	t.Parallel()
 

@@ -563,6 +563,7 @@ func isRuleKeyUpToDate(specKey, observationKey string) bool {
 	return strings.HasSuffix(observationKey, ":"+specKey)
 }
 
+// areRuleTagsUpToDate checks if rule tags match between spec and observation.
 func areRuleTagsUpToDate(specTags *[]string, observationTags []string) bool {
 	if specTags == nil {
 		return true

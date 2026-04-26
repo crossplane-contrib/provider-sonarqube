@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package helpers provides utility functions for formatting and comparison.
 package helpers
 
 import (
@@ -26,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CloseBody closes the body of an http.Response safely.
+// CloseBody closes the body of an [http.Response] safely.
 // If the response or body is nil, it does nothing.
 // The error return value of Close is intentionally ignored.
 func CloseBody(resp *http.Response) {

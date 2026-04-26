@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package config provides a controller for ProviderConfig resources.
 package config
 
 import (
@@ -39,6 +40,8 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	return setupClusterProviderConfig(mgr, opts)
 }
 
+// setupNamespacedProviderConfig initializes the namespaced provider
+// config controller.
 func setupNamespacedProviderConfig(mgr ctrl.Manager, opts controller.Options) error {
 	return setupProviderConfig(
 		mgr,
@@ -54,6 +57,8 @@ func setupNamespacedProviderConfig(mgr ctrl.Manager, opts controller.Options) er
 	)
 }
 
+// setupClusterProviderConfig initializes the cluster provider config
+// controller.
 func setupClusterProviderConfig(mgr ctrl.Manager, opts controller.Options) error {
 	return setupProviderConfig(
 		mgr,
@@ -69,6 +74,7 @@ func setupClusterProviderConfig(mgr ctrl.Manager, opts controller.Options) error
 	)
 }
 
+// setupProviderConfig sets up a provider config controller.
 func setupProviderConfig(
 	mgr ctrl.Manager,
 	opts controller.Options,

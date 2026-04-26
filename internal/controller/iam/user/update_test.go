@@ -33,6 +33,7 @@ import (
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+// TestUpdate tests the Update method.
 func TestUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -113,6 +114,7 @@ func TestUpdate(t *testing.T) {
 	})
 }
 
+// TestBuildGroupsDiff tests the buildGroupsDiff function.
 func TestBuildGroupsDiff(t *testing.T) {
 	t.Parallel()
 
@@ -126,6 +128,7 @@ func TestBuildGroupsDiff(t *testing.T) {
 	}
 }
 
+// TestDesiredGroupIDs tests the desiredGroupIDs function.
 func TestDesiredGroupIDs(t *testing.T) {
 	t.Parallel()
 
@@ -139,6 +142,7 @@ func TestDesiredGroupIDs(t *testing.T) {
 	}
 }
 
+// TestUpdateAggregatesFieldAndGroupErrors tests Update aggregates errors.
 func TestUpdateAggregatesFieldAndGroupErrors(t *testing.T) {
 	t.Parallel()
 

@@ -34,8 +34,10 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+// permissionsTemplateTestID is a test permissions template ID.
 const permissionsTemplateTestID = "template-id"
 
+// TestObserve tests the Observe method.
 func TestObserve(t *testing.T) {
 	t.Parallel()
 
@@ -230,6 +232,7 @@ func TestObserve(t *testing.T) {
 	}
 }
 
+// TestObserveLateInitializesDefault tests Observe late initializes default.
 func TestObserveLateInitializesDefault(t *testing.T) {
 	t.Parallel()
 
@@ -274,6 +277,7 @@ func TestObserveLateInitializesDefault(t *testing.T) {
 	}
 }
 
+// TestGetTemplateSearchString tests the getTemplateSearchString function.
 func TestGetTemplateSearchString(t *testing.T) {
 	t.Parallel()
 
@@ -297,6 +301,8 @@ func TestGetTemplateSearchString(t *testing.T) {
 	}
 }
 
+// TestObserveReturnsExistsWhenExternalNameIsTemplateID tests Observe
+// returns exists when external name is template ID.
 func TestObserveReturnsExistsWhenExternalNameIsTemplateID(t *testing.T) {
 	t.Parallel()
 
@@ -335,6 +341,7 @@ func TestObserveReturnsExistsWhenExternalNameIsTemplateID(t *testing.T) {
 	}
 }
 
+// TestFindMatchingTemplate tests the findMatchingTemplate function.
 func TestFindMatchingTemplate(t *testing.T) {
 	t.Parallel()
 
@@ -352,6 +359,7 @@ func TestFindMatchingTemplate(t *testing.T) {
 	}
 }
 
+// TestObserveTemplatePermissionsPage tests observeTemplatePermissionsPage.
 func TestObserveTemplatePermissionsPage(t *testing.T) {
 	t.Parallel()
 
@@ -384,6 +392,7 @@ func TestObserveTemplatePermissionsPage(t *testing.T) {
 	}
 }
 
+// TestObservePermissionsTemplate tests observing a PermissionsTemplate.
 func TestObservePermissionsTemplate(t *testing.T) {
 	t.Parallel()
 
@@ -440,6 +449,7 @@ func TestObservePermissionsTemplate(t *testing.T) {
 	}
 }
 
+// TestObserveTemplatePermissionPagination tests permission pagination.
 func TestObserveTemplatePermissionPagination(t *testing.T) {
 	t.Parallel()
 

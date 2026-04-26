@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package rule provides a controller for Rule resources.
 package rule
 
 import (
@@ -43,11 +44,16 @@ import (
 )
 
 const (
-	errNotRule      = "managed resource is not a Rule custom resource"
+	// errNotRule indicates managed resource is not a Rule.
+	errNotRule = "managed resource is not a Rule custom resource"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
-	errGetCPC       = "cannot get ClusterProviderConfig"
-	errGetCreds     = "cannot get credentials"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
+	// errGetCPC indicates ClusterProviderConfig retrieval failed.
+	errGetCPC = "cannot get ClusterProviderConfig"
+	// errGetCreds indicates credential retrieval failed.
+	errGetCreds = "cannot get credentials"
 )
 
 // SetupGated adds a controller that reconciles Rule managed
@@ -63,6 +69,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	return nil
 }
 
+// Setup adds a controller that reconciles Rule managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error { //nolint:varnamelen // consistent with other controllers
 	name := managed.ControllerName(v1alpha1.RuleGroupKind)
 
@@ -303,6 +310,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalDelete{}, nil
 }
 
+// Disconnect closes the external client connection.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }

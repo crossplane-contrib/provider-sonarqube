@@ -35,8 +35,11 @@ import (
 )
 
 const (
-	settingsTestProjectKey     = "my-project-key"
-	settingsSonarBaseURLKey    = "sonar.core.serverBaseURL"
+	// settingsTestProjectKey is a test project key.
+	settingsTestProjectKey = "my-project-key"
+	// settingsSonarBaseURLKey is a SonarQube base URL setting key.
+	settingsSonarBaseURLKey = "sonar.core.serverBaseURL"
+	// settingsSonarExclusionsKey is a SonarQube exclusions setting key.
 	settingsSonarExclusionsKey = "sonar.exclusions"
 )
 
@@ -48,6 +51,7 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
+// notSettings is a type for testing non-Settings resources.
 type notSettings struct {
 	resource.Managed
 }
@@ -73,6 +77,8 @@ func errComparer(a, b error) bool {
 	return a.Error() == b.Error()
 }
 
+// TestObserve tests the Observe method.
+//
 //nolint:maintidx // Test function complexity is acceptable for comprehensive table-driven tests
 func TestObserve(t *testing.T) {
 	t.Parallel()
@@ -388,6 +394,8 @@ func TestObserve(t *testing.T) {
 	}
 }
 
+// TestCreate tests the Create method.
+//
 //nolint:maintidx // Test function complexity is acceptable for comprehensive table-driven tests
 func TestCreate(t *testing.T) {
 	t.Parallel()
@@ -639,6 +647,8 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// TestUpdate tests the Update method.
+//
 //nolint:maintidx // Test function complexity is acceptable for comprehensive table-driven tests
 func TestUpdate(t *testing.T) {
 	t.Parallel()
@@ -996,6 +1006,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+// TestDelete tests the Delete method.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
@@ -1172,6 +1183,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+// TestDisconnect tests the Disconnect method.
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 

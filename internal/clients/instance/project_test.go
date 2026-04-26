@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateProjectsCreateOptions tests creating project creation options.
 func TestGenerateProjectsCreateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -131,6 +132,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectDeleteOptions tests creating project deletion options.
 func TestGenerateProjectDeleteOptions(t *testing.T) {
 	t.Parallel()
 
@@ -158,6 +160,7 @@ func TestGenerateProjectDeleteOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectSearchOptions tests creating project search options.
 func TestGenerateProjectSearchOptions(t *testing.T) {
 	t.Parallel()
 
@@ -185,6 +188,7 @@ func TestGenerateProjectSearchOptions(t *testing.T) {
 	}
 }
 
+// TestUpdateProjectAttributesObservation tests updating project observations.
 func TestUpdateProjectAttributesObservation(t *testing.T) {
 	t.Parallel()
 
@@ -246,6 +250,7 @@ func TestUpdateProjectAttributesObservation(t *testing.T) {
 	}
 }
 
+// TestLateInitializeProject tests late initialization of projects.
 func TestLateInitializeProject(t *testing.T) {
 	t.Parallel()
 
@@ -353,6 +358,7 @@ func TestLateInitializeProject(t *testing.T) {
 	}
 }
 
+// TestIsProjectUpToDate tests checking if project is up to date.
 func TestIsProjectUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -431,6 +437,8 @@ func TestIsProjectUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectUpdateVisibilityOptions tests generating
+// visibility options.
 func TestGenerateProjectUpdateVisibilityOptions(t *testing.T) {
 	t.Parallel()
 
@@ -461,6 +469,7 @@ func TestGenerateProjectUpdateVisibilityOptions(t *testing.T) {
 	}
 }
 
+// TestIsProjectLateInitializedNoChanges tests no changes case.
 func TestIsProjectLateInitializedNoChanges(t *testing.T) {
 	t.Parallel()
 
@@ -517,6 +526,7 @@ func TestIsProjectLateInitializedNoChanges(t *testing.T) {
 	}
 }
 
+// TestIsProjectLateInitializedVisibility tests visibility initialization.
 func TestIsProjectLateInitializedVisibility(t *testing.T) {
 	t.Parallel()
 
@@ -576,6 +586,7 @@ func TestIsProjectLateInitializedVisibility(t *testing.T) {
 	}
 }
 
+// TestIsProjectLateInitializedLinks tests links initialization.
 func TestIsProjectLateInitializedLinks(t *testing.T) {
 	t.Parallel()
 
@@ -697,6 +708,7 @@ func TestIsProjectLateInitializedLinks(t *testing.T) {
 	}
 }
 
+// TestIsProjectLateInitializedNewCodePeriod tests new code period init.
 func TestIsProjectLateInitializedNewCodePeriod(t *testing.T) {
 	t.Parallel()
 
@@ -825,6 +837,7 @@ func TestIsProjectLateInitializedNewCodePeriod(t *testing.T) {
 	}
 }
 
+// TestIsProjectLateInitializedCombined tests combined initialization.
 func TestIsProjectLateInitializedCombined(t *testing.T) {
 	t.Parallel()
 
@@ -916,6 +929,7 @@ func TestIsProjectLateInitializedCombined(t *testing.T) {
 	}
 }
 
+// TestIsProjectLateInitializedEdgeCases tests edge cases.
 func TestIsProjectLateInitializedEdgeCases(t *testing.T) {
 	t.Parallel()
 

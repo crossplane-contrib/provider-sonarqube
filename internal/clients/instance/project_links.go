@@ -27,6 +27,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
+// ProjectLinksClient is the interface for managing project links
+// in SonarQube.
 type ProjectLinksClient interface {
 	Create(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error)
 	Delete(opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error)

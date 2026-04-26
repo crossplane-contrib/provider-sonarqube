@@ -24,6 +24,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
 
+// defaultPermissionsPageSize is the default page size for permissions.
 const defaultPermissionsPageSize = 100
 
 // MockPermissionsClient is a mock implementation of the

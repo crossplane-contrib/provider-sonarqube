@@ -45,10 +45,12 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+// notRule is a test type that does not implement Rule.
 type notRule struct {
 	resource.Managed
 }
 
+// mockHTTPResponse returns a mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -56,6 +58,7 @@ func mockHTTPResponse() *http.Response {
 	}
 }
 
+// checkError verifies that an error matches expected behavior.
 func checkError(t *testing.T, method, wantErr string, gotErr error) {
 	t.Helper()
 
@@ -80,6 +83,7 @@ func checkError(t *testing.T, method, wantErr string, gotErr error) {
 	}
 }
 
+// newTestRule creates a new Rule for testing with the given parameters.
 func newTestRule(externalName string, spec v1alpha1.RuleParameters) *v1alpha1.Rule {
 	rule := &v1alpha1.Rule{
 		ObjectMeta: metav1.ObjectMeta{
@@ -98,12 +102,14 @@ func newTestRule(externalName string, spec v1alpha1.RuleParameters) *v1alpha1.Ru
 	return rule
 }
 
+// newTestExternalClient creates a test external client.
 func newTestExternalClient(rulesClient *fake.MockRulesClient) *external {
 	return &external{
 		rulesClient: rulesClient,
 	}
 }
 
+// minimalRuleSpec returns a minimal rule specification for testing.
 func minimalRuleSpec() v1alpha1.RuleParameters {
 	return v1alpha1.RuleParameters{
 		Key:                 "custom:rule",
@@ -113,6 +119,7 @@ func minimalRuleSpec() v1alpha1.RuleParameters {
 	}
 }
 
+// TestObserve tests the Observe method for rules.
 func TestObserve(t *testing.T) {
 	t.Parallel()
 
@@ -298,8 +305,10 @@ func TestObserve(t *testing.T) {
 	}
 }
 
+// errRulesNotImplemented is returned when a mock function is not implemented.
 var errRulesNotImplemented = errors.New("mock function not implemented")
 
+// TestCreate tests the Create method for rules.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -394,6 +403,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// TestUpdate tests the Update method for rules.
 func TestUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -472,6 +482,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+// TestDelete tests the Delete method for rules.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
@@ -536,6 +547,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+// TestDisconnect tests the Disconnect method for rules.
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 
@@ -547,6 +559,7 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
+// TestObserveSetsReadyCondition tests Observe sets ready condition.
 func TestObserveSetsReadyCondition(t *testing.T) {
 	t.Parallel()
 
@@ -581,6 +594,7 @@ func TestObserveSetsReadyCondition(t *testing.T) {
 	}
 }
 
+// TestDeleteClearsExternalNameWhenDeleted tests Delete clears external name.
 func TestDeleteClearsExternalNameWhenDeleted(t *testing.T) {
 	t.Parallel()
 
@@ -601,6 +615,7 @@ func TestDeleteClearsExternalNameWhenDeleted(t *testing.T) {
 	}
 }
 
+// TestDeleteClearsExternalNameOnNotFound tests Delete clears name on not found.
 func TestDeleteClearsExternalNameOnNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -623,6 +638,7 @@ func TestDeleteClearsExternalNameOnNotFound(t *testing.T) {
 
 // TestConnectTypeAssertion verifies that Connect returns errNotRule when the
 // managed resource is not a *v1alpha1.Rule.
+// TestConnectTypeAssertion tests Connect type assertion error handling.
 func TestConnectTypeAssertion(t *testing.T) {
 	t.Parallel()
 

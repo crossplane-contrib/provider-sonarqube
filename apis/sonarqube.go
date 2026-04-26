@@ -26,6 +26,7 @@ import (
 	sonarqubev1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
 
+// init registers all SonarQube API types with the Scheme.
 func init() {
 	// Register the types with the Scheme so the components can map objects to
 	// GroupVersionKinds and back

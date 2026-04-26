@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package settings provides a controller for Settings resources.
 package settings
 
 import (
@@ -43,9 +44,12 @@ import (
 )
 
 const (
-	errNotSettings  = "managed resource is not a Settings custom resource"
+	// errNotSettings indicates managed resource is not Settings.
+	errNotSettings = "managed resource is not a Settings custom resource"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
 )
 
 // SetupGated adds a controller that reconciles Settings managed resources
@@ -61,6 +65,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	return nil
 }
 
+// Setup adds a controller that reconciles Settings managed resources.
 func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	name := managed.ControllerName(v1alpha1.SettingsGroupKind)
 

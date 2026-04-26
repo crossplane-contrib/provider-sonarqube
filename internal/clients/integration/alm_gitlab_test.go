@@ -34,9 +34,13 @@ import (
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
 const (
-	gitlabALMName    = "gitlab-main"
-	gitlabALMURL     = "https://gitlab.example.com"
-	gitlabPATToken   = "pat-token"
+	// gitlabALMName is a test GitLab ALM name.
+	gitlabALMName = "gitlab-main"
+	// gitlabALMURL is a test GitLab ALM URL.
+	gitlabALMURL = "https://gitlab.example.com"
+	// gitlabPATToken is a test GitLab PAT token.
+	gitlabPATToken = "pat-token"
+	// gitlabMutatedURL is a test GitLab mutated URL.
 	gitlabMutatedURL = "https://mutated.example.com"
 )
 
@@ -184,6 +188,7 @@ func TestIsALMGitLabUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateALMGitLabCreateOptions tests GenerateALMGitLabCreateOptions.
 func TestGenerateALMGitLabCreateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -201,6 +206,7 @@ func TestGenerateALMGitLabCreateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateALMGitLabUpdateOptions tests GenerateALMGitLabUpdateOptions.
 func TestGenerateALMGitLabUpdateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -241,6 +247,7 @@ func TestGenerateALMGitLabUpdateOptions(t *testing.T) {
 	}
 }
 
+// TestFindGitLabALMDefinitionByKey tests FindGitLabALMDefinitionByKey.
 func TestFindGitLabALMDefinitionByKey(t *testing.T) {
 	t.Parallel()
 
@@ -296,6 +303,7 @@ func TestFindGitLabALMDefinitionByKey(t *testing.T) {
 	})
 }
 
+// TestGenerateALMGitLabObservation tests GenerateALMGitLabObservation.
 func TestGenerateALMGitLabObservation(t *testing.T) {
 	t.Parallel()
 
@@ -323,6 +331,7 @@ func TestGenerateALMGitLabObservation(t *testing.T) {
 	})
 }
 
+// TestGitLabClientConstructors tests GitLab client constructors.
 func TestGitLabClientConstructors(t *testing.T) {
 	t.Parallel()
 

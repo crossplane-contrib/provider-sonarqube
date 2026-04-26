@@ -105,8 +105,9 @@ spec:
                     description: Rules is the list of rules to be activated in the
                       Quality Profile.
                     items:
-                      description: QualityProfileRuleParameters are the configurable
-                        fields of a QualityProfile Rule.
+                      description: |-
+                        QualityProfileRuleParameters are the configurable fields of a
+                        QualityProfile Rule.
                       properties:
                         impacts:
                           additionalProperties:
@@ -345,14 +346,18 @@ spec:
                     description: Rules represents the list of rules activated in the
                       Quality Profile.
                     items:
-                      description: QualityProfileRuleObservation are the observable
-                        fields of a QualityProfile Rule.
+                      description: |-
+                        QualityProfileRuleObservation are the observable fields of a
+                        QualityProfile Rule.
                       properties:
                         createdAt:
                           format: date-time
                           type: string
                         impacts:
                           items:
+                            description: |-
+                              QualityProfileRuleImpact represents the impact of a rule
+                              on software quality.
                             properties:
                               severity:
                                 type: string

@@ -34,28 +34,35 @@ type mockRulesClient struct {
 	SearchFn func(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error)
 }
 
+// errMockNotImplemented is returned by mock methods that are not implemented.
 var errMockNotImplemented = errors.New("not implemented")
 
+// App returns not implemented error for the mock.
 func (m *mockRulesClient) App() (*sonar.RulesApp, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
+// Create returns not implemented error for the mock.
 func (m *mockRulesClient) Create(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
+// Delete returns not implemented error for the mock.
 func (m *mockRulesClient) Delete(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
 	return nil, errMockNotImplemented
 }
 
+// List returns not implemented error for the mock.
 func (m *mockRulesClient) List(_ *sonar.RulesListOptions) (*string, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
+// Repositories returns not implemented error for the mock.
 func (m *mockRulesClient) Repositories(_ *sonar.RulesRepositoriesOptions) (*sonar.RulesRepositories, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
+// Search returns the result of SearchFn if provided, otherwise not implemented.
 func (m *mockRulesClient) Search(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
@@ -64,18 +71,22 @@ func (m *mockRulesClient) Search(opt *sonar.RulesSearchOptions) (*sonar.RulesSea
 	return nil, nil, errMockNotImplemented
 }
 
+// Show returns not implemented error for the mock.
 func (m *mockRulesClient) Show(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
+// Tags returns not implemented error for the mock.
 func (m *mockRulesClient) Tags(_ *sonar.RulesTagsOptions) (*sonar.RulesTags, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
+// Update calls the mock with the provided options.
 func (m *mockRulesClient) Update(opt *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
+// TestGenerateQualityProfileRulesSearchOption tests search option generation.
 func TestGenerateQualityProfileRulesSearchOption(t *testing.T) {
 	t.Parallel()
 
@@ -130,6 +141,7 @@ func TestGenerateQualityProfileRulesSearchOption(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileRulesObservation tests observation generation.
 func TestGenerateQualityProfileRulesObservation(t *testing.T) {
 	t.Parallel()
 
@@ -203,6 +215,7 @@ func TestGenerateQualityProfileRulesObservation(t *testing.T) {
 	}
 }
 
+// TestFindQualityProfileActiveRuleSettings tests finding active rule settings.
 func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 	t.Parallel()
 
@@ -293,6 +306,7 @@ func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileRuleObservation tests rule observation generation.
 func TestGenerateQualityProfileRuleObservation(t *testing.T) {
 	t.Parallel()
 
@@ -362,6 +376,8 @@ func TestGenerateQualityProfileRuleObservation(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateQualityProfileImpactsObservation tests impact observations.
 func TestGenerateQualityProfileImpactsObservation(t *testing.T) {
 	t.Parallel()
 
@@ -409,6 +425,7 @@ func TestGenerateQualityProfileImpactsObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileRuleImpactObservation tests impact observation.
 func TestGenerateQualityProfileRuleImpactObservation(t *testing.T) {
 	t.Parallel()
 
@@ -451,6 +468,7 @@ func TestGenerateQualityProfileRuleImpactObservation(t *testing.T) {
 	}
 }
 
+// TestIsQualityProfileRuleUpToDate tests rule up-to-date checking.
 func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -572,6 +590,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 	}
 }
 
+// TestIsQualityProfileRuleUpToDatePrioritized tests prioritized rule status.
 func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 	t.Parallel()
 
@@ -648,6 +667,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 	}
 }
 
+// TestAreQualityProfileRuleImpactsUpToDate tests impact up-to-date checking.
 func TestAreQualityProfileRuleImpactsUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -710,6 +730,7 @@ func TestAreQualityProfileRuleImpactsUpToDate(t *testing.T) {
 	}
 }
 
+// TestFetchAllQualityProfileRules tests fetching all rules.
 func TestFetchAllQualityProfileRules(t *testing.T) {
 	t.Parallel()
 
@@ -827,6 +848,8 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileRuleObservationWithActivatedSettings
+// tests observations.
 func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T) {
 	t.Parallel()
 
@@ -950,6 +973,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 	}
 }
 
+// TestGenerateRuleCreateOptions tests generating options for creating a rule.
 func TestGenerateRuleCreateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1094,6 +1118,7 @@ func TestGenerateRuleCreateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleUpdateOptions tests generating options for updating a rule.
 func TestGenerateRuleUpdateOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1237,6 +1262,7 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleDeleteOptions tests generating options for deleting a rule.
 func TestGenerateRuleDeleteOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1267,6 +1293,7 @@ func TestGenerateRuleDeleteOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleGetOptions tests generating options for retrieving a rule.
 func TestGenerateRuleGetOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1297,6 +1324,7 @@ func TestGenerateRuleGetOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleObservation tests generating observations from rule data.
 func TestGenerateRuleObservation(t *testing.T) {
 	t.Parallel()
 
@@ -1395,6 +1423,7 @@ func TestGenerateRuleObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleObservationTags tests generating observations for rule tags.
 func TestGenerateRuleObservationTags(t *testing.T) {
 	t.Parallel()
 
@@ -1416,6 +1445,7 @@ func TestGenerateRuleObservationTags(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleImpactsObservation tests impact observation generation.
 func TestGenerateRuleImpactsObservation(t *testing.T) {
 	t.Parallel()
 
@@ -1469,6 +1499,7 @@ func TestGenerateRuleImpactsObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleParametersObservation tests parameter observation generation.
 func TestGenerateRuleParametersObservation(t *testing.T) {
 	t.Parallel()
 
@@ -1513,6 +1544,7 @@ func TestGenerateRuleParametersObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleParametersObservationFields tests parameter fields.
 func TestGenerateRuleParametersObservationFields(t *testing.T) {
 	t.Parallel()
 
@@ -1539,6 +1571,7 @@ func TestGenerateRuleParametersObservationFields(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleDescriptionSectionsObservation tests description observation.
 func TestGenerateRuleDescriptionSectionsObservation(t *testing.T) {
 	t.Parallel()
 
@@ -1583,6 +1616,7 @@ func TestGenerateRuleDescriptionSectionsObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleDescriptionSectionsObservationWithContext tests context.
 func TestGenerateRuleDescriptionSectionsObservationWithContext(t *testing.T) {
 	t.Parallel()
 
@@ -1612,6 +1646,7 @@ func TestGenerateRuleDescriptionSectionsObservationWithContext(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleDescriptionContextObservation tests context obs.
 func TestGenerateRuleDescriptionContextObservation(t *testing.T) {
 	t.Parallel()
 
@@ -1652,6 +1687,7 @@ func TestGenerateRuleDescriptionContextObservation(t *testing.T) {
 	}
 }
 
+// TestIsRuleUpToDate tests checking if a rule is up to date.
 func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table-driven test covering many field combinations
 	t.Parallel()
 
@@ -2243,6 +2279,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 	}
 }
 
+// TestAreRuleParametersUpToDate tests parameter up-to-date checking.
 func TestAreRuleParametersUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -2318,6 +2355,7 @@ func TestAreRuleParametersUpToDate(t *testing.T) {
 	}
 }
 
+// TestLateInitializeRule tests late initialization of rule parameters.
 func TestLateInitializeRule(t *testing.T) { //nolint:gocognit,maintidx // complexity from comprehensive parallel sub-tests
 	t.Parallel()
 
@@ -2586,6 +2624,7 @@ func TestLateInitializeRule(t *testing.T) { //nolint:gocognit,maintidx // comple
 	}
 }
 
+// TestIsRuleLateInitialized tests checking if a rule has been late initialized.
 func TestIsRuleLateInitialized(t *testing.T) {
 	t.Parallel()
 
@@ -2641,6 +2680,8 @@ func TestIsRuleLateInitialized(t *testing.T) {
 	}
 }
 
+// TestGenerateRuleParametersOptions tests generating options
+// for rule parameters.
 func TestGenerateRuleParametersOptions(t *testing.T) {
 	t.Parallel()
 
@@ -2693,6 +2734,8 @@ func TestGenerateRuleParametersOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateQualityProfileRulesObservationWithActives tests
+// observation with active data.
 func TestGenerateQualityProfileRulesObservationWithActives(t *testing.T) {
 	t.Parallel()
 

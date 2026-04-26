@@ -30,6 +30,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 )
 
+// newTestProject creates a test Project resource.
 func newTestProject(namespace string) *Project {
 	return &Project{
 		ObjectMeta: metav1.ObjectMeta{
@@ -45,6 +46,7 @@ func newTestProject(namespace string) *Project {
 	}
 }
 
+// newTestQualityProfile creates a test QualityProfile resource.
 func newTestQualityProfile(namespace string) *QualityProfile {
 	return &QualityProfile{
 		ObjectMeta: metav1.ObjectMeta{
@@ -60,12 +62,16 @@ func newTestQualityProfile(namespace string) *QualityProfile {
 	}
 }
 
+// setExtName sets the external name on a Kubernetes object.
 func setExtName(obj metav1.Object, name string) {
 	meta.SetExternalName(obj, name)
 }
 
+// testNamespace is the test namespace for resources.
 const testNamespace = "default"
 
+// TestQualityProfileResolveReferences tests quality profile
+// reference resolution.
 func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
 	t.Parallel()
 
@@ -322,6 +328,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 	})
 }
 
+// TestResolveReferences tests reference resolution across resources.
 func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestResolveReferences is a complex function with many cases; we allow it to be cognitively complex without breaking it up into smaller functions.
 	t.Parallel()
 

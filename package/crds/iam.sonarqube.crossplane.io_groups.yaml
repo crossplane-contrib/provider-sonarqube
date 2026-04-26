@@ -34,11 +34,12 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A Group is the Schema for the Groups API. It represents a Group
-          resource in SonarQube, which is a collection of users that can be assigned
-          permissions to access and manage resources in SonarQube. The Group resource
-          allows you to define and manage groups of users in SonarQube, including
-          their names, descriptions, and permissions.
+        description: |-
+          A Group is the Schema for the Groups API. It represents a
+          Group resource in SonarQube, which is a collection of users that can be
+          assigned permissions to access and manage resources in SonarQube.
+          The Group resource allows you to define and manage groups of users in
+          SonarQube, including their names, descriptions, and permissions.
         properties:
           apiVersion:
             description: |-

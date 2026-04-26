@@ -49,6 +49,9 @@ spec:
           metadata:
             type: object
           spec:
+            description: |-
+              ProviderConfigSpec defines the configuration for the
+              SonarQube provider.
             properties:
               baseUrl:
                 description: BaseURL of the SonarQube instance.

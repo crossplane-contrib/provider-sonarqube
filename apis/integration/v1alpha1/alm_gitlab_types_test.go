@@ -24,6 +24,8 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
+// TestALMGitLabParametersJSONInline tests inline JSON
+// marshaling of ALM GitLab parameters.
 func TestALMGitLabParametersJSONInline(t *testing.T) {
 	t.Parallel()
 
@@ -61,6 +63,7 @@ func TestALMGitLabParametersJSONInline(t *testing.T) {
 	}
 }
 
+// TestALMGitLabParametersJSONUnmarshalFlatShape tests flat JSON unmarshaling.
 func TestALMGitLabParametersJSONUnmarshalFlatShape(t *testing.T) {
 	t.Parallel()
 

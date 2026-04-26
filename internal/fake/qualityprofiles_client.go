@@ -25,6 +25,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
 
+// errQualityProfileNotImplemented indicates operation is not implemented.
 var errQualityProfileNotImplemented = errors.New("not implemented")
 
 // MockQualityProfilesClient is a mock implementation of the

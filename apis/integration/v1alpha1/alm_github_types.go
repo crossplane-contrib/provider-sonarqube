@@ -119,6 +119,7 @@ var (
 	ALMGitHubGroupVersionKind = SchemeGroupVersion.WithKind(ALMGitHubKind)
 )
 
+// init registers the ALMGitHub resource with the Scheme.
 func init() {
 	SchemeBuilder.Register(&ALMGitHub{}, &ALMGitHubList{})
 }

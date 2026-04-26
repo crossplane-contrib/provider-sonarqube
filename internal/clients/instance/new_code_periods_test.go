@@ -26,6 +26,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
+// TestGenerateNewCodePeriodsShowOptions tests new code periods show options.
 func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
 	t.Parallel()
 
@@ -75,6 +76,8 @@ func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectNewCodePeriodsSetOptions tests project
+// new code set options.
 func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
 	t.Parallel()
 
@@ -126,6 +129,7 @@ func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateBranchNewCodePeriodsSetOptions tests branch new code set options.
 func TestGenerateBranchNewCodePeriodsSetOptions(t *testing.T) {
 	t.Parallel()
 
@@ -172,6 +176,8 @@ func TestGenerateBranchNewCodePeriodsSetOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectNewCodePeriodsListOptions tests project
+// new code list options.
 func TestGenerateProjectNewCodePeriodsListOptions(t *testing.T) {
 	t.Parallel()
 
@@ -205,6 +211,7 @@ func TestGenerateProjectNewCodePeriodsListOptions(t *testing.T) {
 	}
 }
 
+// TestIsNewCodePeriodUpToDate tests checking new code period up to date.
 func TestIsNewCodePeriodUpToDate(t *testing.T) {
 	t.Parallel()
 
@@ -282,6 +289,8 @@ func TestIsNewCodePeriodUpToDate(t *testing.T) {
 	}
 }
 
+// TestGenerateProjectNewCodePeriodObservation tests generating
+// project observations.
 func TestGenerateProjectNewCodePeriodObservation(t *testing.T) {
 	t.Parallel()
 
@@ -327,6 +336,8 @@ func TestGenerateProjectNewCodePeriodObservation(t *testing.T) {
 	}
 }
 
+// TestGenerateBranchNewCodePeriodObservation tests generating
+// branch observations.
 func TestGenerateBranchNewCodePeriodObservation(t *testing.T) {
 	t.Parallel()
 
@@ -376,6 +387,7 @@ func TestGenerateBranchNewCodePeriodObservation(t *testing.T) {
 	}
 }
 
+// TestLateInitializeProjectNewCodePeriod tests late initialization of periods.
 func TestLateInitializeProjectNewCodePeriod(t *testing.T) {
 	t.Parallel()
 

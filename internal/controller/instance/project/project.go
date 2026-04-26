@@ -44,9 +44,12 @@ import (
 )
 
 const (
-	errNotProject   = "managed resource is not a Project custom resource"
+	// errNotProject indicates managed resource is not a Project.
+	errNotProject = "managed resource is not a Project custom resource"
+	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
+	// errGetPC indicates ProviderConfig retrieval failed.
+	errGetPC = "cannot get ProviderConfig"
 )
 
 // SetupGated adds a controller that reconciles Project managed

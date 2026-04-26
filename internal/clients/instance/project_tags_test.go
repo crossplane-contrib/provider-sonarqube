@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+// TestGenerateProjectTagsSetOptions tests generating project tags set options.
 func TestGenerateProjectTagsSetOptions(t *testing.T) {
 	t.Parallel()
 

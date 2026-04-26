@@ -52,40 +52,54 @@ import (
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
 const (
-	testExternalName     = "github-main"
+	// testExternalName is the test ALM GitHub external name.
+	testExternalName = "github-main"
+	// testRenamedGitHubKey is a renamed GitHub key for testing.
 	testRenamedGitHubKey = "github-renamed"
-	testGitHubURL        = "https://api.github.com"
-	testAppID            = "123456"
-	testClientID         = "Iv1.abc123"
-	githubCSValue        = "githubCSValue"
-	githubWHValue        = "githubWHValue"
-	privateKeyValue      = "pk-value"
+	// testGitHubURL is the test GitHub API URL.
+	testGitHubURL = "https://api.github.com"
+	// testAppID is the test GitHub app ID.
+	testAppID = "123456"
+	// testClientID is the test GitHub client ID.
+	testClientID = "Iv1.abc123"
+	// githubCSValue is the test GitHub client secret value.
+	githubCSValue = "githubCSValue"
+	// githubWHValue is the test GitHub webhook value.
+	githubWHValue = "githubWHValue"
+	// privateKeyValue is the test private key value.
+	privateKeyValue = "pk-value"
 )
 
+// notALMGitHub is a test type that is not an ALMGitHub.
 type notALMGitHub struct {
 	resource.Managed
 }
 
+// mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
 	callback   func()
 	gvks       []schema.GroupVersionKind
 }
 
+// Register registers a callback with the mock gate.
 func (m *mockGate) Register(callback func(), gvks ...schema.GroupVersionKind) {
 	m.registered = true
 	m.callback = callback
 	m.gvks = append(m.gvks, gvks...)
 }
 
+// Set sets a feature gate status in the mock.
 func (m *mockGate) Set(_ schema.GroupVersionKind, _ bool) bool {
 	return false
 }
 
+// mockHTTPResponse creates a mock HTTP response with the given status code.
 func mockHTTPResponse(statusCode int) *http.Response {
 	return &http.Response{StatusCode: statusCode, Body: http.NoBody}
 }
 
+// checkError checks if an error matches expectations.
 func checkError(t *testing.T, method, wantErrSubstr string, gotErr error) {
 	t.Helper()
 
@@ -110,6 +124,7 @@ func checkError(t *testing.T, method, wantErrSubstr string, gotErr error) {
 	}
 }
 
+// newTestALMGitHub creates a test ALMGitHub resource.
 func newTestALMGitHub(externalName string, clientSecretRef, privateKeyRef *xpv1.LocalSecretKeySelector) *v1alpha1.ALMGitHub {
 	alm := &v1alpha1.ALMGitHub{
 		ObjectMeta: metav1.ObjectMeta{
@@ -138,10 +153,12 @@ func newTestALMGitHub(externalName string, clientSecretRef, privateKeyRef *xpv1.
 	return alm
 }
 
+// secretRef creates a test secret key reference.
 func secretRef(name, key string) *xpv1.LocalSecretKeySelector {
 	return &xpv1.LocalSecretKeySelector{LocalSecretReference: xpv1.LocalSecretReference{Name: name}, Key: key}
 }
 
+// testSecret creates a test secret with a single key-value pair.
 func testSecret(name, namespace, key, value string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
@@ -149,6 +166,7 @@ func testSecret(name, namespace, key, value string) *corev1.Secret {
 	}
 }
 
+// multiKeySecret creates a test secret with multiple key-value pairs.
 func multiKeySecret(name, namespace string, data map[string]string) *corev1.Secret {
 	bdata := make(map[string][]byte, len(data))
 	for k, v := range data {
@@ -161,6 +179,8 @@ func multiKeySecret(name, namespace string, data map[string]string) *corev1.Secr
 	}
 }
 
+// TestObserve tests observing ALMGitHub resource state.
+//
 //nolint:maintidx // test function covering many Observe paths
 func TestObserve(t *testing.T) {
 	t.Parallel()
@@ -409,6 +429,7 @@ func TestObserve(t *testing.T) {
 	}
 }
 
+// TestCreate tests creating an ALMGitHub resource.
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
@@ -579,6 +600,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// TestUpdate tests updating an ALMGitHub resource.
 func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test covers all update paths
 	t.Parallel()
 
@@ -826,6 +848,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 	}
 }
 
+// TestDelete tests deleting an ALMGitHub resource.
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
@@ -911,6 +934,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+// TestDisconnect tests disconnecting an ALMGitHub resource.
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 
@@ -922,6 +946,8 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
+// TestGetSavedSecrets tests retrieving saved secrets from an
+// ALMGitHub resource.
 func TestGetSavedSecrets(t *testing.T) {
 	t.Parallel()
 
@@ -1033,6 +1059,7 @@ func TestGetSavedSecrets(t *testing.T) {
 	}
 }
 
+// TestConnect tests connecting to an ALMGitHub resource.
 func TestConnect(t *testing.T) {
 	t.Parallel()
 
@@ -1168,6 +1195,8 @@ func TestConnect(t *testing.T) {
 	})
 }
 
+// TestSetupGatedRegistersALMGitHubGVK tests that SetupGated
+// registers the ALMGitHub GVK.
 func TestSetupGatedRegistersALMGitHubGVK(t *testing.T) {
 	t.Parallel()
 
@@ -1197,6 +1226,8 @@ func TestSetupGatedRegistersALMGitHubGVK(t *testing.T) {
 	}
 }
 
+// TestSetupGatedCallbackPanicsWhenSetupFails tests that the
+// SetupGated callback panics on setup failure.
 func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	t.Parallel()
 
