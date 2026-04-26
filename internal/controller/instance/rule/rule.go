@@ -50,10 +50,6 @@ const (
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
 	errGetPC = "cannot get ProviderConfig"
-	// errGetCPC indicates ClusterProviderConfig retrieval failed.
-	errGetCPC = "cannot get ClusterProviderConfig"
-	// errGetCreds indicates credential retrieval failed.
-	errGetCreds = "cannot get credentials"
 )
 
 // SetupGated adds a controller that reconciles Rule managed
