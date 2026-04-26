@@ -118,9 +118,8 @@ func FindGitLabALMDefinitionByKey(definitions *[]sonar.GitlabDefinition, key str
 	}
 
 	for i := range *definitions {
-		def := (*definitions)[i]
-		if def.Key == key {
-			return &def
+		if (*definitions)[i].Key == key {
+			return &(*definitions)[i]
 		}
 	}
 

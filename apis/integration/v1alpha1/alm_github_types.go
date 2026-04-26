@@ -69,6 +69,7 @@ type ALMGitHubObservation struct {
 }
 
 // A ALMGitHubSpec defines the desired state of a ALMGitHub.
+// +kubebuilder:validation:XValidation:rule="has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name) > 0",message="writeConnectionSecretToRef with a non-empty name is required"
 type ALMGitHubSpec struct {
 	xpv2.ManagedResourceSpec `json:",inline"`
 

@@ -348,7 +348,7 @@ func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-// getSavedAPIToken retrieves the saved API token from the connection secret referenced in the ALMGitLab resource's spec. It returns an empty string if the reference is not set or if there is an error retrieving the token.
+// getSavedAPIToken retrieves the saved API token from the connection secret.
 func (c *external) getSavedAPIToken(ctx context.Context, almGitlab *v1alpha1.ALMGitLab) (string, error) {
 	ref := almGitlab.GetWriteConnectionSecretToReference()
 	if ref == nil || ref.Name == "" {

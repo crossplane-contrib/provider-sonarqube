@@ -186,6 +186,10 @@ spec:
             required:
             - forProvider
             type: object
+            x-kubernetes-validations:
+            - message: writeConnectionSecretToRef with a non-empty name is required
+              rule: has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name)
+                > 0
           status:
             description: A ALMGitHubStatus represents the observed state of a ALMGitHub.
             properties:

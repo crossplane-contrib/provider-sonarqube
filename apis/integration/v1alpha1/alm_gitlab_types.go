@@ -37,6 +37,7 @@ type ALMGitLabObservation struct {
 }
 
 // A ALMGitLabSpec defines the desired state of a ALMGitLab.
+// +kubebuilder:validation:XValidation:rule="has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name) > 0",message="writeConnectionSecretToRef with a non-empty name is required"
 type ALMGitLabSpec struct {
 	xpv2.ManagedResourceSpec `json:",inline"`
 

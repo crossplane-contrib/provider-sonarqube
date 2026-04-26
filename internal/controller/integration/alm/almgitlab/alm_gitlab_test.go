@@ -253,6 +253,24 @@ func TestObserve(t *testing.T) {
 			}()},
 			want: want{observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: false, ResourceLateInitialized: false, ConnectionDetails: managed.ConnectionDetails{}}},
 		},
+		"NoConnectionSecretRefTriggersUpdate": {
+			// When writeConnectionSecretToRef is not set (bypassing CRD validation), the
+			// controller cannot compare stored vs current secret values and treats the
+			// resource as out-of-date so the next Update re-writes the connection secret.
+			objects: []runtime.Object{tokenSecret("pat-secret", "default", "token", "pat-value")},
+			settingsClient: &fake.MockALMSettingsGitLabClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
+				return &sonar.AlmSettingsListDefinitions{Gitlab: []sonar.GitlabDefinition{{Key: testExternalName, URL: testGitLabURL}}}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			args: args{ctx: context.Background(), mg: func() resource.Managed {
+				alm := newTestALMGitLab(testExternalName, tokenRef)
+				// No SetWriteConnectionSecretToReference → saved token is empty string.
+				alm.Status.AtProvider.Key = testExternalName
+				alm.Status.AtProvider.URL = testGitLabURL
+
+				return alm
+			}()},
+			want: want{observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: false, ResourceLateInitialized: false, ConnectionDetails: managed.ConnectionDetails{}}},
+		},
 	}
 
 	for name, tc := range cases {

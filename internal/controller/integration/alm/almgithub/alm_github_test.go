@@ -158,6 +158,7 @@ func multiKeySecret(name, namespace string, data map[string]string) *corev1.Secr
 	}
 }
 
+//nolint:maintidx // test function covering many Observe paths
 func TestObserve(t *testing.T) {
 	t.Parallel()
 
@@ -321,6 +322,29 @@ func TestObserve(t *testing.T) {
 			}},
 			args: args{ctx: context.Background(), mg: newTestALMGitHub(testExternalName, clientSecretRef, privateKeyRef)},
 			want: want{observation: managed.ExternalObservation{}, errSubstr: "cannot list ALM settings definitions from SonarQube API"},
+		},
+		"NoConnectionSecretRefTriggersUpdate": {
+			// When writeConnectionSecretToRef is not set (bypassing CRD validation), the
+			// controller cannot compare stored vs current secret values and treats the
+			// resource as out-of-date so the next Update re-writes the connection secret.
+			objects: []runtime.Object{
+				testSecret("client-secret", "default", "clientSecret", "cs-value"),
+				testSecret("private-key", "default", "privateKey", "pk-value"),
+			},
+			settingsClient: &fake.MockALMSettingsGitHubClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
+				return &sonar.AlmSettingsListDefinitions{Github: []sonar.GithubDefinition{{Key: testExternalName, URL: testGitHubURL, AppID: testAppID, ClientID: testClientID}}}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			args: args{ctx: context.Background(), mg: func() resource.Managed {
+				alm := newTestALMGitHub(testExternalName, clientSecretRef, privateKeyRef)
+				// No SetWriteConnectionSecretToReference → saved secrets are empty strings.
+				alm.Status.AtProvider.Key = testExternalName
+				alm.Status.AtProvider.URL = testGitHubURL
+				alm.Status.AtProvider.AppID = testAppID
+				alm.Status.AtProvider.ClientID = testClientID
+
+				return alm
+			}()},
+			want: want{observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: false, ResourceLateInitialized: false, ConnectionDetails: managed.ConnectionDetails{}}},
 		},
 		"SuccessfulObserveWithWebhookSecret": {
 			objects: []runtime.Object{

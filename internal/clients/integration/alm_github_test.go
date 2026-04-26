@@ -288,53 +288,48 @@ func TestGenerateALMGitHubUpdateOptions(t *testing.T) {
 func TestFindGitHubALMDefinitionByKey(t *testing.T) {
 	t.Parallel()
 
-	cases := map[string]struct {
-		definitions *[]sonar.GithubDefinition
-		key         string
-		wantNil     bool
-		wantKey     string
-	}{
-		"NilDefinitions": {
-			definitions: nil,
-			key:         "github-main",
-			wantNil:     true,
-		},
-		"KeyFound": {
-			definitions: &[]sonar.GithubDefinition{
-				{Key: "other", URL: "https://other.com"},
-				{Key: "github-main", URL: "https://api.github.com", AppID: "123", ClientID: "Iv1.abc"},
-			},
-			key:     "github-main",
-			wantNil: false,
-			wantKey: "github-main",
-		},
-		"KeyNotFound": {
-			definitions: &[]sonar.GithubDefinition{
-				{Key: "other", URL: "https://other.com"},
-			},
-			key:     "github-main",
-			wantNil: true,
-		},
-	}
+	t.Run("NilDefinitions", func(t *testing.T) {
+		t.Parallel()
 
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		if got := FindGitHubALMDefinitionByKey(nil, "github-main"); got != nil {
+			t.Fatalf("FindGitHubALMDefinitionByKey(nil) = %+v, want nil", got)
+		}
+	})
 
-			got := FindGitHubALMDefinitionByKey(tc.definitions, tc.key)
-			if tc.wantNil && got != nil {
-				t.Fatalf("FindGitHubALMDefinitionByKey() = %+v, want nil", got)
-			}
+	t.Run("KeyNotFound", func(t *testing.T) {
+		t.Parallel()
 
-			if !tc.wantNil && got == nil {
-				t.Fatal("FindGitHubALMDefinitionByKey() = nil, want non-nil")
-			}
+		defs := &[]sonar.GithubDefinition{{Key: "other", URL: "https://other.com"}}
+		if got := FindGitHubALMDefinitionByKey(defs, "github-main"); got != nil {
+			t.Fatalf("FindGitHubALMDefinitionByKey() = %+v, want nil", got)
+		}
+	})
 
-			if got != nil && got.Key != tc.wantKey {
-				t.Fatalf("FindGitHubALMDefinitionByKey() key = %q, want %q", got.Key, tc.wantKey)
-			}
-		})
-	}
+	t.Run("KeyFoundReturnsPointerToSliceElement", func(t *testing.T) {
+		t.Parallel()
+
+		// The returned pointer must reference the original slice element, not a local copy.
+		// Mutate via the returned pointer and verify the slice element was updated.
+		defs := &[]sonar.GithubDefinition{
+			{Key: "other", URL: "https://other.com"},
+			{Key: "github-main", URL: "https://api.github.com", AppID: "123", ClientID: "Iv1.abc"},
+		}
+
+		got := FindGitHubALMDefinitionByKey(defs, "github-main")
+		if got == nil {
+			t.Fatal("FindGitHubALMDefinitionByKey() = nil, want non-nil")
+		}
+
+		if got.Key != "github-main" {
+			t.Fatalf("FindGitHubALMDefinitionByKey() key = %q, want %q", got.Key, "github-main")
+		}
+
+		// Mutate via the returned pointer; the slice element must reflect the change.
+		got.AppID = "mutated"
+		if (*defs)[1].AppID != "mutated" {
+			t.Fatal("FindGitHubALMDefinitionByKey() returned a copy, not a pointer to the slice element")
+		}
+	})
 }
 
 func TestGenerateALMGitHubObservation(t *testing.T) {

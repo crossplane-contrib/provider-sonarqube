@@ -242,58 +242,56 @@ func TestGenerateALMGitLabUpdateOptions(t *testing.T) {
 func TestFindGitLabALMDefinitionByKey(t *testing.T) {
 	t.Parallel()
 
-	cases := map[string]struct {
-		definitions *[]sonar.GitlabDefinition
-		key         string
-		wantNil     bool
-		wantKey     string
-	}{
-		"NilDefinitions": {
-			definitions: nil,
-			key:         gitlabALMName,
-			wantNil:     true,
-		},
-		"KeyFound": {
-			definitions: &[]sonar.GitlabDefinition{
-				{Key: "other", URL: "https://other.com"},
-				{Key: gitlabALMName, URL: gitlabALMURL},
-			},
-			key:     gitlabALMName,
-			wantNil: false,
-			wantKey: gitlabALMName,
-		},
-		"KeyNotFound": {
-			definitions: &[]sonar.GitlabDefinition{
-				{Key: "other", URL: "https://other.com"},
-			},
-			key:     gitlabALMName,
-			wantNil: true,
-		},
-		"EmptySlice": {
-			definitions: &[]sonar.GitlabDefinition{},
-			key:         gitlabALMName,
-			wantNil:     true,
-		},
-	}
+	t.Run("NilDefinitions", func(t *testing.T) {
+		t.Parallel()
 
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		if got := FindGitLabALMDefinitionByKey(nil, gitlabALMName); got != nil {
+			t.Fatalf("FindGitLabALMDefinitionByKey(nil) = %+v, want nil", got)
+		}
+	})
 
-			got := FindGitLabALMDefinitionByKey(tc.definitions, tc.key)
-			if tc.wantNil && got != nil {
-				t.Fatalf("FindGitLabALMDefinitionByKey() = %+v, want nil", got)
-			}
+	t.Run("EmptySlice", func(t *testing.T) {
+		t.Parallel()
 
-			if !tc.wantNil && got == nil {
-				t.Fatal("FindGitLabALMDefinitionByKey() = nil, want non-nil")
-			}
+		if got := FindGitLabALMDefinitionByKey(&[]sonar.GitlabDefinition{}, gitlabALMName); got != nil {
+			t.Fatalf("FindGitLabALMDefinitionByKey(empty) = %+v, want nil", got)
+		}
+	})
 
-			if got != nil && got.Key != tc.wantKey {
-				t.Fatalf("FindGitLabALMDefinitionByKey() key = %q, want %q", got.Key, tc.wantKey)
-			}
-		})
-	}
+	t.Run("KeyNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		defs := &[]sonar.GitlabDefinition{{Key: "other", URL: "https://other.com"}}
+		if got := FindGitLabALMDefinitionByKey(defs, gitlabALMName); got != nil {
+			t.Fatalf("FindGitLabALMDefinitionByKey() = %+v, want nil", got)
+		}
+	})
+
+	t.Run("KeyFoundReturnsPointerToSliceElement", func(t *testing.T) {
+		t.Parallel()
+
+		// The returned pointer must reference the original slice element, not a local copy.
+		// Mutate via the returned pointer and verify the slice element was updated.
+		defs := &[]sonar.GitlabDefinition{
+			{Key: "other", URL: "https://other.com"},
+			{Key: gitlabALMName, URL: gitlabALMURL},
+		}
+
+		got := FindGitLabALMDefinitionByKey(defs, gitlabALMName)
+		if got == nil {
+			t.Fatal("FindGitLabALMDefinitionByKey() = nil, want non-nil")
+		}
+
+		if got.Key != gitlabALMName {
+			t.Fatalf("FindGitLabALMDefinitionByKey() key = %q, want %q", got.Key, gitlabALMName)
+		}
+
+		// Mutate via the returned pointer; the slice element must reflect the change.
+		got.URL = "https://mutated.example.com"
+		if (*defs)[1].URL != "https://mutated.example.com" {
+			t.Fatal("FindGitLabALMDefinitionByKey() returned a copy, not a pointer to the slice element")
+		}
+	})
 }
 
 func TestGenerateALMGitLabObservation(t *testing.T) {
