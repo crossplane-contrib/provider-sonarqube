@@ -31,7 +31,7 @@ const (
 	// ErrSecretNotFound is the error string used when a secret cannot be found.
 	ErrSecretNotFound = "Cannot find referenced secret"
 	// ErrSecretKeyNotFound is the error string used when a key in a secret cannot
-	//  be found.
+	// be found.
 	ErrSecretKeyNotFound = "Cannot find key in referenced secret"
 	// ErrSecretSelectorNil is the error string used when a secret selector
 	// is nil.

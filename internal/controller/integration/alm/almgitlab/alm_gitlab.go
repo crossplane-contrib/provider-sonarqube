@@ -61,8 +61,7 @@ const (
 )
 
 // SetupGated adds a controller that reconciles ALMGitLab managed resources
-//
-//	with safe-start support.
+// with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)

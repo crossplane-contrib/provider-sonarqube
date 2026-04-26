@@ -639,7 +639,6 @@ func TestDeleteClearsExternalNameOnNotFound(t *testing.T) {
 
 // TestConnectTypeAssertion verifies that Connect returns errNotRule when the
 // managed resource is not a *v1alpha1.Rule.
-// TestConnectTypeAssertion tests Connect type assertion error handling.
 func TestConnectTypeAssertion(t *testing.T) {
 	t.Parallel()
 

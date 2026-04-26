@@ -19,12 +19,12 @@ limitations under the License.
 package common
 
 const (
-	// BasicAuth is SonarQube's BasicAuth method of authentification that needs a
+	// BasicAuth is SonarQube's BasicAuth method of authentication that needs a
 	// username and a password.
 	BasicAuth AuthType = "BasicAuth"
 
 	// PersonalAccessToken is SonarQube's PersonalAccessToken method of
-	// authentification.
+	// authentication.
 	PersonalAccessToken AuthType = "PersonalAccessToken"
 )
 
