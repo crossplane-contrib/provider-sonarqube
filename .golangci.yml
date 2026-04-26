@@ -7,6 +7,7 @@ linters:
     - exhaustruct
     - gochecknoglobals
     - gochecknoinits
+    - interfacebloat
     - ireturn
     - lll
     - nonamedreturns
@@ -15,8 +16,35 @@ linters:
     - wrapcheck
     - wsl
   settings:
+    copyloopvar:
+      check-alias: true
     dupl:
       threshold: 100
+    embeddedstructfieldcheck:
+      forbid-mutex: true
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - fmt:.*,io/ioutil:^Read.*
+    goconst:
+      min-occurrences: 3
+      match-constant: false
+      find-duplicates: true
+      eval-const-expressions: true
+    gocritic:
+      enable-all: true
+      # enabled-tags:
+      #   - performance
+      settings:
+        captLocal:
+          paramsOnly: true
+        rangeValCopy:
+          sizeThreshold: 32
+    gocyclo:
+      min-complexity: 10
+    godoclint:
+      default: all
     goheader:
       template: |-
         Copyright 2026 The Crossplane Authors.
@@ -32,24 +60,19 @@ linters:
         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
         See the License for the specific language governing permissions and
         limitations under the License.
-    errcheck:
-      check-type-assertions: false
-      check-blank: false
-      exclude-functions:
-        - fmt:.*,io/ioutil:^Read.*
-    goconst:
-      min-len: 3
-      min-occurrences: 5
-    gocritic:
-      enabled-tags:
-        - performance
+    govet:
+      enable-all: true
       settings:
-        captLocal:
-          paramsOnly: true
-        rangeValCopy:
-          sizeThreshold: 32
-    gocyclo:
-      min-complexity: 10
+        shadow:
+          strict: true
+    iface:
+      # List of analyzers.
+      # Default: ["identical"]
+      enable:
+        - identical
+        - unused
+        - opaque
+        - unexported
     lll:
       tab-width: 1
     modernize:
@@ -57,12 +80,36 @@ linters:
         - omitzero
     nakedret:
       max-func-lines: 30
+    nilnil:
+      detect-opposite: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
     prealloc:
       simple: true
       range-loops: true
       for-loops: false
+    promlinter:
+      strict: true
+    reassign:
+      patterns:
+        - ".*"
+    unconvert:
+      fast-math: true
     unparam:
       check-exported: false
+    usestdlibvars:
+      http-method: true
+      http-status-code: true
+      time-date-month: true
+      time-weekday: true
+      time-month: true
+      time-layout: true
+      crypto-hash: true
+      default-rpc-path: true
+      sql-isolation-level: true
+      tls-signature-scheme: true
+      constant-kind: true
   exclusions:
     generated: lax
     rules:
