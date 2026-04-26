@@ -67,7 +67,7 @@ type Config struct {
 // NewClient creates new SonarQube Client with provided SonarQube
 // Configurations/Credentials.
 func NewClient(clientConfig Config) *sonar.Client {
-	var client *sonar.Client
+	var sonarClient *sonar.Client
 
 	switch clientConfig.AuthType {
 	case BasicAuth:
@@ -75,7 +75,7 @@ func NewClient(clientConfig Config) *sonar.Client {
 			panic(errors.New("BasicAuth configuration is required for BasicAuth"))
 		}
 		// Create SonarQube client with Basic Auth
-		sonarClient, err := sonar.NewClient(
+		basicAuthClient, err := sonar.NewClient(
 			&sonar.ClientCreateOptions{
 				URL:      &clientConfig.BaseURL,
 				Username: &clientConfig.BasicAuth.Username,
@@ -85,10 +85,10 @@ func NewClient(clientConfig Config) *sonar.Client {
 			panic(err)
 		}
 
-		client = sonarClient
+		sonarClient = basicAuthClient
 	case PersonalAccessToken:
 		// Create SonarQube client with Personal Access Token
-		sonarClient, err := sonar.NewClient(
+		tokenClient, err := sonar.NewClient(
 			&sonar.ClientCreateOptions{
 				URL:   &clientConfig.BaseURL,
 				Token: &clientConfig.Token,
@@ -97,7 +97,7 @@ func NewClient(clientConfig Config) *sonar.Client {
 			panic(err)
 		}
 
-		client = sonarClient
+		sonarClient = tokenClient
 	default:
 		panic(errors.New("unsupported authentication type"))
 	}
@@ -117,9 +117,9 @@ func NewClient(clientConfig Config) *sonar.Client {
 		httpClient.Transport = transport
 	}
 
-	client.SetHTTPClient(httpClient)
+	sonarClient.SetHTTPClient(httpClient)
 
-	return client
+	return sonarClient
 }
 
 // GetConfig constructs a Config that can be used to authenticate to SonarQube's

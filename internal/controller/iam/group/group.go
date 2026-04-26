@@ -400,7 +400,7 @@ func computePermissionsDelta(specPermissions *[]string, observedPermissions []st
 // it returns an empty slice and nil error.
 // If there is an error during the API call,
 // it returns an error wrapping the original error with additional context.
-func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]string, error) {
+func getGroupPermissions(permissionsClient iam.PermissionsClient, groupName string) ([]string, error) {
 	const maxPageSize = int64(100)
 
 	for page := int64(1); ; page++ {
@@ -409,7 +409,7 @@ func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]stri
 			PageSize: maxPageSize,
 		}))
 
-		permissions, resp, err := client.Groups(options) //nolint:bodyclose // closed via helpers.CloseBody
+		permissions, resp, err := permissionsClient.Groups(options) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {

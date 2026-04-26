@@ -441,7 +441,7 @@ func TestCreate(t *testing.T) {
 			},
 			want: want{
 				o:   managed.ExternalCreation{},
-				err: errors.New("failed to set setting settingsSonarBaseURLKey: api error"),
+				err: errors.New("failed to set setting " + settingsSonarBaseURLKey + ": api error"),
 			},
 		},
 		"SuccessfulCreateSingleSetting": {
@@ -579,7 +579,7 @@ func TestCreate(t *testing.T) {
 			want: want{
 				o: managed.ExternalCreation{},
 				// Error should contain information about the failed setting
-				err: errors.New("failed to set setting settingsSonarExclusionsKey: api error for exclusions"),
+				err: errors.New("failed to set setting " + settingsSonarExclusionsKey + ": api error for exclusions"),
 			},
 		},
 		"CreateWithFieldValues": {
@@ -895,7 +895,7 @@ func TestUpdate(t *testing.T) {
 			},
 			want: want{
 				o:   managed.ExternalUpdate{},
-				err: errors.New("failed to update setting settingsSonarExclusionsKey: api error for exclusions"),
+				err: errors.New("failed to update setting " + settingsSonarExclusionsKey + ": api error for exclusions"),
 			},
 		},
 		"ResetFailsForObsoleteSettings": {

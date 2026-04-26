@@ -28,8 +28,8 @@ import (
 
 // ResolveReferences parses the references to other custom resources and
 // resolves them to the actual values.
-func (user *User) ResolveReferences(ctx context.Context, client client.Reader) error {
-	resolver := reference.NewAPINamespacedResolver(client, user)
+func (user *User) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	resolver := reference.NewAPINamespacedResolver(readerClient, user)
 
 	if user.Spec.ForProvider.Groups == nil {
 		return nil

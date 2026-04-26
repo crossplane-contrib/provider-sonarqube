@@ -37,34 +37,34 @@ func TestIsComparablePtrEqualComparable(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		ptr  *string
-		val  string
-		want bool
+		pointer *string
+		val     string
+		want    bool
 	}{
 		"NilPointerReturnsTrue": {
-			ptr:  nil,
-			val:  "any",
-			want: true,
+			pointer: nil,
+			val:     "any",
+			want:    true,
 		},
 		"MatchingValueReturnsTrue": {
-			ptr:  ptr.To("hello"),
-			val:  "hello",
-			want: true,
+			pointer: ptr.To("hello"),
+			val:     "hello",
+			want:    true,
 		},
 		"DifferentValueReturnsFalse": {
-			ptr:  ptr.To("hello"),
-			val:  "world",
-			want: false,
+			pointer: ptr.To("hello"),
+			val:     "world",
+			want:    false,
 		},
 		"EmptyStringMatch": {
-			ptr:  ptr.To(""),
-			val:  "",
-			want: true,
+			pointer: ptr.To(""),
+			val:     "",
+			want:    true,
 		},
 		"EmptyStringNoMatch": {
-			ptr:  ptr.To(""),
-			val:  "nonempty",
-			want: false,
+			pointer: ptr.To(""),
+			val:     "nonempty",
+			want:    false,
 		},
 	}
 
@@ -72,7 +72,7 @@ func TestIsComparablePtrEqualComparable(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := IsComparablePtrEqualComparable(tc.ptr, tc.val)
+			got := IsComparablePtrEqualComparable(tc.pointer, tc.val)
 			if got != tc.want {
 				t.Errorf("IsComparablePtrEqualComparable() = %v, want %v", got, tc.want)
 			}
@@ -84,29 +84,29 @@ func TestIsComparablePtrEqualComparableInt(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		ptr  *int
-		val  int
-		want bool
+		pointer *int
+		val     int
+		want    bool
 	}{
 		"NilPointerReturnsTrue": {
-			ptr:  nil,
-			val:  42,
-			want: true,
+			pointer: nil,
+			val:     42,
+			want:    true,
 		},
 		"MatchingValueReturnsTrue": {
-			ptr:  ptr.To(42),
-			val:  42,
-			want: true,
+			pointer: ptr.To(42),
+			val:     42,
+			want:    true,
 		},
 		"DifferentValueReturnsFalse": {
-			ptr:  ptr.To(42),
-			val:  24,
-			want: false,
+			pointer: ptr.To(42),
+			val:     24,
+			want:    false,
 		},
 		"ZeroValueMatch": {
-			ptr:  ptr.To(0),
-			val:  0,
-			want: true,
+			pointer: ptr.To(0),
+			val:     0,
+			want:    true,
 		},
 	}
 
@@ -114,7 +114,7 @@ func TestIsComparablePtrEqualComparableInt(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := IsComparablePtrEqualComparable(tc.ptr, tc.val)
+			got := IsComparablePtrEqualComparable(tc.pointer, tc.val)
 			if got != tc.want {
 				t.Errorf("IsComparablePtrEqualComparable() = %v, want %v", got, tc.want)
 			}
@@ -479,34 +479,34 @@ func TestIsComparableSlicePtrEqualComparableSlice(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		ptr  *[]string
-		val  []string
-		want bool
+		pointer *[]string
+		val     []string
+		want    bool
 	}{
 		"NilPointerReturnsTrue": {
-			ptr:  nil,
-			val:  []string{"a", "b"},
-			want: true,
+			pointer: nil,
+			val:     []string{"a", "b"},
+			want:    true,
 		},
 		"MatchingSlicesReturnsTrue": {
-			ptr:  ptr.To([]string{"a", "b", "c"}),
-			val:  []string{"a", "b", "c"},
-			want: true,
+			pointer: ptr.To([]string{"a", "b", "c"}),
+			val:     []string{"a", "b", "c"},
+			want:    true,
 		},
 		"DifferentSlicesReturnsFalse": {
-			ptr:  ptr.To([]string{"a", "b"}),
-			val:  []string{"a", "c"},
-			want: false,
+			pointer: ptr.To([]string{"a", "b"}),
+			val:     []string{"a", "c"},
+			want:    false,
 		},
 		"EmptySliceMatch": {
-			ptr:  ptr.To([]string{}),
-			val:  []string{},
-			want: true,
+			pointer: ptr.To([]string{}),
+			val:     []string{},
+			want:    true,
 		},
 		"NilSliceAndEmptySliceMatch": {
-			ptr:  ptr.To([]string(nil)),
-			val:  []string{},
-			want: true,
+			pointer: ptr.To([]string(nil)),
+			val:     []string{},
+			want:    true,
 		},
 	}
 
@@ -514,7 +514,7 @@ func TestIsComparableSlicePtrEqualComparableSlice(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := IsComparableSlicePtrEqualComparableSlice(tc.ptr, tc.val)
+			got := IsComparableSlicePtrEqualComparableSlice(tc.pointer, tc.val)
 			if got != tc.want {
 				t.Errorf("IsComparableSlicePtrEqualComparableSlice() = %v, want %v", got, tc.want)
 			}
@@ -526,39 +526,39 @@ func TestIsComparableMapPtrEqualComparableMap(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		ptr  *map[string]int
-		val  map[string]int
-		want bool
+		pointer *map[string]int
+		val     map[string]int
+		want    bool
 	}{
 		"NilPointerReturnsTrue": {
-			ptr:  nil,
-			val:  map[string]int{"key": 42},
-			want: true,
+			pointer: nil,
+			val:     map[string]int{"key": 42},
+			want:    true,
 		},
 		"MatchingMapsReturnsTrue": {
-			ptr:  ptr.To(map[string]int{"a": 1, "b": 2}),
-			val:  map[string]int{"a": 1, "b": 2},
-			want: true,
+			pointer: ptr.To(map[string]int{"a": 1, "b": 2}),
+			val:     map[string]int{"a": 1, "b": 2},
+			want:    true,
 		},
 		"DifferentMapsReturnsFalse": {
-			ptr:  ptr.To(map[string]int{"a": 1}),
-			val:  map[string]int{"a": 2},
-			want: false,
+			pointer: ptr.To(map[string]int{"a": 1}),
+			val:     map[string]int{"a": 2},
+			want:    false,
 		},
 		"EmptyMapMatch": {
-			ptr:  ptr.To(map[string]int{}),
-			val:  map[string]int{},
-			want: true,
+			pointer: ptr.To(map[string]int{}),
+			val:     map[string]int{},
+			want:    true,
 		},
 		"NilMapAndEmptyMapMatch": {
-			ptr:  ptr.To(map[string]int(nil)),
-			val:  map[string]int{},
-			want: true,
+			pointer: ptr.To(map[string]int(nil)),
+			val:     map[string]int{},
+			want:    true,
 		},
 		"DifferentKeysReturnsFalse": {
-			ptr:  ptr.To(map[string]int{"a": 1}),
-			val:  map[string]int{"b": 1},
-			want: false,
+			pointer: ptr.To(map[string]int{"a": 1}),
+			val:     map[string]int{"b": 1},
+			want:    false,
 		},
 	}
 
@@ -566,7 +566,7 @@ func TestIsComparableMapPtrEqualComparableMap(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := IsComparableMapPtrEqualComparableMap(tc.ptr, tc.val)
+			got := IsComparableMapPtrEqualComparableMap(tc.pointer, tc.val)
 			if got != tc.want {
 				t.Errorf("IsComparableMapPtrEqualComparableMap() = %v, want %v", got, tc.want)
 			}
@@ -589,11 +589,11 @@ func TestAssignIfNonNil(t *testing.T) {
 		t.Parallel()
 
 		original := original
-		ptr := &original
-		AssignIfNonNil(ptr, nil)
+		pointer := &original
+		AssignIfNonNil(pointer, nil)
 
-		if *ptr != original {
-			t.Errorf("AssignIfNonNil() changed value to %v, want %v", *ptr, original)
+		if *pointer != original {
+			t.Errorf("AssignIfNonNil() changed value to %v, want %v", *pointer, original)
 		}
 	})
 
@@ -601,12 +601,12 @@ func TestAssignIfNonNil(t *testing.T) {
 		t.Parallel()
 
 		original := original
-		ptr := &original
+		pointer := &original
 		testNewStrVal := testNewStr
-		AssignIfNonNil(ptr, &testNewStrVal)
+		AssignIfNonNil(pointer, &testNewStrVal)
 
-		if *ptr != testNewStr {
-			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, testNewStr)
+		if *pointer != testNewStr {
+			t.Errorf("AssignIfNonNil() assigned %v, want %v", *pointer, testNewStr)
 		}
 	})
 
@@ -614,11 +614,11 @@ func TestAssignIfNonNil(t *testing.T) {
 		t.Parallel()
 
 		original := 42
-		ptr := &original
-		AssignIfNonNil(ptr, nil)
+		pointer := &original
+		AssignIfNonNil(pointer, nil)
 
-		if *ptr != 42 {
-			t.Errorf("AssignIfNonNil() changed value to %v, want %v", *ptr, 42)
+		if *pointer != 42 {
+			t.Errorf("AssignIfNonNil() changed value to %v, want %v", *pointer, 42)
 		}
 	})
 
@@ -626,12 +626,12 @@ func TestAssignIfNonNil(t *testing.T) {
 		t.Parallel()
 
 		original := 42
-		ptr := &original
+		pointer := &original
 		testNewStrVal := 100
-		AssignIfNonNil(ptr, &testNewStrVal)
+		AssignIfNonNil(pointer, &testNewStrVal)
 
-		if *ptr != 100 {
-			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, 100)
+		if *pointer != 100 {
+			t.Errorf("AssignIfNonNil() assigned %v, want %v", *pointer, 100)
 		}
 	})
 
@@ -639,12 +639,12 @@ func TestAssignIfNonNil(t *testing.T) {
 		t.Parallel()
 
 		original := false
-		ptr := &original
+		pointer := &original
 		testNewStrVal := true
-		AssignIfNonNil(ptr, &testNewStrVal)
+		AssignIfNonNil(pointer, &testNewStrVal)
 
-		if *ptr != true {
-			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, true)
+		if *pointer != true {
+			t.Errorf("AssignIfNonNil() assigned %v, want %v", *pointer, true)
 		}
 	})
 }

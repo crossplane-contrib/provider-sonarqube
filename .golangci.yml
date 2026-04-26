@@ -69,9 +69,6 @@ linters:
       enable-all: true
       disable:
         - fieldalignment
-      settings:
-        shadow:
-          strict: true
     iface:
       # List of analyzers.
       # Default: ["identical"]
