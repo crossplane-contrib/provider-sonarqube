@@ -52,10 +52,11 @@ import (
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
 const (
-	testExternalName = "github-main"
-	testGitHubURL    = "https://api.github.com"
-	testAppID        = "123456"
-	testClientID     = "Iv1.abc123"
+	testExternalName     = "github-main"
+	testRenamedGitHubKey = "github-renamed"
+	testGitHubURL        = "https://api.github.com"
+	testAppID            = "123456"
+	testClientID         = "Iv1.abc123"
 )
 
 type notALMGitHub struct {
@@ -551,7 +552,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test covers all update paths
+func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test covers all update paths
 	t.Parallel()
 
 	clientSecretRef := secretRef("client-secret", "clientSecret")
@@ -572,6 +573,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test covers al
 		settingsClient *fake.MockALMSettingsGitHubClient
 		args           args
 		want           want
+		registerMG     bool // pre-register tc.args.mg with the fake kube client (needed for kubeClient.Update after key change)
 	}{
 		"NotALMGitHub": {
 			objects:        []runtime.Object{},
@@ -667,7 +669,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test covers al
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				UpdateGithubFn: func(opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
-					if opt == nil || opt.Key != testExternalName || opt.NewKey != "github-renamed" {
+					if opt == nil || opt.Key != testExternalName || opt.NewKey != testRenamedGitHubKey {
 						t.Fatalf("Update() unexpected options: %+v", opt)
 					}
 
@@ -676,7 +678,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test covers al
 			},
 			args: args{ctx: context.Background(), mg: func() resource.Managed {
 				alm := newTestALMGitHub(testExternalName, clientSecretRef, privateKeyRef)
-				alm.Spec.ForProvider.Key = "github-renamed"
+				alm.Spec.ForProvider.Key = testRenamedGitHubKey
 
 				return alm
 			}()},
@@ -685,6 +687,26 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test covers al
 				connectionDetailPrivateKeyKey:    []byte("pk-value"),
 				connectionDetailWebhookSecretKey: []byte(""),
 			}}},
+			registerMG: true,
+		},
+		"UpdateKeyChangePersistError": {
+			objects: []runtime.Object{
+				testSecret("client-secret", "default", "clientSecret", "cs-value"),
+				testSecret("private-key", "default", "privateKey", "pk-value"),
+			},
+			settingsClient: &fake.MockALMSettingsGitHubClient{
+				UpdateGithubFn: func(_ *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
+					return mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+			// registerMG is false → ALMGitHub not in fake client → kubeClient.Update returns not-found
+			args: args{ctx: context.Background(), mg: func() resource.Managed {
+				alm := newTestALMGitHub(testExternalName, clientSecretRef, privateKeyRef)
+				alm.Spec.ForProvider.Key = testRenamedGitHubKey
+
+				return alm
+			}()},
+			want: want{update: managed.ExternalUpdate{}, errSubstr: "cannot update external name annotation after key change"},
 		},
 		"SuccessfulUpdateWithWebhookSecret": {
 			objects: []runtime.Object{
@@ -721,12 +743,25 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test covers al
 
 			scheme := runtime.NewScheme()
 
-			err := corev1.SchemeBuilder.AddToScheme(scheme)
-			if err != nil {
-				t.Fatalf("AddToScheme() unexpected error: %v", err)
+			addCorev1Err := corev1.SchemeBuilder.AddToScheme(scheme)
+			if addCorev1Err != nil {
+				t.Fatalf("AddToScheme(corev1) unexpected error: %v", addCorev1Err)
 			}
 
-			kubeClient := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...).Build()
+			addV1alpha1Err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
+			if addV1alpha1Err != nil {
+				t.Fatalf("AddToScheme(v1alpha1) unexpected error: %v", addV1alpha1Err)
+			}
+
+			builder := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...)
+
+			if tc.registerMG {
+				if alm, ok := tc.args.mg.(*v1alpha1.ALMGitHub); ok {
+					builder = builder.WithRuntimeObjects(alm)
+				}
+			}
+
+			kubeClient := builder.Build()
 			e := &external{
 				kubeClient:     kubeClient,
 				settingsClient: tc.settingsClient,
@@ -743,10 +778,21 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test covers al
 				t.Fatalf("Update() mismatch (-want +got):\n%s", diff)
 			}
 
-			alm, ok := tc.args.mg.(*v1alpha1.ALMGitHub)
-			if ok && name == "SuccessfulUpdateWithKeyChange" {
-				if gotExternalName := meta.GetExternalName(alm); gotExternalName != "github-renamed" {
-					t.Fatalf("Update() external name = %q, want %q", gotExternalName, "github-renamed")
+			if alm, ok := tc.args.mg.(*v1alpha1.ALMGitHub); ok && name == "SuccessfulUpdateWithKeyChange" {
+				if gotExternalName := meta.GetExternalName(alm); gotExternalName != testRenamedGitHubKey {
+					t.Fatalf("Update() external name = %q, want %q", gotExternalName, testRenamedGitHubKey)
+				}
+
+				// Verify the external name was persisted to the Kubernetes API.
+				persisted := &v1alpha1.ALMGitHub{}
+
+				getErr := kubeClient.Get(tc.args.ctx, types.NamespacedName{Name: alm.Name, Namespace: alm.Namespace}, persisted)
+				if getErr != nil {
+					t.Fatalf("Update() kubeClient.Get() error: %v", getErr)
+				}
+
+				if gotPersistedName := meta.GetExternalName(persisted); gotPersistedName != testRenamedGitHubKey {
+					t.Fatalf("Update() persisted external name = %q, want %q", gotPersistedName, testRenamedGitHubKey)
 				}
 			}
 		})

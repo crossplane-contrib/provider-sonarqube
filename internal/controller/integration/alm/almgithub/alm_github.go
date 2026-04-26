@@ -292,6 +292,11 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	if updateOptions.NewKey != "" {
 		meta.SetExternalName(almGitHub, updateOptions.NewKey)
+
+		kubeErr := c.kubeClient.Update(ctx, almGitHub)
+		if kubeErr != nil {
+			return managed.ExternalUpdate{}, errors.Wrap(kubeErr, "cannot update external name annotation after key change")
+		}
 	}
 
 	return managed.ExternalUpdate{

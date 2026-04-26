@@ -303,6 +303,11 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	if updateOptions.NewKey != "" {
 		// If the Key was updated, also update the external name to the new Key to keep it in sync with the identifier of the ALMGitLab resource in SonarQube API.
 		meta.SetExternalName(almGitlab, updateOptions.NewKey)
+
+		kubeErr := c.kubeClient.Update(ctx, almGitlab)
+		if kubeErr != nil {
+			return managed.ExternalUpdate{}, errors.Wrap(kubeErr, "cannot update external name annotation after key change")
+		}
 	}
 
 	return managed.ExternalUpdate{
