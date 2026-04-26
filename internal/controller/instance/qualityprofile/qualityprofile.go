@@ -58,7 +58,8 @@ const (
 	errShowQualityProfile    = "cannot get SonarQube Quality Profile"
 )
 
-// SetupGated adds a controller that reconciles QualityProfile managed resources with safe-start support.
+// SetupGated adds a controller that reconciles QualityProfile
+// managed resources with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
@@ -156,8 +157,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the SonarQube clients interface for QualityProfile.
 type external struct {
 	// qualityProfilesClient is used to interact with SonarQube Quality Profiles API
 	qualityProfilesClient instance.QualityProfilesClient
@@ -255,7 +255,8 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalCreation{}, nil
 }
 
-// Update updates the external resource to match the desired state of the managed resource.
+// Update updates the external resource to match the desired state of the
+// managed resource.
 func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
 	profile, ok := managedResource.(*v1alpha1.QualityProfile)
 	if !ok {
@@ -355,7 +356,8 @@ func (c *external) syncQualityProfileRules(profile *v1alpha1.QualityProfile, ass
 	return nil
 }
 
-// deactivateUnwantedQualityProfileRules deactivates rules that are in the observation but not in the spec.
+// deactivateUnwantedQualityProfileRules deactivates rules that are in the
+// observation but not in the spec.
 // Returns a slice of errors encountered during deactivation.
 func (c *external) deactivateUnwantedQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
@@ -382,7 +384,8 @@ func (c *external) deactivateUnwantedQualityProfileRules(externalName string, as
 	return errs
 }
 
-// activateMissingQualityProfileRules activates rules that are in the spec but not in the observation.
+// activateMissingQualityProfileRules activates rules that are in the spec but
+// not in the observation.
 // Returns a slice of errors encountered during activation.
 func (c *external) activateMissingQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
@@ -418,8 +421,9 @@ func (c *external) activateMissingQualityProfileRules(externalName string, assoc
 	return errs
 }
 
-// updateOutdatedQualityProfileRules updates rules that have different parameters between spec and observation.
-// For SonarQube, updating a rule means re-activating it with the new parameters.
+// updateOutdatedQualityProfileRules updates rules that have different
+// parameters between spec and observation.
+// Updating a rule means re-activating it with the new parameters.
 // Returns a slice of errors encountered during update.
 func (c *external) updateOutdatedQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error

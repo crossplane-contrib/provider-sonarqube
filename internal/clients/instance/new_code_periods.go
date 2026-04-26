@@ -33,14 +33,16 @@ type NewCodePeriodsClient interface {
 	Unset(opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error)
 }
 
-// NewNewCodePeriodsClient creates a new NewCodePeriodsClient with the provided SonarQube client configuration.
+// NewNewCodePeriodsClient creates a new NewCodePeriodsClient with the provided
+// SonarQube client configuration.
 func NewNewCodePeriodsClient(clientConfig common.Config) NewCodePeriodsClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.NewCodePeriods
 }
 
-// GenerateNewCodePeriodsShowOptions generates the options for showing the new code period of a SonarQube Project based on the provided project key.
+// GenerateNewCodePeriodsShowOptions generates the options for showing the new
+// code period of a SonarQube Project based on the provided project key.
 func GenerateNewCodePeriodsShowOptions(projectKey *string, branch *string) *sonar.NewCodePeriodsShowOptions {
 	opts := sonar.NewCodePeriodsShowOptions{}
 	helpers.AssignIfNonNil(&opts.Project, projectKey)
@@ -49,7 +51,9 @@ func GenerateNewCodePeriodsShowOptions(projectKey *string, branch *string) *sona
 	return &opts
 }
 
-// GenerateProjectNewCodePeriodsSetOptions generates the options for setting the new code period of a SonarQube Project based on the provided ProjectParameters.
+// GenerateProjectNewCodePeriodsSetOptions generates the options for setting the
+// new code period of a SonarQube Project based on the provided
+// ProjectParameters.
 func GenerateProjectNewCodePeriodsSetOptions(projectKey string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOptions {
 	opts := sonar.NewCodePeriodsSetOptions{
 		Project: projectKey,
@@ -62,7 +66,9 @@ func GenerateProjectNewCodePeriodsSetOptions(projectKey string, newCodePeriodPar
 	return &opts
 }
 
-// GenerateBranchNewCodePeriodsSetOptions generates the options for setting the new code period of a SonarQube Project branch based on the provided branch name and ProjectParameters.
+// GenerateBranchNewCodePeriodsSetOptions generates the options for setting the
+// new code period of a SonarQube Project branch based on the provided branch
+// name and ProjectParameters.
 func GenerateBranchNewCodePeriodsSetOptions(projectKey string, branchName string, newCodePeriodParameters *v1alpha1.ProjectNewCodePeriodParameters) *sonar.NewCodePeriodsSetOptions {
 	opts := sonar.NewCodePeriodsSetOptions{
 		Project: projectKey,
@@ -76,14 +82,18 @@ func GenerateBranchNewCodePeriodsSetOptions(projectKey string, branchName string
 	return &opts
 }
 
-// GenerateProjectNewCodePeriodsListOptions generates the options for listing the new code periods of a SonarQube Project based on the provided project key.
+// GenerateProjectNewCodePeriodsListOptions generates the options for listing
+// the new code periods of a SonarQube Project based on the provided
+// project key.
 func GenerateProjectNewCodePeriodsListOptions(projectKey string) *sonar.NewCodePeriodsListOptions {
 	return &sonar.NewCodePeriodsListOptions{
 		Project: projectKey,
 	}
 }
 
-// IsNewCodePeriodUpToDate checks if the observed new code period of a SonarQube Project is up to date with the new code definition specified in the managed resource.
+// IsNewCodePeriodUpToDate checks if the observed new code period of a
+// SonarQube Project is up to date with the new code definition specified
+// in the managed resource.
 func IsNewCodePeriodUpToDate(spec *v1alpha1.ProjectNewCodePeriodParameters, observation *v1alpha1.ProjectNewCodePeriodObservation) bool {
 	if observation == nil {
 		return false
@@ -94,7 +104,9 @@ func IsNewCodePeriodUpToDate(spec *v1alpha1.ProjectNewCodePeriodParameters, obse
 			helpers.IsComparablePtrEqualComparable(spec.Value, observation.Value)
 }
 
-// GenerateProjectNewCodePeriodObservation generates the observation for the new code period of a SonarQube Project based on the provided NewCodePeriodsShow response.
+// GenerateProjectNewCodePeriodObservation generates the observation for the new
+// code period of a SonarQube Project based on the provided
+// NewCodePeriodsShow response.
 func GenerateProjectNewCodePeriodObservation(obs *sonar.NewCodePeriodsShow) v1alpha1.ProjectNewCodePeriodObservation {
 	return v1alpha1.ProjectNewCodePeriodObservation{
 		Type:      obs.Type,
@@ -103,7 +115,9 @@ func GenerateProjectNewCodePeriodObservation(obs *sonar.NewCodePeriodsShow) v1al
 	}
 }
 
-// GenerateBranchNewCodePeriodObservation generates the observation for the new code period of a SonarQube Project branch based on the provided NewCodePeriod response.
+// GenerateBranchNewCodePeriodObservation generates the observation for the
+// new code period of a SonarQube Project branch based on the provided
+// NewCodePeriod response.
 func GenerateBranchNewCodePeriodObservation(obs *sonar.NewCodePeriod) v1alpha1.ProjectNewCodePeriodObservation {
 	return v1alpha1.ProjectNewCodePeriodObservation{
 		Type:           obs.Type,
@@ -113,7 +127,9 @@ func GenerateBranchNewCodePeriodObservation(obs *sonar.NewCodePeriod) v1alpha1.P
 	}
 }
 
-// LateInitializeProjectNewCodePeriod performs late initialization of the ProjectNewCodePeriodParameters in the ProjectParameters based on the observed new code period from SonarQube.
+// LateInitializeProjectNewCodePeriod performs late initialization of the
+// ProjectNewCodePeriodParameters in the ProjectParameters based on the observed
+// new code period from SonarQube.
 func LateInitializeProjectNewCodePeriod(spec *v1alpha1.ProjectNewCodePeriodParameters, observation *v1alpha1.ProjectNewCodePeriodObservation) {
 	if spec == nil || observation == nil {
 		return

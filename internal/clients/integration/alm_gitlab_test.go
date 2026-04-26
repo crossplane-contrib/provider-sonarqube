@@ -34,9 +34,9 @@ import (
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
 const (
-	gitlabALMName = "gitlab-main"
-	gitlabALMURL  = "https://gitlab.example.com"
-	gitlabPATToken = "pat-token"
+	gitlabALMName    = "gitlab-main"
+	gitlabALMURL     = "https://gitlab.example.com"
+	gitlabPATToken   = "pat-token"
 	gitlabMutatedURL = "https://mutated.example.com"
 )
 

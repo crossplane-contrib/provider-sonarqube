@@ -24,15 +24,19 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 )
 
-// ALMIntegrationsClient is the interface for interacting with SonarQube ALM integrations API
-// It handles all the operations related to ALM integrations in SonarQube, such as creating, updating, deleting, and retrieving them.
+// ALMIntegrationsClient is the interface for interacting with
+// SonarQube ALM integrations API
+// It handles all the operations related to ALM integrations in SonarQube,
+// such as creating, updating, deleting, and retrieving them.
 type ALMIntegrationsClient interface {
 	CheckPat(opt *sonar.AlmIntegrationsCheckPatOptions) (v *sonar.AlmIntegrationsCheckPat, resp *http.Response, err error)
 	SetPat(opt *sonar.AlmIntegrationsSetPatOptions) (resp *http.Response, err error)
 }
 
-// ALMSettingsClient is the interface for interacting with SonarQube ALM settings API
-// It handles all the operations related to ALM settings in SonarQube, such as creating, updating, deleting, and retrieving them.
+// ALMSettingsClient is the interface for interacting with
+// SonarQube ALM settings API
+// It handles all the operations related to ALM settings in SonarQube,
+// such as creating, updating, deleting, and retrieving them.
 type ALMSettingsClient interface {
 	CountBinding(opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error)
 	Delete(opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error)
@@ -42,7 +46,8 @@ type ALMSettingsClient interface {
 	Validate(opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error)
 }
 
-// IsALMUpToDate checks if the ALM spec is up to date with the SonarQube API response.
+// IsALMUpToDate checks if the ALM spec is up to date with the
+// SonarQube API response.
 // It returns true if the spec is up to date, and false if it is not.
 func IsALMUpToDate(spec *v1alpha1.ALMCommonParameters, specAPIToken string, observation *v1alpha1.ALMCommonObservation, savedAPIToken string) bool {
 	if spec == nil {
@@ -58,8 +63,10 @@ func IsALMUpToDate(spec *v1alpha1.ALMCommonParameters, specAPIToken string, obse
 		specAPIToken == savedAPIToken
 }
 
-// LateInitializeALM fills the empty fields in the ALM spec with the values from the SonarQube API response.
-// The API response should be the result of a "Get" operation for the ALM resource.
+// LateInitializeALM fills the empty fields in the ALM spec with the
+// values from the SonarQube API response.
+// The API response should be the result of a "Get" operation for
+// the ALM resource.
 func LateInitializeALM(spec *v1alpha1.ALMCommonParameters, observation *v1alpha1.ALMCommonObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -68,7 +75,9 @@ func LateInitializeALM(spec *v1alpha1.ALMCommonParameters, observation *v1alpha1
 	// This currently does not do anything because there are no fields in the ALMCommonParameters that can be late initialized. However, if in the future we add any fields to the ALMCommonParameters that can be late initialized, we should add the logic to fill in those fields here.
 }
 
-// IsALMLateInitialized checks if two ALM specs are equal after late initialization. It returns true if the specs are equal, and false if they are not.
+// IsALMLateInitialized checks if two ALM specs are equal after late
+// initialization. It returns true if the specs are equal,
+// and false if they are not.
 func IsALMLateInitialized(former, current *v1alpha1.ALMCommonParameters) bool {
 	if former == nil || current == nil {
 		return true
@@ -78,7 +87,8 @@ func IsALMLateInitialized(former, current *v1alpha1.ALMCommonParameters) bool {
 		former.Key != current.Key
 }
 
-// GenerateALMDeleteOptions generates the options for deleting an ALM resource in SonarQube API based on the external name of the resource.
+// GenerateALMDeleteOptions generates the options for deleting an ALM resource
+// in SonarQube API based on the external name of the resource.
 func GenerateALMDeleteOptions(externalName string) *sonar.AlmSettingsDeleteOptions {
 	return &sonar.AlmSettingsDeleteOptions{
 		Key: externalName,

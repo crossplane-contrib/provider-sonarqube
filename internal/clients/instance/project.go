@@ -30,7 +30,8 @@ import (
 )
 
 // ProjectsClient is the interface for interacting with SonarQube Projects API
-// It handles all the operations related to Projects in SonarQube, such as creating, updating, deleting, and retrieving Projects.
+// It handles all the operations related to Projects in SonarQube, such as
+// creating, updating, deleting, and retrieving Projects.
 type ProjectsClient interface {
 	BulkDelete(opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error)
 	Create(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error)
@@ -42,14 +43,16 @@ type ProjectsClient interface {
 	UpdateVisibility(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error)
 }
 
-// NewProjectsClient creates a new ProjectsClient with the provided SonarQube client configuration.
+// NewProjectsClient creates a new ProjectsClient with the provided
+// SonarQube client configuration.
 func NewProjectsClient(clientConfig common.Config) ProjectsClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.Projects
 }
 
-// GenerateProjectsCreateOptions generates the options for creating a SonarQube Project based on the provided ProjectParameters.
+// GenerateProjectsCreateOptions generates the options for creating a
+// SonarQube Project based on the provided ProjectParameters.
 func GenerateProjectsCreateOptions(spec v1alpha1.ProjectParameters) *sonar.ProjectsCreateOptions {
 	opts := sonar.ProjectsCreateOptions{
 		Name:    spec.Name,
@@ -67,7 +70,8 @@ func GenerateProjectsCreateOptions(spec v1alpha1.ProjectParameters) *sonar.Proje
 	return &opts
 }
 
-// GenerateProjectDeleteOptions generates the options for deleting a SonarQube Project based on the provided ProjectParameters.
+// GenerateProjectDeleteOptions generates the options for deleting a
+// SonarQube Project based on the provided ProjectParameters.
 func GenerateProjectDeleteOptions(projectKey string) *sonar.ProjectsDeleteOptions {
 	opts := sonar.ProjectsDeleteOptions{
 		Project: projectKey,
@@ -76,7 +80,8 @@ func GenerateProjectDeleteOptions(projectKey string) *sonar.ProjectsDeleteOption
 	return &opts
 }
 
-// GenerateProjectSearchOptions generates the options for searching a SonarQube Project based on the provided ProjectParameters.
+// GenerateProjectSearchOptions generates the options for searching a
+// SonarQube Project based on the provided ProjectParameters.
 func GenerateProjectSearchOptions(projectKey string) *sonar.ProjectsSearchOptions {
 	opts := sonar.ProjectsSearchOptions{
 		Projects: []string{projectKey},
@@ -85,7 +90,8 @@ func GenerateProjectSearchOptions(projectKey string) *sonar.ProjectsSearchOption
 	return &opts
 }
 
-// UpdateProjectAttributesObservation updates the ProjectObservation with the attributes of the given SonarQube ProjectSearchComponent.
+// UpdateProjectAttributesObservation updates the ProjectObservation
+// with the attributes of the given SonarQube ProjectSearchComponent.
 func UpdateProjectAttributesObservation(observation *v1alpha1.ProjectObservation, project *sonar.ProjectSearchComponent) {
 	observation.Key = project.Key
 	observation.Name = project.Name
@@ -97,22 +103,26 @@ func UpdateProjectAttributesObservation(observation *v1alpha1.ProjectObservation
 	observation.Managed = project.Managed
 }
 
-// LateInitializeProject performs late initialization of the ProjectParameters in the ProjectParameters based on the observed project from SonarQube.
-// It updates the ProjectParameters with any missing information from the observed project.
+// LateInitializeProject performs late initialization of the ProjectParameters
+// in the ProjectParameters based on the observed project from SonarQube.
+// It updates the ProjectParameters with any missing information from the
+// observed project.
 func LateInitializeProject(spec *v1alpha1.ProjectParameters, observation *v1alpha1.ProjectObservation) {
 	helpers.AssignIfNil(&spec.Visibility, observation.Visibility)
 	LateInitializeProjectLinks(spec, observation.Links)
 	LateInitializeProjectNewCodePeriod(spec.NewCodePeriod, &observation.NewCodePeriod)
 }
 
-// IsProjectLateInitialized checks if the ProjectParameters has been late-initialized based on the observed project from SonarQube.
+// IsProjectLateInitialized checks if the ProjectParameters has been
+// late-initialized based on the observed project from SonarQube.
 func IsProjectLateInitialized(former *v1alpha1.ProjectParameters, current *v1alpha1.ProjectParameters) bool {
 	return !cmp.Equal(former.Visibility, current.Visibility) ||
 		!cmp.Equal(former.Links, current.Links, cmpopts.EquateEmpty()) ||
 		!cmp.Equal(former.NewCodePeriod, current.NewCodePeriod)
 }
 
-// IsProjectUpToDate checks if the observed state of a SonarQube Project is up to date with the desired state specified in the ProjectParameters.
+// IsProjectUpToDate checks if the observed state of a SonarQube Project is up
+// to date with the desired state specified in the ProjectParameters.
 func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.ProjectObservation) bool { //nolint:gocyclo,cyclop // This function is complex due to the number of fields being compared, but it is necessary for determining if the project is up to date.
 	if observation == nil {
 		return false
@@ -130,7 +140,9 @@ func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.P
 			AreProjectQualityProfilesUpToDate(spec.QualityProfiles, observation.QualityProfiles)
 }
 
-// GenerateProjectUpdateVisibilityOptions generates the options for updating the visibility of a SonarQube Project based on the provided project key and desired visibility.
+// GenerateProjectUpdateVisibilityOptions generates the options for updating the
+// visibility of a SonarQube Project based on the provided project key and
+// desired visibility.
 func GenerateProjectUpdateVisibilityOptions(projectKey string, visibility string) *sonar.ProjectsUpdateVisibilityOptions {
 	return &sonar.ProjectsUpdateVisibilityOptions{
 		Project:    projectKey,

@@ -54,7 +54,9 @@ const (
 	connectionDetailTokenKey = "token"
 )
 
-// SetupGated adds a controller that reconciles ALMGitLab managed resources with safe-start support.
+// SetupGated adds a controller that reconciles ALMGitLab managed resources
+//
+//	with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
@@ -157,8 +159,8 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external is used to observe and manipulate the external resource (ALMGitLab)
+// in SonarQube API. It implements the managed.ExternalClient interface.
 type external struct {
 	// kubeClient is the Kubernetes API client that can be used to get and update the managed resource. This is expected to be initialized by the connector when the external client is created.
 	kubeClient client.Client
@@ -168,8 +170,10 @@ type external struct {
 	settingsClient integration.ALMSettingsGitLabClient
 }
 
-// Observe observes the ALMGitLab corresponding external resource using the SonarQube API, and returns an ExternalObservation.
-// It is used to determine if the resource exists, is up to date, and late initialize the spec if needed.
+// Observe observes the ALMGitLab corresponding external resource using the
+// SonarQube API, and returns an ExternalObservation.
+// It is used to determine if the resource exists,
+// is up to date, and late initialize the spec if needed.
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
 	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
 	if !ok {
@@ -230,8 +234,12 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}, nil
 }
 
-// Create creates the ALMGitLab external resource using the SonarQube API, based on the desired state of the managed resource. It returns an ExternalCreation which may include connection details to be stored in a secret.
-// It also sets the external name of the managed resource to the identifier of the created external resource if it is not already set.
+// Create creates the ALMGitLab external resource using the SonarQube API,
+// based on the desired state of the managed resource.
+// It returns an ExternalCreation which may include connection details to be
+// stored in a secret.
+// It also sets the external name of the managed resource to the identifier
+// of the created external resource if it is not already set.
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
 	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
 	if !ok {
@@ -269,7 +277,10 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}, nil
 }
 
-// Update updates the ALMGitLab corresponding external resource to reflect the desired state of the managed resource. It returns an ExternalUpdate which may include connection details to be stored in a secret.
+// Update updates the ALMGitLab corresponding external resource to reflect
+// the desired state of the managed resource.
+// It returns an ExternalUpdate which may include connection details to be
+// stored in a secret.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
 	if !ok {
@@ -317,7 +328,9 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	}, nil
 }
 
-// Delete deletes the ALMGitLab corresponding external resource using the SonarQube API. It returns an ExternalDelete which may include connection details to be stored in a secret.
+// Delete deletes the ALMGitLab corresponding external resource using the
+// SonarQube API. It returns an ExternalDelete which may include
+// connection details to be stored in a secret.
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
 	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
 	if !ok {

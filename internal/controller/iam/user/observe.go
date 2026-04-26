@@ -35,7 +35,8 @@ import (
 
 const defaultMembershipPageSize = 500
 
-// Observe is responsible for observing the external resource and determining if it needs to be created or updated.
+// Observe is responsible for observing the external resource and
+// determining if it needs to be created or updated.
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
 	userResource, ok := mg.(*v1alpha1.User)
 	if !ok {
@@ -85,7 +86,12 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}, nil
 }
 
-// passwordFromSecret retrieves the password for a local user from the Kubernetes secret specified in the UserParameters. If the PasswordSecretRef is not set and the user is local, it returns an error, as a password is required for creating a local user. If the user is not local, it returns an empty password without error, as a password is not required for non-local users.
+// passwordFromSecret retrieves the password for a local user from the
+// Kubernetes secret specified in the UserParameters.
+// If the PasswordSecretRef is not set and the user is local,
+// it returns an error, as a password is required for creating a local user.
+// If the user is not local, it returns an empty password without error,
+// as a password is not required for non-local users.
 //
 //nolint:nilnil // Returning nil password for non-local users is expected.
 func (c *external) passwordFromSecret(ctx context.Context, userResource *v1alpha1.User) (*string, error) {
@@ -105,7 +111,9 @@ func (c *external) passwordFromSecret(ctx context.Context, userResource *v1alpha
 	return password, nil
 }
 
-// getUserGroupsObservation retrieves the groups that the user belongs to from the SonarQube API. It handles pagination to ensure all groups are retrieved, and returns a map of group IDs to membership IDs for efficient lookup.
+// getUserGroupsObservation retrieves the groups that the user belongs to from
+// the SonarQube API. It handles pagination to ensure all groups are retrieved,
+// and returns a map of group IDs to membership IDs for efficient lookup.
 func (c *external) getUserGroupsObservation(userID string) (map[string]string, error) {
 	var allGroups []sonar.GroupMembership
 

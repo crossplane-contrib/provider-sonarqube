@@ -27,7 +27,8 @@ import (
 )
 
 // GroupsClient is the interface for interacting with SonarQube Group API
-// It handles all the operations related to Groups in SonarQube, such as creating, updating, deleting, and retrieving Groups.
+// It handles all the operations related to Groups in SonarQube, such as
+// creating, updating, deleting, and retrieving Groups.
 type GroupsClient interface {
 	CreateGroup(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error)
 	CreateGroupMembership(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error)
@@ -39,15 +40,18 @@ type GroupsClient interface {
 	UpdateGroup(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error)
 }
 
-// NewGroupsClient creates a new GroupsClient with the provided SonarQube client configuration.
+// NewGroupsClient creates a new GroupsClient with the provided SonarQube
+// client configuration.
 func NewGroupsClient(clientConfig common.Config) GroupsClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.V2.Authorizations
 }
 
-// LateInitializeGroup fills the empty fields in the Group spec with the values from the SonarQube API response.
-// The API response should be the result of a "Get" operation for the Group resource.
+// LateInitializeGroup fills the empty fields in the Group spec with
+// the values from the SonarQube API response.
+// The API response should be the result of a "Get" operation for the
+// Group resource.
 func LateInitializeGroup(spec *v1alpha1.GroupParameters, observation *v1alpha1.GroupObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -58,7 +62,9 @@ func LateInitializeGroup(spec *v1alpha1.GroupParameters, observation *v1alpha1.G
 	helpers.AssignIfNil(&spec.Permissions, observation.Permissions)
 }
 
-// IsGroupLateInitialized checks if two Group specs are equal after late initialization. It returns true if the specs are equal, and false if they are not.
+// IsGroupLateInitialized checks if two Group specs are equal after
+// late initialization. It returns true if the specs are equal,
+// and false if they are not.
 //
 //nolint:gocyclo,cyclop // This function intentionally encodes late-init semantics in one place.
 func IsGroupLateInitialized(former, current *v1alpha1.GroupParameters) bool {
@@ -82,7 +88,8 @@ func IsGroupLateInitialized(former, current *v1alpha1.GroupParameters) bool {
 	return nameChanged || descriptionChanged || permissionsChanged
 }
 
-// IsGroupUpToDate checks if the Group spec is up to date with the SonarQube API response.
+// IsGroupUpToDate checks if the Group spec is up to date with the
+// SonarQube API response.
 // It returns true if the spec is up to date, and false if it is not.
 func IsGroupUpToDate(spec *v1alpha1.GroupParameters, observation *v1alpha1.GroupObservation) bool {
 	if spec == nil {
@@ -98,7 +105,8 @@ func IsGroupUpToDate(spec *v1alpha1.GroupParameters, observation *v1alpha1.Group
 		ArePermissionsEqual(spec.Permissions, observation.Permissions)
 }
 
-// GenerateCreateGroupOptions generates the SonarQube API options for creating a Group based on the Group spec.
+// GenerateCreateGroupOptions generates the SonarQube API options for
+// creating a Group based on the Group spec.
 func GenerateCreateGroupOptions(spec *v1alpha1.GroupParameters) *sonar.AuthorizationsCreateGroupOptions {
 	if spec == nil {
 		return nil
@@ -113,7 +121,8 @@ func GenerateCreateGroupOptions(spec *v1alpha1.GroupParameters) *sonar.Authoriza
 	return options
 }
 
-// GenerateUpdateGroupOptions generates the SonarQube API options for updating a Group based on the Group spec.
+// GenerateUpdateGroupOptions generates the SonarQube API options for
+// updating a Group based on the Group spec.
 func GenerateUpdateGroupOptions(spec *v1alpha1.GroupParameters) *sonar.AuthorizationsUpdateGroupOptions {
 	if spec == nil {
 		return nil
@@ -127,7 +136,8 @@ func GenerateUpdateGroupOptions(spec *v1alpha1.GroupParameters) *sonar.Authoriza
 	return options
 }
 
-// GenerateGroupObservation generates the GroupObservation from the SonarQube API response for a Group resource.
+// GenerateGroupObservation generates the GroupObservation from the
+// SonarQube API response for a Group resource.
 func GenerateGroupObservation(group *sonar.Group) v1alpha1.GroupObservation {
 	if group == nil {
 		return v1alpha1.GroupObservation{}
@@ -142,7 +152,8 @@ func GenerateGroupObservation(group *sonar.Group) v1alpha1.GroupObservation {
 	}
 }
 
-// GenerateGroupCreateMembershipOptions generates the SonarQube API options for creating a group membership based on the group ID and user ID.
+// GenerateGroupCreateMembershipOptions generates the SonarQube API
+// options for creating a group membership based on the group ID and user ID.
 func GenerateGroupCreateMembershipOptions(groupID, userID string) sonar.AuthorizationsCreateGroupMembershipOptions {
 	return sonar.AuthorizationsCreateGroupMembershipOptions{
 		GroupId: groupID,
@@ -150,7 +161,8 @@ func GenerateGroupCreateMembershipOptions(groupID, userID string) sonar.Authoriz
 	}
 }
 
-// GenerateGroupSearchMembershipsOptions generates the SonarQube API options for searching group memberships based on the group ID.
+// GenerateGroupSearchMembershipsOptions generates the SonarQube API
+// options for searching group memberships based on the group ID.
 func GenerateGroupSearchMembershipsOptions(groupID, userID *string, pagination *sonar.PaginationParamsV2) sonar.AuthorizationsSearchGroupMembershipsOptions {
 	options := sonar.AuthorizationsSearchGroupMembershipsOptions{}
 
@@ -161,7 +173,8 @@ func GenerateGroupSearchMembershipsOptions(groupID, userID *string, pagination *
 	return options
 }
 
-// GenerateGroupMembershipObservation generates a map of group ID to membership ID from the SonarQube API response for group memberships.
+// GenerateGroupMembershipObservation generates a map of group ID
+// to membership ID from the SonarQube API response for group memberships.
 func GenerateGroupMembershipObservation(memberships *[]sonar.GroupMembership) map[string]string {
 	if memberships == nil {
 		return nil

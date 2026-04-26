@@ -33,7 +33,10 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// Update updates the PermissionsTemplate external resource using the SonarQube API, based on the desired state of the managed resource. It returns an ExternalUpdate which may include connection details to be stored in a secret.
+// Update updates the PermissionsTemplate external resource using the
+// SonarQube API, based on the desired state of the managed resource.
+// It returns an ExternalUpdate which may include connection details
+// to be stored in a secret.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
 	if !ok {
@@ -59,7 +62,8 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	}, nil
 }
 
-// reconcilePermissionsTemplate applies all update operations needed to reach desired state.
+// reconcilePermissionsTemplate applies all update operations needed
+// to reach desired state.
 func (c *external) reconcilePermissionsTemplate(templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
 	var (
 		reconcileWaitGroup sync.WaitGroup
@@ -110,7 +114,8 @@ func (c *external) reconcilePermissionsTemplate(templateID string, permissionsTe
 	return nil
 }
 
-// updateTemplateBaseFields updates mutable template metadata when drift is detected.
+// updateTemplateBaseFields updates mutable template metadata
+// when drift is detected.
 func (c *external) updateTemplateBaseFields(templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
 	// Avoid unnecessary API updates when the desired base fields already match the observed state.
 	if iam.ArePermissionsTemplateBaseFieldsUpToDate(&permissionsTemplate.Spec.ForProvider, &permissionsTemplate.Status.AtProvider) {
@@ -128,7 +133,8 @@ func (c *external) updateTemplateBaseFields(templateID string, permissionsTempla
 	return nil
 }
 
-// setTemplateAsDefaultIfNeeded marks the template as default only when requested and not already default.
+// setTemplateAsDefaultIfNeeded marks the template as default
+// only when requested and not already default.
 func (c *external) setTemplateAsDefaultIfNeeded(templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
 	if permissionsTemplate.Spec.ForProvider.Default == nil || !*permissionsTemplate.Spec.ForProvider.Default || permissionsTemplate.Status.AtProvider.Default {
 		return nil
@@ -145,7 +151,8 @@ func (c *external) setTemplateAsDefaultIfNeeded(templateID string, permissionsTe
 	return nil
 }
 
-// applyTemplatePermissions applies add and remove permission operations concurrently.
+// applyTemplatePermissions applies add and remove permission
+// operations concurrently.
 func (c *external) applyTemplatePermissions(addPermissions []string, removePermissions []string, addFn func(permission string) error, removeFn func(permission string) error) error {
 	var (
 		permissionsWaitGroup sync.WaitGroup
@@ -188,7 +195,12 @@ func (c *external) applyTemplatePermissions(addPermissions []string, removePermi
 	return errors.Join(aggregatedErrors...)
 }
 
-// updatePermissionsTemplateGroups updates the groups permissions of a PermissionsTemplate based on the difference between the spec and the observation. It adds the permissions that are in the spec but not in the observation, and removes the permissions that are in the observation but not in the spec. It returns an error if any occurred during the update.
+// updatePermissionsTemplateGroups updates the groups permissions of a
+// PermissionsTemplate based on the difference between the spec and the
+// observation.
+// It adds the permissions that are in the spec but not in the observation,
+// and removes the permissions that are in the observation but not in the spec.
+// It returns an error if any occurred during the update.
 //
 //nolint:dupl // Group and user reconciliation intentionally share the same control flow with different API endpoints.
 func (c *external) updatePermissionsTemplateGroups(templateID string, specGroups *[]v1alpha1.PermissionsTemplateGroupParameters, observationGroups *[]v1alpha1.PermissionsTemplateGroupObservation) error {
@@ -288,7 +300,8 @@ func (c *external) updatePermissionsTemplateUsers(templateID string, specUsers *
 	)
 }
 
-// updateMappedPermissions reconciles permissions for mapped subjects using provided accessors.
+// updateMappedPermissions reconciles permissions for mapped subjects
+// using provided accessors.
 func (c *external) updateMappedPermissions(
 	mapping map[string][2]int,
 	getSpecPermissions func(specIndex int) []string,
@@ -299,7 +312,8 @@ func (c *external) updateMappedPermissions(
 	return c.updatePermissionsTemplateSubject(mapping, getSpecPermissions, getObservedPermissions, addPermission, removePermission)
 }
 
-// updatePermissionsTemplateSubject reconciles each subject's permissions and aggregates failures.
+// updatePermissionsTemplateSubject reconciles each subject's
+// permissions and aggregates failures.
 func (c *external) updatePermissionsTemplateSubject(
 	mapping map[string][2]int,
 	getSpecPermissions func(specIndex int) []string,
@@ -336,7 +350,10 @@ func (c *external) updatePermissionsTemplateSubject(
 	return errors.Join(aggregatedErrors...)
 }
 
-// computePermissionsDiff computes the permissions to add and remove for a user based on the spec and observation. It returns two slices, one with the permissions to add and one with the permissions to remove.
+// computePermissionsDiff computes the permissions to add and remove for a user
+// based on the spec and observation.
+// It returns two slices,
+// one with the permissions to add and one with the permissions to remove.
 func (c *external) computePermissionsDiff(specPermissions []string, obsPermissions []string) (permissionsToAdd []string, permissionsToRemove []string) {
 	specPerms := helpers.NewStringSetFromSlice(specPermissions)
 	obsPerms := helpers.NewStringSetFromSlice(obsPermissions)
@@ -356,7 +373,11 @@ func (c *external) computePermissionsDiff(specPermissions []string, obsPermissio
 	return permissionsToAdd, permissionsToRemove
 }
 
-// updatePermissionsTemplateCreator updates the creator permissions of a PermissionsTemplate based on the difference between the spec and the observation. It adds the permissions that are in the spec but not in the observation, and removes the permissions that are in the observation but not in the spec. It returns an error if any occurred during the update.
+// updatePermissionsTemplateCreator updates the creator permissions of a
+// PermissionsTemplate based on the difference between the spec and
+// the observation. It adds the permissions that are in the spec but not in the
+// observation, and removes the permissions that are in the observation but not
+// in the spec. It returns an error if any occurred during the update.
 func (c *external) updatePermissionsTemplateCreator(templateID string, spec *[]string, observation []string) error {
 	if spec == nil {
 		return nil

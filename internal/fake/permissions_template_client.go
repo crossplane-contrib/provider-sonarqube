@@ -24,7 +24,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
 
-// MockPermissionsTemplatesClient is a mock implementation of the iam.PermissionsTemplatesClient interface.
+// MockPermissionsTemplatesClient is a mock implementation of the
+// iam.PermissionsTemplatesClient interface.
 type MockPermissionsTemplatesClient struct {
 	AddGroupFn             func(*sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error)
 	AddProjectCreatorFn    func(*sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error)
@@ -53,7 +54,8 @@ func (m *MockPermissionsTemplatesClient) AddGroupToTemplate(opt *sonar.Permissio
 	return nil, errNotImplemented
 }
 
-// AddProjectCreatorToTemplate implements PermissionsTemplatesClient.AddProjectCreatorToTemplate.
+// AddProjectCreatorToTemplate implements
+// PermissionsTemplatesClient.AddProjectCreatorToTemplate.
 func (m *MockPermissionsTemplatesClient) AddProjectCreatorToTemplate(opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error) {
 	if m.AddProjectCreatorFn != nil {
 		return m.AddProjectCreatorFn(opt)
@@ -89,7 +91,8 @@ func (m *MockPermissionsTemplatesClient) DeleteTemplate(opt *sonar.PermissionsDe
 	return nil, errNotImplemented
 }
 
-// RemoveGroupFromTemplate implements PermissionsTemplatesClient.RemoveGroupFromTemplate.
+// RemoveGroupFromTemplate implements
+// PermissionsTemplatesClient.RemoveGroupFromTemplate.
 func (m *MockPermissionsTemplatesClient) RemoveGroupFromTemplate(opt *sonar.PermissionsRemoveGroupFromTemplateOptions) (*http.Response, error) {
 	if m.RemoveGroupFn != nil {
 		return m.RemoveGroupFn(opt)
@@ -98,7 +101,8 @@ func (m *MockPermissionsTemplatesClient) RemoveGroupFromTemplate(opt *sonar.Perm
 	return nil, errNotImplemented
 }
 
-// RemoveProjectCreatorFromTemplate implements PermissionsTemplatesClient.RemoveProjectCreatorFromTemplate.
+// RemoveProjectCreatorFromTemplate implements
+// PermissionsTemplatesClient.RemoveProjectCreatorFromTemplate.
 func (m *MockPermissionsTemplatesClient) RemoveProjectCreatorFromTemplate(opt *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions) (*http.Response, error) {
 	if m.RemoveProjectCreatorFn != nil {
 		return m.RemoveProjectCreatorFn(opt)
@@ -107,7 +111,8 @@ func (m *MockPermissionsTemplatesClient) RemoveProjectCreatorFromTemplate(opt *s
 	return nil, errNotImplemented
 }
 
-// RemoveUserFromTemplate implements PermissionsTemplatesClient.RemoveUserFromTemplate.
+// RemoveUserFromTemplate implements
+// PermissionsTemplatesClient.RemoveUserFromTemplate.
 func (m *MockPermissionsTemplatesClient) RemoveUserFromTemplate(opt *sonar.PermissionsRemoveUserFromTemplateOptions) (*http.Response, error) {
 	if m.RemoveUserFn != nil {
 		return m.RemoveUserFn(opt)

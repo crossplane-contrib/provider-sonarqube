@@ -27,7 +27,8 @@ import (
 
 var errNotImplemented = errors.New("mock function not implemented")
 
-// MockQualityGatesClient is a mock implementation of the QualityGatesClient interface.
+// MockQualityGatesClient is a mock implementation of the
+// QualityGatesClient interface.
 type MockQualityGatesClient struct {
 	AddGroupFn        func(opt *sonar.QualitygatesAddGroupOptions) (resp *http.Response, err error)
 	AddUserFn         func(opt *sonar.QualitygatesAddUserOptions) (resp *http.Response, err error)

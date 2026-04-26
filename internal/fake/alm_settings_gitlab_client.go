@@ -25,7 +25,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 )
 
-// MockALMSettingsGitLabClient is a mock implementation of the ALMSettingsGitLabClient interface.
+// MockALMSettingsGitLabClient is a mock implementation of the
+// ALMSettingsGitLabClient interface.
 type MockALMSettingsGitLabClient struct {
 	CountBindingFn    func(opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error)
 	DeleteFn          func(opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error)

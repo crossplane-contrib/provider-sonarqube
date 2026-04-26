@@ -50,7 +50,8 @@ const (
 	errGetCreds               = "cannot get credentials"
 )
 
-// SetupGated adds a controller that reconciles PermissionsTemplate managed resources with safe-start support.
+// SetupGated adds a controller that reconciles PermissionsTemplate
+// managed resources with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
@@ -150,14 +151,17 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	return &external{client: svc}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the ExternalClient interface for
+// PermissionsTemplate resources.
 type external struct {
 	// client is used to interact with SonarQube PermissionsTemplate API
 	client iam.PermissionsTemplatesClient
 }
 
-// Create creates the PermissionsTemplate external resource using the SonarQube API, based on the desired state of the managed resource. It returns an ExternalCreation which may include connection details to be stored in a secret.
+// Create creates the PermissionsTemplate external resource using the
+// SonarQube API, based on the desired state of the managed resource.
+// It returns an ExternalCreation which may include connection details to be
+// stored in a secret.
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
 	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
 	if !ok {
@@ -180,7 +184,10 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalCreation{}, nil
 }
 
-// Delete deletes the PermissionsTemplate external resource using the SonarQube API, based on the desired state of the managed resource. It returns an ExternalDelete which may include connection details to be stored in a secret.
+// Delete deletes the PermissionsTemplate external resource using the
+// SonarQube API, based on the desired state of the managed resource.
+// It returns an ExternalDelete which may include connection details to be
+// stored in a secret.
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
 	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
 	if !ok {
@@ -206,7 +213,8 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalDelete{}, nil
 }
 
-// Disconnect performs external client cleanup; this client has no persistent resources.
+// Disconnect performs external client cleanup; this client has no
+// persistent resources.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }

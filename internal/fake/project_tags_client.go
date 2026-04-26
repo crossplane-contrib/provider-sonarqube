@@ -24,7 +24,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
 
-// MockProjectTagsClient is a mock implementation of the ProjectTagsClient interface.
+// MockProjectTagsClient is a mock implementation of
+// the ProjectTagsClient interface.
 type MockProjectTagsClient struct {
 	SearchFn func(opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error)
 	SetFn    func(opt *sonar.ProjectTagsSetOptions) (*http.Response, error)

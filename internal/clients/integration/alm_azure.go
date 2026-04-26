@@ -24,30 +24,36 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
-// ALMIntegrationsAzureClient is the interface for interacting with SonarQube ALMAzure API
-// It handles all the operations related to ALMAzure in SonarQube, such as creating, updating, deleting, and retrieving ALMAzure.
+// ALMIntegrationsAzureClient is the interface for interacting with
+// SonarQube ALMAzure API
+// It handles all the operations related to ALMAzure in SonarQube,
+// such as creating, updating, deleting, and retrieving ALMAzure.
 type ALMIntegrationsAzureClient interface {
 	ALMIntegrationsClient
 	ListAzureProjects(opt *sonar.AlmIntegrationsListAzureProjectsOptions) (v *sonar.AlmIntegrationsListAzureProjects, resp *http.Response, err error)
 	SearchAzureRepos(opt *sonar.AlmIntegrationsSearchAzureReposOptions) (v *sonar.AlmIntegrationsSearchAzureRepos, resp *http.Response, err error)
 }
 
-// ALMSettingsAzureClient is the interface for interacting with SonarQube ALM settings API for Azure
-// It handles all the operations related to ALM settings for Azure in SonarQube, such as creating, updating, deleting, and retrieving them.
+// ALMSettingsAzureClient is the interface for interacting with
+// SonarQube ALM settings API for Azure
+// It handles all the operations related to ALM settings for Azure in SonarQube,
+// such as creating, updating, deleting, and retrieving them.
 type ALMSettingsAzureClient interface {
 	ALMSettingsClient
 	CreateAzure(opt *sonar.AlmSettingsCreateAzureOptions) (*http.Response, error)
 	UpdateAzure(opt *sonar.AlmSettingsUpdateAzureOptions) (*http.Response, error)
 }
 
-// NewALMIntegrationsAzureClient creates a new ALMIntegrationsAzureClient with the provided SonarQube client configuration.
+// NewALMIntegrationsAzureClient creates a new ALMIntegrationsAzureClient with
+// the provided SonarQube client configuration.
 func NewALMIntegrationsAzureClient(clientConfig common.Config) ALMIntegrationsAzureClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.AlmIntegrations
 }
 
-// NewALMSettingsAzureClient creates a new ALMSettingsAzureClient with the provided SonarQube client configuration.
+// NewALMSettingsAzureClient creates a new ALMSettingsAzureClient with the
+// provided SonarQube client configuration.
 func NewALMSettingsAzureClient(clientConfig common.Config) ALMSettingsAzureClient {
 	newClient := common.NewClient(clientConfig)
 

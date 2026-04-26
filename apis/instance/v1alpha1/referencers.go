@@ -25,8 +25,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ResolveReferences parses the references to other custom resources and resolves them to
-// the actual values.
+// ResolveReferences parses the references to other custom
+// resources and resolves them to the actual values.
 func (project *Project) ResolveReferences(ctx context.Context, client client.Reader) error {
 	resolver := reference.NewAPINamespacedResolver(client, project)
 
@@ -109,7 +109,8 @@ func (project *Project) ResolveReferences(ctx context.Context, client client.Rea
 	return nil
 }
 
-// ResolveReferences parses the references to other custom resources and resolves them to
+// ResolveReferences parses the references to other custom resources and
+// resolves them to
 // the actual values.
 func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, client client.Reader) error {
 	resolver := reference.NewAPINamespacedResolver(client, qualityProfile)

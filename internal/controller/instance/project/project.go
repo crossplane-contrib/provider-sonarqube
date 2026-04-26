@@ -49,7 +49,8 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 )
 
-// SetupGated adds a controller that reconciles Project managed resources with safe-start support.
+// SetupGated adds a controller that reconciles Project managed
+// resources with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
@@ -153,8 +154,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the ExternalClient interface for Project resources.
 type external struct {
 	// projectsClient is used to interact with SonarQube Projects API
 	projectsClient instance.ProjectsClient
@@ -184,7 +184,8 @@ type observeResult struct {
 	errors               []error
 }
 
-// Observe observes the external resource and updates the managed resource's status with the observed state of the external resource.
+// Observe observes the external resource and updates the managed
+// resource's status with the observed state of the external resource.
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
 	project, ok := mg.(*v1alpha1.Project)
 	if !ok {

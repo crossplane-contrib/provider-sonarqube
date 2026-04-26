@@ -83,7 +83,8 @@ type ProjectParameters struct {
 	QualityProfiles map[string]ProjectQualityProfileReference `json:"qualityProfiles,omitempty"`
 }
 
-// ProjectLinkParameters represent the parameters of a link associated with a project.
+// ProjectLinkParameters represent the parameters of a link
+// associated with a project.
 type ProjectLinkParameters struct {
 	// ID is the unique identifier of the link. This field is used for updating and deleting links, and is not required when creating a new link.
 	// +kubebuilder:validation:Optional
@@ -100,7 +101,8 @@ type ProjectLinkParameters struct {
 	URL string `json:"url"`
 }
 
-// ProjectNewCodePeriodParameters represent the parameters of the new code definition of a project.
+// ProjectNewCodePeriodParameters represent the parameters of the
+// new code definition of a project.
 type ProjectNewCodePeriodParameters struct {
 	// Type is the type of the new code definition. Can be either "PREVIOUS_VERSION" or "NUMBER_OF_DAYS" or "REFERENCE_BRANCH" for projects.
 	// Can be "SPECIFIC_ANALYSIS" for branches.
@@ -112,7 +114,8 @@ type ProjectNewCodePeriodParameters struct {
 	Value *string `json:"value,omitempty"`
 }
 
-// ProjectQualityProfileReference represent the reference to a quality profile to be associated with the project.
+// ProjectQualityProfileReference represent the reference to a quality profile
+// to be associated with the project.
 type ProjectQualityProfileReference struct {
 	// Id is the name of the quality profile to be associated with the project.
 	// +kubebuilder:validation:Optional
@@ -159,7 +162,8 @@ type ProjectObservation struct {
 	QualityProfiles map[string]ProjectQualityProfileObservation `json:"qualityProfiles,omitempty"`
 }
 
-// ProjectLinkObservation represent the observed state of a link associated with a project.
+// ProjectLinkObservation represent the observed state of a link associated with
+// a project.
 type ProjectLinkObservation struct {
 	// ID is the unique identifier of the link.
 	ID string `json:"id"`
@@ -171,7 +175,8 @@ type ProjectLinkObservation struct {
 	URL string `json:"url"`
 }
 
-// ProjectQualityProfileObservation represent the observed state of a quality profile associated with a project.
+// ProjectQualityProfileObservation represent the observed state of a
+// quality profile associated with a project.
 type ProjectQualityProfileObservation struct {
 	// Id is the unique identifier of the quality profile.
 	Id string `json:"id"`
@@ -179,7 +184,8 @@ type ProjectQualityProfileObservation struct {
 	Name string `json:"name"`
 }
 
-// ProjectBranchObservation represent the observed state of a branch of a project.
+// ProjectBranchObservation represent the observed state of a
+// branch of a project.
 type ProjectBranchObservation struct {
 	// AnalysisDate is the date of the last analysis.
 	AnalysisDate *metav1.Time `json:"analysisDate,omitempty"`
@@ -199,7 +205,8 @@ type ProjectBranchObservation struct {
 	NewCodePeriod ProjectNewCodePeriodObservation `json:"newCodePeriod,omitempty"`
 }
 
-// ProjectNewCodePeriodObservation represent the observed state of the new code period of a project.
+// ProjectNewCodePeriodObservation represent the observed state of the new code
+// period of a project.
 type ProjectNewCodePeriodObservation struct {
 	// EffectiveValue is the effective value of the new code period.
 	EffectiveValue string `json:"effectiveValue,omitempty"`
@@ -211,7 +218,8 @@ type ProjectNewCodePeriodObservation struct {
 	Value string `json:"value,omitempty"`
 }
 
-// ProjectBranchStatusObservation represents the observed status of a branch of a project.
+// ProjectBranchStatusObservation represents the observed status of a
+// branch of a project.
 type ProjectBranchStatusObservation struct {
 	// QualityGateStatus is the quality gate status of the branch.
 	QualityGateStatus string `json:"qualityGateStatus,omitempty"`

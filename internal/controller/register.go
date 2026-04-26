@@ -33,8 +33,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
 )
 
-// SetupGated creates all SonarQube controllers with safe-start support and adds them to
-// the supplied manager.
+// SetupGated creates all SonarQube controllers with safe-start support and
+// adds them to the supplied manager.
 func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
 		config.Setup,

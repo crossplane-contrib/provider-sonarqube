@@ -35,14 +35,16 @@ type UsersClient interface {
 	Update(userID string, opt *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error)
 }
 
-// NewUsersClient creates a new UsersClient with the provided SonarQube client configuration.
+// NewUsersClient creates a new UsersClient with the provided SonarQube
+// client configuration.
 func NewUsersClient(clientConfig common.Config) UsersClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.V2.UsersManagement
 }
 
-// LateInitializeUser fills the empty fields in the User spec with the values from the SonarQube API response.
+// LateInitializeUser fills the empty fields in the User spec with the
+// values from the SonarQube API response.
 func LateInitializeUser(spec *v1alpha1.UserParameters, observation *v1alpha1.UserObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -57,7 +59,8 @@ func LateInitializeUser(spec *v1alpha1.UserParameters, observation *v1alpha1.Use
 	}
 }
 
-// IsUserLateInitialized checks if two User specs are equal after late initialization.
+// IsUserLateInitialized checks if two User specs are equal after late
+// initialization.
 func IsUserLateInitialized(former, current *v1alpha1.UserParameters) bool {
 	if former == nil || current == nil {
 		return false
@@ -70,7 +73,8 @@ func IsUserLateInitialized(former, current *v1alpha1.UserParameters) bool {
 		!AreUserScmAccountsUpToDate(former.ScmAccounts, current.ScmAccounts)
 }
 
-// IsUserUpToDate checks if the User spec is up to date with the SonarQube API response.
+// IsUserUpToDate checks if the User spec is up to date with the
+// SonarQube API response.
 func IsUserUpToDate(spec *v1alpha1.UserParameters, observation *v1alpha1.UserObservation) bool {
 	if spec == nil {
 		return true
@@ -88,7 +92,8 @@ func IsUserUpToDate(spec *v1alpha1.UserParameters, observation *v1alpha1.UserObs
 		AreUserGroupsUpToDate(spec.Groups, &observation.Groups)
 }
 
-// AreUserScmAccountsUpToDate checks if the User's SCM accounts are up to date with the SonarQube API response.
+// AreUserScmAccountsUpToDate checks if the User's SCM accounts are up to date
+// with the SonarQube API response.
 func AreUserScmAccountsUpToDate(spec *[]string, observation *[]string) bool {
 	if spec == nil {
 		return true
@@ -101,7 +106,8 @@ func AreUserScmAccountsUpToDate(spec *[]string, observation *[]string) bool {
 	return helpers.AreStringSlicesEqualDeDuped(*spec, *observation)
 }
 
-// AreUserGroupsUpToDate checks if the User's group associations are up to date with the SonarQube API response.
+// AreUserGroupsUpToDate checks if the User's group associations are up to date
+// with the SonarQube API response.
 func AreUserGroupsUpToDate(spec *[]v1alpha1.UserGroupsParameters, observation *map[string]string) bool {
 	if spec == nil {
 		return true
@@ -128,7 +134,8 @@ func AreUserGroupsUpToDate(spec *[]v1alpha1.UserGroupsParameters, observation *m
 	return helpers.AreStringSlicesEqualDeDuped(specGroups, observationGroups)
 }
 
-// GenerateCreateUserOptions generates the SonarQube API options for creating a user.
+// GenerateCreateUserOptions generates the SonarQube API options for
+// creating a user.
 func GenerateCreateUserOptions(spec *v1alpha1.UserParameters, password *string) *sonar.UsersCreateOptionsV2 {
 	if spec == nil {
 		return nil
@@ -152,7 +159,8 @@ func GenerateCreateUserOptions(spec *v1alpha1.UserParameters, password *string) 
 	return options
 }
 
-// GenerateUpdateUserOptions generates the SonarQube API options for updating a user.
+// GenerateUpdateUserOptions generates the SonarQube API options for
+// updating a user.
 func GenerateUpdateUserOptions(spec *v1alpha1.UserParameters) *sonar.UsersUpdateOptionsV2 {
 	if spec == nil {
 		return nil
@@ -178,7 +186,8 @@ func GenerateUpdateUserOptions(spec *v1alpha1.UserParameters) *sonar.UsersUpdate
 	return options
 }
 
-// GenerateUserObservation generates the UserObservation from the SonarQube API response.
+// GenerateUserObservation generates the UserObservation from the SonarQube API
+// response.
 func GenerateUserObservation(user *sonar.UserV2) v1alpha1.UserObservation {
 	if user == nil {
 		return v1alpha1.UserObservation{}

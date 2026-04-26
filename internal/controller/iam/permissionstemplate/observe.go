@@ -39,7 +39,9 @@ const (
 
 var errPermissionsTemplateNotFound = errors.New(permissionsTemplateNotFound)
 
-// Observe observes the external resource and returns an ExternalObservation. It is used to determine if the resource exists, is up to date, and late initialize the spec if needed.
+// Observe observes the external resource and returns an ExternalObservation.
+// It is used to determine if the resource exists, is up to date,
+// and late initialize the spec if needed.
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
 	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
 	if !ok {
@@ -87,7 +89,8 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}, nil
 }
 
-// observeTemplatePermissions collects group and user permissions concurrently for a template.
+// observeTemplatePermissions collects group and user permissions
+// concurrently for a template.
 func (c *external) observeTemplatePermissions(templateID string) ([]v1alpha1.PermissionsTemplateGroupObservation, []v1alpha1.PermissionsTemplateUserObservation, error) {
 	var (
 		groupsObservations []v1alpha1.PermissionsTemplateGroupObservation
@@ -147,8 +150,10 @@ func (c *external) observeTemplatePermissions(templateID string) ([]v1alpha1.Per
 	return groupsObservations, usersObservations, nil
 }
 
-// observePermissionsTemplate resolves a template either by ID (preferred) or by name.
-// ID lookup scans paginated templates without a query because SonarQube query filtering is name-oriented.
+// observePermissionsTemplate resolves a template either by ID
+// (preferred) or by name.
+// ID lookup scans paginated templates without a query because SonarQube
+// query filtering is name-oriented.
 func (c *external) observePermissionsTemplate(templateID *string, templateName *string) (sonar.PermissionTemplate, bool, error) {
 	if templateID == nil && templateName == nil {
 		return sonar.PermissionTemplate{}, false, pkgerrors.New("either id or name must be provided to search for PermissionsTemplate")
@@ -165,7 +170,8 @@ func (c *external) observePermissionsTemplate(templateID *string, templateName *
 	})
 }
 
-// searchPermissionsTemplate scans template pages using the provided query and returns the first matching template.
+// searchPermissionsTemplate scans template pages using the provided query
+// and returns the first matching template.
 func (c *external) searchPermissionsTemplate(query string, match func(template sonar.PermissionTemplate) bool) (sonar.PermissionTemplate, bool, error) {
 	const maxPageSize = int64(500)
 
@@ -213,7 +219,8 @@ func getTemplateSearchString(templateID *string, templateName *string) (string, 
 	return *templateName, nil
 }
 
-// findMatchingTemplate returns the first template matching the provided id or name.
+// findMatchingTemplate returns the first template matching the
+// provided id or name.
 func findMatchingTemplate(templates []sonar.PermissionTemplate, defaultTemplatesIDs map[string]struct{}, templateID *string, templateName *string) (sonar.PermissionTemplate, bool, bool) {
 	for _, template := range templates {
 		if (templateID != nil && template.ID != *templateID) || (templateName != nil && template.Name != *templateName) {
@@ -228,7 +235,8 @@ func findMatchingTemplate(templates []sonar.PermissionTemplate, defaultTemplates
 	return sonar.PermissionTemplate{}, false, false
 }
 
-// observeTemplatePermissionsPage paginates through template permission endpoints until exhaustion.
+// observeTemplatePermissionsPage paginates through template permission
+// endpoints until exhaustion.
 func (c *external) observeTemplatePermissionsPage(fetchPage func(page int64) (int, error)) error {
 	const maxPageSize = int64(100)
 
@@ -246,7 +254,8 @@ func (c *external) observeTemplatePermissionsPage(fetchPage func(page int64) (in
 	return nil
 }
 
-// observePermissionsTemplateGroups retrieves all group permissions associated with a PermissionsTemplate.
+// observePermissionsTemplateGroups retrieves all group permissions
+// associated with a PermissionsTemplate.
 //
 //nolint:dupl // User and group pagination handlers intentionally mirror each other with different API endpoints.
 func (c *external) observePermissionsTemplateGroups(templateID string) ([]v1alpha1.PermissionsTemplateGroupObservation, error) {
@@ -274,7 +283,8 @@ func (c *external) observePermissionsTemplateGroups(templateID string) ([]v1alph
 	return groupsObservations, nil
 }
 
-// observePermissionsTemplateUsers retrieves all user permissions associated with a PermissionsTemplate.
+// observePermissionsTemplateUsers retrieves all user permissions
+// associated with a PermissionsTemplate.
 //
 //nolint:dupl // This mirrors group pagination behavior with a different API endpoint and observation type.
 func (c *external) observePermissionsTemplateUsers(templateID string) ([]v1alpha1.PermissionsTemplateUserObservation, error) {

@@ -24,21 +24,25 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
-// ProjectTagsClient is the interface for interacting with SonarQube Project Tags API
-// It handles all the operations related to Project Tags in SonarQube, such as searching and setting project tags.
+// ProjectTagsClient is the interface for interacting with SonarQube
+// Project Tags API
+// It handles all the operations related to Project Tags in SonarQube,
+// such as searching and setting project tags.
 type ProjectTagsClient interface {
 	Search(opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error)
 	Set(opt *sonar.ProjectTagsSetOptions) (*http.Response, error)
 }
 
-// NewProjectTagsClient creates a new ProjectTagsClient with the provided SonarQube client configuration.
+// NewProjectTagsClient creates a new ProjectTagsClient with the provided
+// SonarQube client configuration.
 func NewProjectTagsClient(clientConfig common.Config) ProjectTagsClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.ProjectTags
 }
 
-// GenerateProjectTagsSetOptions generates the options for setting project tags based on the provided project key and list of tags.
+// GenerateProjectTagsSetOptions generates the options for setting project tags
+// based on the provided project key and list of tags.
 func GenerateProjectTagsSetOptions(projectKey string, tags []string) *sonar.ProjectTagsSetOptions {
 	return &sonar.ProjectTagsSetOptions{
 		Project: projectKey,

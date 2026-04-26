@@ -28,10 +28,10 @@ import (
 )
 
 const (
-	testEmail       = "alice@example.com"
-	testSecret      = "secret"
-	testUserName    = "Alice"
-	testUserLogin   = "alice"
+	testEmail     = "alice@example.com"
+	testSecret    = "secret"
+	testUserName  = "Alice"
+	testUserLogin = "alice"
 )
 
 func TestNewUsersClient(t *testing.T) {

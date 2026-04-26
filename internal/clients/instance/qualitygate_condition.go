@@ -23,7 +23,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// GenerateQualityGateConditionObservation generates QualityGateConditionObservation from SonarQube QualityGateCondition.
+// GenerateQualityGateConditionObservation generates
+// QualityGateConditionObservation from SonarQube QualityGateCondition.
 func GenerateQualityGateConditionObservation(condition *sonar.QualityGateCondition) v1alpha1.QualityGateConditionObservation {
 	return v1alpha1.QualityGateConditionObservation{
 		Error:  condition.Error,
@@ -33,7 +34,8 @@ func GenerateQualityGateConditionObservation(condition *sonar.QualityGateConditi
 	}
 }
 
-// GenerateQualityGateConditionObservationFromCreate generates QualityGateConditionObservation from SonarQube QualityGateCondition.
+// GenerateQualityGateConditionObservationFromCreate generates
+// QualityGateConditionObservation from SonarQube QualityGateCondition.
 func GenerateQualityGateConditionObservationFromCreate(condition *sonar.QualitygatesCreateCondition) *v1alpha1.QualityGateConditionObservation {
 	return &v1alpha1.QualityGateConditionObservation{
 		Error:  condition.Error,
@@ -43,7 +45,9 @@ func GenerateQualityGateConditionObservationFromCreate(condition *sonar.Qualityg
 	}
 }
 
-// GenerateQualityGateConditionsObservation generates a slice of QualityGateConditionObservation from a slice of SonarQube QualityGateCondition.
+// GenerateQualityGateConditionsObservation generates a slice of
+// QualityGateConditionObservation from a slice of
+// SonarQube QualityGateCondition.
 func GenerateQualityGateConditionsObservation(conditions []sonar.QualityGateCondition) []v1alpha1.QualityGateConditionObservation {
 	conditionObservations := make([]v1alpha1.QualityGateConditionObservation, len(conditions))
 	for i, condition := range conditions {
@@ -53,7 +57,8 @@ func GenerateQualityGateConditionsObservation(conditions []sonar.QualityGateCond
 	return conditionObservations
 }
 
-// GenerateCreateQualityGateConditionOption generates SonarQube QualitygatesCreateConditionOption from QualityGateConditionParameters.
+// GenerateCreateQualityGateConditionOption generates SonarQube
+// QualitygatesCreateConditionOption from QualityGateConditionParameters.
 func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesCreateConditionOptions {
 	option := sonar.QualitygatesCreateConditionOptions{
 		GateName: gateName,
@@ -67,7 +72,8 @@ func GenerateCreateQualityGateConditionOption(gateName string, params v1alpha1.Q
 	return &option
 }
 
-// GenerateUpdateQualityGateConditionOption generates SonarQube QualitygatesUpdateConditionOption from QualityGateConditionParameters.
+// GenerateUpdateQualityGateConditionOption generates SonarQube
+// QualitygatesUpdateConditionOption from QualityGateConditionParameters.
 func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.QualityGateConditionParameters) *sonar.QualitygatesUpdateConditionOptions {
 	option := sonar.QualitygatesUpdateConditionOptions{
 		ID:     id,
@@ -81,14 +87,16 @@ func GenerateUpdateQualityGateConditionOption(id string, params v1alpha1.Quality
 	return &option
 }
 
-// GenerateDeleteQualityGateConditionOption generates SonarQube QualitygatesDeleteConditionOption from QualityGateConditionObservation.
+// GenerateDeleteQualityGateConditionOption generates SonarQube
+// QualitygatesDeleteConditionOption from QualityGateConditionObservation.
 func GenerateDeleteQualityGateConditionOption(id string) *sonar.QualitygatesDeleteConditionOptions {
 	return &sonar.QualitygatesDeleteConditionOptions{
 		ID: id,
 	}
 }
 
-// LateInitializeQualityGateCondition fills the empty fields in *QualityGateConditionParameters with
+// LateInitializeQualityGateCondition fills the empty fields in
+// *QualityGateConditionParameters with
 // the values seen in QualityGateConditionObservation.
 func LateInitializeQualityGateCondition(params *v1alpha1.QualityGateConditionParameters, observation *v1alpha1.QualityGateConditionObservation) {
 	if params == nil || observation == nil {
@@ -101,7 +109,9 @@ func LateInitializeQualityGateCondition(params *v1alpha1.QualityGateConditionPar
 	helpers.AssignIfNil(&params.Op, observation.Op)
 }
 
-// IsQualityGateConditionUpToDate checks whether the observed QualityGateCondition is up to date with the desired QualityGateConditionParameters.
+// IsQualityGateConditionUpToDate checks whether the observed
+// QualityGateCondition is up to date with the
+// desired QualityGateConditionParameters.
 func IsQualityGateConditionUpToDate(params *v1alpha1.QualityGateConditionParameters, observation *v1alpha1.QualityGateConditionObservation) bool {
 	if params == nil {
 		return true
@@ -126,14 +136,17 @@ func IsQualityGateConditionUpToDate(params *v1alpha1.QualityGateConditionParamet
 	return true
 }
 
-// QualityGateConditionAssociation associates a QualityGateConditionObservation with its corresponding QualityGateConditionParameters.
+// QualityGateConditionAssociation associates a
+// QualityGateConditionObservation with its
+// corresponding QualityGateConditionParameters.
 type QualityGateConditionAssociation struct {
 	Observation *v1alpha1.QualityGateConditionObservation
 	Spec        *v1alpha1.QualityGateConditionParameters
 	UpToDate    bool
 }
 
-// GenerateQualityGateConditionsAssociation generates associations between QualityGateConditionParameters and QualityGateConditionObservation.
+// GenerateQualityGateConditionsAssociation generates associations between
+// QualityGateConditionParameters and QualityGateConditionObservation.
 func GenerateQualityGateConditionsAssociation(specs []v1alpha1.QualityGateConditionParameters, observations []v1alpha1.QualityGateConditionObservation) map[string]QualityGateConditionAssociation {
 	associations := make(map[string]QualityGateConditionAssociation)
 
@@ -175,7 +188,9 @@ func GenerateQualityGateConditionsAssociation(specs []v1alpha1.QualityGateCondit
 	return associations
 }
 
-// AreQualityGateConditionsUpToDate checks whether the observed QualityGateConditions are up to date with the desired QualityGateConditionParameters.
+// AreQualityGateConditionsUpToDate checks whether the observed
+// QualityGateConditions are up to date with the
+// desired QualityGateConditionParameters.
 func AreQualityGateConditionsUpToDate(associations map[string]QualityGateConditionAssociation) bool {
 	for _, assoc := range associations {
 		if !assoc.UpToDate {
@@ -186,7 +201,8 @@ func AreQualityGateConditionsUpToDate(associations map[string]QualityGateConditi
 	return true
 }
 
-// FindNonExistingQualityGateConditions finds QualityGateConditionParameters that do not have a corresponding QualityGateConditionObservation.
+// FindNonExistingQualityGateConditions finds QualityGateConditionParameters
+// that do not have a corresponding QualityGateConditionObservation.
 func FindNonExistingQualityGateConditions(associations map[string]QualityGateConditionAssociation) []*v1alpha1.QualityGateConditionParameters {
 	var nonExisting []*v1alpha1.QualityGateConditionParameters
 
@@ -199,7 +215,8 @@ func FindNonExistingQualityGateConditions(associations map[string]QualityGateCon
 	return nonExisting
 }
 
-// FindMissingQualityGateConditions finds QualityGateConditionObservations that do not have a corresponding QualityGateConditionParameters.
+// FindMissingQualityGateConditions finds QualityGateConditionObservations that
+// do not have a corresponding QualityGateConditionParameters.
 func FindMissingQualityGateConditions(associations map[string]QualityGateConditionAssociation) []*v1alpha1.QualityGateConditionObservation {
 	var missing []*v1alpha1.QualityGateConditionObservation
 
@@ -212,7 +229,9 @@ func FindMissingQualityGateConditions(associations map[string]QualityGateConditi
 	return missing
 }
 
-// FindNotUpToDateQualityGateConditions finds QualityGateConditionParameters that are not up to date with their corresponding QualityGateConditionObservation
+// FindNotUpToDateQualityGateConditions finds QualityGateConditionParameters
+// that are not up to date with their
+// corresponding QualityGateConditionObservation
 // This ignores associations where either Spec or Observation is nil.
 func FindNotUpToDateQualityGateConditions(associations map[string]QualityGateConditionAssociation) []QualityGateConditionAssociation {
 	var notUpToDate []QualityGateConditionAssociation

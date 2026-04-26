@@ -26,7 +26,8 @@ import (
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
 )
 
-// PermissionsTemplateParameters are the configurable fields of a PermissionsTemplate.
+// PermissionsTemplateParameters are the configurable fields of a
+// PermissionsTemplate.
 type PermissionsTemplateParameters struct {
 	// Name of the PermissionsTemplate. This is a required field and must be unique within the SonarQube instance.
 	// +kubebuilder:validation:Required
@@ -53,7 +54,8 @@ type PermissionsTemplateParameters struct {
 	GroupPermissions *[]PermissionsTemplateGroupParameters `json:"groupPermissions,omitempty"`
 }
 
-// PermissionsTemplateUserParameters is a struct that represents the permissions assigned to a user in a SonarQube Permission Template.
+// PermissionsTemplateUserParameters is a struct that represents the permissions
+// assigned to a user in a SonarQube Permission Template.
 type PermissionsTemplateUserParameters struct {
 	// Login is the unique identifier of the user in SonarQube. This field is required to associate the permissions with a specific user.
 	// +kubebuilder:validation:Required
@@ -66,7 +68,8 @@ type PermissionsTemplateUserParameters struct {
 	Permissions *[]string `json:"permissions"`
 }
 
-// PermissionsTemplateGroupParameters is a struct that represents the permissions assigned to a group in a SonarQube Permission Template.
+// PermissionsTemplateGroupParameters is a struct that represents the
+// permissions assigned to a group in a SonarQube Permission Template.
 type PermissionsTemplateGroupParameters struct {
 	// Name is the name of the group in SonarQube.
 	// +kubebuilder:validation:Required
@@ -79,7 +82,8 @@ type PermissionsTemplateGroupParameters struct {
 	Permissions *[]string `json:"permissions,omitempty"`
 }
 
-// PermissionsTemplateObservation are the observable fields of a PermissionsTemplate.
+// PermissionsTemplateObservation are the observable fields of a
+// PermissionsTemplate.
 type PermissionsTemplateObservation struct {
 	// ID is the unique identifier of the PermissionsTemplate in SonarQube.  This field is created by the SonarQube API when the PermissionsTemplate is created.
 	ID string `json:"id"`
@@ -106,7 +110,8 @@ type PermissionsTemplateObservation struct {
 	UpdatedAt *metav1.Time `json:"updatedAt,omitempty"`
 }
 
-// PermissionsTemplateUserObservation is a struct that represents the observed permissions for a user in a SonarQube Permission Template.
+// PermissionsTemplateUserObservation is a struct that represents
+// the observed permissions for a user in a SonarQube Permission Template.
 type PermissionsTemplateUserObservation struct {
 	// Login is the unique identifier of the user in SonarQube. This field is observed from the SonarQube API and reflects the actual login of the user associated with the PermissionsTemplate.
 	Login string `json:"login"`
@@ -114,7 +119,10 @@ type PermissionsTemplateUserObservation struct {
 	Permissions []string `json:"permissions"`
 }
 
-// PermissionsTemplateGroupObservation is a struct that represents the observed state of a group in a SonarQube Permission Template. It contains the actual name of the group and the permissions assigned to it as observed from the SonarQube API response.
+// PermissionsTemplateGroupObservation is a struct that represents the observed
+// state of a group in a SonarQube Permission Template.
+// It contains the actual name of the group and the permissions assigned to it
+// as observed from the SonarQube API response.
 type PermissionsTemplateGroupObservation struct {
 	// Name is the name of the group in SonarQube. This field is observed from the SonarQube API and reflects the actual name of the group associated with the PermissionsTemplate.
 	Name string `json:"name"`
@@ -129,7 +137,8 @@ type PermissionsTemplateSpec struct {
 	ForProvider PermissionsTemplateParameters `json:"forProvider"`
 }
 
-// A PermissionsTemplateStatus represents the observed state of a PermissionsTemplate.
+// A PermissionsTemplateStatus represents the observed state of a
+// PermissionsTemplate.
 type PermissionsTemplateStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
 

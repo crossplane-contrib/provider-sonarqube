@@ -142,7 +142,8 @@ type ClusterProviderConfigList struct {
 // +kubebuilder:printcolumn:name="RESOURCE-NAME",type="string",JSONPath=".resourceRef.name"
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,provider,sonarqube}
 
-// ClusterProviderConfigUsage indicates that a resource is using a ClusterProviderConfig.
+// ClusterProviderConfigUsage indicates that a resource is using a
+// ClusterProviderConfig.
 type ClusterProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -30,9 +30,11 @@ import (
 const (
 	// ErrSecretNotFound is the error string used when a secret cannot be found.
 	ErrSecretNotFound = "Cannot find referenced secret"
-	// ErrSecretKeyNotFound is the error string used when a key in a secret cannot be found.
+	// ErrSecretKeyNotFound is the error string used when a key in a secret cannot
+	//  be found.
 	ErrSecretKeyNotFound = "Cannot find key in referenced secret"
-	// ErrSecretSelectorNil is the error string used when a secret selector is nil.
+	// ErrSecretSelectorNil is the error string used when a secret selector
+	// is nil.
 	ErrSecretSelectorNil = "Secret selector is nil"
 )
 
@@ -59,7 +61,8 @@ func GetTokenValueFromSecret(ctx context.Context, client client.Client, m resour
 	return &data, nil
 }
 
-// GetTokenValueFromLocalSecret retrieves the token value from a local secret in the same namespace as the managed resource.
+// GetTokenValueFromLocalSecret retrieves the token value from a local secret
+// in the same namespace as the managed resource.
 func GetTokenValueFromLocalSecret(ctx context.Context, client client.Client, managedResource resource.Managed, localSelector *xpv1.LocalSecretKeySelector) (*string, error) {
 	if localSelector == nil {
 		return nil, errors.Errorf(ErrSecretSelectorNil)
@@ -74,7 +77,8 @@ func GetTokenValueFromLocalSecret(ctx context.Context, client client.Client, man
 	})
 }
 
-// GetTokenValueFromLocalSecretReference retrieves the token value from a local secret in the same namespace as the managed resource.
+// GetTokenValueFromLocalSecretReference retrieves the token value from a
+// local secret in the same namespace as the managed resource.
 func GetTokenValueFromLocalSecretReference(ctx context.Context, client client.Client, managedResource resource.Managed, localSelector *xpv1.LocalSecretReference, key string) (*string, error) {
 	if localSelector == nil {
 		return nil, errors.Errorf(ErrSecretSelectorNil)

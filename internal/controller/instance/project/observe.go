@@ -28,7 +28,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// observeProjectExistence checks if the project with the given key exists in SonarQube.
+// observeProjectExistence checks if the project with the given key exists
+// in SonarQube.
 // It populates the ProjectObservation with the project details if it exists.
 func (c *external) observeProjectExistence(projectKey string, observation *v1alpha1.ProjectObservation) (bool, error) {
 	projects, resp, err := c.projectsClient.Search(instance.GenerateProjectSearchOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
@@ -57,7 +58,8 @@ func (c *external) observeProjectExistence(projectKey string, observation *v1alp
 	return true, nil
 }
 
-// observeProjectDetails makes all observation API calls concurrently and returns the results.
+// observeProjectDetails makes all observation API calls concurrently and
+// returns the results.
 func (c *external) observeProjectDetails(projectKey string, projectId string) observeResult {
 	var (
 		result observeResult
@@ -92,7 +94,8 @@ func (c *external) observeProjectDetails(projectKey string, projectId string) ob
 	return result
 }
 
-// observeBranches retrieves the project branches from SonarQube and populates the result.
+// observeBranches retrieves the project branches from SonarQube and
+// populates the result.
 func (c *external) observeBranches(projectKey string, result *observeResult, mutex *sync.Mutex) {
 	branches, resp, branchErr := c.projectBranchesClient.List(instance.GenerateProjectBranchesListOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
@@ -117,7 +120,8 @@ func (c *external) observeBranches(projectKey string, result *observeResult, mut
 	}
 }
 
-// observeLinks retrieves the project links from SonarQube and populates the result.
+// observeLinks retrieves the project links from SonarQube and
+// populates the result.
 func (c *external) observeLinks(projectId string, result *observeResult, mutex *sync.Mutex) {
 	links, resp, linkErr := c.projectLinksClient.Search(instance.GenerateProjectLinksSearchOptions(projectId)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
@@ -134,7 +138,8 @@ func (c *external) observeLinks(projectId string, result *observeResult, mutex *
 	result.links = instance.GenerateProjectLinksObservations(*links)
 }
 
-// observeNewCodePeriods observes the new code periods of the project and populates the result.
+// observeNewCodePeriods observes the new code periods of the project
+// and populates the result.
 func (c *external) observeNewCodePeriods(projectKey string, result *observeResult, mutex *sync.Mutex) {
 	newCodePeriod, resp, ncErr := c.projectNewCodePeriodsClient.Show(instance.GenerateNewCodePeriodsShowOptions(&projectKey, nil)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
@@ -166,7 +171,8 @@ func (c *external) observeNewCodePeriods(projectKey string, result *observeResul
 	}
 }
 
-// observeQualityGate retrieves the quality gate associated with the project from SonarQube.
+// observeQualityGate retrieves the quality gate associated with
+// the project from SonarQube.
 func (c *external) observeQualityGate(projectKey string, result *observeResult, mutex *sync.Mutex) {
 	qualityGate, resp, qgErr := c.qualityGatesClient.GetByProject(instance.GenerateQualityGateGetByProjectOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
@@ -183,7 +189,8 @@ func (c *external) observeQualityGate(projectKey string, result *observeResult, 
 	result.qualityGateName = qualityGate.QualityGate.Name
 }
 
-// observeQualityProfiles retrieves the quality profiles associated with the project from SonarQube.
+// observeQualityProfiles retrieves the quality profiles associated
+// with the project from SonarQube.
 func (c *external) observeQualityProfiles(projectKey string, result *observeResult, mutex *sync.Mutex) {
 	qualityProfiles, resp, qpErr := c.qualityProfilesClient.Search(instance.GenerateQualityProfilesSearchProjectOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
@@ -200,7 +207,8 @@ func (c *external) observeQualityProfiles(projectKey string, result *observeResu
 	result.qualityProfiles = instance.GenerateQualityProfilesSearchProjectObservation(qualityProfiles)
 }
 
-// applyObserveResult applies the concurrent observation results to the ProjectObservation.
+// applyObserveResult applies the concurrent observation results
+// to the ProjectObservation.
 func (c *external) applyObserveResult(observation *v1alpha1.ProjectObservation, result *observeResult) {
 	if result.branches != nil {
 		observation.Branches = result.branches

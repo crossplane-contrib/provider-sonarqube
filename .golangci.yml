@@ -45,6 +45,11 @@ linters:
       min-complexity: 10
     godoclint:
       default: all
+      options:
+        require-doc:
+          ignore-unexported: false
+        start-with-name:
+          include-unexported: true
     goheader:
       template: |-
         Copyright 2026 The Crossplane Authors.
@@ -62,6 +67,8 @@ linters:
         limitations under the License.
     govet:
       enable-all: true
+      disable:
+        - fieldalignment
       settings:
         shadow:
           strict: true
@@ -150,6 +157,7 @@ linters:
       - examples$
 issues:
   max-same-issues: 0
+  max-issues-per-linter: 0
   new: false
 formatters:
   enable:

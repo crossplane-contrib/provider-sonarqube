@@ -26,8 +26,11 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// PermissionsTemplatesClient is the interface for interacting with SonarQube PermissionsTemplate API
-// It handles all the operations related to PermissionsTemplates in SonarQube, such as creating, updating, deleting, and retrieving PermissionsTemplates.
+// PermissionsTemplatesClient is the interface for interacting with
+// SonarQube PermissionsTemplate API
+// It handles all the operations related to PermissionsTemplates
+// in SonarQube, such as creating, updating, deleting,
+// and retrieving PermissionsTemplates.
 type PermissionsTemplatesClient interface { //nolint:interfacebloat // This interface is intentionally large to cover all operations related to PermissionsTemplates in SonarQube.
 	AddGroupToTemplate(opt *sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error)
 	AddProjectCreatorToTemplate(opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error)
@@ -44,15 +47,18 @@ type PermissionsTemplatesClient interface { //nolint:interfacebloat // This inte
 	UpdateTemplate(opt *sonar.PermissionsUpdateTemplateOptions) (*sonar.PermissionsUpdateTemplate, *http.Response, error)
 }
 
-// NewPermissionsTemplatesClient creates a new PermissionsTemplatesClient with the provided SonarQube client configuration.
+// NewPermissionsTemplatesClient creates a new PermissionsTemplatesClient
+// with the provided SonarQube client configuration.
 func NewPermissionsTemplatesClient(clientConfig common.Config) PermissionsTemplatesClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.Permissions
 }
 
-// LateInitializePermissionsTemplate fills the empty fields in the PermissionsTemplate spec with the values from the SonarQube API response.
-// The API response should be the result of a "Get" operation for the PermissionsTemplate resource.
+// LateInitializePermissionsTemplate fills the empty fields in the
+// PermissionsTemplate spec with the values from the SonarQube API response.
+// The API response should be the result of a "Get" operation for
+// the PermissionsTemplate resource.
 func LateInitializePermissionsTemplate(spec *v1alpha1.PermissionsTemplateParameters, observation *v1alpha1.PermissionsTemplateObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -64,7 +70,9 @@ func LateInitializePermissionsTemplate(spec *v1alpha1.PermissionsTemplateParamet
 	helpers.AssignIfNil(&spec.CreatorPermissions, observation.CreatorPermissions)
 }
 
-// IsPermissionsTemplateLateInitialized checks if two PermissionsTemplate specs are equal after late initialization. It returns true if the specs are equal, and false if they are not.
+// IsPermissionsTemplateLateInitialized checks if two PermissionsTemplate
+// specs are equal after late initialization.
+// It returns true if the specs are equal, and false if they are not.
 func IsPermissionsTemplateLateInitialized(former, current *v1alpha1.PermissionsTemplateParameters) bool {
 	if former == nil || current == nil {
 		return false
@@ -82,7 +90,8 @@ func IsPermissionsTemplateLateInitialized(former, current *v1alpha1.PermissionsT
 	return descriptionChanged || projectKeyPatternChanged || defaultChanged || creatorPermissionsChanged
 }
 
-// IsPermissionsTemplateUpToDate checks if the PermissionsTemplate spec is up to date with the SonarQube API response.
+// IsPermissionsTemplateUpToDate checks if the PermissionsTemplate
+// spec is up to date with the SonarQube API response.
 // It returns true if the spec is up to date, and false if it is not.
 func IsPermissionsTemplateUpToDate(spec *v1alpha1.PermissionsTemplateParameters, observation *v1alpha1.PermissionsTemplateObservation) bool {
 	if spec == nil {
@@ -100,7 +109,10 @@ func IsPermissionsTemplateUpToDate(spec *v1alpha1.PermissionsTemplateParameters,
 		ArePermissionsTemplateUsersUpToDate(spec.UserPermissions, &observation.UserPermissions)
 }
 
-// ArePermissionsTemplateBaseFieldsUpToDate checks if the base fields of the PermissionsTemplate spec are up to date with the SonarQube API response. Base fields include name, description and project key pattern. It returns true if the base fields are up to date, and false if they are not.
+// ArePermissionsTemplateBaseFieldsUpToDate checks if the base fields of
+// the PermissionsTemplate spec are up to date with the SonarQube API response.
+// Base fields include name, description and project key pattern.
+// It returns true if the base fields are up to date, and false if they are not.
 func ArePermissionsTemplateBaseFieldsUpToDate(spec *v1alpha1.PermissionsTemplateParameters, observation *v1alpha1.PermissionsTemplateObservation) bool {
 	if spec == nil {
 		return true
@@ -115,7 +127,8 @@ func ArePermissionsTemplateBaseFieldsUpToDate(spec *v1alpha1.PermissionsTemplate
 		helpers.IsComparablePtrEqualComparable(spec.ProjectKeyPattern, observation.ProjectKeyPattern)
 }
 
-// GeneratePermissionsTemplateSearchOptions generates the options for searching PermissionsTemplates based on the provided template name.
+// GeneratePermissionsTemplateSearchOptions generates the options for searching
+// PermissionsTemplates based on the provided template name.
 func GeneratePermissionsTemplateSearchOptions(templateName string, pagination *sonar.PaginationArgs) *sonar.PermissionsSearchTemplatesOptions {
 	options := &sonar.PermissionsSearchTemplatesOptions{
 		Query: templateName,
@@ -126,7 +139,8 @@ func GeneratePermissionsTemplateSearchOptions(templateName string, pagination *s
 	return options
 }
 
-// GeneratePermissionsTemplateUpdateOptions generates the options for updating a PermissionsTemplate based on the provided template ID and spec.
+// GeneratePermissionsTemplateUpdateOptions generates the options for updating
+// a PermissionsTemplate based on the provided template ID and spec.
 func GeneratePermissionsTemplateUpdateOptions(templateID string, spec *v1alpha1.PermissionsTemplateParameters) *sonar.PermissionsUpdateTemplateOptions {
 	options := &sonar.PermissionsUpdateTemplateOptions{
 		ID:   templateID,
@@ -139,7 +153,8 @@ func GeneratePermissionsTemplateUpdateOptions(templateID string, spec *v1alpha1.
 	return options
 }
 
-// ArePermissionsTemplateGroupsUpToDate determines if the permission templates for groups matches the actual observation in SonarQube.
+// ArePermissionsTemplateGroupsUpToDate determines if the permission templates
+// for groups matches the actual observation in SonarQube.
 func ArePermissionsTemplateGroupsUpToDate(spec *[]v1alpha1.PermissionsTemplateGroupParameters, observation *[]v1alpha1.PermissionsTemplateGroupObservation) bool {
 	if spec == nil {
 		return true
@@ -161,8 +176,13 @@ func ArePermissionsTemplateGroupsUpToDate(spec *[]v1alpha1.PermissionsTemplateGr
 	return true
 }
 
-// CreatePermissionsTemplateGroupMapping builds a mapping between the spec and the observed groups.
-// First element of the list is the index of the group in the spec, and the second element is the index of the group in the observation. If a group from the spec does not exist in the observation, its second element will be -1, and if a group from the observation does not exist in the spec, its first element will be -1.
+// CreatePermissionsTemplateGroupMapping builds a mapping between
+// the spec and the observed groups.
+// First element of the list is the index of the group in the spec,
+// and the second element is the index of the group in the observation.
+// If a group from the spec does not exist in the observation,
+// its second element will be -1, and if a group from the observation
+// does not exist in the spec, its first element will be -1.
 func CreatePermissionsTemplateGroupMapping(spec *[]v1alpha1.PermissionsTemplateGroupParameters, observation *[]v1alpha1.PermissionsTemplateGroupObservation) map[string][2]int {
 	mapping := make(map[string][2]int)
 
@@ -195,7 +215,8 @@ func CreatePermissionsTemplateGroupMapping(spec *[]v1alpha1.PermissionsTemplateG
 	return mapping
 }
 
-// ArePermissionsTemplateUsersUpToDate determines if the permission templates for users matches the actual observation in SonarQube.
+// ArePermissionsTemplateUsersUpToDate determines if the permission templates
+// for users matches the actual observation in SonarQube.
 func ArePermissionsTemplateUsersUpToDate(spec *[]v1alpha1.PermissionsTemplateUserParameters, observation *[]v1alpha1.PermissionsTemplateUserObservation) bool {
 	if spec == nil {
 		return true
@@ -217,8 +238,13 @@ func ArePermissionsTemplateUsersUpToDate(spec *[]v1alpha1.PermissionsTemplateUse
 	return true
 }
 
-// CreatePermissionsTemplateUserMapping builds a mapping between the spec and the observed users.
-// First element of the list is the index of the user in the spec, and the second element is the index of the user in the observation. If a user from the spec does not exist in the observation, its second element will be -1, and if a user from the observation does not exist in the spec, its first element will be -1.
+// CreatePermissionsTemplateUserMapping builds a mapping between the spec and
+// the observed users.
+// First element of the list is the index of the user in the spec,
+// and the second element is the index of the user in the observation.
+// If a user from the spec does not exist in the observation,
+// its second element will be -1, and if a user from the observation does not
+// exist in the spec, its first element will be -1.
 func CreatePermissionsTemplateUserMapping(spec *[]v1alpha1.PermissionsTemplateUserParameters, observation *[]v1alpha1.PermissionsTemplateUserObservation) map[string][2]int {
 	mapping := make(map[string][2]int)
 
@@ -243,14 +269,16 @@ func CreatePermissionsTemplateUserMapping(spec *[]v1alpha1.PermissionsTemplateUs
 	return mapping
 }
 
-// GeneratePermissionsTemplateDeleteOptions generates the options for deleting a PermissionsTemplate based on the provided template ID.
+// GeneratePermissionsTemplateDeleteOptions generates the options for deleting
+// a PermissionsTemplate based on the provided template ID.
 func GeneratePermissionsTemplateDeleteOptions(templateID string) *sonar.PermissionsDeleteTemplateOptions {
 	return &sonar.PermissionsDeleteTemplateOptions{
 		TemplateID: templateID,
 	}
 }
 
-// GeneratePermissionsTemplateCreationOptions generates the options for creating a PermissionsTemplate based on the provided spec.
+// GeneratePermissionsTemplateCreationOptions generates the options for
+// creating a PermissionsTemplate based on the provided spec.
 func GeneratePermissionsTemplateCreationOptions(spec *v1alpha1.PermissionsTemplateParameters) *sonar.PermissionsCreateTemplateOptions {
 	options := &sonar.PermissionsCreateTemplateOptions{
 		Name: spec.Name,
@@ -262,14 +290,17 @@ func GeneratePermissionsTemplateCreationOptions(spec *v1alpha1.PermissionsTempla
 	return options
 }
 
-// GeneratePermissionsTemplateSetAsDefaultOptions generates the options for setting a PermissionsTemplate as default based on the provided template ID.
+// GeneratePermissionsTemplateSetAsDefaultOptions generates the options for
+// setting a PermissionsTemplate as default based on the provided template ID.
 func GeneratePermissionsTemplateSetAsDefaultOptions(templateID string) *sonar.PermissionsSetDefaultTemplateOptions {
 	return &sonar.PermissionsSetDefaultTemplateOptions{
 		TemplateID: templateID,
 	}
 }
 
-// GeneratePermissionsTemplateGroupsSearchOptions generates the options for searching the groups permissions of a PermissionsTemplate based on the provided template ID and pagination options.
+// GeneratePermissionsTemplateGroupsSearchOptions generates the options for
+// searching the groups permissions of a PermissionsTemplate based on the
+// provided template ID and pagination options.
 func GeneratePermissionsTemplateGroupsSearchOptions(templateID string, pagination *sonar.PaginationArgs) *sonar.PermissionsTemplateGroupsOptions {
 	options := &sonar.PermissionsTemplateGroupsOptions{
 		TemplateID: templateID,
@@ -280,7 +311,9 @@ func GeneratePermissionsTemplateGroupsSearchOptions(templateID string, paginatio
 	return options
 }
 
-// GeneratePermissionsTemplateUsersSearchOptions generates the options for searching the users permissions of a PermissionsTemplate based on the provided template ID and pagination options.
+// GeneratePermissionsTemplateUsersSearchOptions generates the options for
+// searching the users permissions of a PermissionsTemplate based on the
+// provided template ID and pagination options.
 func GeneratePermissionsTemplateUsersSearchOptions(templateID string, pagination *sonar.PaginationArgs) *sonar.PermissionsTemplateUsersOptions {
 	options := &sonar.PermissionsTemplateUsersOptions{
 		TemplateID: templateID,
@@ -291,7 +324,9 @@ func GeneratePermissionsTemplateUsersSearchOptions(templateID string, pagination
 	return options
 }
 
-// UpdatePermissionsTemplateObservation updates the PermissionsTemplateObservation based on the provided PermissionTemplate from the SonarQube API response and if the template is default or not.
+// UpdatePermissionsTemplateObservation updates the
+// PermissionsTemplateObservation based on the provided PermissionTemplate
+// from the SonarQube API response and if the template is default or not.
 func UpdatePermissionsTemplateObservation(observation *v1alpha1.PermissionsTemplateObservation, template *sonar.PermissionTemplate, isDefault bool) {
 	observation.ID = template.ID
 	observation.Name = template.Name
@@ -313,7 +348,9 @@ func UpdatePermissionsTemplateObservation(observation *v1alpha1.PermissionsTempl
 	observation.CreatorPermissions = creatorPermissions
 }
 
-// GeneratePermissionsTemplateGroupObservations generates a list of PermissionsTemplateGroupObservation based on the provided list of TemplateGroup from the SonarQube API response.
+// GeneratePermissionsTemplateGroupObservations generates a list of
+// PermissionsTemplateGroupObservation based on the provided list of
+// TemplateGroup from the SonarQube API response.
 func GeneratePermissionsTemplateGroupObservations(groups *[]sonar.TemplateGroup) []v1alpha1.PermissionsTemplateGroupObservation {
 	if groups == nil {
 		return nil
@@ -327,7 +364,9 @@ func GeneratePermissionsTemplateGroupObservations(groups *[]sonar.TemplateGroup)
 	return observations
 }
 
-// GeneratePermissionsTemplateGroupObservation generates a PermissionsTemplateGroupObservation based on the provided TemplateGroup from the SonarQube API response.
+// GeneratePermissionsTemplateGroupObservation generates a
+// PermissionsTemplateGroupObservation based on the provided TemplateGroup
+// from the SonarQube API response.
 func GeneratePermissionsTemplateGroupObservation(group *sonar.TemplateGroup) *v1alpha1.PermissionsTemplateGroupObservation {
 	return &v1alpha1.PermissionsTemplateGroupObservation{
 		Name:        group.Name,
@@ -335,7 +374,9 @@ func GeneratePermissionsTemplateGroupObservation(group *sonar.TemplateGroup) *v1
 	}
 }
 
-// GeneratePermissionsTemplateUserObservations generates a list of PermissionsTemplateUserObservation based on the provided list of TemplateUser from the SonarQube API response.
+// GeneratePermissionsTemplateUserObservations generates a list of
+// PermissionsTemplateUserObservation based on the provided list of TemplateUser
+// from the SonarQube API response.
 func GeneratePermissionsTemplateUserObservations(users *[]sonar.TemplateUser) []v1alpha1.PermissionsTemplateUserObservation {
 	if users == nil {
 		return nil
@@ -349,7 +390,9 @@ func GeneratePermissionsTemplateUserObservations(users *[]sonar.TemplateUser) []
 	return observations
 }
 
-// GeneratePermissionsTemplateUserObservation generates a PermissionsTemplateUserObservation based on the provided TemplateUser from the SonarQube API response.
+// GeneratePermissionsTemplateUserObservation generates a
+// PermissionsTemplateUserObservation based on the provided TemplateUser
+// from the SonarQube API response.
 func GeneratePermissionsTemplateUserObservation(user *sonar.TemplateUser) *v1alpha1.PermissionsTemplateUserObservation {
 	return &v1alpha1.PermissionsTemplateUserObservation{
 		Login:       user.Login,
@@ -357,7 +400,9 @@ func GeneratePermissionsTemplateUserObservation(user *sonar.TemplateUser) *v1alp
 	}
 }
 
-// GeneratePermissionsTemplateAddGroupPermissionOptions generates the options for adding a group permission to a PermissionsTemplate based on the provided template ID, group name and permission.
+// GeneratePermissionsTemplateAddGroupPermissionOptions generates the options
+// for adding a group permission to a PermissionsTemplate based on the provided
+// template ID, group name and permission.
 func GeneratePermissionsTemplateAddGroupPermissionOptions(templateID string, groupName string, permission string) *sonar.PermissionsAddGroupToTemplateOptions {
 	return &sonar.PermissionsAddGroupToTemplateOptions{
 		TemplateID: templateID,
@@ -366,7 +411,9 @@ func GeneratePermissionsTemplateAddGroupPermissionOptions(templateID string, gro
 	}
 }
 
-// GeneratePermissionsTemplateRemoveGroupPermissionOptions generates the options for removing a group permission from a PermissionsTemplate based on the provided template ID, group name and permission.
+// GeneratePermissionsTemplateRemoveGroupPermissionOptions generates the options
+// for removing a group permission from a PermissionsTemplate based on the
+// provided template ID, group name and permission.
 func GeneratePermissionsTemplateRemoveGroupPermissionOptions(templateID string, groupName string, permission string) *sonar.PermissionsRemoveGroupFromTemplateOptions {
 	return &sonar.PermissionsRemoveGroupFromTemplateOptions{
 		TemplateID: templateID,
@@ -375,7 +422,9 @@ func GeneratePermissionsTemplateRemoveGroupPermissionOptions(templateID string, 
 	}
 }
 
-// GeneratePermissionsTemplateAddUserPermissionOptions generates the options for adding a user permission to a PermissionsTemplate based on the provided template ID, user login and permission.
+// GeneratePermissionsTemplateAddUserPermissionOptions generates the options for
+// adding a user permission to a PermissionsTemplate based on the provided
+// template ID, user login and permission.
 func GeneratePermissionsTemplateAddUserPermissionOptions(templateID string, userLogin string, permission string) *sonar.PermissionsAddUserToTemplateOptions {
 	return &sonar.PermissionsAddUserToTemplateOptions{
 		TemplateID: templateID,
@@ -384,7 +433,9 @@ func GeneratePermissionsTemplateAddUserPermissionOptions(templateID string, user
 	}
 }
 
-// GeneratePermissionsTemplateRemoveUserPermissionOptions generates the options for removing a user permission from a PermissionsTemplate based on the provided template ID, user login and permission.
+// GeneratePermissionsTemplateRemoveUserPermissionOptions generates the options
+// for removing a user permission from a PermissionsTemplate based on the
+// provided template ID, user login and permission.
 func GeneratePermissionsTemplateRemoveUserPermissionOptions(templateID string, userLogin string, permission string) *sonar.PermissionsRemoveUserFromTemplateOptions {
 	return &sonar.PermissionsRemoveUserFromTemplateOptions{
 		TemplateID: templateID,

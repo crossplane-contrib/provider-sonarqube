@@ -51,7 +51,6 @@ func setExtName(obj metav1.Object, name string) {
 	meta.SetExternalName(obj, name)
 }
 
-//nolint:gocognit // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
 const testNamespace = "default"
 
 func TestUserResolveReferences(t *testing.T) {

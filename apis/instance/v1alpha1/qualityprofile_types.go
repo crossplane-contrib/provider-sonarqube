@@ -75,7 +75,8 @@ type QualityProfileObservation struct {
 	Rules []QualityProfileRuleObservation `json:"rules,omitempty"`
 }
 
-// QualityProfileRuleParameters are the configurable fields of a QualityProfile Rule.
+// QualityProfileRuleParameters are the configurable fields of a
+// QualityProfile Rule.
 type QualityProfileRuleParameters struct {
 	// Impacts overrides severities for the rule. Cannot be used as the same time as 'severity'.
 	// If used together with 'severity', 'impacts' will take precedence.
@@ -104,7 +105,8 @@ type QualityProfileRuleParameters struct {
 	Severity *string `json:"severity,omitempty"`
 }
 
-// QualityProfileRuleObservation are the observable fields of a QualityProfile Rule.
+// QualityProfileRuleObservation are the observable fields of a
+// QualityProfile Rule.
 type QualityProfileRuleObservation struct {
 	Key         string                     `json:"key"`
 	Name        string                     `json:"name"`

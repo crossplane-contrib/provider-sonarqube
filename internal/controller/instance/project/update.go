@@ -27,7 +27,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// updateProjectConcurrently launches all project update operations concurrently and collects errors.
+// updateProjectConcurrently launches all project update operations
+// concurrently and collects errors.
 func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectKey string, projectId string) []error {
 	waitGr := sync.WaitGroup{}
 	errChan := make(chan error)
@@ -84,7 +85,8 @@ func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectK
 	return allErrors
 }
 
-// updateVisibility updates the project visibility if it differs from the desired state.
+// updateVisibility updates the project visibility if it differs from the
+// desired state.
 func (c *external) updateVisibility(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if helpers.IsComparablePtrEqualComparable(project.Spec.ForProvider.Visibility, project.Status.AtProvider.Visibility) {
 		return
@@ -112,7 +114,8 @@ func (c *external) updateTags(project *v1alpha1.Project, projectKey string, errC
 	}
 }
 
-// updateDefaultBranch updates the project default branch if it differs from the desired state.
+// updateDefaultBranch updates the project default branch if it differs from
+// the desired state.
 func (c *external) updateDefaultBranch(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if helpers.IsComparablePtrEqualComparable(project.Spec.ForProvider.DefaultBranch, project.Status.AtProvider.DefaultBranch) {
 		return
@@ -126,7 +129,8 @@ func (c *external) updateDefaultBranch(project *v1alpha1.Project, projectKey str
 	}
 }
 
-// updateBranchNewCodePeriods updates the new code periods of branches that differ from the desired state.
+// updateBranchNewCodePeriods updates the new code periods of branches that
+// differ from the desired state.
 func (c *external) updateBranchNewCodePeriods(project *v1alpha1.Project, projectKey string, waitGr *sync.WaitGroup, errChan chan<- error) {
 	if instance.AreProjectBranchesUpToDate(project.Spec.ForProvider.Branches, project.Status.AtProvider.Branches) {
 		return
@@ -151,7 +155,8 @@ func (c *external) updateBranchNewCodePeriods(project *v1alpha1.Project, project
 	}
 }
 
-// updateProjectLinks updates the links of the project if they differ from the desired state.
+// updateProjectLinks updates the links of the project if they differ from the
+// desired state.
 func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId string, errChan chan<- error) {
 	if instance.AreProjectLinksUpToDate(project.Spec.ForProvider.Links, project.Status.AtProvider.Links) {
 		return
@@ -194,7 +199,9 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 	linksUpdateWaitGroup.Wait()
 }
 
-// deleteNonSpecLinks deletes the project links that exist in the observed state but not in the desired state, or that differ between the observed and desired state.
+// deleteNonSpecLinks deletes the project links that exist in the observed state
+// but not in the desired state, or that differ between the observed
+// and desired state.
 func (c *external) deleteNonSpecLinks(project *v1alpha1.Project, errChan chan<- error) {
 	deleteWaitGroup := sync.WaitGroup{}
 	// Delete links that exist in the observed state but not in the desired state, or that differ between the observed and desired state.
@@ -229,7 +236,8 @@ func (c *external) isProjectLinkInSpec(spec []v1alpha1.ProjectLinkParameters, li
 	return false
 }
 
-// updateProjectNewCodePeriod updates the project-level new code period if it differs from the desired state.
+// updateProjectNewCodePeriod updates the project-level new code period
+// if it differs from the desired state.
 func (c *external) updateProjectNewCodePeriod(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if instance.IsNewCodePeriodUpToDate(project.Spec.ForProvider.NewCodePeriod, &project.Status.AtProvider.NewCodePeriod) {
 		return
@@ -243,7 +251,8 @@ func (c *external) updateProjectNewCodePeriod(project *v1alpha1.Project, project
 	}
 }
 
-// updateProjectQualityGate updates the quality gate of the project if it differs from the desired state.
+// updateProjectQualityGate updates the quality gate of the project
+// if it differs from the desired state.
 func (c *external) updateProjectQualityGate(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if helpers.IsComparablePtrEqualComparable(project.Spec.ForProvider.QualityGateName, project.Status.AtProvider.QualityGateName) {
 		return
@@ -257,7 +266,8 @@ func (c *external) updateProjectQualityGate(project *v1alpha1.Project, projectKe
 	}
 }
 
-// updateProjectQualityProfiles updates the quality profiles of the project if they differ from the desired state.
+// updateProjectQualityProfiles updates the quality profiles of the project
+// if they differ from the desired state.
 func (c *external) updateProjectQualityProfiles(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if instance.AreProjectQualityProfilesUpToDate(project.Spec.ForProvider.QualityProfiles, project.Status.AtProvider.QualityProfiles) {
 		return

@@ -18,7 +18,8 @@ package common
 
 import "net/http"
 
-// IsResponseNotFound checks if the response from a SonarQube API call indicates that the resource was not found (HTTP 404).
+// IsResponseNotFound checks if the response from a SonarQube API call
+// indicates that the resource was not found (HTTP 404).
 func IsResponseNotFound(resp *http.Response) bool {
 	return resp != nil && resp.StatusCode == http.StatusNotFound
 }

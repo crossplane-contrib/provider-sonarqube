@@ -48,7 +48,8 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 )
 
-// SetupGated adds a controller that reconciles Settings managed resources with safe-start support.
+// SetupGated adds a controller that reconciles Settings managed resources
+// with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
@@ -147,14 +148,17 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	return &external{settingsClient: svc}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the managed.ExternalClient interface for Settings
+// resources.
 type external struct {
 	// settingsClient is used to interact with SonarQube Settings API
 	settingsClient instance.SettingsClient
 }
 
-// Observe checks if the external resource exists and if it matches the desired state specified by the managed resource. It returns an ExternalObservation indicating whether the resource exists, whether it is up to date, and any connection details or errors.
+// Observe checks if the external resource exists and if it matches the desired
+// state specified by the managed resource. It returns an ExternalObservation
+// indicating whether the resource exists,
+// whether it is up to date, and any connection details or errors.
 func (c *external) Observe(ctx context.Context, managedResource resource.Managed) (managed.ExternalObservation, error) {
 	settings, ok := managedResource.(*v1alpha1.Settings)
 	if !ok {
@@ -186,7 +190,9 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	}, nil
 }
 
-// Create sets the SonarQube Settings based on the desired state in the managed resource. It should return an error if the creation failed, or nil if it succeeded.
+// Create sets the SonarQube Settings based on the desired state in the managed
+// resource. It should return an error if the creation failed,
+// or nil if it succeeded.
 func (c *external) Create(ctx context.Context, managedResource resource.Managed) (managed.ExternalCreation, error) {
 	settings, ok := managedResource.(*v1alpha1.Settings)
 	if !ok {
@@ -221,7 +227,10 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalCreation{}, stderrors.Join(errs...)
 }
 
-// Update checks for any differences between the desired state in the managed resource and the observed state in SonarQube. If there are differences, it updates the SonarQube settings to match the desired state. It returns an error if the update failed, or nil if it succeeded.
+// Update checks for any differences between the desired state in the managed
+// resource and the observed state in SonarQube. If there are differences,
+// it updates the SonarQube settings to match the desired state.
+// It returns an error if the update failed, or nil if it succeeded.
 func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
 	settings, ok := managedResource.(*v1alpha1.Settings)
 	if !ok {
@@ -244,7 +253,8 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalUpdate{}, stderrors.Join(updateErrors...)
 }
 
-// Delete resets the settings in SonarQube based on the given managed resource. It returns any error that occurred during deletion.
+// Delete resets the settings in SonarQube based on the given managed resource.
+// It returns any error that occurred during deletion.
 func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
 	settings, ok := managedResource.(*v1alpha1.Settings)
 	if !ok {
@@ -266,12 +276,15 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 	return managed.ExternalDelete{}, nil
 }
 
-// Disconnect is called when the external resource is disconnected from the provider. Since SonarQube settings cannot be deleted, there is no cleanup to perform, so this method simply returns nil.
+// Disconnect is called when the external resource is disconnected from the
+// provider. Since SonarQube settings cannot be deleted,
+// there is no cleanup to perform, so this method simply returns nil.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-// updateOutOfDateSettings updates settings that are out of date by comparing the desired settings in the CR with the observed settings in SonarQube.
+// updateOutOfDateSettings updates settings that are out of date by comparing
+// the desired settings in the CR with the observed settings in SonarQube.
 func (c *external) updateOutOfDateSettings(settings *v1alpha1.Settings) []error {
 	var updateErrors []error
 
@@ -291,7 +304,9 @@ func (c *external) updateOutOfDateSettings(settings *v1alpha1.Settings) []error 
 	return updateErrors
 }
 
-// resetObsoleteSettings resets any settings that are not in the desired settings in the CR. This ensures that any settings that were manually changed in SonarQube or removed from the CR are reset to their default values.
+// resetObsoleteSettings resets any settings that are not in the desired
+// settings in the CR. This ensures that any settings that were manually changed
+// in SonarQube or removed from the CR are reset to their default values.
 func (c *external) resetObsoleteSettings(settings *v1alpha1.Settings) []error {
 	var resetErrors []error
 

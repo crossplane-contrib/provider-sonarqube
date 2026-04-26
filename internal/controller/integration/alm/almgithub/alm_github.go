@@ -56,7 +56,8 @@ const (
 	connectionDetailWebhookSecretKey = "webhookSecret"
 )
 
-// SetupGated adds a controller that reconciles ALMGitHub managed resources with safe-start support.
+// SetupGated adds a controller that reconciles ALMGitHub managed resources
+// with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
@@ -114,7 +115,8 @@ func Setup(mgr ctrl.Manager, options controller.Options) error {
 		Complete(ratelimiter.NewReconciler(name, reconciler, options.GlobalRateLimiter))
 }
 
-// A connector is expected to produce an ExternalClient when its Connect method is called.
+// A connector is expected to produce an ExternalClient when its Connect
+// method is called.
 type connector struct {
 	kube  client.Client
 	usage *resource.ProviderConfigUsageTracker
@@ -156,14 +158,14 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the ExternalClient interface for ALMGitHub resources.
 type external struct {
 	kubeClient     client.Client
 	settingsClient integration.ALMSettingsGitHubClient
 }
 
-// Observe observes the ALMGitHub corresponding external resource using the SonarQube API, and returns an ExternalObservation.
+// Observe observes the ALMGitHub corresponding external resource using the
+// SonarQube API, and returns an ExternalObservation.
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
 	almGitHub, ok := mg.(*v1alpha1.ALMGitHub)
 	if !ok {
@@ -259,7 +261,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}, nil
 }
 
-// Update updates the ALMGitHub corresponding external resource to reflect the desired state of the managed resource.
+// Update updates the ALMGitHub corresponding external resource to reflect the
+// desired state of the managed resource.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	almGitHub, ok := mg.(*v1alpha1.ALMGitHub)
 	if !ok {
@@ -308,7 +311,8 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	}, nil
 }
 
-// Delete deletes the ALMGitHub corresponding external resource using the SonarQube API.
+// Delete deletes the ALMGitHub corresponding external resource using the
+// SonarQube API.
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
 	almGitHub, ok := mg.(*v1alpha1.ALMGitHub)
 	if !ok {
@@ -338,8 +342,10 @@ func (c *external) Disconnect(_ context.Context) error {
 	return nil
 }
 
-// getSavedSecrets retrieves the saved GitHub App secrets from the connection secret referenced in the ALMGitHub spec.
-// Returns empty strings (not errors) if the connection secret or any key is missing.
+// getSavedSecrets retrieves the saved GitHub App secrets from the connection
+// secret referenced in the ALMGitHub spec.
+// Returns empty strings (not errors) if the connection secret
+// or any key is missing.
 func (c *external) getSavedSecrets(ctx context.Context, almGitHub *v1alpha1.ALMGitHub) (clientSecret, privateKey, webhookSecret string, err error) {
 	ref := almGitHub.GetWriteConnectionSecretToReference()
 	if ref == nil || ref.Name == "" {

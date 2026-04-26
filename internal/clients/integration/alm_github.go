@@ -25,8 +25,10 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
-// ALMIntegrationsGitHubClient is the interface for interacting with SonarQube ALMGitHub API
-// It handles all the operations related to ALMGitHub in SonarQube, such as creating, updating, deleting, and retrieving ALMGitHub.
+// ALMIntegrationsGitHubClient is the interface for interacting with
+// SonarQube ALMGitHub API
+// It handles all the operations related to ALMGitHub in SonarQube,
+// such as creating, updating, deleting, and retrieving ALMGitHub.
 type ALMIntegrationsGitHubClient interface {
 	ALMIntegrationsClient
 	GetGithubClientId(opt *sonar.AlmIntegrationsGetGithubClientIdOptions) (v *sonar.AlmIntegrationsGetGithubClientId, resp *http.Response, err error)
@@ -34,29 +36,34 @@ type ALMIntegrationsGitHubClient interface {
 	ListGithubRepositories(opt *sonar.AlmIntegrationsListGithubRepositoriesOptions) (v *sonar.AlmIntegrationsListGithubRepositories, resp *http.Response, err error)
 }
 
-// ALMSettingsGitHubClient is the interface for interacting with SonarQube ALM settings API for GitHub
-// It handles all the operations related to ALM settings for GitHub in SonarQube, such as creating, updating, deleting, and retrieving them.
+// ALMSettingsGitHubClient is the interface for interacting with SonarQube ALM
+// settings API for GitHub
+// It handles all the operations related to ALM settings for GitHub in
+// SonarQube, such as creating, updating, deleting, and retrieving them.
 type ALMSettingsGitHubClient interface {
 	ALMSettingsClient
 	CreateGithub(opt *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error)
 	UpdateGithub(opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error)
 }
 
-// NewALMIntegrationsGitHubClient creates a new ALMIntegrationsGitHubClient with the provided SonarQube client configuration.
+// NewALMIntegrationsGitHubClient creates a new ALMIntegrationsGitHubClient
+// with the provided SonarQube client configuration.
 func NewALMIntegrationsGitHubClient(clientConfig common.Config) ALMIntegrationsGitHubClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.AlmIntegrations
 }
 
-// NewALMSettingsGitHubClient creates a new ALMSettingsGitHubClient with the provided SonarQube client configuration.
+// NewALMSettingsGitHubClient creates a new ALMSettingsGitHubClient with
+// the provided SonarQube client configuration.
 func NewALMSettingsGitHubClient(clientConfig common.Config) ALMSettingsGitHubClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.AlmSettings
 }
 
-// LateInitializeALMGitHub fills the empty fields in the ALMGitHub spec with the values from the SonarQube API response.
+// LateInitializeALMGitHub fills the empty fields in the ALMGitHub spec with
+// the values from the SonarQube API response.
 func LateInitializeALMGitHub(spec *v1alpha1.ALMGitHubParameters, observation *v1alpha1.ALMGitHubObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -64,8 +71,10 @@ func LateInitializeALMGitHub(spec *v1alpha1.ALMGitHubParameters, observation *v1
 	// No fields to late-initialize for GitHub ALM; all observable fields are required in the spec.
 }
 
-// IsALMGitHubLateInitialized checks if two ALMGitHub specs are equal after late initialization.
-// Returns true if the specs differ (late init changed something), false if they are equal.
+// IsALMGitHubLateInitialized checks if two ALMGitHub specs are equal after
+// late initialization.
+// Returns true if the specs differ (late init changed something),
+// false if they are equal.
 func IsALMGitHubLateInitialized(former, current *v1alpha1.ALMGitHubParameters) bool {
 	if former == nil || current == nil {
 		return true
@@ -77,7 +86,8 @@ func IsALMGitHubLateInitialized(former, current *v1alpha1.ALMGitHubParameters) b
 		former.ClientID != current.ClientID
 }
 
-// IsALMGitHubUpToDate checks if the ALMGitHub spec is up to date with the SonarQube API response.
+// IsALMGitHubUpToDate checks if the ALMGitHub spec is up to date with
+// the SonarQube API response.
 // It compares observable fields and all three secret pairs for changes.
 func IsALMGitHubUpToDate(
 	spec *v1alpha1.ALMGitHubParameters,
@@ -103,7 +113,8 @@ func IsALMGitHubUpToDate(
 		webhookSecret == savedWebhookSecret
 }
 
-// GenerateALMGitHubCreateOptions generates the options for creating an ALMGitHub resource in SonarQube API.
+// GenerateALMGitHubCreateOptions generates the options for creating an
+// ALMGitHub resource in SonarQube API.
 func GenerateALMGitHubCreateOptions(spec *v1alpha1.ALMGitHubParameters, clientSecret, privateKey, webhookSecret string) *sonar.AlmSettingsCreateGithubOptions {
 	return &sonar.AlmSettingsCreateGithubOptions{
 		AppID:         spec.AppID,
@@ -116,7 +127,8 @@ func GenerateALMGitHubCreateOptions(spec *v1alpha1.ALMGitHubParameters, clientSe
 	}
 }
 
-// GenerateALMGitHubUpdateOptions generates the options for updating an ALMGitHub resource in SonarQube API.
+// GenerateALMGitHubUpdateOptions generates the options for updating an
+// ALMGitHub resource in SonarQube API.
 // Sets NewKey only when the key has changed.
 func GenerateALMGitHubUpdateOptions(key string, spec *v1alpha1.ALMGitHubParameters, clientSecret, privateKey, webhookSecret string) *sonar.AlmSettingsUpdateGithubOptions {
 	opts := &sonar.AlmSettingsUpdateGithubOptions{
@@ -136,7 +148,8 @@ func GenerateALMGitHubUpdateOptions(key string, spec *v1alpha1.ALMGitHubParamete
 	return opts
 }
 
-// FindGitHubALMDefinitionByKey searches for an ALM settings definition in the list of GitHub definitions by its key.
+// FindGitHubALMDefinitionByKey searches for an ALM settings definition in
+// the list of GitHub definitions by its key.
 func FindGitHubALMDefinitionByKey(definitions *[]sonar.GithubDefinition, key string) *sonar.GithubDefinition {
 	if definitions == nil {
 		return nil
@@ -151,7 +164,8 @@ func FindGitHubALMDefinitionByKey(definitions *[]sonar.GithubDefinition, key str
 	return nil
 }
 
-// GenerateALMGitHubObservation generates the ALMGitHubObservation based on the ALM settings definition retrieved from SonarQube API.
+// GenerateALMGitHubObservation generates the ALMGitHubObservation based on
+// the ALM settings definition retrieved from SonarQube API.
 func GenerateALMGitHubObservation(definition *sonar.GithubDefinition) v1alpha1.ALMGitHubObservation {
 	if definition == nil {
 		return v1alpha1.ALMGitHubObservation{}

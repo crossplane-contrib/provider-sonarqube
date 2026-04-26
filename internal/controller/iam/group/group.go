@@ -57,7 +57,8 @@ const (
 	errObserveGroup = "cannot observe Group"
 )
 
-// SetupGated adds a controller that reconciles Group managed resources with safe-start support.
+// SetupGated adds a controller that reconciles Group managed resources
+// with safe-start support.
 func SetupGated(mgr ctrl.Manager, options controller.Options) error {
 	options.Gate.Register(func() {
 		err := Setup(mgr, options)
@@ -159,8 +160,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the ExternalClient interface for Group resources.
 type external struct {
 	// groupClient is used to interact with SonarQube Group API
 	groupClient iam.GroupsClient
@@ -217,7 +217,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}, nil
 }
 
-// Create a new external resource based on the managed resource spec. The external resource should be created in a way that it will be observed as up to date by Observe for the managed resource.
+// Create a new external resource based on the managed resource spec.
+// The external resource should be created in a way that it will be observed as
+// up to date by Observe for the managed resource.
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
 	group, ok := mg.(*v1alpha1.Group)
 	if !ok {
@@ -242,7 +244,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalCreation{}, nil
 }
 
-// Update is required to update an existing external resource to match the desired state of the managed resource.
+// Update is required to update an existing external resource to match the
+// desired state of the managed resource.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	group, ok := mg.(*v1alpha1.Group)
 	if !ok {
@@ -283,7 +286,9 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalUpdate{}, stderrors.Join(combinedErrors...)
 }
 
-// Delete will delete the external resource if it exists. After deletion, Observe should return ResourceExists=false to indicate that the external resource no longer exists.
+// Delete will delete the external resource if it exists.
+// After deletion, Observe should return ResourceExists=false to indicate
+// that the external resource no longer exists.
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
 	group, ok := mg.(*v1alpha1.Group)
 	if !ok {
@@ -312,7 +317,8 @@ func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-// addGroupPermissions adds a slice of permissions to a group using parallel goroutines. Each permission is added concurrently,
+// addGroupPermissions adds a slice of permissions to a group using parallel
+// goroutines. Each permission is added concurrently,
 // and any errors are sent to the provided error channel.
 func (c *external) addGroupPermissions(groupName string, permissions []string, errChan chan error) {
 	waitGroup := sync.WaitGroup{}
@@ -335,7 +341,8 @@ func (c *external) addGroupPermissions(groupName string, permissions []string, e
 	waitGroup.Wait()
 }
 
-// removeGroupPermissions removes a slice of permissions from a group using parallel goroutines. Each permission is removed concurrently,
+// removeGroupPermissions removes a slice of permissions from a group using
+// parallel goroutines. Each permission is removed concurrently,
 // and any errors are sent to the provided error channel.
 func (c *external) removeGroupPermissions(groupName string, permissions []string, errChan chan error) {
 	waitGroup := sync.WaitGroup{}
@@ -358,7 +365,8 @@ func (c *external) removeGroupPermissions(groupName string, permissions []string
 	waitGroup.Wait()
 }
 
-// computePermissionsDelta computes the permissions to add and remove to make the observed permissions match the desired permissions.
+// computePermissionsDelta computes the permissions to add and remove to
+// make the observed permissions match the desired permissions.
 func computePermissionsDelta(specPermissions *[]string, observedPermissions []string) (permissionsToAdd []string, permissionsToRemove []string) {
 	if specPermissions == nil {
 		return nil, nil
@@ -384,9 +392,14 @@ func computePermissionsDelta(specPermissions *[]string, observedPermissions []st
 	return permissionsToAdd, permissionsToRemove
 }
 
-// getGroupPermissions retrieves the permissions associated with a group from SonarQube. It returns a slice of permission keys and any error encountered during the API call.
-// If the group is not found after paging through results, it returns an empty slice and nil error.
-// If there is an error during the API call, it returns an error wrapping the original error with additional context.
+// getGroupPermissions retrieves the permissions associated with a group
+// from SonarQube.
+// It returns a slice of permission keys and any error encountered during
+// the API call.
+// If the group is not found after paging through results,
+// it returns an empty slice and nil error.
+// If there is an error during the API call,
+// it returns an error wrapping the original error with additional context.
 func getGroupPermissions(client iam.PermissionsClient, groupName string) ([]string, error) {
 	const maxPageSize = int64(100)
 

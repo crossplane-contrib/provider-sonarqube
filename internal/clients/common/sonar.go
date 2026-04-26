@@ -32,30 +32,40 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
 
-// BasicAuthArgs is the expected struct that can be passed in the Config.Token field to add support for BasicAuth AuthMethod.
+// BasicAuthArgs is the expected struct that can be passed in the Config.Token
+// field to add support for BasicAuth AuthMethod.
 type BasicAuthArgs struct {
-	// Username is the username for Basic Authentication. It is expected to be stored in a Kubernetes Secret and referenced in the ProviderConfig.
+	// Username is the username for Basic Authentication.
+	// It is expected to be stored in a Kubernetes Secret and
+	// referenced in the ProviderConfig.
 	Username string `json:"username"`
-	// Password is the password for Basic Authentication. It is expected to be stored in a Kubernetes Secret and referenced in the ProviderConfig.
-	//nolint:gosec // This is a configuration DTO field name, not a hardcoded secret.
+	// Password is the password for Basic Authentication.
+	// It is expected to be stored in a Kubernetes Secret and
+	// referenced in the ProviderConfig.
+
+	// not a hardcoded secret.
 	Password string `json:"password"`
 }
 
 // Config provides SonarQube configurations for the SonarQube client.
 type Config struct {
-	// AuthType is the SonarQube authentication type to use (e.g., BasicAuth, PersonalAccessToken)
+	// AuthType is the SonarQube authentication type to use
+	// (e.g., BasicAuth, PersonalAccessToken)
 	AuthType AuthType
-	// BasicAuth contains the Basic authentication credentials for the SonarQube instance
+	// BasicAuth contains the Basic authentication credentials for the
+	// SonarQube instance
 	BasicAuth *BasicAuthArgs
 	// Token is the Personal access token for the SonarQube instance
 	Token string
 	// BaseURL is the URL of the SonarQube instance (trailing slash is optional)
 	BaseURL string
-	// InsecureSkipVerify indicates whether to skip TLS certificate verification (for self-signed certificates)
+	// InsecureSkipVerify indicates whether to skip TLS certificate verification
+	// (for self-signed certificates)
 	InsecureSkipVerify bool
 }
 
-// NewClient creates new SonarQube Client with provided SonarQube Configurations/Credentials.
+// NewClient creates new SonarQube Client with provided SonarQube
+// Configurations/Credentials.
 func NewClient(clientConfig Config) *sonar.Client {
 	var client *sonar.Client
 
@@ -128,8 +138,9 @@ func GetConfig(ctx context.Context, kubeClient client.Client, managedResource re
 	}
 }
 
-// UseProviderConfig uses the given ProviderConfig reference to construct a Config
-// that can be used to authenticate to SonarQube's API by the SonarQube Go client.
+// UseProviderConfig uses the given ProviderConfig reference to construct a
+// Config that can be used to authenticate to SonarQube's API by the
+// SonarQube Go client.
 func UseProviderConfig(ctx context.Context, kubeClient client.Client, managedResource resource.ModernManaged) (*Config, error) {
 	providerConfigRef := managedResource.GetProviderConfigReference()
 
@@ -204,8 +215,10 @@ func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedR
 	return config, nil
 }
 
-// determineAuthType determines the AuthType based on the provided ProviderConfigSpec
-// It populates the AuthType and BasicAuth fields in the Config struct accordingly
+// determineAuthType determines the AuthType based on the provided
+// ProviderConfigSpec.
+// It populates the AuthType and BasicAuth fields in the Config struct
+// accordingly.
 // It returns an error if no valid authentication method is found.
 func determineAuthType(spec v1alpha1.ProviderConfigSpec) (AuthType, error) {
 	// Check if Token is provided for Personal Access Token authentication

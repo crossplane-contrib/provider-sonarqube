@@ -78,7 +78,8 @@ type QualityGateStatus struct {
 	AtProvider QualityGateObservation `json:"atProvider,omitempty"`
 }
 
-// QualityGatesActions represents the actions that can be performed on a Quality Gate.
+// QualityGatesActions represents the actions that can be performed on a
+// Quality Gate.
 type QualityGatesActions struct {
 	// AssociateProjects defines whether projects can be associated with the Quality Gate.
 	AssociateProjects bool `json:"associateProjects"`
@@ -98,7 +99,8 @@ type QualityGatesActions struct {
 	SetAsDefault bool `json:"setAsDefault"`
 }
 
-// QualityGateConditionParameters are the configurable fields of a QualityGateCondition.
+// QualityGateConditionParameters are the configurable fields of a
+// QualityGateCondition.
 type QualityGateConditionParameters struct {
 	// Id is the Condition ID
 	// It will be populated by the controller upon creation / update
@@ -127,7 +129,8 @@ type QualityGateConditionParameters struct {
 	Op *string `json:"op,omitempty"`
 }
 
-// QualityGateConditionObservation are the observable fields of a QualityGateCondition.
+// QualityGateConditionObservation are the observable fields of a
+// QualityGateCondition.
 type QualityGateConditionObservation struct {
 	// Error is the Condition error threshold
 	Error string `json:"error,omitempty"`

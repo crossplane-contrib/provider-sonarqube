@@ -34,7 +34,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// Update is responsible for updating the external resource to match the desired state of the managed resource.
+// Update is responsible for updating the external resource to match the
+// desired state of the managed resource.
 func (c *external) Update(_ context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
 	const updateErrorCapacity = 2
 
@@ -78,7 +79,8 @@ func (c *external) Update(_ context.Context, managedResource resource.Managed) (
 	return result, stderrors.Join(errorSlice...)
 }
 
-// updateUserFields updates the mutable fields of the User resource. It does not handle password or group membership updates.
+// updateUserFields updates the mutable fields of the User resource.
+// It does not handle password or group membership updates.
 func (c *external) updateUserFields(userResource *v1alpha1.User, externalName string) error {
 	_, resp, err := c.usersClient.Update(externalName, iam.GenerateUpdateUserOptions(&userResource.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
@@ -90,7 +92,10 @@ func (c *external) updateUserFields(userResource *v1alpha1.User, externalName st
 	return nil
 }
 
-// reconcileGroupMemberships ensures that the User's group memberships in SonarQube match the desired state specified in the User resource. It calculates the necessary additions and removals of group memberships and performs the required API calls to reconcile the state.
+// reconcileGroupMemberships ensures that the User's group memberships in
+// SonarQube match the desired state specified in the User resource.
+// It calculates the necessary additions and removals of group memberships
+// and performs the required API calls to reconcile the state.
 func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, externalName string) error {
 	if userResource.Spec.ForProvider.Groups == nil {
 		return nil
@@ -150,7 +155,9 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 	return stderrors.Join(errorSlice...)
 }
 
-// desiredGroupIDs extracts the desired group IDs from the UserGroupsParameters. It filters out any nil or empty group IDs, returning a slice of valid group IDs that the user should be a member of.
+// desiredGroupIDs extracts the desired group IDs from the UserGroupsParameters.
+// It filters out any nil or empty group IDs,
+// returning a slice of valid group IDs that the user should be a member of.
 func desiredGroupIDs(groups *[]v1alpha1.UserGroupsParameters) []string {
 	if groups == nil {
 		return nil
@@ -168,7 +175,13 @@ func desiredGroupIDs(groups *[]v1alpha1.UserGroupsParameters) []string {
 	return out
 }
 
-// buildGroupsDiff compares the desired and observed group memberships for a user and returns two slices: one containing the ids of groups that the user should be added to (present in desired but not in observed), and another containing the membership ids of groups that the user should be removed from (present in observed but not in desired). This function is used to determine the necessary changes to reconcile the user's group memberships with the desired state.
+// buildGroupsDiff compares the desired and observed group memberships for a
+// user and returns two slices: one containing the ids of groups that the user
+// should be added to (present in desired but not in observed),
+// and another containing the membership ids of groups that the user should be
+// removed from (present in observed but not in desired).
+// This function is used to determine the necessary changes to reconcile
+// the user's group memberships with the desired state.
 func buildGroupsDiff(desired []string, observed map[string]string) (toAdd []string, toRemove []string) {
 	desiredSet := helpers.NewStringSetFromSlice(desired)
 

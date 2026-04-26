@@ -47,14 +47,16 @@ type RulesClient interface {
 	Update(opt *sonar.RulesUpdateOptions) (v *sonar.RulesUpdate, resp *http.Response, err error)
 }
 
-// NewRulesClient creates a new RulesClient with the provided SonarQube client configuration.
+// NewRulesClient creates a new RulesClient with the provided SonarQube client
+// configuration.
 func NewRulesClient(clientConfig common.Config) RulesClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.Rules
 }
 
-// GenerateQualityProfileRulesSearchOption generates SonarQube RulesSearchOption for a given quality profile key
+// GenerateQualityProfileRulesSearchOption generates SonarQube RulesSearchOption
+// for a given quality profile key
 // to fetch activated rules in that quality profile.
 func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesSearchOptions {
 	return &sonar.RulesSearchOptions{
@@ -81,7 +83,8 @@ func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesS
 	}
 }
 
-// FetchAllQualityProfileRules fetches all activated rules for a quality profile using pagination.
+// FetchAllQualityProfileRules fetches all activated rules for a quality profile
+// using pagination.
 // It iterates through all pages until all rules are fetched.
 func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey string) (*sonar.RulesSearch, error) {
 	var allRules []sonar.RuleDetails
@@ -125,7 +128,8 @@ func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey stri
 	}
 }
 
-// GenerateQualityProfileRulesObservation generates observations for Quality Profile Rules.
+// GenerateQualityProfileRulesObservation generates observations for
+// Quality Profile Rules.
 func GenerateQualityProfileRulesObservation(qualityProfileId string, rules *sonar.RulesSearch) []v1alpha1.QualityProfileRuleObservation {
 	if rules == nil || rules.Rules == nil {
 		return []v1alpha1.QualityProfileRuleObservation{}
@@ -148,7 +152,8 @@ func GenerateQualityProfileRulesObservation(qualityProfileId string, rules *sona
 	return observations
 }
 
-// ruleActiveSettings holds the activated settings for a rule, including severity and parameters.
+// ruleActiveSettings holds the activated settings for a rule,
+// including severity and parameters.
 type ruleActiveSettings struct {
 	Severity    *string
 	Params      *map[string]string
@@ -156,7 +161,10 @@ type ruleActiveSettings struct {
 	Prioritized *bool
 }
 
-// findQualityProfileActiveRuleSettings parses the activated rules, confirms that they belong to the quality profile, and returns a map of rule key to its activated settings (severity and parameters).
+// findQualityProfileActiveRuleSettings parses the activated rules,
+// confirms that they belong to the quality profile,
+// and returns a map of rule key to its activated settings
+// (severity and parameters).
 func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *[]sonar.RuleActivation) *ruleActiveSettings {
 	if activeRules == nil {
 		return nil
@@ -181,7 +189,8 @@ func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *
 	return nil
 }
 
-// GenerateQualityProfileRuleObservation generates observation for a Quality Profile Rule.
+// GenerateQualityProfileRuleObservation generates observation for a
+// Quality Profile Rule.
 func GenerateQualityProfileRuleObservation(rule sonar.RuleDetails, activatedSettings *ruleActiveSettings) v1alpha1.QualityProfileRuleObservation {
 	ruleObservation := v1alpha1.QualityProfileRuleObservation{
 		Key:       rule.Key,
@@ -213,7 +222,8 @@ func GenerateQualityProfileRuleObservation(rule sonar.RuleDetails, activatedSett
 	return ruleObservation
 }
 
-// GenerateQualityProfileImpactsObservation generates observations for Quality Profile Rule Impacts.
+// GenerateQualityProfileImpactsObservation generates observations for
+// Quality Profile Rule Impacts.
 func GenerateQualityProfileImpactsObservation(impacts *[]sonar.RuleImpact) []v1alpha1.QualityProfileRuleImpact {
 	if impacts == nil {
 		return []v1alpha1.QualityProfileRuleImpact{}
@@ -227,7 +237,8 @@ func GenerateQualityProfileImpactsObservation(impacts *[]sonar.RuleImpact) []v1a
 	return observations
 }
 
-// GenerateQualityProfileRuleImpactObservation generates observation for Quality Profile Rule Impact.
+// GenerateQualityProfileRuleImpactObservation generates observation for
+// Quality Profile Rule Impact.
 func GenerateQualityProfileRuleImpactObservation(impact sonar.RuleImpact) v1alpha1.QualityProfileRuleImpact {
 	return v1alpha1.QualityProfileRuleImpact{
 		Severity:        impact.Severity,
@@ -235,7 +246,8 @@ func GenerateQualityProfileRuleImpactObservation(impact sonar.RuleImpact) v1alph
 	}
 }
 
-// IsQualityProfileRuleUpToDate checks whether the observed QualityProfileRule is up to date with the desired QualityProfileRuleParameters
+// IsQualityProfileRuleUpToDate checks whether the observed QualityProfileRule
+// is up to date with the desired QualityProfileRuleParameters
 // Compares rule key, severity (if specified), and parameters (if specified).
 func IsQualityProfileRuleUpToDate(spec *v1alpha1.QualityProfileRuleParameters, observation *v1alpha1.QualityProfileRuleObservation) bool {
 	if spec == nil {
@@ -276,7 +288,8 @@ func IsQualityProfileRuleUpToDate(spec *v1alpha1.QualityProfileRuleParameters, o
 	return true
 }
 
-// areQualityProfileRuleImpactsUpToDate checks whether the observed QualityProfileRule impacts are up to date with the desired impacts.
+// areQualityProfileRuleImpactsUpToDate checks whether the observed
+// QualityProfileRule impacts are up to date with the desired impacts.
 func areQualityProfileRuleImpactsUpToDate(spec *map[string]string, observation []v1alpha1.QualityProfileRuleImpact) bool {
 	if spec == nil {
 		return true
@@ -291,8 +304,10 @@ func areQualityProfileRuleImpactsUpToDate(spec *map[string]string, observation [
 	return cmp.Equal(*spec, impactMap, cmpopts.EquateEmpty())
 }
 
-// GenerateRuleCreateOptions generates SonarQube RulesCreateOption based on the provided Rule parameters.
-// Note: Per SonarQube API, impacts and severity are mutually exclusive. If both are provided, impacts takes precedence.
+// GenerateRuleCreateOptions generates SonarQube RulesCreateOption based on the
+// provided Rule parameters.
+// Note: Per SonarQube API, impacts and severity are mutually exclusive. If both
+// are provided, impacts takes precedence.
 func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.RulesCreateOptions {
 	rulesCreateOptions := &sonar.RulesCreateOptions{}
 	if parameters == nil {
@@ -320,8 +335,10 @@ func GenerateRuleCreateOptions(parameters *v1alpha1.RuleParameters) *sonar.Rules
 	return rulesCreateOptions
 }
 
-// GenerateRuleUpdateOptions generates SonarQube RulesUpdateOption based on the provided Rule parameters and observation.
-// Note: Per SonarQube API, impacts and severity are mutually exclusive. If both are provided, impacts takes precedence.
+// GenerateRuleUpdateOptions generates SonarQube RulesUpdateOption based on the
+// provided Rule parameters and observation.
+// Note: Per SonarQube API, impacts and severity are mutually exclusive.
+// If both are provided, impacts takes precedence.
 func GenerateRuleUpdateOptions(key string, parameters *v1alpha1.RuleParameters) *sonar.RulesUpdateOptions {
 	rulesUpdateOptions := &sonar.RulesUpdateOptions{}
 	if parameters == nil {
@@ -351,7 +368,8 @@ func GenerateRuleUpdateOptions(key string, parameters *v1alpha1.RuleParameters) 
 	return rulesUpdateOptions
 }
 
-// generateRuleParametersOptions generates SonarQube RuleParameters based on the provided Rule parameters.
+// generateRuleParametersOptions generates SonarQube RuleParameters based on the
+// provided Rule parameters.
 func generateRuleParametersOptions(spec *map[string]v1alpha1.RuleParameterConfiguration) map[string]string {
 	if spec == nil {
 		return map[string]string{}
@@ -365,21 +383,24 @@ func generateRuleParametersOptions(spec *map[string]v1alpha1.RuleParameterConfig
 	return params
 }
 
-// GenerateRuleDeleteOptions generates SonarQube RulesDeleteOption based on the provided Rule observation.
+// GenerateRuleDeleteOptions generates SonarQube RulesDeleteOption based on the
+// provided Rule observation.
 func GenerateRuleDeleteOptions(key string) *sonar.RulesDeleteOptions {
 	return &sonar.RulesDeleteOptions{
 		Key: key,
 	}
 }
 
-// GenerateRuleGetOptions generates SonarQube RulesShowOption based on the provided Rule observation.
+// GenerateRuleGetOptions generates SonarQube RulesShowOption based on the
+// provided Rule observation.
 func GenerateRuleGetOptions(key string) *sonar.RulesShowOptions {
 	return &sonar.RulesShowOptions{
 		Key: key,
 	}
 }
 
-// GenerateRuleObservation generates the observation for a Rule based on the SonarQube RulesShow response.
+// GenerateRuleObservation generates the observation for a Rule based on the
+// SonarQube RulesShow response.
 func GenerateRuleObservation(rule *sonar.RulesShow) v1alpha1.RuleObservation {
 	if rule == nil {
 		return v1alpha1.RuleObservation{}
@@ -438,7 +459,8 @@ func GenerateRuleImpactsObservation(impacts *[]sonar.RuleImpact) map[string]stri
 	return observations
 }
 
-// GenerateRuleParametersObservation generates the observation of RuleParameters from the SonarQube Rule Show response.
+// GenerateRuleParametersObservation generates the observation of RuleParameters
+// from the SonarQube Rule Show response.
 func GenerateRuleParametersObservation(rule *[]sonar.RuleParam) []v1alpha1.RuleParameterObservation {
 	if rule == nil {
 		return []v1alpha1.RuleParameterObservation{}
@@ -458,7 +480,8 @@ func GenerateRuleParametersObservation(rule *[]sonar.RuleParam) []v1alpha1.RuleP
 	return observations
 }
 
-// GenerateRuleDescriptionSectionsObservation generates the observation of RuleDescriptionsSections from the SonarQube rule Show response.
+// GenerateRuleDescriptionSectionsObservation generates the observation of
+// RuleDescriptionsSections from the SonarQube rule Show response.
 func GenerateRuleDescriptionSectionsObservation(sections *[]sonar.RuleDescriptionSection) []v1alpha1.RuleDescriptionSectionObservation {
 	if sections == nil {
 		return []v1alpha1.RuleDescriptionSectionObservation{}
@@ -476,7 +499,8 @@ func GenerateRuleDescriptionSectionsObservation(sections *[]sonar.RuleDescriptio
 	return observations
 }
 
-// GenerateRuleDescriptionContextObservation generates the observation of RuleDescriptionContext from the SonarQube rule Show response.
+// GenerateRuleDescriptionContextObservation generates the observation of
+// RuleDescriptionContext from the SonarQube rule Show response.
 func GenerateRuleDescriptionContextObservation(context *sonar.RuleDescriptionSectionContext) v1alpha1.RuleDescriptionContextObservation {
 	if context == nil {
 		return v1alpha1.RuleDescriptionContextObservation{}
@@ -488,8 +512,10 @@ func GenerateRuleDescriptionContextObservation(context *sonar.RuleDescriptionSec
 	}
 }
 
-// IsRuleUpToDate checks whether the observed Rule is up to date with the desired RuleParameters.
-// Compares rule key, severity (if specified), status (if specified), and parameters (if specified).
+// IsRuleUpToDate checks whether the observed Rule is up to date with the
+// desired RuleParameters.
+// Compares rule key, severity (if specified), status (if specified),
+// and parameters (if specified).
 func IsRuleUpToDate(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObservation) bool { //nolint:gocyclo,cyclop // This function is inherently complex due to the number of fields that need to be compared, and breaking it down would reduce readability.
 	if spec == nil {
 		return true
@@ -520,8 +546,11 @@ func IsRuleUpToDate(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObs
 		areRuleParametersUpToDate(spec.Parameters, &observation.Params)
 }
 
-// isRuleKeyUpToDate checks whether the observed rule key is up to date with the desired rule key.
-// The rule key in SonarQube is returned as "language:key" (e.g., "java:S1234"), while the desired rule key in our spec is just the unprefixed key (e.g., "S1234").
+// isRuleKeyUpToDate checks whether the observed rule key is up to date with the
+// desired rule key.
+// The rule key in SonarQube is returned as "language:key" (e.g., "java:S1234"),
+// while the desired rule key in our spec is just the unprefixed key
+// (e.g., "S1234").
 func isRuleKeyUpToDate(specKey, observationKey string) bool {
 	if specKey == observationKey {
 		return true
@@ -544,7 +573,8 @@ func areRuleTagsUpToDate(specTags *[]string, observationTags []string) bool {
 	}))
 }
 
-// areRuleParametersUpToDate checks whether the observed Rule parameters are up to date with the desired parameters.
+// areRuleParametersUpToDate checks whether the observed Rule parameters are up
+// to date with the desired parameters.
 func areRuleParametersUpToDate(spec *map[string]v1alpha1.RuleParameterConfiguration, observation *[]v1alpha1.RuleParameterObservation) bool {
 	if spec == nil {
 		return true
@@ -571,7 +601,9 @@ func areRuleParametersUpToDate(spec *map[string]v1alpha1.RuleParameterConfigurat
 	return cmp.Equal(*spec, observationMap, cmpopts.EquateEmpty())
 }
 
-// LateInitializeRule fills the empty fields in the RuleParameters with the values from RuleObservation. This is used to update the spec with default values from the API response during late initialization.
+// LateInitializeRule fills the empty fields in the RuleParameters with the
+// values from RuleObservation. This is used to update the spec with default
+// values from the API response during late initialization.
 func LateInitializeRule(spec *v1alpha1.RuleParameters, observation *v1alpha1.RuleObservation) { //nolint:gocyclo,cyclop // complexity comes from guarding each field for non-empty values
 	if spec == nil || observation == nil {
 		return
@@ -613,7 +645,12 @@ func LateInitializeRule(spec *v1alpha1.RuleParameters, observation *v1alpha1.Rul
 	}
 }
 
-// IsRuleLateInitialized checks whether a rule was late initialized by comparing the before and after RuleParameters. It returns true if the only differences between before and after are fields that can be late initialized (i.e., fields that are nil in before and non-nil in after), and false otherwise.
+// IsRuleLateInitialized checks whether a rule was late initialized by
+// comparing the before and after RuleParameters.
+// It returns true if the only differences between before and after are fields
+// that can be late initialized
+// (i.e., fields that are nil in before and non-nil in after),
+// and false otherwise.
 func IsRuleLateInitialized(before *v1alpha1.RuleParameters, after *v1alpha1.RuleParameters) bool {
 	return !cmp.Equal(before, after, cmpopts.EquateEmpty())
 }

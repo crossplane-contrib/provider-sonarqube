@@ -28,21 +28,24 @@ import (
 )
 
 // SettingsClient is the interface for interacting with SonarQube Settings API
-// It handles all the operations related to Settings in SonarQube, such as creating, updating, deleting, and retrieving Settings.
+// It handles all the operations related to Settings in SonarQube,
+// such as creating, updating, deleting, and retrieving Settings.
 type SettingsClient interface {
 	Set(opt *sonar.SettingsSetOptions) (*http.Response, error)
 	Values(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error)
 	Reset(opt *sonar.SettingsResetOptions) (*http.Response, error)
 }
 
-// NewSettingsClient creates a new SettingsClient with the provided SonarQube client configuration.
+// NewSettingsClient creates a new SettingsClient with the provided
+// SonarQube client configuration.
 func NewSettingsClient(clientConfig common.Config) SettingsClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.Settings
 }
 
-// GenerateSettingSetOptions generates the options for the Set API call based on the provided settings parameters and component.
+// GenerateSettingSetOptions generates the options for the Set API call based
+// on the provided settings parameters and component.
 func GenerateSettingSetOptions(key string, params v1alpha1.SettingParameters, component *string) *sonar.SettingsSetOptions {
 	settingsSetOptions := &sonar.SettingsSetOptions{
 		Key: key,
@@ -64,7 +67,8 @@ func GenerateSettingSetOptions(key string, params v1alpha1.SettingParameters, co
 	return settingsSetOptions
 }
 
-// GenerateSettingsValuesOptions generates the options for the Values API call based on the provided component and keys.
+// GenerateSettingsValuesOptions generates the options for the Values API call
+// based on the provided component and keys.
 func GenerateSettingsValuesOptions(params *v1alpha1.SettingsParameters) *sonar.SettingsValuesOptions {
 	keys := make([]string, 0, len(params.Settings))
 	for key := range params.Settings {
@@ -79,7 +83,8 @@ func GenerateSettingsValuesOptions(params *v1alpha1.SettingsParameters) *sonar.S
 	return settingsValuesOptions
 }
 
-// GenerateSettingsResetOptions generates the options for the Reset API call based on the provided settings parameters and component.
+// GenerateSettingsResetOptions generates the options for the Reset API call
+// based on the provided settings parameters and component.
 func GenerateSettingsResetOptions(params v1alpha1.SettingsParameters) *sonar.SettingsResetOptions {
 	keys := make([]string, 0, len(params.Settings))
 	for key := range params.Settings {
@@ -94,7 +99,8 @@ func GenerateSettingsResetOptions(params v1alpha1.SettingsParameters) *sonar.Set
 	return settingsResetOptions
 }
 
-// GenerateSettingsResetOptionsFromList generates the options for the Reset API call based on the provided list of keys and component.
+// GenerateSettingsResetOptionsFromList generates the options for the Reset
+// API call based on the provided list of keys and component.
 func GenerateSettingsResetOptionsFromList(keys []string, component *string) *sonar.SettingsResetOptions {
 	settingsResetOptions := &sonar.SettingsResetOptions{
 		Keys: keys,
@@ -104,7 +110,8 @@ func GenerateSettingsResetOptionsFromList(keys []string, component *string) *son
 	return settingsResetOptions
 }
 
-// GenerateSettingsObservation generates the SettingsObservation based on the observed SettingsValues from SonarQube.
+// GenerateSettingsObservation generates the SettingsObservation based on
+// the observed SettingsValues from SonarQube.
 func GenerateSettingsObservation(observed *sonar.SettingsValues) v1alpha1.SettingsObservation {
 	settingsObservation := v1alpha1.SettingsObservation{
 		Settings: make(map[string]v1alpha1.SettingObservation),
@@ -117,7 +124,8 @@ func GenerateSettingsObservation(observed *sonar.SettingsValues) v1alpha1.Settin
 	return settingsObservation
 }
 
-// GenerateSettingObservation generates the SettingObservation based on the observed SettingValue from SonarQube.
+// GenerateSettingObservation generates the SettingObservation based on
+// the observed SettingValue from SonarQube.
 func GenerateSettingObservation(observed *sonar.SettingValue) v1alpha1.SettingObservation {
 	fieldValues := make(map[string]string)
 
@@ -132,14 +140,16 @@ func GenerateSettingObservation(observed *sonar.SettingValue) v1alpha1.SettingOb
 	}
 }
 
-// IsSettingUpToDate checks if the observed setting is up to date with the desired setting parameters.
+// IsSettingUpToDate checks if the observed setting is up to date with
+// the desired setting parameters.
 func IsSettingUpToDate(params v1alpha1.SettingParameters, observation v1alpha1.SettingObservation) bool {
 	return helpers.IsComparablePtrEqualComparable(params.Value, observation.Value) &&
 		helpers.IsComparableSlicePtrEqualComparableSlice(params.Values, observation.Values) &&
 		helpers.IsComparableMapPtrEqualComparableMap(params.FieldValues, observation.FieldValues)
 }
 
-// AreSettingsUpToDate checks if the observed settings are up to date with the desired settings parameters.
+// AreSettingsUpToDate checks if the observed settings are up to date with
+// the desired settings parameters.
 func AreSettingsUpToDate(params v1alpha1.SettingsParameters, observation v1alpha1.SettingsObservation) bool {
 	for key, param := range params.Settings {
 		observationSetting, exists := observation.Settings[key]

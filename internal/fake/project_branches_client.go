@@ -24,7 +24,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
 
-// MockProjectBranchesClient is a mock implementation of the ProjectBranchesClient interface.
+// MockProjectBranchesClient is a mock implementation of the
+// ProjectBranchesClient interface.
 type MockProjectBranchesClient struct {
 	DeleteFn                         func(opt *sonar.ProjectBranchesDeleteOptions) (*http.Response, error)
 	ListFn                           func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error)
@@ -63,7 +64,8 @@ func (m *MockProjectBranchesClient) Rename(opt *sonar.ProjectBranchesRenameOptio
 	return nil, errNotImplemented
 }
 
-// SetAutomaticDeletionProtection implements ProjectBranchesClient.SetAutomaticDeletionProtection.
+// SetAutomaticDeletionProtection implements
+// ProjectBranchesClient.SetAutomaticDeletionProtection.
 func (m *MockProjectBranchesClient) SetAutomaticDeletionProtection(opt *sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions) (*http.Response, error) {
 	if m.SetAutomaticDeletionProtectionFn != nil {
 		return m.SetAutomaticDeletionProtectionFn(opt)

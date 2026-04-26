@@ -24,7 +24,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
 
-// MockNewCodePeriodsClient is a mock implementation of the NewCodePeriodsClient interface.
+// MockNewCodePeriodsClient is a mock implementation of the
+// NewCodePeriodsClient interface.
 type MockNewCodePeriodsClient struct {
 	ListFn  func(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error)
 	SetFn   func(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error)

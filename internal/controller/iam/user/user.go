@@ -53,7 +53,8 @@ const (
 	passwordKey = "password"
 )
 
-// SetupGated adds a controller that reconciles User managed resources with safe-start support.
+// SetupGated adds a controller that reconciles User managed resources
+// with safe-start support.
 func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
@@ -154,8 +155,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
+// external implements the ExternalClient interface for User resources.
 type external struct {
 	// kube is used to connect to the Kubernetes API and fetch secrets, such as the password for a local user.
 	kube client.Client
@@ -165,7 +165,8 @@ type external struct {
 	groupsClient iam.GroupsClient
 }
 
-// Create is responsible for creating the external resource based on the desired state of the managed resource.
+// Create is responsible for creating the external resource based on the
+// desired state of the managed resource.
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
 	userResource, ok := mg.(*v1alpha1.User)
 	result := managed.ExternalCreation{}
@@ -203,7 +204,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	return result, nil
 }
 
-// Delete is responsible for deleting the external resource when the managed resource is deleted.
+// Delete is responsible for deleting the external resource when the
+// managed resource is deleted.
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
 	userResource, ok := mg.(*v1alpha1.User)
 	if !ok {

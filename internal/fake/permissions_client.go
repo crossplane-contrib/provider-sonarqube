@@ -26,7 +26,8 @@ import (
 
 const defaultPermissionsPageSize = 100
 
-// MockPermissionsClient is a mock implementation of the iam.PermissionsClient interface.
+// MockPermissionsClient is a mock implementation of the
+// iam.PermissionsClient interface.
 type MockPermissionsClient struct {
 	AddGroupFn    func(*sonar.PermissionsAddGroupOptions) (*http.Response, error)
 	GroupsFn      func(*sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error)

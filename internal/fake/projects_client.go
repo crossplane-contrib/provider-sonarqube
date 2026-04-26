@@ -84,7 +84,8 @@ func (m *MockProjectsClient) SearchMyProjects(opt *sonar.ProjectsSearchMyProject
 	return nil, nil, errNotImplemented
 }
 
-// SearchMyScannableProjects implements ProjectsClient.SearchMyScannableProjects.
+// SearchMyScannableProjects implements
+// ProjectsClient.SearchMyScannableProjects.
 func (m *MockProjectsClient) SearchMyScannableProjects(opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error) {
 	if m.SearchMyScannableProjectsFn != nil {
 		return m.SearchMyScannableProjectsFn(opt)

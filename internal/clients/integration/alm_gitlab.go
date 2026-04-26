@@ -25,37 +25,45 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
-// ALMIntegrationsGitLabClient is the interface for interacting with SonarQube ALMGitLab API
-// It handles all the operations related to ALMGitLab in SonarQube, such as creating, updating, deleting, and retrieving ALMGitLab.
+// ALMIntegrationsGitLabClient is the interface for interacting with
+// SonarQube ALMGitLab API
+// It handles all the operations related to ALMGitLab in SonarQube,
+// such as creating, updating, deleting, and retrieving ALMGitLab.
 type ALMIntegrationsGitLabClient interface {
 	ALMIntegrationsClient
 	SearchGitlabRepos(opt *sonar.AlmIntegrationsSearchGitlabReposOptions) (v *sonar.AlmIntegrationsSearchGitlabRepos, resp *http.Response, err error)
 }
 
-// ALMSettingsGitLabClient is the interface for interacting with SonarQube ALM settings API for GitLab
-// It handles all the operations related to ALM settings for GitLab in SonarQube, such as creating, updating, deleting, and retrieving them.
+// ALMSettingsGitLabClient is the interface for interacting with
+// SonarQube ALM settings API for GitLab
+// It handles all the operations related to ALM settings for GitLab in
+// SonarQube, such as creating, updating, deleting, and retrieving them.
 type ALMSettingsGitLabClient interface {
 	ALMSettingsClient
 	CreateGitlab(opt *sonar.AlmSettingsCreateGitlabOptions) (*http.Response, error)
 	UpdateGitlab(opt *sonar.AlmSettingsUpdateGitlabOptions) (*http.Response, error)
 }
 
-// NewALMIntegrationsGitLabClient creates a new ALMIntegrationsGitLabClient with the provided SonarQube client configuration.
+// NewALMIntegrationsGitLabClient creates a new ALMIntegrationsGitLabClient
+// with the provided SonarQube client configuration.
 func NewALMIntegrationsGitLabClient(clientConfig common.Config) ALMIntegrationsGitLabClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.AlmIntegrations
 }
 
-// NewALMSettingsGitLabClient creates a new ALMSettingsGitLabClient with the provided SonarQube client configuration.
+// NewALMSettingsGitLabClient creates a new ALMSettingsGitLabClient with the
+// provided SonarQube client configuration.
 func NewALMSettingsGitLabClient(clientConfig common.Config) ALMSettingsGitLabClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.AlmSettings
 }
 
-// LateInitializeALMGitLab fills the empty fields in the ALMGitLab spec with the values from the SonarQube API response.
-// The API response should be the result of a "Get" operation for the ALMGitLab resource.
+// LateInitializeALMGitLab fills the empty fields in the ALMGitLab spec with
+// the values from the SonarQube API response.
+// The API response should be the result of a "Get" operation for the
+// ALMGitLab resource.
 func LateInitializeALMGitLab(spec *v1alpha1.ALMGitLabParameters, observation *v1alpha1.ALMGitLabObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -64,7 +72,9 @@ func LateInitializeALMGitLab(spec *v1alpha1.ALMGitLabParameters, observation *v1
 	LateInitializeALM(&spec.ALMCommonParameters, &observation.ALMCommonObservation)
 }
 
-// IsALMGitLabLateInitialized checks if two ALMGitLab specs are equal after late initialization. It returns true if the specs are equal, and false if they are not.
+// IsALMGitLabLateInitialized checks if two ALMGitLab specs are equal after late
+// initialization. It returns true if the specs are equal,
+// and false if they are not.
 func IsALMGitLabLateInitialized(former, current *v1alpha1.ALMGitLabParameters) bool {
 	if former == nil || current == nil {
 		return true
@@ -73,7 +83,8 @@ func IsALMGitLabLateInitialized(former, current *v1alpha1.ALMGitLabParameters) b
 	return IsALMLateInitialized(&former.ALMCommonParameters, &current.ALMCommonParameters)
 }
 
-// IsALMGitLabUpToDate checks if the ALMGitLab spec is up to date with the SonarQube API response.
+// IsALMGitLabUpToDate checks if the ALMGitLab spec is up to date with
+// the SonarQube API response.
 // It returns true if the spec is up to date, and false if it is not.
 func IsALMGitLabUpToDate(spec *v1alpha1.ALMGitLabParameters, specAPIToken string, observation *v1alpha1.ALMGitLabObservation, savedAPIToken string) bool {
 	if spec == nil {
@@ -87,7 +98,9 @@ func IsALMGitLabUpToDate(spec *v1alpha1.ALMGitLabParameters, specAPIToken string
 	return IsALMUpToDate(&spec.ALMCommonParameters, specAPIToken, &observation.ALMCommonObservation, savedAPIToken)
 }
 
-// GenerateALMGitLabCreateOptions generates the options for creating an ALMGitLab resource in SonarQube API based on the desired state in the ALMGitLabParameters and the provided API token.
+// GenerateALMGitLabCreateOptions generates the options for creating an
+// ALMGitLab resource in SonarQube API based on the desired state in the
+// ALMGitLabParameters and the provided API token.
 func GenerateALMGitLabCreateOptions(spec *v1alpha1.ALMGitLabParameters, apiToken string) *sonar.AlmSettingsCreateGitlabOptions {
 	return &sonar.AlmSettingsCreateGitlabOptions{
 		URL:                 spec.URL,
@@ -96,7 +109,10 @@ func GenerateALMGitLabCreateOptions(spec *v1alpha1.ALMGitLabParameters, apiToken
 	}
 }
 
-// GenerateALMGitLabUpdateOptions generates the options for updating an ALMGitLab resource in SonarQube API based on the desired state in the ALMGitLabParameters, the provided API token, and the identifier of the ALMGitLab resource in SonarQube.
+// GenerateALMGitLabUpdateOptions generates the options for updating an
+// ALMGitLab resource in SonarQube API based on the desired state in the
+// ALMGitLabParameters, the provided API token, and the identifier of the
+// ALMGitLab resource in SonarQube.
 func GenerateALMGitLabUpdateOptions(key string, spec *v1alpha1.ALMGitLabParameters, apiToken string) *sonar.AlmSettingsUpdateGitlabOptions {
 	updateOptions := sonar.AlmSettingsUpdateGitlabOptions{
 		URL:                 spec.URL,
@@ -111,7 +127,9 @@ func GenerateALMGitLabUpdateOptions(key string, spec *v1alpha1.ALMGitLabParamete
 	return &updateOptions
 }
 
-// FindGitLabALMDefinitionByKey searches for an ALM settings definition in the list of definitions by its key and devops platform. It returns the definition if found, and nil if not found.
+// FindGitLabALMDefinitionByKey searches for an ALM settings definition
+// in the list of definitions by its key and devops platform.
+// It returns the definition if found, and nil if not found.
 func FindGitLabALMDefinitionByKey(definitions *[]sonar.GitlabDefinition, key string) *sonar.GitlabDefinition {
 	if definitions == nil {
 		return nil
@@ -126,7 +144,8 @@ func FindGitLabALMDefinitionByKey(definitions *[]sonar.GitlabDefinition, key str
 	return nil
 }
 
-// GenerateALMGitLabObservation generates the ALMGitLabObservation based on the ALM settings definition retrieved from SonarQube API.
+// GenerateALMGitLabObservation generates the ALMGitLabObservation
+// based on the ALM settings definition retrieved from SonarQube API.
 func GenerateALMGitLabObservation(definition *sonar.GitlabDefinition) v1alpha1.ALMGitLabObservation {
 	if definition == nil {
 		return v1alpha1.ALMGitLabObservation{}

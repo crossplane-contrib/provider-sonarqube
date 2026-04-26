@@ -33,14 +33,16 @@ type ProjectLinksClient interface {
 	Search(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error)
 }
 
-// NewProjectLinksClient creates a new ProjectLinksClient with the provided SonarQube client configuration.
+// NewProjectLinksClient creates a new ProjectLinksClient with the provided
+// SonarQube client configuration.
 func NewProjectLinksClient(clientConfig common.Config) ProjectLinksClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.ProjectLinks
 }
 
-// GenerateProjectLinksCreateOptions generates the options for creating a project link based on the provided project ID and ProjectLinkParameters.
+// GenerateProjectLinksCreateOptions generates the options for creating a
+// project link based on the provided project ID and ProjectLinkParameters.
 func GenerateProjectLinksCreateOptions(projectId string, link v1alpha1.ProjectLinkParameters) *sonar.ProjectLinksCreateOptions {
 	opts := &sonar.ProjectLinksCreateOptions{
 		ProjectID: projectId,
@@ -51,22 +53,27 @@ func GenerateProjectLinksCreateOptions(projectId string, link v1alpha1.ProjectLi
 	return opts
 }
 
-// GenerateProjectLinksDeleteOptions generates the options for deleting a project link based on the provided link ID.
+// GenerateProjectLinksDeleteOptions generates the options for deleting a
+// project link based on the provided link ID.
 func GenerateProjectLinksDeleteOptions(linkId string) *sonar.ProjectLinksDeleteOptions {
 	return &sonar.ProjectLinksDeleteOptions{
 		ID: linkId,
 	}
 }
 
-// GenerateProjectLinksSearchOptions generates the options for searching project links based on the provided project ID.
+// GenerateProjectLinksSearchOptions generates the options for searching
+// project links based on the provided project ID.
 func GenerateProjectLinksSearchOptions(projectId string) *sonar.ProjectLinksSearchOptions {
 	return &sonar.ProjectLinksSearchOptions{
 		ProjectID: projectId,
 	}
 }
 
-// LateInitializeProjectLinks performs late initialization of the ProjectLinkParameters in the ProjectParameters based on the observed project links from SonarQube.
-// It updates the ProjectParameters with any missing information from the observed project links.
+// LateInitializeProjectLinks performs late initialization of the
+// ProjectLinkParameters in the ProjectParameters based on the observed
+// project links from SonarQube.
+// It updates the ProjectParameters with any missing information
+// from the observed project links.
 func LateInitializeProjectLinks(spec *v1alpha1.ProjectParameters, observation map[string]v1alpha1.ProjectLinkObservation) {
 	// Update the ProjectLinks that do not have an ID in the spec
 	for linkIdx, link := range spec.Links {
@@ -83,7 +90,8 @@ func LateInitializeProjectLinks(spec *v1alpha1.ProjectParameters, observation ma
 	}
 }
 
-// GenerateProjectLinksObservations generates the observations for the links of a SonarQube Project based on the provided list of links.
+// GenerateProjectLinksObservations generates the observations for the links
+// of a SonarQube Project based on the provided list of links.
 func GenerateProjectLinksObservations(links sonar.ProjectLinksSearch) map[string]v1alpha1.ProjectLinkObservation {
 	observations := make(map[string]v1alpha1.ProjectLinkObservation)
 	for _, link := range links.Links {
@@ -98,7 +106,9 @@ func GenerateProjectLinksObservations(links sonar.ProjectLinksSearch) map[string
 	return observations
 }
 
-// AreProjectLinksUpToDate compares the desired state of the project links in the spec with the observed state of the project links from SonarQube and returns true if they are up to date, or false if they are not.
+// AreProjectLinksUpToDate compares the desired state of the project links
+// in the spec with the observed state of the project links from SonarQube.
+// Returns true if they are up to date, or false if they are not.
 func AreProjectLinksUpToDate(specLinks []v1alpha1.ProjectLinkParameters, observedLinks map[string]v1alpha1.ProjectLinkObservation) bool {
 	if len(specLinks) != len(observedLinks) {
 		return false
@@ -114,7 +124,10 @@ func AreProjectLinksUpToDate(specLinks []v1alpha1.ProjectLinkParameters, observe
 	return true
 }
 
-// IsProjectLinkUpToDate checks if the desired state of a project link in the spec is up to date with the observed state of the project link from SonarQube and returns true if it is up to date, or false if it is not.
+// IsProjectLinkUpToDate checks if the desired state of a project link in
+// the spec is up to date with the observed state of the project link from
+// SonarQube.
+// Returns true if it is up to date, or false if it is not.
 func IsProjectLinkUpToDate(specLink v1alpha1.ProjectLinkParameters, observedLink *v1alpha1.ProjectLinkObservation) bool {
 	if observedLink == nil {
 		return false

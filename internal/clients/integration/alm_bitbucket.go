@@ -24,8 +24,10 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
-// ALMIntegrationsBitbucketClient is the interface for interacting with SonarQube ALMBitbucket API
-// It handles all the operations related to ALMBitbucket in SonarQube, such as creating, updating, deleting, and retrieving ALMBitbucket.
+// ALMIntegrationsBitbucketClient is the interface for interacting with
+// SonarQube ALMBitbucket API
+// It handles all the operations related to ALMBitbucket in SonarQube,
+// such as creating, updating, deleting, and retrieving ALMBitbucket.
 type ALMIntegrationsBitbucketClient interface {
 	ALMIntegrationsClient
 	ListBitbucketServerProjects(opt *sonar.AlmIntegrationsListBitbucketServerProjectsOptions) (v *sonar.AlmIntegrationsListBitbucketServerProjects, resp *http.Response, err error)
@@ -33,22 +35,27 @@ type ALMIntegrationsBitbucketClient interface {
 	SearchBitbucketServerRepos(opt *sonar.AlmIntegrationsSearchBitbucketServerReposOptions) (v *sonar.AlmIntegrationsSearchBitbucketServerRepos, resp *http.Response, err error)
 }
 
-// ALMSettingsBitbucketClient is the interface for interacting with SonarQube ALM settings API for Bitbucket
-// It handles all the operations related to ALM settings for Bitbucket in SonarQube, such as creating, updating, deleting, and retrieving them.
+// ALMSettingsBitbucketClient is the interface for interacting with SonarQube
+// ALM settings API for Bitbucket
+// It handles all the operations related to ALM settings for Bitbucket
+// in SonarQube, such as creating, updating, deleting, and retrieving them.
 type ALMSettingsBitbucketClient interface {
 	ALMSettingsClient
 	CreateBitbucket(opt *sonar.AlmSettingsCreateBitbucketOptions) (*http.Response, error)
 	UpdateBitbucket(opt *sonar.AlmSettingsUpdateBitbucketOptions) (*http.Response, error)
 }
 
-// NewALMIntegrationsBitbucketClient creates a new ALMIntegrationsBitbucketClient with the provided SonarQube client configuration.
+// NewALMIntegrationsBitbucketClient creates a new
+// ALMIntegrationsBitbucketClient with the provided
+// SonarQube client configuration.
 func NewALMIntegrationsBitbucketClient(clientConfig common.Config) ALMIntegrationsBitbucketClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.AlmIntegrations
 }
 
-// NewALMSettingsBitbucketClient creates a new ALMSettingsBitbucketClient with the provided SonarQube client configuration.
+// NewALMSettingsBitbucketClient creates a new ALMSettingsBitbucketClient
+// with the provided SonarQube client configuration.
 func NewALMSettingsBitbucketClient(clientConfig common.Config) ALMSettingsBitbucketClient {
 	newClient := common.NewClient(clientConfig)
 

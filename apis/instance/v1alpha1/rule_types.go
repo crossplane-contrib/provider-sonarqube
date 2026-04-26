@@ -98,7 +98,8 @@ type RuleParameters struct {
 	Tags *[]string `json:"tags,omitempty"`
 }
 
-// RuleParameterConfiguration represents the configuration of a parameter for a rule.
+// RuleParameterConfiguration represents the configuration of a parameter
+// for a rule.
 type RuleParameterConfiguration struct {
 	// DefaultValue is the default value of the parameter if unspecified in implementation.
 	// +kubebuilder:validation:Optional
@@ -186,7 +187,8 @@ type RuleObservation struct {
 	Template bool `json:"template"`
 }
 
-// RuleParameterObservation represents a parameter that can be configured for a rule.
+// RuleParameterObservation represents a parameter that can be configured
+// for a rule.
 type RuleParameterObservation struct {
 	// DefaultValue is the default value of the parameter.
 	// +kubebuilder:validation:Optional
@@ -205,7 +207,8 @@ type RuleParameterObservation struct {
 	Type string `json:"type"`
 }
 
-// RuleDescriptionSectionObservation represents a section of a rule's description.
+// RuleDescriptionSectionObservation represents a section of a rule's
+// description.
 type RuleDescriptionSectionObservation struct {
 	// Content is the HTML content of the section.
 	// +kubebuilder:validation:Optional

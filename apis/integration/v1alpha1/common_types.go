@@ -20,7 +20,8 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
-// ALMCommonParameters are the common configurable fields for all ALM integrations in SonarQube.
+// ALMCommonParameters are the common configurable fields for all
+// ALM integrations in SonarQube.
 type ALMCommonParameters struct {
 	// URL is the URL of the ALM system API to integrate with SonarQube.
 	// +kubebuilder:validation:Required
@@ -36,7 +37,8 @@ type ALMCommonParameters struct {
 	PersonalAccessTokenSecretRef *xpv1.LocalSecretKeySelector `json:"personalAccessTokenSecretRef"`
 }
 
-// ALMCommonObservation are the common observable fields for all ALM integrations in SonarQube.
+// ALMCommonObservation are the common observable fields for all
+// ALM integrations in SonarQube.
 type ALMCommonObservation struct {
 	// Key is the unique identifier for the ALM integration in SonarQube.
 	Key string `json:"key,omitempty"`

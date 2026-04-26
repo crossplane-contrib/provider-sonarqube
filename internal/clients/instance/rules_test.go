@@ -28,7 +28,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
-// mockRulesClient is a test-local mock implementation of the RulesClient interface.
+// mockRulesClient is a test-local mock implementation of the
+// RulesClient interface.
 type mockRulesClient struct {
 	SearchFn func(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error)
 }

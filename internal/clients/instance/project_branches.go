@@ -26,7 +26,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// ProjectBranchesClient is the interface for interacting with SonarQube Project Branches API.
+// ProjectBranchesClient is the interface for interacting with
+// SonarQube Project Branches API.
 type ProjectBranchesClient interface {
 	Delete(opt *sonar.ProjectBranchesDeleteOptions) (*http.Response, error)
 	List(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error)
@@ -35,21 +36,25 @@ type ProjectBranchesClient interface {
 	SetMain(opt *sonar.ProjectBranchesSetMainOptions) (*http.Response, error)
 }
 
-// NewProjectBranchesClient creates a new ProjectBranchesClient with the provided SonarQube client configuration.
+// NewProjectBranchesClient creates a new ProjectBranchesClient with
+// the provided SonarQube client configuration.
 func NewProjectBranchesClient(clientConfig common.Config) ProjectBranchesClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.ProjectBranches
 }
 
-// GenerateProjectBranchesListOptions generates the options for listing branches of a SonarQube Project based on the provided project key.
+// GenerateProjectBranchesListOptions generates the options for listing branches
+// of a SonarQube Project based on the provided project key.
 func GenerateProjectBranchesListOptions(projectKey string) *sonar.ProjectBranchesListOptions {
 	return &sonar.ProjectBranchesListOptions{
 		Project: projectKey,
 	}
 }
 
-// GenerateProjectBranchesDeleteOptions generates the options for deleting a branch of a SonarQube Project based on the provided project key and branch key.
+// GenerateProjectBranchesDeleteOptions generates the options for deleting a
+// branch of a SonarQube Project based on the provided project key
+// and branch key.
 func GenerateProjectBranchesDeleteOptions(projectKey string, branchKey string) *sonar.ProjectBranchesDeleteOptions {
 	return &sonar.ProjectBranchesDeleteOptions{
 		Project: projectKey,
@@ -57,7 +62,8 @@ func GenerateProjectBranchesDeleteOptions(projectKey string, branchKey string) *
 	}
 }
 
-// GenerateBranchesObservations generates the observations for the branches of a SonarQube Project based on the provided list of branches.
+// GenerateBranchesObservations generates the observations for the branches of
+// a SonarQube Project based on the provided list of branches.
 func GenerateBranchesObservations(branches sonar.ProjectBranchesList) map[string]v1alpha1.ProjectBranchObservation {
 	observations := make(map[string]v1alpha1.ProjectBranchObservation)
 	for _, branch := range branches.Branches {
@@ -75,8 +81,11 @@ func GenerateBranchesObservations(branches sonar.ProjectBranchesList) map[string
 	return observations
 }
 
-// AreProjectBranchesUpToDate checks if the observed branches of a SonarQube Project are up to date with the authorized branches specified in the managed resource.
-// Only confirms that each branch new code definition matches the branch status in the observation for each branch specified in the spec.
+// AreProjectBranchesUpToDate checks if the observed branches of a
+// SonarQube Project are up to date with the authorized branches
+// specified in the managed resource.
+// Only confirms that each branch new code definition matches
+// the branch status in the observation for each branch specified in the spec.
 func AreProjectBranchesUpToDate(spec map[string]*v1alpha1.ProjectNewCodePeriodParameters, observation map[string]v1alpha1.ProjectBranchObservation) bool {
 	for branchName, branchObservation := range observation {
 		// Check if the branch exists in the spec and if its new code period is up to date with the observation. If the branch does not exist in the spec, we consider it up to date since we are only concerned with branches specified in the spec.
@@ -89,7 +98,8 @@ func AreProjectBranchesUpToDate(spec map[string]*v1alpha1.ProjectNewCodePeriodPa
 	return true
 }
 
-// IsProjectMainBranchUpToDate checks if the main branch of a SonarQube Project is up to date with the main branch specified in the managed resource.
+// IsProjectMainBranchUpToDate checks if the main branch of a SonarQube Project
+// is up to date with the main branch specified in the managed resource.
 func IsProjectMainBranchUpToDate(observedBranches map[string]v1alpha1.ProjectBranchObservation, mainBranchName string) bool {
 	for branchName, branchObservation := range observedBranches {
 		if branchObservation.IsMain && branchName != mainBranchName {
@@ -100,7 +110,9 @@ func IsProjectMainBranchUpToDate(observedBranches map[string]v1alpha1.ProjectBra
 	return true
 }
 
-// GenerateProjectBranchesSetMainOptions generates the options for setting the main branch of a SonarQube Project based on the provided project key and main branch name.
+// GenerateProjectBranchesSetMainOptions generates the options for setting
+// the main branch of a SonarQube Project based on the provided
+// project key and main branch name.
 func GenerateProjectBranchesSetMainOptions(projectKey string, mainBranchName string) *sonar.ProjectBranchesSetMainOptions {
 	return &sonar.ProjectBranchesSetMainOptions{
 		Project: projectKey,

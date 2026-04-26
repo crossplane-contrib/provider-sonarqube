@@ -24,14 +24,16 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 )
 
-// MockALMIntegrationsGitLabClient is a mock implementation of the ALMIntegrationsGitLabClient interface.
+// MockALMIntegrationsGitLabClient is a mock implementation of the
+// ALMIntegrationsGitLabClient interface.
 type MockALMIntegrationsGitLabClient struct {
 	CheckPatFn          func(opt *sonar.AlmIntegrationsCheckPatOptions) (v *sonar.AlmIntegrationsCheckPat, resp *http.Response, err error)
 	SetPatFn            func(opt *sonar.AlmIntegrationsSetPatOptions) (resp *http.Response, err error)
 	SearchGitlabReposFn func(opt *sonar.AlmIntegrationsSearchGitlabReposOptions) (v *sonar.AlmIntegrationsSearchGitlabRepos, resp *http.Response, err error)
 }
 
-// Ensure MockALMIntegrationsGitLabClient implements ALMIntegrationsGitLabClient.
+// Ensure MockALMIntegrationsGitLabClient implements
+// ALMIntegrationsGitLabClient.
 var _ integration.ALMIntegrationsGitLabClient = &MockALMIntegrationsGitLabClient{}
 
 // CheckPat implements ALMIntegrationsClient.CheckPat.

@@ -898,9 +898,10 @@ func TestLateInitializeQualityProfile(t *testing.T) {
 	}
 }
 
-// TestGenerateQualityProfilesSearchProjectObservation verifies that the observation
-// is keyed by language (not by profile UUID) so that AreProjectQualityProfilesUpToDate
-// can look up profiles via the language key used in the spec.
+// TestGenerateQualityProfilesSearchProjectObservation verifies that the
+// observation is keyed by language (not by profile UUID) so that
+// AreProjectQualityProfilesUpToDate can look up profiles via the
+// language key used in the spec.
 func TestGenerateQualityProfilesSearchProjectObservation(t *testing.T) {
 	t.Parallel()
 
@@ -963,9 +964,10 @@ func TestGenerateQualityProfilesSearchProjectObservation(t *testing.T) {
 	}
 }
 
-// TestAreProjectQualityProfilesUpToDate verifies the up-to-date check, with special
-// attention to the regression cases that caused infinite reconcile loops:
-//   - empty spec + non-empty observation must be considered up to date (no management needed)
+// TestAreProjectQualityProfilesUpToDate verifies the up-to-date check,
+// with special attention to the regression cases that caused
+// infinite reconcile loops:
+//   - empty spec + non-empty observation must be considered up to date
 //   - observation may have more entries than spec (default built-in profiles)
 func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 	t.Parallel()

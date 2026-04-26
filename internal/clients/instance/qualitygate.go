@@ -26,8 +26,11 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// QualityGatesClient is the interface for interacting with SonarQube Quality Gates API
-// It handles all the operations related to Quality Gates in SonarQube, such as creating, updating, deleting, and retrieving Quality Gates and their conditions.
+// QualityGatesClient is the interface for interacting with SonarQube
+// Quality Gates API
+// It handles all the operations related to Quality Gates in SonarQube,
+// such as creating, updating, deleting,
+// and retrieving Quality Gates and their conditions.
 // It also handles users / groups / projects association with Quality Gates.
 // It also interacts with Quality Gate Conditions.
 //
@@ -56,23 +59,29 @@ type QualityGatesClient interface {
 	UpdateCondition(opt *sonar.QualitygatesUpdateConditionOptions) (resp *http.Response, err error)
 }
 
-// NewQualityGatesClient creates a new QualityGatesClient with the provided SonarQube client configuration.
+// NewQualityGatesClient creates a new QualityGatesClient with the
+// provided SonarQube client configuration.
 func NewQualityGatesClient(clientConfig common.Config) QualityGatesClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.Qualitygates
 }
 
-// GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption from QualityGateParameters.
+// GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption
+// from QualityGateParameters.
 func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sonar.QualitygatesCreateOptions {
 	return &sonar.QualitygatesCreateOptions{
 		Name: spec.Name,
 	}
 }
 
-// GenerateQualityGateObservation generates QualityGateObservation from SonarQube QualityGate
-// observation should not be nil, else it will panic.
+// GenerateQualityGateObservation generates QualityGateObservation from
+// SonarQube QualityGate.
 func GenerateQualityGateObservation(observation *sonar.QualitygatesShow) v1alpha1.QualityGateObservation {
+	if observation == nil {
+		return v1alpha1.QualityGateObservation{}
+	}
+
 	return v1alpha1.QualityGateObservation{
 		Actions:           GenerateQualityGateActionsObservation(&observation.Actions),
 		CaycStatus:        observation.CaycStatus,
@@ -84,9 +93,13 @@ func GenerateQualityGateObservation(observation *sonar.QualitygatesShow) v1alpha
 	}
 }
 
-// GenerateQualityGateActionsObservation generates QualityGatesActions from SonarQube QualityGateActions
-// actions should not be nil, else it will panic.
+// GenerateQualityGateActionsObservation generates QualityGatesActions from
+// SonarQube QualityGateActions.
 func GenerateQualityGateActionsObservation(actions *sonar.QualityGateActions) v1alpha1.QualityGatesActions {
+	if actions == nil {
+		return v1alpha1.QualityGatesActions{}
+	}
+
 	return v1alpha1.QualityGatesActions{
 		AssociateProjects:     actions.AssociateProjects,
 		Copy:                  actions.Copy,
@@ -99,7 +112,8 @@ func GenerateQualityGateActionsObservation(actions *sonar.QualityGateActions) v1
 	}
 }
 
-// IsQualityGateUpToDate checks if the Quality Gate spec is up to date with the observed state.
+// IsQualityGateUpToDate checks if the Quality Gate spec is up to date with the
+// observed state.
 func IsQualityGateUpToDate(spec *v1alpha1.QualityGateParameters, observation *v1alpha1.QualityGateObservation, associations map[string]QualityGateConditionAssociation) bool {
 	if spec == nil {
 		return true
@@ -124,7 +138,8 @@ func IsQualityGateUpToDate(spec *v1alpha1.QualityGateParameters, observation *v1
 	return true
 }
 
-// buildObservationIdSet creates a map of all observation condition IDs for quick lookup.
+// buildObservationIdSet creates a map of all observation condition IDs for
+// quick lookup.
 func buildObservationIdSet(conditions []v1alpha1.QualityGateConditionObservation) map[string]bool {
 	idSet := make(map[string]bool)
 	for i := range conditions {
@@ -134,7 +149,8 @@ func buildObservationIdSet(conditions []v1alpha1.QualityGateConditionObservation
 	return idSet
 }
 
-// findMatchingObservationId searches for an observation condition that matches the spec condition
+// findMatchingObservationId searches for an observation condition that
+// matches the spec condition
 // by metric, error, and op, and returns its ID.
 func findMatchingObservationId(specCondition v1alpha1.QualityGateConditionParameters, observations []v1alpha1.QualityGateConditionObservation) *string {
 	for i := range observations {
@@ -148,9 +164,12 @@ func findMatchingObservationId(specCondition v1alpha1.QualityGateConditionParame
 	return nil
 }
 
-// LateInitializeQualityGate fills the spec with the observed state if the spec fields are nil
-// It also late-initializes condition IDs by matching conditions by their metric, error, and op fields
-// If a condition has a stale ID (doesn't exist in observations), it will be updated to the correct ID.
+// LateInitializeQualityGate fills the spec with the observed state if the spec
+// fields are nil
+// It also late-initializes condition IDs by matching conditions
+// by their metric, error, and op fields
+// If a condition has a stale ID (doesn't exist in observations),
+// it will be updated to the correct ID.
 func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation *v1alpha1.QualityGateObservation) {
 	if spec == nil || observation == nil {
 		return
@@ -178,7 +197,8 @@ func LateInitializeQualityGate(spec *v1alpha1.QualityGateParameters, observation
 	}
 }
 
-// WereQualityGateConditionsLateInitialized checks if any conditions had their IDs late-initialized
+// WereQualityGateConditionsLateInitialized checks if any conditions
+// had their IDs late-initialized
 // by comparing the before and after states.
 func WereQualityGateConditionsLateInitialized(before, after []v1alpha1.QualityGateConditionParameters) bool {
 	if len(before) != len(after) {
@@ -195,14 +215,16 @@ func WereQualityGateConditionsLateInitialized(before, after []v1alpha1.QualityGa
 	return false
 }
 
-// GenerateQualityGateGetByProjectOptions generates the options for getting a SonarQube Quality Gate by project based on the provided project key.
+// GenerateQualityGateGetByProjectOptions generates the options for getting a
+// SonarQube Quality Gate by project based on the provided project key.
 func GenerateQualityGateGetByProjectOptions(projectKey string) *sonar.QualitygatesGetByProjectOptions {
 	return &sonar.QualitygatesGetByProjectOptions{
 		Project: projectKey,
 	}
 }
 
-// GenerateQualityGateSelectOptions generates the options for selecting a SonarQube Quality Gate based on the provided quality gate name.
+// GenerateQualityGateSelectOptions generates the options for selecting a
+// SonarQube Quality Gate based on the provided quality gate name.
 func GenerateQualityGateSelectOptions(projectKey string, qualityGateName string) *sonar.QualitygatesSelectOptions {
 	return &sonar.QualitygatesSelectOptions{
 		ProjectKey: projectKey,

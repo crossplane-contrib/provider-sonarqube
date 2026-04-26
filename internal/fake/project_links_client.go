@@ -24,7 +24,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
 
-// MockProjectLinksClient is a mock implementation of the ProjectLinksClient interface.
+// MockProjectLinksClient is a mock implementation of the
+// ProjectLinksClient interface.
 type MockProjectLinksClient struct {
 	CreateFn func(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error)
 	DeleteFn func(opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error)

@@ -28,11 +28,11 @@ import (
 )
 
 const (
-	lateInitCustomDesc    = "custom"
-	lateInitWritePerm     = "write"
-	lateInitGroupID       = "group-1"
-	lateInitUserID        = "user-1"
-	lateInitGroupDesc     = "engineering"
+	lateInitCustomDesc = "custom"
+	lateInitWritePerm  = "write"
+	lateInitGroupID    = "group-1"
+	lateInitUserID     = "user-1"
+	lateInitGroupDesc  = "engineering"
 )
 
 // Unlike many Kubernetes projects Crossplane does not use third party testing
@@ -225,7 +225,8 @@ func TestNewPermissionsClient(t *testing.T) {
 	}
 }
 
-// TestGeneratePermissionsAddGroupOptions tests the GeneratePermissionsAddGroupOptions function.
+// TestGeneratePermissionsAddGroupOptions tests the
+// GeneratePermissionsAddGroupOptions function.
 func TestGeneratePermissionsAddGroupOptions(t *testing.T) {
 	t.Parallel()
 
@@ -243,7 +244,8 @@ func TestGeneratePermissionsAddGroupOptions(t *testing.T) {
 	}
 }
 
-// TestGeneratePermissionsRemoveGroupOptions tests the GeneratePermissionsRemoveGroupOptions function.
+// TestGeneratePermissionsRemoveGroupOptions tests the
+// GeneratePermissionsRemoveGroupOptions function.
 func TestGeneratePermissionsRemoveGroupOptions(t *testing.T) {
 	t.Parallel()
 
@@ -261,7 +263,8 @@ func TestGeneratePermissionsRemoveGroupOptions(t *testing.T) {
 	}
 }
 
-// TestGeneratePermissionsGroupsOptions tests the GeneratePermissionsGroupsOptions function.
+// TestGeneratePermissionsGroupsOptions tests the
+// GeneratePermissionsGroupsOptions function.
 func TestGeneratePermissionsGroupsOptions(t *testing.T) {
 	t.Parallel()
 
