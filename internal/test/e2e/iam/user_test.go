@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:build e2e
-
 package iam_test
 
 import (
@@ -25,9 +25,10 @@ import (
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	iamv1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/test/e2e"
@@ -73,8 +74,8 @@ func TestUserCRUD(t *testing.T) {
 			ForProvider: iamv1alpha1.UserParameters{
 				Login: userLogin,
 				Name:  userName,
-				Email: stringPtr(userEmail),
-				Local: boolPtr(true),
+				Email: ptr.To(userEmail),
+				Local: ptr.To(true),
 				PasswordSecretRef: &xpv1.SecretKeySelector{
 					Key: secretKey,
 					SecretReference: xpv1.SecretReference{
@@ -84,7 +85,7 @@ func TestUserCRUD(t *testing.T) {
 				},
 				// Anonymise on delete so re-creating with the same login
 				// after a previous run leaves no observable trace.
-				Anonymize: boolPtr(true),
+				Anonymize: ptr.To(true),
 			},
 		},
 	}

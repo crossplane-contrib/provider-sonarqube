@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:build e2e
-
 package iam_test
 
 import (
@@ -23,12 +23,6 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-// stringPtr returns a pointer to the supplied string.
-func stringPtr(s string) *string { return &s }
-
-// boolPtr returns a pointer to the supplied bool.
-func boolPtr(b bool) *bool { return &b }
 
 // kubeKey is a terse alias for client.ObjectKeyFromObject.
 func kubeKey(obj client.Object) client.ObjectKey {

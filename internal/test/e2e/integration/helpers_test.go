@@ -16,14 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package instance_test
+package integration_test
 
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// kubeKey is a terse alias for client.ObjectKeyFromObject to keep the
-// polling loops in the individual test files readable.
+// kubeKey is a terse alias for client.ObjectKeyFromObject.
 func kubeKey(obj client.Object) client.ObjectKey {
 	return client.ObjectKeyFromObject(obj)
 }

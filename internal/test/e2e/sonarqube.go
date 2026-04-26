@@ -194,3 +194,35 @@ func (f *Framework) GroupPermissions(groupName string) ([]string, error) {
 	}
 	return []string{}, nil
 }
+
+// FindALMGitLabDefinitionByKey returns the GitLab ALM setting definition
+// whose key exactly matches key, or (nil, nil) if no such definition exists.
+func (f *Framework) FindALMGitLabDefinitionByKey(key string) (*sonar.GitlabDefinition, error) {
+	res, resp, err := f.Sonar.AlmSettings.ListDefinitions()
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.Gitlab {
+		if res.Gitlab[i].Key == key {
+			return &res.Gitlab[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional: absence of definition is the natural "not yet created" sentinel
+}
+
+// FindALMGitHubDefinitionByKey returns the GitHub ALM setting definition
+// whose key exactly matches key, or (nil, nil) if no such definition exists.
+func (f *Framework) FindALMGitHubDefinitionByKey(key string) (*sonar.GithubDefinition, error) {
+	res, resp, err := f.Sonar.AlmSettings.ListDefinitions()
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.Github {
+		if res.Github[i].Key == key {
+			return &res.Github[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional
+}

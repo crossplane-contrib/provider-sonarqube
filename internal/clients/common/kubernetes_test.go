@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -137,7 +138,7 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 					Key: "token",
 				},
 			},
-			want:    strPtr("my-token-value"),
+			want:    ptr.To("my-token-value"),
 			wantErr: false,
 		},
 	}
@@ -231,7 +232,7 @@ func TestGetTokenValueFromLocalSecret(t *testing.T) {
 					Key: "token",
 				},
 			},
-			want:    strPtr("local-token-value"),
+			want:    ptr.To("local-token-value"),
 			wantErr: false,
 		},
 		"SecretNotFoundReturnsError": {
@@ -292,11 +293,6 @@ func TestGetTokenValueFromLocalSecret(t *testing.T) {
 			}
 		})
 	}
-}
-
-// strPtr returns a pointer to the given string.
-func strPtr(s string) *string {
-	return &s
 }
 
 // containsString checks if a string contains a substring.

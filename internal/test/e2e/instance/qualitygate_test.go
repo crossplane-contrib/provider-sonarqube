@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:build e2e
-
 package instance_test
 
 import (
@@ -27,6 +27,7 @@ import (
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	instancev1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/test/e2e"
@@ -56,7 +57,7 @@ func TestQualityGateCRUD(t *testing.T) {
 			ForProvider: instancev1alpha1.QualityGateParameters{
 				Name: qgName,
 				Conditions: []instancev1alpha1.QualityGateConditionParameters{
-					{Metric: "blocker_violations", Op: stringPtr("GT"), Error: "0"},
+					{Metric: "blocker_violations", Op: ptr.To("GT"), Error: "0"},
 				},
 			},
 		},
@@ -104,7 +105,7 @@ func TestQualityGateInvalidMetric(t *testing.T) {
 			ForProvider: instancev1alpha1.QualityGateParameters{
 				Name: qgName,
 				Conditions: []instancev1alpha1.QualityGateConditionParameters{
-					{Metric: "not_a_real_metric", Op: stringPtr("GT"), Error: "0"},
+					{Metric: "not_a_real_metric", Op: ptr.To("GT"), Error: "0"},
 				},
 			},
 		},

@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:build e2e
-
 package instance_test
 
 import (
@@ -25,6 +25,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	instancev1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/test/e2e"
@@ -56,14 +57,14 @@ func TestProjectCRUD(t *testing.T) {
 			ForProvider: instancev1alpha1.ProjectParameters{
 				Key:           projKey,
 				Name:          projName,
-				Visibility:    stringPtr(visPublic),
-				DefaultBranch: stringPtr("main"),
+				Visibility:    ptr.To(visPublic),
+				DefaultBranch: ptr.To("main"),
 				Tags:          &[]string{"crossplane", "e2e"},
 				// Pin to the built-in "Sonar way" gate. Leaving this unset
 				// causes Crossplane's reference resolver to issue a server
 				// side apply with qualityGateName="" which fails the field's
 				// MinLength=1 CRD validation.
-				QualityGateName: stringPtr("Sonar way"),
+				QualityGateName: ptr.To("Sonar way"),
 			},
 		},
 	}
