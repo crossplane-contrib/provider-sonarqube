@@ -492,6 +492,7 @@ func TestCreate(t *testing.T) {
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				CreateGithubFn: func(_ *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("api create failed")
 				},
 			},
@@ -684,6 +685,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				UpdateGithubFn: func(_ *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("api update failed")
 				},
 			},
@@ -884,6 +886,7 @@ func TestDelete(t *testing.T) {
 						t.Fatalf("Delete() unexpected options: %+v", opt)
 					}
 
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("api delete failed")
 				},
 			},

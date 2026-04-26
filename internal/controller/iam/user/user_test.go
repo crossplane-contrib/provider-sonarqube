@@ -257,6 +257,7 @@ func TestDeleteHandlesNotFoundAndErrors(t *testing.T) {
 	meta.SetExternalName(user, testUserID)
 
 	_, err := (&external{usersClient: &sonarfake.MockUsersClient{DeactivateFn: func(_ *sonar.UsersDeactivateOptionsV2) (*http.Response, error) {
+		//nolint:nilnil // Intentional: simulating partial HTTP failure.
 		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(""))}, errors.New("not found")
 	}}}).Delete(context.Background(), user)
 	if err != nil {
@@ -264,6 +265,7 @@ func TestDeleteHandlesNotFoundAndErrors(t *testing.T) {
 	}
 
 	_, err = (&external{usersClient: &sonarfake.MockUsersClient{DeactivateFn: func(_ *sonar.UsersDeactivateOptionsV2) (*http.Response, error) {
+		//nolint:nilnil // Intentional: simulating partial HTTP failure.
 		return &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader(""))}, errors.New("boom")
 	}}}).Delete(context.Background(), user)
 	if err == nil || !strings.Contains(err.Error(), "cannot delete User") {

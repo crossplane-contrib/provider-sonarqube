@@ -622,6 +622,7 @@ func TestDeleteClearsExternalNameOnNotFound(t *testing.T) {
 	r := newTestRule("custom:rule", minimalRuleSpec())
 	e := newTestExternalClient(&fake.MockRulesClient{
 		DeleteFn: func(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
+			//nolint:nilnil // Intentional: simulating partial HTTP failure.
 			return &http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, errors.New("not found")
 		},
 	})

@@ -363,6 +363,7 @@ func TestCreate(t *testing.T) {
 			objects: []runtime.Object{tokenSecret("pat-secret", "default", "token", gitlabPATValue)},
 			settingsClient: &fake.MockALMSettingsGitLabClient{
 				CreateGitlabFn: func(_ *sonar.AlmSettingsCreateGitlabOptions) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("api create failed")
 				},
 			},
@@ -475,6 +476,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 			objects: []runtime.Object{tokenSecret("pat-secret", "default", "token", gitlabPATValue)},
 			settingsClient: &fake.MockALMSettingsGitLabClient{
 				UpdateGitlabFn: func(_ *sonar.AlmSettingsUpdateGitlabOptions) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("api update failed")
 				},
 			},
@@ -635,6 +637,7 @@ func TestDelete(t *testing.T) {
 						t.Fatalf("Delete() unexpected options: %+v", opt)
 					}
 
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("api delete failed")
 				},
 			},

@@ -587,6 +587,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 			}},
 			permissionsClient: &fake.MockPermissionsClient{
 				AddGroupFn: func(_ *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("cannot add")
 				},
 			},
@@ -615,6 +616,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 			}},
 			permissionsClient: &fake.MockPermissionsClient{
 				RemoveGroupFn: func(_ *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("cannot remove")
 				},
 			},
@@ -663,6 +665,7 @@ func TestDelete(t *testing.T) {
 		"DeleteFails": {
 			client: &fake.MockGroupsClient{
 				DeleteGroupFn: func(_ string) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(http.StatusInternalServerError), errors.New("delete error")
 				},
 			},

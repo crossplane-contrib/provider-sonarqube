@@ -44,6 +44,7 @@ type BasicAuthArgs struct {
 	// referenced in the ProviderConfig.
 
 	// not a hardcoded secret.
+	//nolint:gosec // Not a hardcoded secret, from Kubernetes Secret.
 	Password string `json:"password"`
 }
 

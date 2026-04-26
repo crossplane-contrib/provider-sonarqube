@@ -209,6 +209,7 @@ func TestDelete(t *testing.T) {
 		"DeleteFailureReturnsWrappedError": {
 			client: &fake.MockPermissionsTemplatesClient{
 				DeleteFn: func(opt *sonar.PermissionsDeleteTemplateOptions) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
 					return mockHTTPResponse(), errors.New("delete failed")
 				},
 			},

@@ -161,10 +161,8 @@ func (c *external) applyTemplatePermissions(addPermissions, removePermissions []
 	)
 
 	for _, permission := range addPermissions {
-		perm := permission
-
 		permissionsWaitGroup.Go(func() {
-			err := addFn(perm)
+			err := addFn(permission)
 			if err != nil {
 				errorsMutex.Lock()
 
@@ -176,10 +174,8 @@ func (c *external) applyTemplatePermissions(addPermissions, removePermissions []
 	}
 
 	for _, permission := range removePermissions {
-		perm := permission
-
 		permissionsWaitGroup.Go(func() {
-			err := removeFn(perm)
+			err := removeFn(permission)
 			if err != nil {
 				errorsMutex.Lock()
 
