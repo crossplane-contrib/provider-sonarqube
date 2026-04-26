@@ -29,6 +29,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualityprofile"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/rule"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/settings"
+	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgithub"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
 )
 
@@ -46,6 +47,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		group.SetupGated,
 		permissionstemplate.SetupGated,
 		almgitlab.SetupGated,
+		almgithub.SetupGated,
 	} {
 		err := setup(mgr, opts)
 		if err != nil {
