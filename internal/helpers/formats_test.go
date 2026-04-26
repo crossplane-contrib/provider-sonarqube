@@ -26,7 +26,12 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-const original = "original"
+const (
+	original   = "original"
+	testStr1   = "testStr1"
+	string3    = "string3"
+	testNewStr = "testNewStr"
+)
 
 func TestIsComparablePtrEqualComparable(t *testing.T) {
 	t.Parallel()
@@ -246,7 +251,7 @@ func TestAssignIfNil(t *testing.T) {
 
 		original := original
 		inner := &original
-		AssignIfNil(&inner, "new")
+		AssignIfNil(&inner, testNewStr)
 
 		if *inner != original {
 			t.Errorf("AssignIfNil() changed value to %v, want %v", *inner, original)
@@ -432,30 +437,30 @@ func TestAnySliceToStringSlice(t *testing.T) {
 	t.Run("AllStringsReturnsAllElements", func(t *testing.T) {
 		t.Parallel()
 
-		slice := []any{"string1", "string2", "string3"}
+		slice := []any{testStr1, testStr1, string3}
 
 		result := AnySliceToStringSlice(slice)
 		if len(result) != 3 {
 			t.Fatalf("AnySliceToStringSlice() length = %d, want 3", len(result))
 		}
 
-		if result[0] != "string1" || result[1] != "string2" || result[2] != "string3" {
-			t.Errorf("AnySliceToStringSlice() = %v, want [string1 string2 string3]", result)
+		if result[0] != testStr1 || result[1] != testStr1 || result[2] != string3 {
+			t.Errorf("AnySliceToStringSlice() = %v, want [testStr1 testStr1 string3]", result)
 		}
 	})
 
 	t.Run("MixedTypesFiltersNonStrings", func(t *testing.T) {
 		t.Parallel()
 
-		slice := []any{"string1", 42, "string2", true, "string3"}
+		slice := []any{testStr1, 42, testStr1, true, string3}
 
 		result := AnySliceToStringSlice(slice)
 		if len(result) != 3 {
 			t.Fatalf("AnySliceToStringSlice() length = %d, want 3", len(result))
 		}
 
-		if result[0] != "string1" || result[1] != "string2" || result[2] != "string3" {
-			t.Errorf("AnySliceToStringSlice() = %v, want [string1 string2 string3]", result)
+		if result[0] != testStr1 || result[1] != testStr1 || result[2] != string3 {
+			t.Errorf("AnySliceToStringSlice() = %v, want [testStr1 testStr1 string3]", result)
 		}
 	})
 
@@ -597,11 +602,11 @@ func TestAssignIfNonNil(t *testing.T) {
 
 		original := original
 		ptr := &original
-		newVal := "new"
-		AssignIfNonNil(ptr, &newVal)
+		testNewStrVal := testNewStr
+		AssignIfNonNil(ptr, &testNewStrVal)
 
-		if *ptr != "new" {
-			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, "new")
+		if *ptr != testNewStr {
+			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, testNewStr)
 		}
 	})
 
@@ -622,8 +627,8 @@ func TestAssignIfNonNil(t *testing.T) {
 
 		original := 42
 		ptr := &original
-		newVal := 100
-		AssignIfNonNil(ptr, &newVal)
+		testNewStrVal := 100
+		AssignIfNonNil(ptr, &testNewStrVal)
 
 		if *ptr != 100 {
 			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, 100)
@@ -635,8 +640,8 @@ func TestAssignIfNonNil(t *testing.T) {
 
 		original := false
 		ptr := &original
-		newVal := true
-		AssignIfNonNil(ptr, &newVal)
+		testNewStrVal := true
+		AssignIfNonNil(ptr, &testNewStrVal)
 
 		if *ptr != true {
 			t.Errorf("AssignIfNonNil() assigned %v, want %v", *ptr, true)

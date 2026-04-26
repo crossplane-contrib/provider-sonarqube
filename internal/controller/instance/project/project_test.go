@@ -35,6 +35,10 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+const (
+	projectVisibilityPublic = "public"
+)
+
 type notProject struct {
 	resource.Managed
 }
@@ -124,7 +128,7 @@ func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksC
 		SearchFn: func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 			return &sonar.ProjectsSearch{
 				Components: []sonar.ProjectSearchComponent{
-					{Key: "test-key", Name: "test-project", Visibility: "public", Qualifier: "TRK"},
+					{Key: "test-key", Name: "test-project", Visibility: projectVisibilityPublic, Qualifier: "TRK"},
 				},
 			}, mockHTTPResponse(), nil
 		},
@@ -845,7 +849,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 						Key:        "test-key",
 						Visibility: ptr.To("private"),
 					})
-					proj.Status.AtProvider.Visibility = "public"
+					proj.Status.AtProvider.Visibility = projectVisibilityPublic
 
 					return proj
 				}(),
@@ -898,7 +902,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 						Key:        "test-key",
 						Visibility: ptr.To("private"),
 					})
-					proj.Status.AtProvider.Visibility = "public"
+					proj.Status.AtProvider.Visibility = projectVisibilityPublic
 
 					return proj
 				}(),

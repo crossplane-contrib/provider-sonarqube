@@ -31,6 +31,9 @@ import (
 const (
 	permissionsTemplateID = "template-id"
 	permissionScan        = "scan"
+	templateNameA         = "template-a"
+	templateDescription   = "desc"
+	projectKeyPattern     = "proj-.*"
 )
 
 func TestLateInitializePermissionsTemplate(t *testing.T) {
@@ -47,24 +50,24 @@ func TestLateInitializePermissionsTemplate(t *testing.T) {
 			want:        nil,
 		},
 		"InitializesMissingFieldsOnly": {
-			spec: &v1alpha1.PermissionsTemplateParameters{Name: "template-a"},
+			spec: &v1alpha1.PermissionsTemplateParameters{Name: templateNameA},
 			observation: &v1alpha1.PermissionsTemplateObservation{
 				Description:        "generated",
-				ProjectKeyPattern:  "proj-.*",
+				ProjectKeyPattern:  projectKeyPattern,
 				Default:            false,
 				CreatorPermissions: []string{"scan", "admin"},
 			},
 			want: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
+				Name:               templateNameA,
 				Description:        ptr.To("generated"),
-				ProjectKeyPattern:  ptr.To("proj-.*"),
+				ProjectKeyPattern:  ptr.To(projectKeyPattern),
 				Default:            ptr.To(false),
 				CreatorPermissions: &[]string{"scan", "admin"},
 			},
 		},
 		"PreservesExistingValues": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
+				Name:               templateNameA,
 				Description:        ptr.To("custom"),
 				ProjectKeyPattern:  ptr.To("existing"),
 				Default:            ptr.To(true),
@@ -72,12 +75,12 @@ func TestLateInitializePermissionsTemplate(t *testing.T) {
 			},
 			observation: &v1alpha1.PermissionsTemplateObservation{
 				Description:        "generated",
-				ProjectKeyPattern:  "proj-.*",
+				ProjectKeyPattern:  projectKeyPattern,
 				Default:            false,
 				CreatorPermissions: []string{"scan", "admin"},
 			},
 			want: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
+				Name:               templateNameA,
 				Description:        ptr.To("custom"),
 				ProjectKeyPattern:  ptr.To("existing"),
 				Default:            ptr.To(true),
@@ -123,12 +126,12 @@ func TestIsPermissionsTemplateLateInitialized(t *testing.T) {
 		},
 		"SameValuesReturnsFalse": {
 			former: &v1alpha1.PermissionsTemplateParameters{
-				Description:        ptr.To("desc"),
+				Description:        ptr.To(templateDescription),
 				ProjectKeyPattern:  ptr.To("pattern"),
 				CreatorPermissions: &[]string{"scan"},
 			},
 			current: &v1alpha1.PermissionsTemplateParameters{
-				Description:        ptr.To("desc"),
+				Description:        ptr.To(templateDescription),
 				ProjectKeyPattern:  ptr.To("pattern"),
 				CreatorPermissions: &[]string{"scan"},
 			},
@@ -191,9 +194,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 
 	baseObservation := &v1alpha1.PermissionsTemplateObservation{
 		ID:                 "template-1",
-		Name:               "template-a",
-		Description:        "desc",
-		ProjectKeyPattern:  "proj-.*",
+		Name:               templateNameA,
+		Description:        templateDescription,
+		ProjectKeyPattern:  projectKeyPattern,
 		Default:            true,
 		CreatorPermissions: []string{"scan"},
 		GroupPermissions:   []v1alpha1.PermissionsTemplateGroupObservation{{Name: "devs", Permissions: []string{"scan"}}},
@@ -211,14 +214,14 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 			want:        true,
 		},
 		"NilObservationReturnsFalse": {
-			spec: &v1alpha1.PermissionsTemplateParameters{Name: "template-a"},
+			spec: &v1alpha1.PermissionsTemplateParameters{Name: templateNameA},
 			want: false,
 		},
 		"EverythingMatchesReturnsTrue": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
-				Description:        ptr.To("desc"),
-				ProjectKeyPattern:  ptr.To("proj-.*"),
+				Name:               templateNameA,
+				Description:        ptr.To(templateDescription),
+				ProjectKeyPattern:  ptr.To(projectKeyPattern),
 				Default:            ptr.To(true),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &groupPermissions,
@@ -229,9 +232,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		},
 		"DefaultDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
-				Description:        ptr.To("desc"),
-				ProjectKeyPattern:  ptr.To("proj-.*"),
+				Name:               templateNameA,
+				Description:        ptr.To(templateDescription),
+				ProjectKeyPattern:  ptr.To(projectKeyPattern),
 				Default:            ptr.To(false),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &groupPermissions,
@@ -242,9 +245,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		},
 		"CreatorPermissionsDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
-				Description:        ptr.To("desc"),
-				ProjectKeyPattern:  ptr.To("proj-.*"),
+				Name:               templateNameA,
+				Description:        ptr.To(templateDescription),
+				ProjectKeyPattern:  ptr.To(projectKeyPattern),
 				Default:            ptr.To(true),
 				CreatorPermissions: &[]string{"admin"},
 				GroupPermissions:   &groupPermissions,
@@ -255,9 +258,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		},
 		"GroupPermissionsDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
-				Description:        ptr.To("desc"),
-				ProjectKeyPattern:  ptr.To("proj-.*"),
+				Name:               templateNameA,
+				Description:        ptr.To(templateDescription),
+				ProjectKeyPattern:  ptr.To(projectKeyPattern),
 				Default:            ptr.To(true),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &[]v1alpha1.PermissionsTemplateGroupParameters{{Name: "devs", Permissions: &[]string{"admin"}}},
@@ -268,9 +271,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		},
 		"UserPermissionsDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
-				Name:               "template-a",
-				Description:        ptr.To("desc"),
-				ProjectKeyPattern:  ptr.To("proj-.*"),
+				Name:               templateNameA,
+				Description:        ptr.To(templateDescription),
+				ProjectKeyPattern:  ptr.To(projectKeyPattern),
 				Default:            ptr.To(true),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &groupPermissions,
@@ -306,35 +309,35 @@ func TestArePermissionsTemplateBaseFieldsUpToDate(t *testing.T) {
 			want:        true,
 		},
 		"NilObservationReturnsFalse": {
-			spec: &v1alpha1.PermissionsTemplateParameters{Name: "template-a"},
+			spec: &v1alpha1.PermissionsTemplateParameters{Name: templateNameA},
 			want: false,
 		},
 		"MatchingValuesReturnsTrue": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
-				Name:              "template-a",
-				Description:       ptr.To("desc"),
-				ProjectKeyPattern: ptr.To("proj-.*"),
+				Name:              templateNameA,
+				Description:       ptr.To(templateDescription),
+				ProjectKeyPattern: ptr.To(projectKeyPattern),
 			},
 			observation: &v1alpha1.PermissionsTemplateObservation{
-				Name:              "template-a",
-				Description:       "desc",
-				ProjectKeyPattern: "proj-.*",
+				Name:              templateNameA,
+				Description:       templateDescription,
+				ProjectKeyPattern: projectKeyPattern,
 			},
 			want: true,
 		},
 		"NameDiffReturnsFalse": {
-			spec:        &v1alpha1.PermissionsTemplateParameters{Name: "template-a"},
+			spec:        &v1alpha1.PermissionsTemplateParameters{Name: templateNameA},
 			observation: &v1alpha1.PermissionsTemplateObservation{Name: "template-b"},
 			want:        false,
 		},
 		"DescriptionDiffReturnsFalse": {
-			spec:        &v1alpha1.PermissionsTemplateParameters{Name: "template-a", Description: ptr.To("spec")},
-			observation: &v1alpha1.PermissionsTemplateObservation{Name: "template-a", Description: "obs"},
+			spec:        &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, Description: ptr.To("spec")},
+			observation: &v1alpha1.PermissionsTemplateObservation{Name: templateNameA, Description: "obs"},
 			want:        false,
 		},
 		"PatternDiffReturnsFalse": {
-			spec:        &v1alpha1.PermissionsTemplateParameters{Name: "template-a", ProjectKeyPattern: ptr.To("spec")},
-			observation: &v1alpha1.PermissionsTemplateObservation{Name: "template-a", ProjectKeyPattern: "obs"},
+			spec:        &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, ProjectKeyPattern: ptr.To("spec")},
+			observation: &v1alpha1.PermissionsTemplateObservation{Name: templateNameA, ProjectKeyPattern: "obs"},
 			want:        false,
 		},
 	}
@@ -353,12 +356,12 @@ func TestArePermissionsTemplateBaseFieldsUpToDate(t *testing.T) {
 func TestGeneratePermissionsTemplateSearchOptions(t *testing.T) {
 	t.Parallel()
 
-	withPagination := GeneratePermissionsTemplateSearchOptions("template-a", &sonar.PaginationArgs{Page: 2, PageSize: 50})
+	withPagination := GeneratePermissionsTemplateSearchOptions(templateNameA, &sonar.PaginationArgs{Page: 2, PageSize: 50})
 	if withPagination == nil {
 		t.Fatal("GeneratePermissionsTemplateSearchOptions() expected non-nil options")
 	}
 
-	if withPagination.Query != "template-a" || withPagination.Page != 2 || withPagination.PageSize != 50 {
+	if withPagination.Query != templateNameA || withPagination.Page != 2 || withPagination.PageSize != 50 {
 		t.Fatalf("GeneratePermissionsTemplateSearchOptions() got %+v, want query and pagination to match", withPagination)
 	}
 
@@ -376,9 +379,9 @@ func TestGeneratePermissionsTemplateUpdateOptions(t *testing.T) {
 	t.Parallel()
 
 	spec := &v1alpha1.PermissionsTemplateParameters{
-		Name:              "template-a",
-		Description:       ptr.To("desc"),
-		ProjectKeyPattern: ptr.To("proj-.*"),
+		Name:              templateNameA,
+		Description:       ptr.To(templateDescription),
+		ProjectKeyPattern: ptr.To(projectKeyPattern),
 	}
 
 	got := GeneratePermissionsTemplateUpdateOptions(permissionsTemplateID, spec)
@@ -386,16 +389,16 @@ func TestGeneratePermissionsTemplateUpdateOptions(t *testing.T) {
 		t.Fatal("GeneratePermissionsTemplateUpdateOptions() expected non-nil options")
 	}
 
-	if got.ID != permissionsTemplateID || got.Name != "template-a" {
+	if got.ID != permissionsTemplateID || got.Name != templateNameA {
 		t.Fatalf("GeneratePermissionsTemplateUpdateOptions() got %+v, want ID and Name to match", got)
 	}
 
-	if got.Description != "desc" {
-		t.Fatalf("GeneratePermissionsTemplateUpdateOptions() description = %q, want %q", got.Description, "desc")
+	if got.Description != templateDescription {
+		t.Fatalf("GeneratePermissionsTemplateUpdateOptions() description = %q, want %q", got.Description, templateDescription)
 	}
 
-	if got.ProjectKeyPattern != "proj-.*" {
-		t.Fatalf("GeneratePermissionsTemplateUpdateOptions() projectKeyPattern = %q, want %q", got.ProjectKeyPattern, "proj-.*")
+	if got.ProjectKeyPattern != projectKeyPattern {
+		t.Fatalf("GeneratePermissionsTemplateUpdateOptions() projectKeyPattern = %q, want %q", got.ProjectKeyPattern, projectKeyPattern)
 	}
 }
 
@@ -572,10 +575,10 @@ func TestCreatePermissionsTemplateUserMapping(t *testing.T) {
 func TestGeneratePermissionsTemplateOptions(t *testing.T) {
 	t.Parallel()
 
-	creationSpec := &v1alpha1.PermissionsTemplateParameters{Name: "template-a", Description: ptr.To("desc"), ProjectKeyPattern: ptr.To("proj-.*")}
+	creationSpec := &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, Description: ptr.To(templateDescription), ProjectKeyPattern: ptr.To(projectKeyPattern)}
 
 	gotCreate := GeneratePermissionsTemplateCreationOptions(creationSpec)
-	if gotCreate.Name != "template-a" || gotCreate.Description != "desc" || gotCreate.ProjectKeyPattern != "proj-.*" {
+	if gotCreate.Name != templateNameA || gotCreate.Description != templateDescription || gotCreate.ProjectKeyPattern != projectKeyPattern {
 		t.Fatalf("GeneratePermissionsTemplateCreationOptions() got %+v", gotCreate)
 	}
 
@@ -600,7 +603,7 @@ func TestGeneratePermissionsTemplateOptions(t *testing.T) {
 	}
 
 	gotAddGroup := GeneratePermissionsTemplateAddGroupPermissionOptions(permissionsTemplateID, "devs", permissionScan)
-	if gotAddGroup.TemplateID != permissionsTemplateID || gotAddGroup.GroupName != "devs" || gotAddGroup.Permission != permissionScan {
+	if gotAddGroup.TemplateID != permissionsTemplateID || gotAddGroup.GroupName != testGroupName || gotAddGroup.Permission != permissionScan {
 		t.Fatalf("GeneratePermissionsTemplateAddGroupPermissionOptions() got %+v", gotAddGroup)
 	}
 
@@ -610,7 +613,7 @@ func TestGeneratePermissionsTemplateOptions(t *testing.T) {
 	}
 
 	gotAddUser := GeneratePermissionsTemplateAddUserPermissionOptions(permissionsTemplateID, "alice", permissionScan)
-	if gotAddUser.TemplateID != permissionsTemplateID || gotAddUser.Login != "alice" || gotAddUser.Permission != permissionScan {
+	if gotAddUser.TemplateID != permissionsTemplateID || gotAddUser.Login != testUserLogin || gotAddUser.Permission != permissionScan {
 		t.Fatalf("GeneratePermissionsTemplateAddUserPermissionOptions() got %+v", gotAddUser)
 	}
 
@@ -637,9 +640,9 @@ func TestUpdatePermissionsTemplateObservation(t *testing.T) {
 	updatedAt := "2026-04-03T11:45:00Z"
 	template := &sonar.PermissionTemplate{
 		ID:                "template-1",
-		Name:              "template-a",
-		Description:       "desc",
-		ProjectKeyPattern: "proj-.*",
+		Name:              templateNameA,
+		Description:       templateDescription,
+		ProjectKeyPattern: projectKeyPattern,
 		CreatedAt:         createdAt,
 		UpdatedAt:         updatedAt,
 		Permissions: []sonar.TemplatePermission{
@@ -652,11 +655,11 @@ func TestUpdatePermissionsTemplateObservation(t *testing.T) {
 	obs := &v1alpha1.PermissionsTemplateObservation{}
 	UpdatePermissionsTemplateObservation(obs, template, true)
 
-	if obs.ID != "template-1" || obs.Name != "template-a" || obs.Description != "desc" || obs.ProjectKeyPattern != "proj-.*" || !obs.Default {
+	if obs.ID != "template-1" || obs.Name != templateNameA || obs.Description != templateDescription || obs.ProjectKeyPattern != projectKeyPattern || !obs.Default {
 		t.Fatalf("UpdatePermissionsTemplateObservation() got %+v", obs)
 	}
 
-	if obs.CreatedAt == nil || obs.UpdatedAt == nil || !obs.CreatedAt.Time.Equal(time.Date(2026, 4, 3, 10, 30, 0, 0, time.UTC)) || !obs.UpdatedAt.Time.Equal(time.Date(2026, 4, 3, 11, 45, 0, 0, time.UTC)) {
+	if obs.CreatedAt == nil || obs.UpdatedAt == nil || !obs.CreatedAt.Time.Equal(time.Date(2026, time.April, 3, 10, 30, 0, 0, time.UTC)) || !obs.UpdatedAt.Time.Equal(time.Date(2026, time.April, 3, 11, 45, 0, 0, time.UTC)) {
 		t.Fatalf("UpdatePermissionsTemplateObservation() timestamps got createdAt=%v updatedAt=%v", obs.CreatedAt, obs.UpdatedAt)
 	}
 

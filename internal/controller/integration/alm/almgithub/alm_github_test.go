@@ -57,6 +57,9 @@ const (
 	testGitHubURL        = "https://api.github.com"
 	testAppID            = "123456"
 	testClientID         = "Iv1.abc123"
+	githubCSValue        = "githubCSValue"
+	githubWHValue        = "githubWHValue"
+	privateKeyValue      = "pk-value"
 )
 
 type notALMGitHub struct {
@@ -206,14 +209,14 @@ func TestObserve(t *testing.T) {
 			want:           want{observation: managed.ExternalObservation{}, errSubstr: "client secret is empty"},
 		},
 		"MissingPrivateKeyRefReturnsError": {
-			objects:        []runtime.Object{testSecret("client-secret", "default", "clientSecret", "cs-value")},
+			objects:        []runtime.Object{testSecret("client-secret", "default", "clientSecret", githubCSValue)},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
 			args:           args{ctx: context.Background(), mg: newTestALMGitHub(testExternalName, clientSecretRef, nil)},
 			want:           want{observation: managed.ExternalObservation{}, errSubstr: "cannot get private key from secret reference"},
 		},
 		"EmptyPrivateKeyReturnsError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
 				testSecret("private-key", "default", "privateKey", ""),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
@@ -222,8 +225,8 @@ func TestObserve(t *testing.T) {
 		},
 		"MissingSavedSecretsDoesNotFailObserve": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Github: []sonar.GithubDefinition{{Key: testExternalName, URL: testGitHubURL, AppID: testAppID, ClientID: testClientID}}}, mockHTTPResponse(http.StatusOK), nil
@@ -240,8 +243,8 @@ func TestObserve(t *testing.T) {
 		},
 		"DefinitionNotFound": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Github: []sonar.GithubDefinition{}}, mockHTTPResponse(http.StatusOK), nil
@@ -251,11 +254,11 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveUpToDate": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 				multiKeySecret("connection-secret", "default", map[string]string{
-					connectionDetailClientSecretKey:  "cs-value",
-					connectionDetailPrivateKeyKey:    "pk-value",
+					connectionDetailClientSecretKey:  githubCSValue,
+					connectionDetailPrivateKeyKey:    privateKeyValue,
 					connectionDetailWebhookSecretKey: "",
 				}),
 			},
@@ -276,11 +279,11 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveNotUpToDate": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "new-cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", "new-githubCSValue"),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 				multiKeySecret("connection-secret", "default", map[string]string{
-					connectionDetailClientSecretKey: "old-cs-value",
-					connectionDetailPrivateKeyKey:   "pk-value",
+					connectionDetailClientSecretKey: "old-githubCSValue",
+					connectionDetailPrivateKeyKey:   privateKeyValue,
 				}),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
@@ -300,8 +303,8 @@ func TestObserve(t *testing.T) {
 		},
 		"WebhookSecretErrorReturnsError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
 			args: args{ctx: context.Background(), mg: func() resource.Managed {
@@ -314,8 +317,8 @@ func TestObserve(t *testing.T) {
 		},
 		"ListDefinitionsErrorReturnsError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return nil, mockHTTPResponse(http.StatusInternalServerError), errors.New("api list failed")
@@ -328,8 +331,8 @@ func TestObserve(t *testing.T) {
 			// controller cannot compare stored vs current secret values and treats the
 			// resource as out-of-date so the next Update re-writes the connection secret.
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Github: []sonar.GithubDefinition{{Key: testExternalName, URL: testGitHubURL, AppID: testAppID, ClientID: testClientID}}}, mockHTTPResponse(http.StatusOK), nil
@@ -348,13 +351,13 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveWithWebhookSecret": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
-				testSecret("webhook-secret", "default", "webhookSecret", "wh-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
+				testSecret("webhook-secret", "default", "webhookSecret", githubWHValue),
 				multiKeySecret("connection-secret", "default", map[string]string{
-					connectionDetailClientSecretKey:  "cs-value",
-					connectionDetailPrivateKeyKey:    "pk-value",
-					connectionDetailWebhookSecretKey: "wh-value",
+					connectionDetailClientSecretKey:  githubCSValue,
+					connectionDetailPrivateKeyKey:    privateKeyValue,
+					connectionDetailWebhookSecretKey: githubWHValue,
 				}),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
@@ -447,14 +450,14 @@ func TestCreate(t *testing.T) {
 			want:           want{creation: managed.ExternalCreation{}, errSubstr: "client secret is empty"},
 		},
 		"MissingPrivateKeyRef": {
-			objects:        []runtime.Object{testSecret("client-secret", "default", "clientSecret", "cs-value")},
+			objects:        []runtime.Object{testSecret("client-secret", "default", "clientSecret", githubCSValue)},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
 			args:           args{ctx: context.Background(), mg: newTestALMGitHub("", clientSecretRef, nil)},
 			want:           want{creation: managed.ExternalCreation{}, errSubstr: "cannot get private key from secret reference"},
 		},
 		"EmptyPrivateKey": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
 				testSecret("private-key", "default", "privateKey", ""),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
@@ -463,8 +466,8 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				CreateGithubFn: func(_ *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error) {
@@ -476,8 +479,8 @@ func TestCreate(t *testing.T) {
 		},
 		"WebhookSecretError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
 			args: args{ctx: context.Background(), mg: func() resource.Managed {
@@ -490,12 +493,12 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreate": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				CreateGithubFn: func(opt *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error) {
-					if opt == nil || opt.Key != testExternalName || opt.URL != testGitHubURL || opt.AppID != testAppID || opt.ClientID != testClientID || opt.ClientSecret != "cs-value" || opt.PrivateKey != "pk-value" {
+					if opt == nil || opt.Key != testExternalName || opt.URL != testGitHubURL || opt.AppID != testAppID || opt.ClientID != testClientID || opt.ClientSecret != githubCSValue || opt.PrivateKey != privateKeyValue {
 						t.Fatalf("Create() unexpected options: %+v", opt)
 					}
 
@@ -504,20 +507,20 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{ctx: context.Background(), mg: newTestALMGitHub("", clientSecretRef, privateKeyRef)},
 			want: want{creation: managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{
-				connectionDetailClientSecretKey:  []byte("cs-value"),
-				connectionDetailPrivateKeyKey:    []byte("pk-value"),
+				connectionDetailClientSecretKey:  []byte(githubCSValue),
+				connectionDetailPrivateKeyKey:    []byte(privateKeyValue),
 				connectionDetailWebhookSecretKey: []byte(""),
 			}}},
 		},
 		"SuccessfulCreateWithWebhookSecret": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
-				testSecret("webhook-secret", "default", "webhookSecret", "wh-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
+				testSecret("webhook-secret", "default", "webhookSecret", githubWHValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				CreateGithubFn: func(opt *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error) {
-					if opt == nil || opt.WebhookSecret != "wh-value" {
+					if opt == nil || opt.WebhookSecret != githubWHValue {
 						t.Fatalf("Create() unexpected webhook secret: %+v", opt)
 					}
 
@@ -531,9 +534,9 @@ func TestCreate(t *testing.T) {
 				return alm
 			}()},
 			want: want{creation: managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{
-				connectionDetailClientSecretKey:  []byte("cs-value"),
-				connectionDetailPrivateKeyKey:    []byte("pk-value"),
-				connectionDetailWebhookSecretKey: []byte("wh-value"),
+				connectionDetailClientSecretKey:  []byte(githubCSValue),
+				connectionDetailPrivateKeyKey:    []byte(privateKeyValue),
+				connectionDetailWebhookSecretKey: []byte(githubWHValue),
 			}}},
 		},
 	}
@@ -618,7 +621,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 			want:           want{update: managed.ExternalUpdate{}, errSubstr: "cannot get client secret from secret reference"},
 		},
 		"MissingPrivateKeyRef": {
-			objects:        []runtime.Object{testSecret("client-secret", "default", "clientSecret", "cs-value")},
+			objects:        []runtime.Object{testSecret("client-secret", "default", "clientSecret", githubCSValue)},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
 			args:           args{ctx: context.Background(), mg: newTestALMGitHub(testExternalName, clientSecretRef, nil)},
 			want:           want{update: managed.ExternalUpdate{}, errSubstr: "cannot get private key from secret reference"},
@@ -631,7 +634,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 		},
 		"EmptyPrivateKey": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
 				testSecret("private-key", "default", "privateKey", ""),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
@@ -640,8 +643,8 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 		},
 		"WebhookSecretError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{},
 			args: args{ctx: context.Background(), mg: func() resource.Managed {
@@ -654,8 +657,8 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 		},
 		"UpdateError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				UpdateGithubFn: func(_ *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
@@ -667,12 +670,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 		},
 		"SuccessfulUpdateWithoutKeyChange": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				UpdateGithubFn: func(opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
-					if opt == nil || opt.Key != testExternalName || opt.NewKey != "" || opt.URL != testGitHubURL || opt.AppID != testAppID || opt.ClientID != testClientID || opt.ClientSecret != "cs-value" || opt.PrivateKey != "pk-value" {
+					if opt == nil || opt.Key != testExternalName || opt.NewKey != "" || opt.URL != testGitHubURL || opt.AppID != testAppID || opt.ClientID != testClientID || opt.ClientSecret != githubCSValue || opt.PrivateKey != privateKeyValue {
 						t.Fatalf("Update() unexpected options: %+v", opt)
 					}
 
@@ -681,15 +684,15 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 			},
 			args: args{ctx: context.Background(), mg: newTestALMGitHub(testExternalName, clientSecretRef, privateKeyRef)},
 			want: want{update: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{
-				connectionDetailClientSecretKey:  []byte("cs-value"),
-				connectionDetailPrivateKeyKey:    []byte("pk-value"),
+				connectionDetailClientSecretKey:  []byte(githubCSValue),
+				connectionDetailPrivateKeyKey:    []byte(privateKeyValue),
 				connectionDetailWebhookSecretKey: []byte(""),
 			}}},
 		},
 		"SuccessfulUpdateWithKeyChange": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				UpdateGithubFn: func(opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
@@ -707,16 +710,16 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 				return alm
 			}()},
 			want: want{update: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{
-				connectionDetailClientSecretKey:  []byte("cs-value"),
-				connectionDetailPrivateKeyKey:    []byte("pk-value"),
+				connectionDetailClientSecretKey:  []byte(githubCSValue),
+				connectionDetailPrivateKeyKey:    []byte(privateKeyValue),
 				connectionDetailWebhookSecretKey: []byte(""),
 			}}},
 			registerMG: true,
 		},
 		"UpdateKeyChangePersistError": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				UpdateGithubFn: func(_ *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
@@ -734,13 +737,13 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 		},
 		"SuccessfulUpdateWithWebhookSecret": {
 			objects: []runtime.Object{
-				testSecret("client-secret", "default", "clientSecret", "cs-value"),
-				testSecret("private-key", "default", "privateKey", "pk-value"),
-				testSecret("webhook-secret", "default", "webhookSecret", "wh-value"),
+				testSecret("client-secret", "default", "clientSecret", githubCSValue),
+				testSecret("private-key", "default", "privateKey", privateKeyValue),
+				testSecret("webhook-secret", "default", "webhookSecret", githubWHValue),
 			},
 			settingsClient: &fake.MockALMSettingsGitHubClient{
 				UpdateGithubFn: func(opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
-					if opt == nil || opt.WebhookSecret != "wh-value" {
+					if opt == nil || opt.WebhookSecret != githubWHValue {
 						t.Fatalf("Update() unexpected webhook secret: %+v", opt)
 					}
 
@@ -754,9 +757,9 @@ func TestUpdate(t *testing.T) { //nolint:maintidx,gocognit // table-driven test 
 				return alm
 			}()},
 			want: want{update: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{
-				connectionDetailClientSecretKey:  []byte("cs-value"),
-				connectionDetailPrivateKeyKey:    []byte("pk-value"),
-				connectionDetailWebhookSecretKey: []byte("wh-value"),
+				connectionDetailClientSecretKey:  []byte(githubCSValue),
+				connectionDetailPrivateKeyKey:    []byte(privateKeyValue),
+				connectionDetailWebhookSecretKey: []byte(githubWHValue),
 			}}},
 		},
 	}

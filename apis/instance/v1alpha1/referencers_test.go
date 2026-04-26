@@ -64,10 +64,10 @@ func setExtName(obj metav1.Object, name string) {
 	meta.SetExternalName(obj, name)
 }
 
+const testNamespace = "default"
+
 func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
 	t.Parallel()
-
-	const ns = "default"
 
 	notFoundRule := kerrors.NewNotFound(
 		schema.GroupResource{Group: "instance.sonarqube.crossplane.io", Resource: "rules"},
@@ -83,13 +83,13 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 	}{
 		"NoRules_NoOp": {
 			reason:  "A quality profile with no rules resolves with no error.",
-			profile: newTestQualityProfile(ns),
+			profile: newTestQualityProfile(testNamespace),
 			client:  test.NewMockClient(),
 		},
 		"RuleAlreadySet_NoRefOrSelector_Preserved": {
 			reason: "When Rule is already set and no ref/selector exists, it is preserved.",
 			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(ns)
+				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{Rule: ptr.To("go:S100")}}
 
 				return qp
@@ -102,7 +102,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 		"RuleRef_ResolvesToExternalName": {
 			reason: "RuleRef.Name uses the Kubernetes object name and resolves to external-name.",
 			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(ns)
+				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
 					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
 				}}
@@ -123,9 +123,9 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 		"RuleRef_WithExplicitNamespace": {
 			reason: "An explicit namespace in RuleRef is respected.",
 			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(ns)
+				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
-					RuleRef: &xpv1.NamespacedReference{Name: "example-rule", Namespace: ns},
+					RuleRef: &xpv1.NamespacedReference{Name: "example-rule", Namespace: testNamespace},
 				}}
 
 				return qp
@@ -144,7 +144,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 		"RuleRef_WrongName_ReturnsError": {
 			reason: "Using a non-existing Kubernetes rule object name returns not found.",
 			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(ns)
+				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
 					RuleRef: &xpv1.NamespacedReference{Name: "sonarqube-rule-key-instead-of-k8s-name"},
 				}}
@@ -159,7 +159,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 		"RuleSelector_ResolvesToExternalName": {
 			reason: "A selector lists matching Rules and resolves the external-name.",
 			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(ns)
+				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
 					RuleSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"language": "go"}},
 				}}
@@ -173,7 +173,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 						return nil
 					}
 
-					r := Rule{ObjectMeta: metav1.ObjectMeta{Name: "example-rule", Namespace: ns}}
+					r := Rule{ObjectMeta: metav1.ObjectMeta{Name: "example-rule", Namespace: testNamespace}}
 					setExtName(&r, "py:S101")
 					ruleList.Items = []Rule{r}
 
@@ -187,7 +187,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 		"RuleRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
 			reason: "A stale cached Rule value (K8s name) must be overwritten when RuleRef is set.",
 			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(ns)
+				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
 					Rule:    ptr.To("example-rule"),
 					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
@@ -209,7 +209,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 		"MultipleRules_MixedInputs_AllResolvedIndependently": {
 			reason: "Direct, ref and selector based rules are each resolved and retained independently.",
 			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(ns)
+				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{
 					{Rule: ptr.To("go:S100")},
 					{RuleRef: &xpv1.NamespacedReference{Name: "rule-ref-java"}},
@@ -234,7 +234,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 						return nil
 					}
 
-					r := Rule{ObjectMeta: metav1.ObjectMeta{Name: "selector-rule", Namespace: ns}}
+					r := Rule{ObjectMeta: metav1.ObjectMeta{Name: "selector-rule", Namespace: testNamespace}}
 					setExtName(&r, "java:S1118")
 					ruleList.Items = []Rule{r}
 
@@ -292,7 +292,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 	t.Run("ErrorOnFirstRule_StopsResolution", func(t *testing.T) {
 		t.Parallel()
 
-		qp := newTestQualityProfile(ns)
+		qp := newTestQualityProfile(testNamespace)
 		qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{
 			{RuleRef: &xpv1.NamespacedReference{Name: "missing-rule"}},
 			{RuleRef: &xpv1.NamespacedReference{Name: "second-rule"}},
@@ -326,7 +326,6 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 	t.Parallel()
 
 	const (
-		ns     = "default"
 		qgUUID = "qg-uuid-123"
 		qpUUID = "qp-uuid-456"
 		qgK8s  = "example-qualitygate"
@@ -352,13 +351,13 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 	}{
 		"NoRefsNoSelectors_NoOp": {
 			reason:  "A project with no refs or selectors resolves without error.",
-			project: newTestProject(ns),
+			project: newTestProject(testNamespace),
 			client:  test.NewMockClient(),
 		},
 		"QualityGateNameAlreadySet_NoRef": {
 			reason: "When QualityGateName is already set and no ref exists, it is preserved.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityGateName = ptr.To("Sonar way")
 
 				return p
@@ -378,7 +377,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityGateNameRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
 			reason: "A stale qualityGateName (K8s name) must be overwritten when a ref is present; the live annotation value wins.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				// Stale cached value: set to the K8s object name by a previous
 				// reconcile before the QualityGate controller had run.
 				p.Spec.ForProvider.QualityGateName = ptr.To(qgK8s)
@@ -400,7 +399,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityProfileIdRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
 			reason: "A stale qualityProfile.id (K8s name) must be overwritten when a ref is present; the live annotation value wins.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 					"go": {
 						// Stale: was set to K8s name before the profile controller ran.
@@ -424,7 +423,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityGateNameRef_ResolvesToExternalName": {
 			reason: "QualityGateNameRef.Name is the K8s object name; ExternalName annotation is resolved.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: qgK8s}
 
 				return p
@@ -441,8 +440,8 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityGateNameRef_WithExplicitNamespace": {
 			reason: "An explicit namespace in QualityGateNameRef is respected.",
 			project: func() *Project {
-				p := newTestProject(ns)
-				p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: qgK8s, Namespace: ns}
+				p := newTestProject(testNamespace)
+				p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: qgK8s, Namespace: testNamespace}
 
 				return p
 			}(),
@@ -460,7 +459,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityGateNameRef_WrongName_ReturnsError": {
 			reason: "Using the SonarQube name instead of the K8s object name returns a not-found error.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: "sonarqube-display-name"}
 
 				return p
@@ -473,7 +472,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityGateNameSelector_ResolvesToExternalName": {
 			reason: "A selector lists matching QualityGates and resolves the ExternalName.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityGateNameSelector = &xpv1.NamespacedSelector{
 					MatchLabels: map[string]string{"app": "sonarqube"},
 				}
@@ -487,7 +486,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 						return nil
 					}
 
-					qg := QualityGate{ObjectMeta: metav1.ObjectMeta{Name: qgK8s, Namespace: ns}}
+					qg := QualityGate{ObjectMeta: metav1.ObjectMeta{Name: qgK8s, Namespace: testNamespace}}
 					setExtName(&qg, qgUUID)
 					qgList.Items = []QualityGate{qg}
 
@@ -499,7 +498,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityProfileIdRef_ResolvesToExternalName": {
 			reason: "IdRef.Name must be the K8s object name; ExternalName returns the UUID.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 					"go": {IdRef: &xpv1.NamespacedReference{Name: qpK8s}},
 				}
@@ -518,9 +517,9 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityProfileIdRef_WithExplicitNamespace": {
 			reason: "An explicit namespace in IdRef is respected.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
-					"go": {IdRef: &xpv1.NamespacedReference{Name: qpK8s, Namespace: ns}},
+					"go": {IdRef: &xpv1.NamespacedReference{Name: qpK8s, Namespace: testNamespace}},
 				}
 
 				return p
@@ -542,7 +541,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityProfileIdRef_WrongName_SonarQubeNameInsteadOfK8sName": {
 			reason: "Using spec.forProvider.name as idRef.name fails; K8s object name must be used.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 					// WRONG: "example-go-profile" is the SonarQube name, not the K8s metadata.name.
 					// Correct value would be "example-qualityprofile-go".
@@ -559,7 +558,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityProfileIdAlreadySet_NoRef": {
 			reason: "When Id is already set and no ref/selector exists, it is preserved.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 					"go": {Id: ptr.To(qpUUID)},
 				}
@@ -572,7 +571,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		"QualityProfileIdSelector_ResolvesToExternalName": {
 			reason: "IdSelector lists matching QualityProfiles and resolves ExternalName.",
 			project: func() *Project {
-				p := newTestProject(ns)
+				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 					"go": {IdSelector: &xpv1.NamespacedSelector{
 						MatchLabels: map[string]string{"language": "go"},
@@ -588,7 +587,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 						return nil
 					}
 
-					qp := QualityProfile{ObjectMeta: metav1.ObjectMeta{Name: qpK8s, Namespace: ns}}
+					qp := QualityProfile{ObjectMeta: metav1.ObjectMeta{Name: qpK8s, Namespace: testNamespace}}
 					setExtName(&qp, qpUUID)
 					qpList.Items = []QualityProfile{qp}
 
@@ -621,7 +620,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			profileExtName = "qp-uuid-different" // what the quality profile resolves to
 		)
 
-		p := newTestProject(ns)
+		p := newTestProject(testNamespace)
 		p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: qgK8s}
 		p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 			"go": {IdRef: &xpv1.NamespacedReference{Name: qpK8s}},
@@ -666,7 +665,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 	t.Run("MultipleQualityProfiles_EachLanguageKeepsItsOwnId", func(t *testing.T) {
 		t.Parallel()
 
-		p := newTestProject(ns)
+		p := newTestProject(testNamespace)
 		p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 			"go":   {IdRef: &xpv1.NamespacedReference{Name: "qp-go"}},
 			"java": {IdRef: &xpv1.NamespacedReference{Name: "qp-java"}},
@@ -722,7 +721,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 	t.Run("BothRefs_StaleCachedK8sNames_OverwrittenByRealAnnotations", func(t *testing.T) {
 		t.Parallel()
 
-		p := newTestProject(ns)
+		p := newTestProject(testNamespace)
 		// Pre-set stale cached values (what Crossplane's initializer writes).
 		p.Spec.ForProvider.QualityGateName = ptr.To("example-qualitygate")
 		p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: "example-qualitygate"}

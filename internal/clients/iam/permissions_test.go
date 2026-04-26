@@ -25,9 +25,10 @@ import (
 )
 
 const (
-	testGroupName  = "devs"
-	testPermission = "scan"
+	testGroupName = "devs"
 )
+
+// permissionScan is defined in permissions_template_test.go as permissionScan
 
 func TestPermissionsNewClient(t *testing.T) {
 	t.Parallel()
@@ -67,13 +68,13 @@ func TestPermissionsGenerateAddGroupOptions(t *testing.T) {
 	t.Run("RegularValues", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsAddGroupOptions(testGroupName, testPermission)
+		got := GeneratePermissionsAddGroupOptions(testGroupName, permissionScan)
 		if got == nil {
 			t.Fatal("GeneratePermissionsAddGroupOptions() expected non-nil options")
 		}
 
-		if got.GroupName != testGroupName || got.Permission != testPermission {
-			t.Fatalf("GeneratePermissionsAddGroupOptions() got = %+v, want GroupName=%s Permission=%s", got, testGroupName, testPermission)
+		if got.GroupName != testGroupName || got.Permission != permissionScan {
+			t.Fatalf("GeneratePermissionsAddGroupOptions() got = %+v, want GroupName=%s Permission=%s", got, testGroupName, permissionScan)
 		}
 	})
 
@@ -97,13 +98,13 @@ func TestPermissionsGenerateRemoveGroupOptions(t *testing.T) {
 	t.Run("RegularValues", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsRemoveGroupOptions(testGroupName, testPermission)
+		got := GeneratePermissionsRemoveGroupOptions(testGroupName, permissionScan)
 		if got == nil {
 			t.Fatal("GeneratePermissionsRemoveGroupOptions() expected non-nil options")
 		}
 
-		if got.GroupName != testGroupName || got.Permission != testPermission {
-			t.Fatalf("GeneratePermissionsRemoveGroupOptions() got = %+v, want GroupName=%s Permission=%s", got, testGroupName, testPermission)
+		if got.GroupName != testGroupName || got.Permission != permissionScan {
+			t.Fatalf("GeneratePermissionsRemoveGroupOptions() got = %+v, want GroupName=%s Permission=%s", got, testGroupName, permissionScan)
 		}
 	})
 

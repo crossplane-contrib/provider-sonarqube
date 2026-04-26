@@ -35,6 +35,11 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+const (
+	myQualityGateName = "my-sonar-gate"
+	myConditionID     = "cond-id-123"
+)
+
 // Unlike many Kubernetes projects Crossplane does not use third party testing
 // libraries, per the common Go test review comments. Crossplane encourages the
 // use of table driven unit tests. The tests of the crossplane-runtime project
@@ -377,12 +382,12 @@ func TestCreate(t *testing.T) {
 				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
 						ID:   "gate-123",
-						Name: "my-sonar-gate", // different from k8s resource name to test the fix
+						Name: myQualityGateName, // different from k8s resource name to test the fix
 					}, nil, nil
 				},
 				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
 					// Verify the correct SonarQube quality gate name is used, not Kubernetes resource name
-					if opt.Name != "my-sonar-gate" {
+					if opt.Name != myQualityGateName {
 						return nil, errors.New("expected SonarQube gate name but got: " + opt.Name)
 					}
 
@@ -631,7 +636,7 @@ func TestDelete(t *testing.T) {
 			client: &fake.MockQualityGatesClient{
 				DestroyFn: func(opt *sonar.QualitygatesDestroyOptions) (*http.Response, error) {
 					// Verify the correct external name is used for deletion
-					if opt.Name != "my-sonar-gate" {
+					if opt.Name != myQualityGateName {
 						return nil, errors.New("expected external name 'my-sonar-gate' but got: " + opt.Name)
 					}
 
@@ -772,7 +777,7 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 				IsBuiltIn:  false,
 				IsDefault:  false,
 				Conditions: []sonar.QualityGateCondition{
-					{ID: "cond-id-123", Metric: "coverage", Error: "80", Op: "LT"},
+					{ID: myConditionID, Metric: "coverage", Error: "80", Op: "LT"},
 					{ID: "cond-id-456", Metric: "bugs", Error: "0", Op: "GT"},
 				},
 				Actions: sonar.QualityGateActions{},
@@ -817,7 +822,7 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 
 	if qg.Spec.ForProvider.Conditions[0].Id == nil {
 		t.Errorf("Expected first condition to have ID, but it was nil")
-	} else if *qg.Spec.ForProvider.Conditions[0].Id != "cond-id-123" {
+	} else if *qg.Spec.ForProvider.Conditions[0].Id != myConditionID {
 		t.Errorf("Expected first condition ID = 'cond-id-123', got '%s'", *qg.Spec.ForProvider.Conditions[0].Id)
 	}
 
@@ -844,7 +849,7 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 				IsBuiltIn:  false,
 				IsDefault:  false,
 				Conditions: []sonar.QualityGateCondition{
-					{ID: "cond-id-123", Metric: "coverage", Error: "80", Op: "LT"},
+					{ID: myConditionID, Metric: "coverage", Error: "80", Op: "LT"},
 				},
 				Actions: sonar.QualityGateActions{},
 			}, nil, nil
@@ -883,7 +888,7 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 	// Verify condition still has the same ID
 	if qg.Spec.ForProvider.Conditions[0].Id == nil {
 		t.Errorf("Expected condition to have ID, but it was nil")
-	} else if *qg.Spec.ForProvider.Conditions[0].Id != "cond-id-123" {
+	} else if *qg.Spec.ForProvider.Conditions[0].Id != myConditionID {
 		t.Errorf("Expected condition ID = 'cond-id-123', got '%s'", *qg.Spec.ForProvider.Conditions[0].Id)
 	}
 

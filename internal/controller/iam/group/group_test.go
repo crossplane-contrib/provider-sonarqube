@@ -46,6 +46,12 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
+const (
+	provisioningPerm = "provisioning"
+	adminPerm        = "admin"
+	scanPerm         = "scan"
+)
+
 // Unlike many Kubernetes projects Crossplane does not use third party testing
 // libraries, per the common Go test review comments. Crossplane encourages the
 // use of table driven unit tests. The tests of the crossplane-runtime project
@@ -506,9 +512,9 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 	t.Run("UpdateAppliesPermissionDelta", func(t *testing.T) {
 		t.Parallel()
 
-		specPermissions := []string{"admin", "provisioning"}
+		specPermissions := []string{adminPerm, provisioningPerm}
 		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Permissions: &specPermissions})
-		group.Status.AtProvider.Permissions = []string{"admin", "scan"}
+		group.Status.AtProvider.Permissions = []string{adminPerm, scanPerm}
 
 		added := false
 		removed := false
@@ -519,7 +525,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 			}},
 			permissionsClient: &fake.MockPermissionsClient{
 				AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
-					if opt == nil || opt.GroupName != "devs" || opt.Permission != "provisioning" {
+					if opt == nil || opt.GroupName != "devs" || opt.Permission != provisioningPerm {
 						t.Fatalf("AddGroup() unexpected options: %+v", opt)
 					}
 
@@ -556,7 +562,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 	t.Run("UpdateReturnsAddPermissionError", func(t *testing.T) {
 		t.Parallel()
 
-		specPermissions := []string{"admin", "provisioning"}
+		specPermissions := []string{adminPerm, provisioningPerm}
 		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Permissions: &specPermissions})
 		group.Status.AtProvider.Permissions = []string{"admin"}
 
@@ -586,7 +592,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 
 		specPermissions := []string{"admin"}
 		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Permissions: &specPermissions})
-		group.Status.AtProvider.Permissions = []string{"admin", "scan"}
+		group.Status.AtProvider.Permissions = []string{adminPerm, scanPerm}
 
 		e := &external{
 			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
@@ -948,7 +954,7 @@ func TestComputePermissionsDelta(t *testing.T) {
 	}{
 		"NilSpecReturnsNoChanges": {
 			specPermissions:     nil,
-			observedPermissions: []string{"admin"},
+			observedPermissions: []string{adminPerm},
 			wantAdd:             nil,
 			wantRemove:          nil,
 		},
@@ -959,19 +965,19 @@ func TestComputePermissionsDelta(t *testing.T) {
 			wantRemove:          nil,
 		},
 		"AddsMissingPermissions": {
-			specPermissions:     ptr.To([]string{"admin", "scan", "provisioning"}),
+			specPermissions:     ptr.To([]string{adminPerm, scanPerm, provisioningPerm}),
 			observedPermissions: []string{"admin", "scan"},
 			wantAdd:             []string{"provisioning"},
 			wantRemove:          nil,
 		},
 		"RemovesExtraPermissions": {
-			specPermissions:     ptr.To([]string{"admin"}),
+			specPermissions:     ptr.To([]string{adminPerm}),
 			observedPermissions: []string{"admin", "scan"},
 			wantAdd:             nil,
 			wantRemove:          []string{"scan"},
 		},
 		"AddsAndRemoves": {
-			specPermissions:     ptr.To([]string{"admin", "provisioning"}),
+			specPermissions:     ptr.To([]string{adminPerm, provisioningPerm}),
 			observedPermissions: []string{"admin", "scan"},
 			wantAdd:             []string{"provisioning"},
 			wantRemove:          []string{"scan"},
@@ -1120,7 +1126,7 @@ func TestAddGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driv
 					AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
 						callCount++
 
-						if opt.Permission != "provisioning" {
+						if opt.Permission != provisioningPerm {
 							t.Fatalf("AddGroup() permission = %q, want %q", opt.Permission, "provisioning")
 						}
 
@@ -1161,7 +1167,7 @@ func TestAddGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driv
 			clientFn: func() iam.PermissionsClient {
 				return &fake.MockPermissionsClient{
 					AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
-						if opt.Permission == "admin" {
+						if opt.Permission == adminPerm {
 							return mockHTTPResponse(http.StatusInternalServerError), errors.New("admin error")
 						}
 
@@ -1242,7 +1248,7 @@ func TestRemoveGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-d
 			clientFn: func() iam.PermissionsClient {
 				return &fake.MockPermissionsClient{
 					RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
-						if opt.Permission != "provisioning" {
+						if opt.Permission != provisioningPerm {
 							t.Fatalf("RemoveGroup() permission = %q, want %q", opt.Permission, "provisioning")
 						}
 
@@ -1286,7 +1292,7 @@ func TestRemoveGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-d
 			clientFn: func() iam.PermissionsClient {
 				return &fake.MockPermissionsClient{
 					RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
-						if opt.Permission == "admin" {
+						if opt.Permission == adminPerm {
 							return mockHTTPResponse(http.StatusInternalServerError), errors.New("admin revoke error")
 						}
 

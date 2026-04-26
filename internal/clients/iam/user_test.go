@@ -27,7 +27,12 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
-const testEmail = "alice@example.com"
+const (
+	testEmail       = "alice@example.com"
+	testSecret      = "secret"
+	testUserName    = "Alice"
+	testUserLogin   = "alice"
+)
 
 func TestNewUsersClient(t *testing.T) {
 	t.Parallel()
@@ -257,7 +262,7 @@ func TestGenerateCreateUserOptions(t *testing.T) {
 	email := testEmail
 	local := true
 	accounts := []string{"github:alice", "gitlab:alice"}
-	password := "secret"
+	password := testSecret
 
 	options := GenerateCreateUserOptions(&v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: &email, Local: &local, ScmAccounts: &accounts}, &password)
 
@@ -265,7 +270,7 @@ func TestGenerateCreateUserOptions(t *testing.T) {
 		t.Fatal("GenerateCreateUserOptions() returned nil")
 	}
 
-	if options.Login != "alice" || options.Name != "Alice" || options.Password != "secret" {
+	if options.Login != testUserLogin || options.Name != testUserName || options.Password != testSecret {
 		t.Fatalf("GenerateCreateUserOptions() got %+v", options)
 	}
 
@@ -301,7 +306,7 @@ func TestGenerateUpdateUserOptions(t *testing.T) {
 		t.Fatal("GenerateUpdateUserOptions() returned nil")
 	}
 
-	if options.Login != "alice" || options.Name != "Alice" {
+	if options.Login != testUserLogin || options.Name != "Alice" {
 		t.Fatalf("GenerateUpdateUserOptions() got %+v", options)
 	}
 

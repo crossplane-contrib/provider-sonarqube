@@ -28,7 +28,7 @@ linters:
       exclude-functions:
         - fmt:.*,io/ioutil:^Read.*
     goconst:
-      min-occurrences: 3
+      min-occurrences: 2
       match-constant: false
       find-duplicates: true
       eval-const-expressions: true
@@ -71,7 +71,6 @@ linters:
       enable:
         - identical
         - unused
-        - opaque
         - unexported
     lll:
       tab-width: 1
