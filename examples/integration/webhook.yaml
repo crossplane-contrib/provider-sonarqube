@@ -1,0 +1,63 @@
+---
+# Global webhook (no project scope)
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: Webhook
+metadata:
+  namespace: default
+  name: example-global-webhook
+spec:
+  forProvider:
+    name: my-ci-webhook
+    url: https://ci.example.com/sonarqube/hook
+
+---
+# Global webhook with HMAC signing secret
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: example-webhook-secret
+type: Opaque
+stringData:
+  secret: supersecrethmacvalue1234567890  # must be 16-200 characters
+
+---
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: Webhook
+metadata:
+  namespace: default
+  name: example-global-webhook-with-secret
+spec:
+  forProvider:
+    name: my-signed-webhook
+    url: https://ci.example.com/sonarqube/hook
+    secretRef:
+      name: example-webhook-secret
+      key: secret
+
+---
+# Project-scoped webhook using a direct projectKey value
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: Webhook
+metadata:
+  namespace: default
+  name: example-project-webhook
+spec:
+  forProvider:
+    name: my-project-webhook
+    url: https://ci.example.com/sonarqube/hook
+    projectKey: my-sonarqube-project
+
+---
+# Project-scoped webhook using a cross-resource reference to a Project CR
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: Webhook
+metadata:
+  namespace: default
+  name: example-project-webhook-ref
+spec:
+  forProvider:
+    name: my-project-webhook-via-ref
+    url: https://ci.example.com/sonarqube/hook
+    projectKeyRef:
+      name: my-project-cr

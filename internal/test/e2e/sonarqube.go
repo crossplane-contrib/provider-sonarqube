@@ -211,6 +211,25 @@ func (f *Framework) FindALMGitLabDefinitionByKey(key string) (*sonar.GitlabDefin
 	return nil, nil //nolint:nilnil // intentional: absence of definition is the natural "not yet created" sentinel
 }
 
+// FindGlobalWebhookByKey returns the global SonarQube webhook whose key
+// exactly matches key, or (nil, nil) if no such webhook exists.
+func (f *Framework) FindGlobalWebhookByKey(key string) (*sonar.Webhook, error) {
+	res, resp, err := f.Sonar.Webhooks.List(&sonar.WebhooksListOptions{})
+	defer helpers.CloseBody(resp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range res.Webhooks {
+		if res.Webhooks[i].Key == key {
+			return &res.Webhooks[i], nil
+		}
+	}
+
+	return nil, nil //nolint:nilnil // intentional: absence is the natural "not found" sentinel
+}
+
 // FindALMGitHubDefinitionByKey returns the GitHub ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
 func (f *Framework) FindALMGitHubDefinitionByKey(key string) (*sonar.GithubDefinition, error) {

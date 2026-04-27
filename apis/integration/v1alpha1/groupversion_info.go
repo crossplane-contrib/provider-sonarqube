@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains the v1alpha1 group Sample resources of the
-// SonarQube provider.
+// Package v1alpha1 contains v1alpha1 group resources of the SonarQube provider.
 // +kubebuilder:object:generate=true
 // +groupName=integration.sonarqube.crossplane.io
 // +versionName=v1alpha1
