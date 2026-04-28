@@ -31,6 +31,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/settings"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgithub"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
+	"github.com/crossplane/provider-sonarqube/internal/controller/integration/webhook"
 )
 
 // SetupGated creates all SonarQube controllers with safe-start support and
@@ -48,6 +49,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		permissionstemplate.SetupGated,
 		almgitlab.SetupGated,
 		almgithub.SetupGated,
+		webhook.SetupGated,
 	} {
 		err := setup(mgr, opts)
 		if err != nil {

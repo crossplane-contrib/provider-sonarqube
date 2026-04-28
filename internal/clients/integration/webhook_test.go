@@ -23,6 +23,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
 // newSecretKeySelector creates a test LocalSecretKeySelector.
@@ -217,6 +218,132 @@ func TestFindWebhookByKey(t *testing.T) {
 
 			if got.Key != tc.want.Key {
 				t.Errorf("FindWebhookByKey().Key = %q, want %q", got.Key, tc.want.Key)
+			}
+		})
+	}
+}
+
+// TestNewWebhooksClient verifies that NewWebhooksClient returns a non-nil
+// client for a valid configuration.
+func TestNewWebhooksClient(t *testing.T) {
+	t.Parallel()
+
+	cfg := common.Config{
+		AuthType: common.PersonalAccessToken,
+		Token:    "test-token",
+		BaseURL:  "http://localhost:9000",
+	}
+
+	got := NewWebhooksClient(cfg)
+
+	if got == nil {
+		t.Error("NewWebhooksClient() returned nil")
+	}
+}
+
+// TestGenerateWebhookCreateOptions verifies that the options struct is
+// correctly built from spec, projectKey and secret.
+func TestGenerateWebhookCreateOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		spec       *v1alpha1.WebhookParameters
+		projectKey string
+		secret     string
+		want       *sonar.WebhooksCreateOptions
+	}{
+		"GlobalWebhookNoSecret": {
+			spec:       &v1alpha1.WebhookParameters{Name: "hook", URL: "https://example.com"},
+			projectKey: "",
+			secret:     "",
+			want:       &sonar.WebhooksCreateOptions{Name: "hook", URL: "https://example.com", Project: "", Secret: ""},
+		},
+		"ProjectScopedWithSecret": {
+			spec:       &v1alpha1.WebhookParameters{Name: "proj-hook", URL: "https://ci.example.com/hook"},
+			projectKey: "my-project",
+			secret:     "s3cr3t",
+			want:       &sonar.WebhooksCreateOptions{Name: "proj-hook", URL: "https://ci.example.com/hook", Project: "my-project", Secret: "s3cr3t"},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateWebhookCreateOptions(tc.spec, tc.projectKey, tc.secret)
+
+			if got == nil {
+				t.Fatal("GenerateWebhookCreateOptions() returned nil")
+			}
+
+			if got.Name != tc.want.Name {
+				t.Errorf("Name = %q, want %q", got.Name, tc.want.Name)
+			}
+
+			if got.URL != tc.want.URL {
+				t.Errorf("URL = %q, want %q", got.URL, tc.want.URL)
+			}
+
+			if got.Project != tc.want.Project {
+				t.Errorf("Project = %q, want %q", got.Project, tc.want.Project)
+			}
+
+			if got.Secret != tc.want.Secret {
+				t.Errorf("Secret = %q, want %q", got.Secret, tc.want.Secret)
+			}
+		})
+	}
+}
+
+// TestGenerateWebhookUpdateOptions verifies that the options struct is
+// correctly built from webhookKey, spec and secret.
+func TestGenerateWebhookUpdateOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		webhookKey string
+		spec       *v1alpha1.WebhookParameters
+		secret     string
+		want       *sonar.WebhooksUpdateOptions
+	}{
+		"UpdateNameAndURL": {
+			webhookKey: "key-abc",
+			spec:       &v1alpha1.WebhookParameters{Name: "new-name", URL: "https://new.example.com"},
+			secret:     "",
+			want:       &sonar.WebhooksUpdateOptions{Webhook: "key-abc", Name: "new-name", URL: "https://new.example.com", Secret: ""},
+		},
+		"UpdateWithSecret": {
+			webhookKey: "key-xyz",
+			spec:       &v1alpha1.WebhookParameters{Name: "hook", URL: "https://example.com"},
+			secret:     "rotated-secret",
+			want:       &sonar.WebhooksUpdateOptions{Webhook: "key-xyz", Name: "hook", URL: "https://example.com", Secret: "rotated-secret"},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateWebhookUpdateOptions(tc.webhookKey, tc.spec, tc.secret)
+
+			if got == nil {
+				t.Fatal("GenerateWebhookUpdateOptions() returned nil")
+			}
+
+			if got.Webhook != tc.want.Webhook {
+				t.Errorf("Webhook = %q, want %q", got.Webhook, tc.want.Webhook)
+			}
+
+			if got.Name != tc.want.Name {
+				t.Errorf("Name = %q, want %q", got.Name, tc.want.Name)
+			}
+
+			if got.URL != tc.want.URL {
+				t.Errorf("URL = %q, want %q", got.URL, tc.want.URL)
+			}
+
+			if got.Secret != tc.want.Secret {
+				t.Errorf("Secret = %q, want %q", got.Secret, tc.want.Secret)
 			}
 		})
 	}

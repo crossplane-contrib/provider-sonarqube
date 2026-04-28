@@ -25,6 +25,7 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -32,10 +33,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
+	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
@@ -52,6 +57,25 @@ const (
 
 // notAWebhook is a test type that is not a Webhook.
 type notAWebhook struct{ resource.Managed }
+
+// mockGate is a mock implementation of the feature gate interface.
+type mockGate struct {
+	registered bool
+	callback   func()
+	gvks       []schema.GroupVersionKind
+}
+
+// Register records the callback and GVKs.
+func (m *mockGate) Register(callback func(), gvks ...schema.GroupVersionKind) {
+	m.registered = true
+	m.callback = callback
+	m.gvks = append(m.gvks, gvks...)
+}
+
+// Set implements the gate interface (no-op for tests).
+func (m *mockGate) Set(_ schema.GroupVersionKind, _ bool) bool {
+	return false
+}
 
 // mockHTTPResponse creates a mock HTTP response with the given status code.
 func mockHTTPResponse(statusCode int) *http.Response {
@@ -230,6 +254,81 @@ func TestObserve(t *testing.T) {
 				ResourceExists: true, ResourceUpToDate: false, ConnectionDetails: managed.ConnectionDetails{},
 			}},
 		},
+		"ReadSecretErrorReturnsError": {
+			objects: []runtime.Object{},
+			webhookClient: &fake.MockWebhooksClient{
+				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
+					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL},
+					}}, mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newTestWebhook(testExternalName, webhookSecretRef("missing-secret", "value"))},
+			want: want{observation: managed.ExternalObservation{}, errSubstr: errGetSecret},
+		},
+		"SavedSecretMissingTreatedAsEmpty": {
+			objects: []runtime.Object{},
+			webhookClient: &fake.MockWebhooksClient{
+				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
+					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL, HasSecret: false},
+					}}, mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: func() resource.Managed {
+				wh := newTestWebhook(testExternalName, nil)
+				wh.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "missing-conn-secret"})
+
+				return wh
+			}()},
+			want: want{observation: managed.ExternalObservation{
+				ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{},
+			}},
+		},
+		"SavedSecretMatchesCurrentSecret": {
+			objects: []runtime.Object{
+				testKubeSecret("hook-secret", "default", "value", testSecretValue),
+				testKubeSecret("conn-secret", "default", connectionDetailSecretKey, testSecretValue),
+			},
+			webhookClient: &fake.MockWebhooksClient{
+				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
+					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL, HasSecret: true},
+					}}, mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: func() resource.Managed {
+				wh := newTestWebhook(testExternalName, webhookSecretRef("hook-secret", "value"))
+				wh.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "conn-secret"})
+
+				return wh
+			}()},
+			want: want{observation: managed.ExternalObservation{
+				ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{},
+			}},
+		},
+		"SecretRotatedNotUpToDate": {
+			objects: []runtime.Object{
+				testKubeSecret("hook-secret", "default", "value", "new-secret"),
+				testKubeSecret("conn-secret", "default", connectionDetailSecretKey, "old-secret"),
+			},
+			webhookClient: &fake.MockWebhooksClient{
+				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
+					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL, HasSecret: true},
+					}}, mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: func() resource.Managed {
+				wh := newTestWebhook(testExternalName, webhookSecretRef("hook-secret", "value"))
+				wh.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "conn-secret"})
+
+				return wh
+			}()},
+			want: want{observation: managed.ExternalObservation{
+				ResourceExists: true, ResourceUpToDate: false, ConnectionDetails: managed.ConnectionDetails{},
+			}},
+		},
 	}
 
 	for name, tc := range cases {
@@ -323,6 +422,16 @@ func TestCreate(t *testing.T) {
 			args: args{ctx: context.Background(), mg: newTestWebhook("", webhookSecretRef("hook-secret", "value"))},
 			want: want{},
 		},
+		"CreateAPIReturnsEmptyWebhookKey": {
+			objects: []runtime.Object{},
+			webhookClient: &fake.MockWebhooksClient{
+				CreateFn: func(_ *sonar.WebhooksCreateOptions) (*sonar.WebhooksCreate, *http.Response, error) {
+					return &sonar.WebhooksCreate{}, mockHTTPResponse(http.StatusOK), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newTestWebhook("", nil)},
+			want: want{errSubstr: "API response missing webhook key"},
+		},
 	}
 
 	for name, tc := range cases {
@@ -390,6 +499,12 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{ctx: context.Background(), mg: newTestWebhook(testExternalName, nil)},
 			want: want{},
+		},
+		"UpdateReadSecretErrorReturnsError": {
+			objects:       []runtime.Object{},
+			webhookClient: &fake.MockWebhooksClient{},
+			args:          args{ctx: context.Background(), mg: newTestWebhook(testExternalName, webhookSecretRef("missing-secret", "value"))},
+			want:          want{errSubstr: errGetSecret},
 		},
 	}
 
@@ -473,4 +588,205 @@ func TestDelete(t *testing.T) {
 			checkError(t, "Delete", tc.want.errSubstr, err)
 		})
 	}
+}
+
+// TestDisconnect verifies that Disconnect is a no-op and returns no error.
+func TestDisconnect(t *testing.T) {
+	t.Parallel()
+
+	e := &external{}
+
+	err := e.Disconnect(context.Background())
+	if err != nil {
+		t.Errorf("Disconnect() unexpected error: %v", err)
+	}
+}
+
+// TestConnect tests the connector's Connect method.
+func TestConnect(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NotAWebhook", func(t *testing.T) {
+		t.Parallel()
+
+		c := &connector{}
+		_, err := c.Connect(context.Background(), &notAWebhook{})
+
+		checkError(t, "Connect", errNotWebhook, err)
+	})
+
+	t.Run("TrackUsageError", func(t *testing.T) {
+		t.Parallel()
+
+		scheme := runtime.NewScheme()
+
+		addErr := apisv1alpha1.SchemeBuilder.AddToScheme(scheme)
+		if addErr != nil {
+			t.Fatalf("AddToScheme(apisv1alpha1) unexpected error: %v", addErr)
+		}
+
+		addErr = v1alpha1.SchemeBuilder.AddToScheme(scheme)
+		if addErr != nil {
+			t.Fatalf("AddToScheme(v1alpha1) unexpected error: %v", addErr)
+		}
+
+		kube := fakekube.NewClientBuilder().WithScheme(scheme).Build()
+		c := &connector{
+			kube:  kube,
+			usage: resource.NewProviderConfigUsageTracker(kube, &apisv1alpha1.ProviderConfigUsage{}),
+		}
+
+		_, err := c.Connect(context.Background(), newTestWebhook("", nil))
+
+		checkError(t, "Connect", errTrackPCUsage, err)
+	})
+
+	t.Run("GetConfigError", func(t *testing.T) {
+		t.Parallel()
+
+		scheme := runtime.NewScheme()
+
+		addErr := apisv1alpha1.SchemeBuilder.AddToScheme(scheme)
+		if addErr != nil {
+			t.Fatalf("AddToScheme(apisv1alpha1) unexpected error: %v", addErr)
+		}
+
+		addErr = v1alpha1.SchemeBuilder.AddToScheme(scheme)
+		if addErr != nil {
+			t.Fatalf("AddToScheme(v1alpha1) unexpected error: %v", addErr)
+		}
+
+		kube := fakekube.NewClientBuilder().WithScheme(scheme).Build()
+
+		wh := newTestWebhook("", nil)
+		wh.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "missing-pc", Kind: "ProviderConfig"})
+
+		c := &connector{
+			kube:  kube,
+			usage: resource.NewProviderConfigUsageTracker(kube, &apisv1alpha1.ProviderConfigUsage{}),
+		}
+
+		_, err := c.Connect(context.Background(), wh)
+
+		checkError(t, "Connect", errGetPC, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+
+		scheme := runtime.NewScheme()
+
+		addErr := apisv1alpha1.SchemeBuilder.AddToScheme(scheme)
+		if addErr != nil {
+			t.Fatalf("AddToScheme(apisv1alpha1) unexpected error: %v", addErr)
+		}
+
+		addErr = v1alpha1.SchemeBuilder.AddToScheme(scheme)
+		if addErr != nil {
+			t.Fatalf("AddToScheme(v1alpha1) unexpected error: %v", addErr)
+		}
+
+		addErr = corev1.AddToScheme(scheme)
+		if addErr != nil {
+			t.Fatalf("AddToScheme(corev1) unexpected error: %v", addErr)
+		}
+
+		providerConfig := &apisv1alpha1.ProviderConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "pc", Namespace: "default"},
+			Spec: apisv1alpha1.ProviderConfigSpec{
+				BaseURL: "http://localhost:9000",
+				Token: &apisv1alpha1.ProviderCredentials{
+					CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
+						SecretRef: &xpv1.SecretKeySelector{
+							SecretReference: xpv1.SecretReference{Name: "prov-secret", Namespace: "default"},
+							Key:             "token",
+						},
+					},
+					Source: xpv1.CredentialsSourceSecret,
+				},
+			},
+		}
+
+		providerSecret := testKubeSecret("prov-secret", "default", "token", "test-token")
+
+		kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(providerConfig, providerSecret).Build()
+
+		wh := newTestWebhook("", nil)
+		wh.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "pc", Kind: "ProviderConfig"})
+
+		c := &connector{
+			kube:  kube,
+			usage: resource.NewProviderConfigUsageTracker(kube, &apisv1alpha1.ProviderConfigUsage{}),
+			newServiceFn: func(cfg common.Config) integration.WebhooksClient {
+				return &fake.MockWebhooksClient{}
+			},
+		}
+
+		got, err := c.Connect(context.Background(), wh)
+		if err != nil {
+			t.Fatalf("Connect() unexpected error: %v", err)
+		}
+
+		if got == nil {
+			t.Fatal("Connect() returned nil client")
+		}
+	})
+}
+
+// TestSetupGatedRegistersWebhookGVK verifies that SetupGated registers the
+// Webhook GVK with the gate and returns nil.
+func TestSetupGatedRegistersWebhookGVK(t *testing.T) {
+	t.Parallel()
+
+	g := &mockGate{}
+	o := controller.DefaultOptions()
+	o.Gate = g
+
+	err := SetupGated(nil, o)
+	if err != nil {
+		t.Fatalf("SetupGated() unexpected error: %v", err)
+	}
+
+	if !g.registered {
+		t.Fatal("SetupGated() expected Gate.Register to be called")
+	}
+
+	if g.callback == nil {
+		t.Fatal("SetupGated() expected a non-nil callback")
+	}
+
+	if len(g.gvks) != 1 {
+		t.Fatalf("SetupGated() registered %d GVKs, want 1", len(g.gvks))
+	}
+
+	if g.gvks[0] != v1alpha1.WebhookGroupVersionKind {
+		t.Fatalf("SetupGated() GVK = %v, want %v", g.gvks[0], v1alpha1.WebhookGroupVersionKind)
+	}
+}
+
+// TestSetupGatedCallbackPanicsWhenSetupFails verifies that the registered
+// callback panics when Setup fails (e.g. nil manager).
+func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
+	t.Parallel()
+
+	g := &mockGate{}
+	o := controller.DefaultOptions()
+	o.Gate = g
+
+	err := SetupGated(nil, o)
+	if err != nil {
+		t.Fatalf("SetupGated() unexpected error: %v", err)
+	}
+
+	if g.callback == nil {
+		t.Fatal("SetupGated() expected callback to be registered")
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected callback to panic when setup fails")
+		}
+	}()
+
+	g.callback()
 }
