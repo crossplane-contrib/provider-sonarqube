@@ -46,6 +46,7 @@ type WebhookParameters struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxLength=400
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="ProjectKey is immutable."
+	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.Project
 	ProjectKey *string `json:"projectKey,omitempty"`
 
 	// ProjectKeyRef resolves projectKey from a Project managed resource.
