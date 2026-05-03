@@ -138,7 +138,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			reason: "A selector lists matching Groups and resolves the external name.",
 			user: func() *User {
 				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupIdSelector: &xpv1.Selector{MatchLabels: map[string]string{"team": "platform"}}}}
+				groups := []UserGroupsParameters{{GroupIdSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"team": "platform"}}}}
 				u.Spec.ForProvider.Groups = &groups
 
 				return u
@@ -184,7 +184,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 				groups := []UserGroupsParameters{
 					{GroupId: new("devs")},
 					{GroupIdRef: &xpv1.NamespacedReference{Name: "group-ref-ops"}},
-					{GroupIdSelector: &xpv1.Selector{MatchLabels: map[string]string{"team": "sec"}}},
+					{GroupIdSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"team": "sec"}}},
 				}
 				u.Spec.ForProvider.Groups = &groups
 

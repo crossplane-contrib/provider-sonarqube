@@ -481,7 +481,7 @@ func (in *UserGroupsParameters) DeepCopyInto(out *UserGroupsParameters) {
 	}
 	if in.GroupIdSelector != nil {
 		in, out := &in.GroupIdSelector, &out.GroupIdSelector
-		*out = new(v1.Selector)
+		*out = new(v1.NamespacedSelector)
 		(*in).DeepCopyInto(*out)
 	}
 }

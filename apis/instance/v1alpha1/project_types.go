@@ -70,6 +70,7 @@ type ProjectParameters struct {
 	// QualityGateName is the name of the quality gate to be associated with the project.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
+	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.QualityGate
 	QualityGateName *string `json:"qualityGateName,omitempty"`
 	// QualityGateNameRef is a reference to a QualityGate to retrieve its name and associate it with the project.
 	// +kubebuilder:validation:Optional
@@ -120,6 +121,7 @@ type ProjectQualityProfileReference struct {
 	// Id is the name of the quality profile to be associated with the project.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
+	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.QualityProfile
 	Id *string `json:"id,omitempty"`
 	// IdRef is a reference to a QualityProfile to retrieve its id and associate it with the project.
 	// +kubebuilder:validation:Optional

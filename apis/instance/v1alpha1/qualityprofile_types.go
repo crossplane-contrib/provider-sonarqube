@@ -91,6 +91,7 @@ type QualityProfileRuleParameters struct {
 	// Rule is the unique key (identifier) of the rule to be activated in the Quality Profile.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
+	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.Rule
 	Rule *string `json:"rule"`
 	// RuleRef is a reference to a Rule to retrieve its id and associate it with the project.
 	// +kubebuilder:validation:Optional

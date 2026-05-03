@@ -160,7 +160,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			client: &test.MockClient{
 				MockGet: test.NewMockGetFn(notFoundRule),
 			},
-			errSubstr: "spec.forProvider.rules.rule",
+			errSubstr: "mg.Spec.ForProvider.Rules[i3].Rule",
 		},
 		"RuleSelector_ResolvesToExternalName": {
 			reason: "A selector lists matching Rules and resolves the external-name.",
@@ -318,7 +318,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			t.Fatal("expected an error but got nil")
 		}
 
-		if !strings.Contains(err.Error(), "spec.forProvider.rules.rule") {
+		if !strings.Contains(err.Error(), "mg.Spec.ForProvider.Rules[i3].Rule") {
 			t.Fatalf("expected wrapped error path, got %q", err.Error())
 		}
 
