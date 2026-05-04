@@ -42,7 +42,6 @@ type BasicAuthArgs struct {
 	// Password is the password for Basic Authentication.
 	// It is expected to be stored in a Kubernetes Secret and
 	// referenced in the ProviderConfig.
-	//nolint:gosec // Not a hardcoded secret, from Kubernetes Secret.
 	Password string `json:"password"`
 }
 
