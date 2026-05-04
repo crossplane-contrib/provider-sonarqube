@@ -39,7 +39,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
@@ -190,8 +189,8 @@ func TestObserve(t *testing.T) {
 					Name:                "Custom Rule",
 					TemplateKey:         "java:TemplateRule",
 					MarkdownDescription: "A rule",
-					Severity:            ptr.To("MAJOR"),
-					Status:              ptr.To("READY"),
+					Severity:            new("MAJOR"),
+					Status:              new("READY"),
 				}),
 			},
 			want: want{

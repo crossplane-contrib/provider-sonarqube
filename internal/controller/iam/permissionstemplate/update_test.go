@@ -29,7 +29,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
@@ -50,9 +49,9 @@ func TestUpdate(t *testing.T) {
 			Spec: v1alpha1.PermissionsTemplateSpec{
 				ForProvider: v1alpha1.PermissionsTemplateParameters{
 					Name:               "template-a",
-					Description:        ptr.To("desc"),
-					ProjectKeyPattern:  ptr.To("proj-.*"),
-					Default:            ptr.To(false),
+					Description:        new("desc"),
+					ProjectKeyPattern:  new("proj-.*"),
+					Default:            new(false),
 					CreatorPermissions: stringSlice("scan"),
 					GroupPermissions: &[]v1alpha1.PermissionsTemplateGroupParameters{{
 						Name:        "devs",
@@ -99,7 +98,7 @@ func TestUpdate(t *testing.T) {
 			},
 			mg: func() resource.Managed {
 				template := baseTemplate()
-				template.Spec.ForProvider.Default = ptr.To(true)
+				template.Spec.ForProvider.Default = new(true)
 
 				return template
 			}(),
@@ -134,7 +133,7 @@ func TestUpdate(t *testing.T) {
 			},
 			mg: func() resource.Managed {
 				template := baseTemplate()
-				template.Spec.ForProvider.Default = ptr.To(true)
+				template.Spec.ForProvider.Default = new(true)
 				template.Spec.ForProvider.CreatorPermissions = stringSlice("admin")
 				template.Spec.ForProvider.GroupPermissions = &[]v1alpha1.PermissionsTemplateGroupParameters{{Name: "devs", Permissions: stringSlice("admin")}}
 				template.Spec.ForProvider.UserPermissions = &[]v1alpha1.PermissionsTemplateUserParameters{{Login: "alice", Permissions: stringSlice("admin")}}
@@ -260,9 +259,9 @@ func TestBaseFieldsAndDefaultHelpers(t *testing.T) {
 	e := &external{client: &fake.MockPermissionsTemplatesClient{}}
 	template := withExternalName(newPermissionsTemplate("template-a"), "template-id")
 
-	template.Spec.ForProvider.Description = ptr.To("desc")
-	template.Spec.ForProvider.ProjectKeyPattern = ptr.To("proj-.*")
-	template.Spec.ForProvider.Default = ptr.To(true)
+	template.Spec.ForProvider.Description = new("desc")
+	template.Spec.ForProvider.ProjectKeyPattern = new("proj-.*")
+	template.Spec.ForProvider.Default = new(true)
 	template.Status.AtProvider.Name = templateNameA
 	template.Status.AtProvider.Description = "desc"
 	template.Status.AtProvider.ProjectKeyPattern = "proj-.*"
@@ -278,7 +277,7 @@ func TestBaseFieldsAndDefaultHelpers(t *testing.T) {
 		t.Fatalf("setTemplateAsDefaultIfNeeded() unexpected error: %v", err)
 	}
 
-	template.Spec.ForProvider.Default = ptr.To(false)
+	template.Spec.ForProvider.Default = new(false)
 	template.Status.AtProvider.Default = false
 
 	err = e.setTemplateAsDefaultIfNeeded("template-id", template)

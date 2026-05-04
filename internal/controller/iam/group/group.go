@@ -26,7 +26,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
-	"k8s.io/utils/ptr"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/pkg/errors"
@@ -416,7 +415,7 @@ func getGroupPermissions(permissionsClient iam.PermissionsClient, groupName stri
 	const maxPageSize = int64(100)
 
 	for page := int64(1); ; page++ {
-		options := iam.GeneratePermissionsGroupsOptions(groupName, ptr.To(sonar.PaginationArgs{
+		options := iam.GeneratePermissionsGroupsOptions(groupName, new(sonar.PaginationArgs{
 			Page:     page,
 			PageSize: maxPageSize,
 		}))

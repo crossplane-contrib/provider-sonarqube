@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -86,7 +85,7 @@ func TestLateInitializeGroup(t *testing.T) {
 	t.Run("DescriptionNotOverwrittenWhenPresent", func(t *testing.T) {
 		t.Parallel()
 
-		spec := &v1alpha1.GroupParameters{Name: "devs", Description: ptr.To(lateInitCustomDesc)}
+		spec := &v1alpha1.GroupParameters{Name: "devs", Description: new(lateInitCustomDesc)}
 		obs := &v1alpha1.GroupObservation{Description: "engineering group"}
 
 		LateInitializeGroup(spec, obs)
@@ -195,12 +194,12 @@ func TestIsGroupLateInitialized(t *testing.T) {
 		},
 		"EmptyDescriptionNotMeaningful": {
 			former:  &v1alpha1.GroupParameters{Name: "devs", Description: nil},
-			current: &v1alpha1.GroupParameters{Name: "devs", Description: ptr.To("")},
+			current: &v1alpha1.GroupParameters{Name: "devs", Description: new("")},
 			want:    false,
 		},
 		"EmptyPermissionsNotMeaningful": {
 			former:  &v1alpha1.GroupParameters{Name: "devs", Permissions: nil},
-			current: &v1alpha1.GroupParameters{Name: "devs", Permissions: ptr.To([]string{})},
+			current: &v1alpha1.GroupParameters{Name: "devs", Permissions: new([]string{})},
 			want:    false,
 		},
 	}

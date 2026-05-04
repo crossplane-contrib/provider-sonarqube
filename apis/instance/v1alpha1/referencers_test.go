@@ -96,7 +96,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			reason: "When Rule is already set and no ref/selector exists, it is preserved.",
 			profile: func() *QualityProfile {
 				qp := newTestQualityProfile(testNamespace)
-				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{Rule: ptr.To("go:S100")}}
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{Rule: new("go:S100")}}
 
 				return qp
 			}(),
@@ -195,7 +195,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			profile: func() *QualityProfile {
 				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
-					Rule:    ptr.To("example-rule"),
+					Rule:    new("example-rule"),
 					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
 				}}
 
@@ -217,7 +217,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 			profile: func() *QualityProfile {
 				qp := newTestQualityProfile(testNamespace)
 				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{
-					{Rule: ptr.To("go:S100")},
+					{Rule: new("go:S100")},
 					{RuleRef: &xpv1.NamespacedReference{Name: "rule-ref-java"}},
 					{RuleSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"team": "sec"}}},
 				}
@@ -365,7 +365,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			reason: "When QualityGateName is already set and no ref exists, it is preserved.",
 			project: func() *Project {
 				p := newTestProject(testNamespace)
-				p.Spec.ForProvider.QualityGateName = ptr.To("Sonar way")
+				p.Spec.ForProvider.QualityGateName = new("Sonar way")
 
 				return p
 			}(),
@@ -730,11 +730,11 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 
 		p := newTestProject(testNamespace)
 		// Pre-set stale cached values (what Crossplane's initializer writes).
-		p.Spec.ForProvider.QualityGateName = ptr.To("example-qualitygate")
+		p.Spec.ForProvider.QualityGateName = new("example-qualitygate")
 		p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: "example-qualitygate"}
 		p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 			"go": {
-				Id:    ptr.To("example-qualityprofile-go"),
+				Id:    new("example-qualityprofile-go"),
 				IdRef: &xpv1.NamespacedReference{Name: "example-qualityprofile-go"},
 			},
 		}

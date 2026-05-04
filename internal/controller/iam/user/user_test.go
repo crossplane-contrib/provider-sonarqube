@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -103,7 +102,7 @@ func TestCreate(t *testing.T) {
 	t.Run("local user without secret returns error", func(t *testing.T) {
 		t.Parallel()
 
-		user := newUserWithSpec(v1alpha1.UserParameters{Login: "alice", Name: "Alice", Local: ptr.To(true)})
+		user := newUserWithSpec(v1alpha1.UserParameters{Login: "alice", Name: "Alice", Local: new(true)})
 
 		_, err := (&external{usersClient: &sonarfake.MockUsersClient{}}).Create(context.Background(), user)
 		if err == nil || !strings.Contains(err.Error(), "passwordSecretRef must be set") {
@@ -114,11 +113,11 @@ func TestCreate(t *testing.T) {
 	t.Run("creates user", func(t *testing.T) {
 		t.Parallel()
 
-		desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("devs")}, {GroupId: ptr.To("ops")}, {GroupId: nil}}
+		desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: new("devs")}, {GroupId: new("ops")}, {GroupId: nil}}
 		user := newUserWithSpec(v1alpha1.UserParameters{
 			Login:       testUserLogin,
 			Name:        "Alice",
-			Local:       ptr.To(false),
+			Local:       new(false),
 			Groups:      &desiredGroups,
 			ScmAccounts: &[]string{"github:alice"},
 		})
@@ -174,7 +173,7 @@ func TestCreate(t *testing.T) {
 		user := newUserWithSpec(v1alpha1.UserParameters{
 			Login: testUserLogin,
 			Name:  "Alice",
-			Local: ptr.To(true),
+			Local: new(true),
 			PasswordSecretRef: &xpv1.SecretKeySelector{Key: "password", SecretReference: xpv1.SecretReference{
 				Name:      "pwd",
 				Namespace: "default",
@@ -235,7 +234,7 @@ func TestDelete(t *testing.T) {
 				return &http.Response{StatusCode: http.StatusNoContent, Body: io.NopCloser(strings.NewReader(""))}, nil
 			},
 		}
-		user := newUserWithSpec(v1alpha1.UserParameters{Anonymize: ptr.To(true)})
+		user := newUserWithSpec(v1alpha1.UserParameters{Anonymize: new(true)})
 		meta.SetExternalName(user, testUserID)
 
 		_, err := (&external{usersClient: usersClient}).Delete(context.Background(), user)

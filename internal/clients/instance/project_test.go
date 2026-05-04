@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -48,7 +47,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 			spec: v1alpha1.ProjectParameters{
 				Name:       "test-project",
 				Key:        "test-key",
-				Visibility: ptr.To("private"),
+				Visibility: new("private"),
 			},
 			want: &sonar.ProjectsCreateOptions{
 				Name:       "test-project",
@@ -60,7 +59,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 			spec: v1alpha1.ProjectParameters{
 				Name:          "test-project",
 				Key:           "test-key",
-				DefaultBranch: ptr.To("develop"),
+				DefaultBranch: new("develop"),
 			},
 			want: &sonar.ProjectsCreateOptions{
 				Name:       "test-project",
@@ -74,7 +73,7 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 				Key:  "test-key",
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "NUMBER_OF_DAYS",
-					Value: ptr.To("30"),
+					Value: new("30"),
 				},
 			},
 			want: &sonar.ProjectsCreateOptions{
@@ -102,11 +101,11 @@ func TestGenerateProjectsCreateOptions(t *testing.T) {
 			spec: v1alpha1.ProjectParameters{
 				Name:          "full-project",
 				Key:           "full-key",
-				Visibility:    ptr.To("public"),
-				DefaultBranch: ptr.To("main"),
+				Visibility:    new("public"),
+				DefaultBranch: new("main"),
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "REFERENCE_BRANCH",
-					Value: ptr.To("main"),
+					Value: new("main"),
 				},
 			},
 			want: &sonar.ProjectsCreateOptions{
@@ -263,25 +262,25 @@ func TestLateInitializeProject(t *testing.T) {
 	}{
 		"VisibilityAlreadySet": {
 			spec: &v1alpha1.ProjectParameters{
-				Visibility: ptr.To("private"),
+				Visibility: new("private"),
 			},
 			observation: &v1alpha1.ProjectObservation{
 				Visibility: "public",
 			},
-			wantVisib: ptr.To("private"),
+			wantVisib: new("private"),
 		},
 		"VisibilityNilGetsInitialized": {
 			spec: &v1alpha1.ProjectParameters{},
 			observation: &v1alpha1.ProjectObservation{
 				Visibility: "public",
 			},
-			wantVisib: ptr.To("public"),
+			wantVisib: new("public"),
 		},
 		// When spec.NewCodePeriod is nil, LateInitializeProject must not panic or change
 		// the field (the nil guard in LateInitializeProjectNewCodePeriod should short-circuit).
 		"NewCodePeriodNilSpecIsNoOp": {
 			spec: &v1alpha1.ProjectParameters{
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				// NewCodePeriod intentionally left nil
 			},
 			observation: &v1alpha1.ProjectObservation{
@@ -291,14 +290,14 @@ func TestLateInitializeProject(t *testing.T) {
 					Inherited: true,
 				},
 			},
-			wantVisib:     ptr.To("public"),
+			wantVisib:     new("public"),
 			checkNCPValue: false, // spec.NewCodePeriod stays nil; nothing to assert
 		},
 		// When spec.NewCodePeriod is set but Value is nil, the observation's value should
 		// be back-filled so that drift detection works correctly.
 		"NewCodePeriodValueNilIsInitialized": {
 			spec: &v1alpha1.ProjectParameters{
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type: "NUMBER_OF_DAYS",
 					// Value intentionally nil: should be set from observation
@@ -311,17 +310,17 @@ func TestLateInitializeProject(t *testing.T) {
 					Value: "30",
 				},
 			},
-			wantVisib:     ptr.To("public"),
-			wantNCPValue:  ptr.To("30"),
+			wantVisib:     new("public"),
+			wantNCPValue:  new("30"),
 			checkNCPValue: true,
 		},
 		// When spec.NewCodePeriod.Value is already set, it must not be overwritten.
 		"NewCodePeriodValueAlreadySetIsPreserved": {
 			spec: &v1alpha1.ProjectParameters{
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "NUMBER_OF_DAYS",
-					Value: ptr.To("14"),
+					Value: new("14"),
 				},
 			},
 			observation: &v1alpha1.ProjectObservation{
@@ -331,8 +330,8 @@ func TestLateInitializeProject(t *testing.T) {
 					Value: "30",
 				},
 			},
-			wantVisib:     ptr.To("public"),
-			wantNCPValue:  ptr.To("14"),
+			wantVisib:     new("public"),
+			wantNCPValue:  new("14"),
 			checkNCPValue: true,
 		},
 	}
@@ -414,7 +413,7 @@ func TestIsProjectUpToDate(t *testing.T) {
 			spec: &v1alpha1.ProjectParameters{
 				Name:       "proj",
 				Key:        "key",
-				Visibility: ptr.To("private"),
+				Visibility: new("private"),
 			},
 			observation: &v1alpha1.ProjectObservation{
 				Name:       "proj",
@@ -482,7 +481,7 @@ func TestIsProjectLateInitializedNoChanges(t *testing.T) {
 			former: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				Links:      []v1alpha1.ProjectLinkParameters{},
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "PREVIOUS_VERSION",
@@ -492,7 +491,7 @@ func TestIsProjectLateInitializedNoChanges(t *testing.T) {
 			current: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				Links:      []v1alpha1.ProjectLinkParameters{},
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "PREVIOUS_VERSION",
@@ -539,12 +538,12 @@ func TestIsProjectLateInitializedVisibility(t *testing.T) {
 			former: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 			},
 			current: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("private"),
+				Visibility: new("private"),
 			},
 			want: true,
 		},
@@ -556,7 +555,7 @@ func TestIsProjectLateInitializedVisibility(t *testing.T) {
 			current: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 			},
 			want: true,
 		},
@@ -564,7 +563,7 @@ func TestIsProjectLateInitializedVisibility(t *testing.T) {
 			former: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 			},
 			current: &v1alpha1.ProjectParameters{
 				Name: "test-proj",
@@ -731,7 +730,7 @@ func TestIsProjectLateInitializedNewCodePeriod(t *testing.T) {
 				Key:  "test-key",
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "NUMBER_OF_DAYS",
-					Value: ptr.To("30"),
+					Value: new("30"),
 				},
 			},
 			want: true,
@@ -750,7 +749,7 @@ func TestIsProjectLateInitializedNewCodePeriod(t *testing.T) {
 				Key:  "test-key",
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "NUMBER_OF_DAYS",
-					Value: ptr.To("30"),
+					Value: new("30"),
 				},
 			},
 			want: true,
@@ -761,7 +760,7 @@ func TestIsProjectLateInitializedNewCodePeriod(t *testing.T) {
 				Key:  "test-key",
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "NUMBER_OF_DAYS",
-					Value: ptr.To("30"),
+					Value: new("30"),
 				},
 			},
 			current: &v1alpha1.ProjectParameters{
@@ -818,7 +817,7 @@ func TestIsProjectLateInitializedNewCodePeriod(t *testing.T) {
 				Key:  "test-key",
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "REFERENCE_BRANCH",
-					Value: ptr.To("main"),
+					Value: new("main"),
 				},
 			},
 			want: true,
@@ -850,13 +849,13 @@ func TestIsProjectLateInitializedCombined(t *testing.T) {
 			former: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				Links:      []v1alpha1.ProjectLinkParameters{},
 			},
 			current: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("private"),
+				Visibility: new("private"),
 				Links: []v1alpha1.ProjectLinkParameters{
 					{
 						Name: "Homepage",
@@ -870,7 +869,7 @@ func TestIsProjectLateInitializedCombined(t *testing.T) {
 			former: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "PREVIOUS_VERSION",
 					Value: nil,
@@ -879,10 +878,10 @@ func TestIsProjectLateInitializedCombined(t *testing.T) {
 			current: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("private"),
+				Visibility: new("private"),
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "NUMBER_OF_DAYS",
-					Value: ptr.To("30"),
+					Value: new("30"),
 				},
 			},
 			want: true,
@@ -891,7 +890,7 @@ func TestIsProjectLateInitializedCombined(t *testing.T) {
 			former: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				Links:      []v1alpha1.ProjectLinkParameters{},
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "PREVIOUS_VERSION",
@@ -901,7 +900,7 @@ func TestIsProjectLateInitializedCombined(t *testing.T) {
 			current: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("private"),
+				Visibility: new("private"),
 				Links: []v1alpha1.ProjectLinkParameters{
 					{
 						Name: "Homepage",
@@ -910,7 +909,7 @@ func TestIsProjectLateInitializedCombined(t *testing.T) {
 				},
 				NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 					Type:  "NUMBER_OF_DAYS",
-					Value: ptr.To("30"),
+					Value: new("30"),
 				},
 			},
 			want: true,
@@ -942,13 +941,13 @@ func TestIsProjectLateInitializedEdgeCases(t *testing.T) {
 			former: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				Links:      []v1alpha1.ProjectLinkParameters{},
 			},
 			current: &v1alpha1.ProjectParameters{
 				Name:       "test-proj",
 				Key:        "test-key",
-				Visibility: ptr.To("public"),
+				Visibility: new("public"),
 				Links:      []v1alpha1.ProjectLinkParameters{},
 			},
 			want: false,

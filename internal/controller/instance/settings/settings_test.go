@@ -28,7 +28,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
@@ -122,7 +121,7 @@ func TestObserve(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsTestProjectKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -150,7 +149,7 @@ func TestObserve(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -185,7 +184,7 @@ func TestObserve(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -222,7 +221,7 @@ func TestObserve(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -255,7 +254,7 @@ func TestObserve(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -306,13 +305,13 @@ func TestObserve(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 								settingsSonarExclusionsKey: {
-									Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
+									Values: new([]string{"**/*.test.js", "**/*.spec.js"}),
 								},
 								"sonar.issue.enforce.multicriteria": {
-									FieldValues: ptr.To(map[string]string{
+									FieldValues: new(map[string]string{
 										"1.ruleKey":     "squid:S1134",
 										"1.resourceKey": "**/*.java",
 									}),
@@ -356,10 +355,10 @@ func TestObserve(t *testing.T) {
 					},
 					Spec: v1alpha1.SettingsSpec{
 						ForProvider: v1alpha1.SettingsParameters{
-							Component: ptr.To(settingsTestProjectKey),
+							Component: new(settingsTestProjectKey),
 							Settings: map[string]v1alpha1.SettingParameters{
 								"sonar.coverage.jacoco.xmlReportPaths": {
-									Value: ptr.To("target/site/jacoco/jacoco.xml"),
+									Value: new("target/site/jacoco/jacoco.xml"),
 								},
 							},
 						},
@@ -440,7 +439,7 @@ func TestCreate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -474,7 +473,7 @@ func TestCreate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -509,10 +508,10 @@ func TestCreate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 								settingsSonarExclusionsKey: {
-									Values: ptr.To([]string{"**/*.test.js"}),
+									Values: new([]string{"**/*.test.js"}),
 								},
 							},
 						},
@@ -540,10 +539,10 @@ func TestCreate(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{Name: "test-settings"},
 					Spec: v1alpha1.SettingsSpec{
 						ForProvider: v1alpha1.SettingsParameters{
-							Component: ptr.To(settingsTestProjectKey),
+							Component: new(settingsTestProjectKey),
 							Settings: map[string]v1alpha1.SettingParameters{
 								"sonar.coverage.jacoco.xmlReportPaths": {
-									Value: ptr.To("target/site/jacoco/jacoco.xml"),
+									Value: new("target/site/jacoco/jacoco.xml"),
 								},
 							},
 						},
@@ -574,10 +573,10 @@ func TestCreate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 								settingsSonarExclusionsKey: {
-									Values: ptr.To([]string{"**/*.test.js"}),
+									Values: new([]string{"**/*.test.js"}),
 								},
 							},
 						},
@@ -612,7 +611,7 @@ func TestCreate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								"sonar.issue.enforce.multicriteria": {
-									FieldValues: ptr.To(map[string]string{
+									FieldValues: new(map[string]string{
 										"1.ruleKey":     "squid:S1134",
 										"1.resourceKey": "**/*.java",
 									}),
@@ -701,7 +700,7 @@ func TestUpdate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://new-url.com"),
+									Value: new("https://new-url.com"),
 								},
 							},
 						},
@@ -736,7 +735,7 @@ func TestUpdate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -784,7 +783,7 @@ func TestUpdate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -830,13 +829,13 @@ func TestUpdate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://new-url.com"),
+									Value: new("https://new-url.com"),
 								},
 								settingsSonarExclusionsKey: {
-									Values: ptr.To([]string{"**/*.new.js"}),
+									Values: new([]string{"**/*.new.js"}),
 								},
 								"sonar.uptodate.setting": {
-									Value: ptr.To("same-value"),
+									Value: new("same-value"),
 								},
 							},
 						},
@@ -881,10 +880,10 @@ func TestUpdate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://new-url.com"),
+									Value: new("https://new-url.com"),
 								},
 								settingsSonarExclusionsKey: {
-									Values: ptr.To([]string{"**/*.new.js"}),
+									Values: new([]string{"**/*.new.js"}),
 								},
 							},
 						},
@@ -922,7 +921,7 @@ func TestUpdate(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},
@@ -962,10 +961,10 @@ func TestUpdate(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{Name: "test-settings"},
 					Spec: v1alpha1.SettingsSpec{
 						ForProvider: v1alpha1.SettingsParameters{
-							Component: ptr.To(settingsTestProjectKey),
+							Component: new(settingsTestProjectKey),
 							Settings: map[string]v1alpha1.SettingParameters{
 								"sonar.coverage.jacoco.xmlReportPaths": {
-									Value: ptr.To("target/new/jacoco.xml"),
+									Value: new("target/new/jacoco.xml"),
 								},
 							},
 						},
@@ -1065,10 +1064,10 @@ func TestDelete(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 								settingsSonarExclusionsKey: {
-									Values: ptr.To([]string{"**/*.test.js"}),
+									Values: new([]string{"**/*.test.js"}),
 								},
 							},
 						},
@@ -1096,10 +1095,10 @@ func TestDelete(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{Name: "test-settings"},
 					Spec: v1alpha1.SettingsSpec{
 						ForProvider: v1alpha1.SettingsParameters{
-							Component: ptr.To(settingsTestProjectKey),
+							Component: new(settingsTestProjectKey),
 							Settings: map[string]v1alpha1.SettingParameters{
 								"sonar.coverage.jacoco.xmlReportPaths": {
-									Value: ptr.To("target/site/jacoco/jacoco.xml"),
+									Value: new("target/site/jacoco/jacoco.xml"),
 								},
 							},
 						},
@@ -1125,7 +1124,7 @@ func TestDelete(t *testing.T) {
 						ForProvider: v1alpha1.SettingsParameters{
 							Settings: map[string]v1alpha1.SettingParameters{
 								settingsSonarBaseURLKey: {
-									Value: ptr.To("https://sonarqube.example.com"),
+									Value: new("https://sonarqube.example.com"),
 								},
 							},
 						},

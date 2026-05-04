@@ -28,7 +28,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
@@ -47,9 +46,9 @@ func TestObserve(t *testing.T) {
 			Spec: v1alpha1.PermissionsTemplateSpec{
 				ForProvider: v1alpha1.PermissionsTemplateParameters{
 					Name:               templateNameA,
-					Description:        ptr.To("desc"),
-					ProjectKeyPattern:  ptr.To("proj-.*"),
-					Default:            ptr.To(false),
+					Description:        new("desc"),
+					ProjectKeyPattern:  new("proj-.*"),
+					Default:            new(false),
 					CreatorPermissions: stringSlice("scan"),
 					GroupPermissions: &[]v1alpha1.PermissionsTemplateGroupParameters{{
 						Name:        "devs",
@@ -68,7 +67,7 @@ func TestObserve(t *testing.T) {
 		return withExternalName(&v1alpha1.PermissionsTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "template-b"},
 			Spec: v1alpha1.PermissionsTemplateSpec{
-				ForProvider: v1alpha1.PermissionsTemplateParameters{Name: "template-b", Default: ptr.To(false)},
+				ForProvider: v1alpha1.PermissionsTemplateParameters{Name: "template-b", Default: new(false)},
 			},
 		}, "template-id-b")
 	}
@@ -156,9 +155,9 @@ func TestObserve(t *testing.T) {
 			},
 			mg: func() resource.Managed {
 				template := withExternalName(newPermissionsTemplate("template-empty"), "template-id-empty")
-				template.Spec.ForProvider.Description = ptr.To("desc")
-				template.Spec.ForProvider.ProjectKeyPattern = ptr.To("proj-.*")
-				template.Spec.ForProvider.Default = ptr.To(false)
+				template.Spec.ForProvider.Description = new("desc")
+				template.Spec.ForProvider.ProjectKeyPattern = new("proj-.*")
+				template.Spec.ForProvider.Default = new(false)
 				template.Spec.ForProvider.CreatorPermissions = stringSlice("scan")
 				template.Spec.ForProvider.GroupPermissions = &[]v1alpha1.PermissionsTemplateGroupParameters{{Name: "devs", Permissions: &[]string{"scan"}}}
 				template.Spec.ForProvider.UserPermissions = &[]v1alpha1.PermissionsTemplateUserParameters{{Login: "alice", Permissions: &[]string{"scan"}}}
@@ -290,12 +289,12 @@ func TestGetTemplateSearchString(t *testing.T) {
 		t.Fatal("getTemplateSearchString(nil, nil) expected error")
 	}
 
-	got, err := getTemplateSearchString(ptr.To(permissionsTemplateTestID), ptr.To("template-name"))
+	got, err := getTemplateSearchString(new(permissionsTemplateTestID), new("template-name"))
 	if err != nil || got != permissionsTemplateTestID {
 		t.Fatalf("getTemplateSearchString() got %q, err=%v", got, err)
 	}
 
-	got, err = getTemplateSearchString(nil, ptr.To("template-name"))
+	got, err = getTemplateSearchString(nil, new("template-name"))
 	if err != nil || got != "template-name" {
 		t.Fatalf("getTemplateSearchString() got %q, err=%v", got, err)
 	}
@@ -348,12 +347,12 @@ func TestFindMatchingTemplate(t *testing.T) {
 	templates := []sonar.PermissionTemplate{{ID: permissionsTemplateTestID, Name: templateNameA}, {ID: "template-2", Name: "template-b"}}
 	defaultTemplates := map[string]struct{}{permissionsTemplateTestID: {}}
 
-	got, isDefault, found := findMatchingTemplate(templates, defaultTemplates, ptr.To(permissionsTemplateTestID), nil)
+	got, isDefault, found := findMatchingTemplate(templates, defaultTemplates, new(permissionsTemplateTestID), nil)
 	if !found || !isDefault || got.ID != permissionsTemplateTestID {
 		t.Fatalf("findMatchingTemplate() got=%+v isDefault=%v found=%v", got, isDefault, found)
 	}
 
-	_, _, found = findMatchingTemplate(templates, defaultTemplates, ptr.To("missing"), nil)
+	_, _, found = findMatchingTemplate(templates, defaultTemplates, new("missing"), nil)
 	if found {
 		t.Fatal("findMatchingTemplate() expected no match")
 	}
@@ -412,7 +411,7 @@ func TestObservePermissionsTemplate(t *testing.T) {
 
 	e := &external{client: idLookupClient}
 
-	got, isDefault, err := e.observePermissionsTemplate(ptr.To(permissionsTemplateTestID), nil)
+	got, isDefault, err := e.observePermissionsTemplate(new(permissionsTemplateTestID), nil)
 	if err != nil || got.ID != permissionsTemplateTestID || !isDefault {
 		t.Fatalf("observePermissionsTemplate() got=%+v isDefault=%v err=%v", got, isDefault, err)
 	}
@@ -429,7 +428,7 @@ func TestObservePermissionsTemplate(t *testing.T) {
 
 	e = &external{client: nameLookupClient}
 
-	got, isDefault, err = e.observePermissionsTemplate(nil, ptr.To(templateNameA))
+	got, isDefault, err = e.observePermissionsTemplate(nil, new(templateNameA))
 	if err != nil || got.ID != permissionsTemplateTestID || !isDefault {
 		t.Fatalf("observePermissionsTemplate() name-only got=%+v isDefault=%v err=%v", got, isDefault, err)
 	}
@@ -443,7 +442,7 @@ func TestObservePermissionsTemplate(t *testing.T) {
 		return nil, mockHTTPResponse(), errors.New("search failed")
 	}}}
 
-	_, _, err = errExternalClient.observePermissionsTemplate(ptr.To(permissionsTemplateTestID), nil)
+	_, _, err = errExternalClient.observePermissionsTemplate(new(permissionsTemplateTestID), nil)
 	if err == nil || !strings.Contains(err.Error(), "failed to search for PermissionsTemplate") {
 		t.Fatalf("observePermissionsTemplate() error = %v", err)
 	}

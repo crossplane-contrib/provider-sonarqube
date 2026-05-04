@@ -27,7 +27,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
@@ -113,7 +112,7 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 		go func(groupID string) {
 			defer membershipsWaitGroup.Done()
 
-			created, resp, err := c.groupsClient.CreateGroupMembership(ptr.To(iam.GenerateGroupCreateMembershipOptions(groupID, externalName))) //nolint:bodyclose // closed via helpers.CloseBody
+			created, resp, err := c.groupsClient.CreateGroupMembership(new(iam.GenerateGroupCreateMembershipOptions(groupID, externalName))) //nolint:bodyclose // closed via helpers.CloseBody
 			defer helpers.CloseBody(resp)
 
 			if err != nil {

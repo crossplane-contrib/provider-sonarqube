@@ -29,7 +29,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
@@ -158,7 +157,7 @@ func TestObserve(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:    "test-gate",
-								Default: ptr.To(false), // explicitly set to match observation and avoid late initialization
+								Default: new(false), // explicitly set to match observation and avoid late initialization
 							},
 						},
 					}
@@ -200,7 +199,7 @@ func TestObserve(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:    "test-gate",
-								Default: ptr.To(false), // explicitly set to match observation and avoid late initialization
+								Default: new(false), // explicitly set to match observation and avoid late initialization
 							},
 						},
 					}
@@ -406,7 +405,7 @@ func TestCreate(t *testing.T) {
 					Spec: v1alpha1.QualityGateSpec{
 						ForProvider: v1alpha1.QualityGateParameters{
 							Name:    "my-sonar-gate",
-							Default: ptr.To(true),
+							Default: new(true),
 						},
 					},
 				},
@@ -435,7 +434,7 @@ func TestCreate(t *testing.T) {
 					Spec: v1alpha1.QualityGateSpec{
 						ForProvider: v1alpha1.QualityGateParameters{
 							Name:    "test-gate",
-							Default: ptr.To(true),
+							Default: new(true),
 						},
 					},
 				},
@@ -528,7 +527,7 @@ func TestUpdate(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:    "test-gate",
-								Default: ptr.To(true),
+								Default: new(true),
 							},
 						},
 					}
@@ -559,7 +558,7 @@ func TestUpdate(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:    "test-gate",
-								Default: ptr.To(true),
+								Default: new(true),
 							},
 						},
 					}
@@ -805,10 +804,10 @@ func TestObserveLateInitializesConditionIds(t *testing.T) {
 		Spec: v1alpha1.QualityGateSpec{
 			ForProvider: v1alpha1.QualityGateParameters{
 				Name:    "test-gate",
-				Default: ptr.To(false),
+				Default: new(false),
 				Conditions: []v1alpha1.QualityGateConditionParameters{
-					{Metric: "coverage", Error: "80", Op: ptr.To("LT")}, // no ID
-					{Metric: "bugs", Error: "0", Op: ptr.To("GT")},      // no ID
+					{Metric: "coverage", Error: "80", Op: new("LT")}, // no ID
+					{Metric: "bugs", Error: "0", Op: new("GT")},      // no ID
 				},
 			},
 		},
@@ -878,9 +877,9 @@ func TestObserveWithExistingConditionIds(t *testing.T) {
 		Spec: v1alpha1.QualityGateSpec{
 			ForProvider: v1alpha1.QualityGateParameters{
 				Name:    "test-gate",
-				Default: ptr.To(false),
+				Default: new(false),
 				Conditions: []v1alpha1.QualityGateConditionParameters{
-					{Id: ptr.To("cond-id-123"), Metric: "coverage", Error: "80", Op: ptr.To("LT")}, // already has ID
+					{Id: new("cond-id-123"), Metric: "coverage", Error: "80", Op: new("LT")}, // already has ID
 				},
 			},
 		},
@@ -939,9 +938,9 @@ func TestObserveWithStaleConditionId(t *testing.T) {
 		Spec: v1alpha1.QualityGateSpec{
 			ForProvider: v1alpha1.QualityGateParameters{
 				Name:    "test-gate",
-				Default: ptr.To(false),
+				Default: new(false),
 				Conditions: []v1alpha1.QualityGateConditionParameters{
-					{Id: ptr.To("old-stale-id"), Metric: "coverage", Error: "80", Op: ptr.To("LT")}, // stale ID
+					{Id: new("old-stale-id"), Metric: "coverage", Error: "80", Op: new("LT")}, // stale ID
 				},
 			},
 		},
@@ -1015,7 +1014,7 @@ func TestUpdateWithConditions(t *testing.T) {
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name: "test-gate",
 								Conditions: []v1alpha1.QualityGateConditionParameters{
-									{Metric: "coverage", Error: "80", Op: ptr.To("LT")},
+									{Metric: "coverage", Error: "80", Op: new("LT")},
 								},
 							},
 						},
@@ -1090,7 +1089,7 @@ func TestUpdateWithConditions(t *testing.T) {
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name: "test-gate",
 								Conditions: []v1alpha1.QualityGateConditionParameters{
-									{Id: ptr.To("existing-id"), Metric: "coverage", Error: "90", Op: ptr.To("LT")},
+									{Id: new("existing-id"), Metric: "coverage", Error: "90", Op: new("LT")},
 								},
 							},
 						},
@@ -1249,9 +1248,9 @@ func TestObserveWithConditions(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:    "test-gate",
-								Default: ptr.To(false),
+								Default: new(false),
 								Conditions: []v1alpha1.QualityGateConditionParameters{
-									{Id: ptr.To("1"), Metric: "coverage", Error: "80", Op: ptr.To("LT")},
+									{Id: new("1"), Metric: "coverage", Error: "80", Op: new("LT")},
 								},
 							},
 						},
@@ -1296,9 +1295,9 @@ func TestObserveWithConditions(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:    "test-gate",
-								Default: ptr.To(false),
+								Default: new(false),
 								Conditions: []v1alpha1.QualityGateConditionParameters{
-									{Id: ptr.To("1"), Metric: "coverage", Error: "90", Op: ptr.To("LT")},
+									{Id: new("1"), Metric: "coverage", Error: "90", Op: new("LT")},
 								},
 							},
 						},
@@ -1343,7 +1342,7 @@ func TestObserveWithConditions(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:       "test-gate",
-								Default:    ptr.To(false),
+								Default:    new(false),
 								Conditions: []v1alpha1.QualityGateConditionParameters{},
 							},
 						},
@@ -1386,7 +1385,7 @@ func TestObserveWithConditions(t *testing.T) {
 						Spec: v1alpha1.QualityGateSpec{
 							ForProvider: v1alpha1.QualityGateParameters{
 								Name:    "test-gate",
-								Default: ptr.To(false),
+								Default: new(false),
 								Conditions: []v1alpha1.QualityGateConditionParameters{
 									{Metric: "coverage", Error: "80"},
 								},

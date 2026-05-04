@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -39,7 +38,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		"BasicSetOptionWithValueOnly": {
 			key: "sonar.core.serverBaseURL",
 			params: v1alpha1.SettingParameters{
-				Value: ptr.To("https://sonarqube.example.com"),
+				Value: new("https://sonarqube.example.com"),
 			},
 			component: nil,
 			want: &sonar.SettingsSetOptions{
@@ -50,9 +49,9 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		"SetOptionWithComponent": {
 			key: "sonar.coverage.jacoco.xmlReportPaths",
 			params: v1alpha1.SettingParameters{
-				Value: ptr.To("target/site/jacoco/jacoco.xml"),
+				Value: new("target/site/jacoco/jacoco.xml"),
 			},
-			component: ptr.To("my-project-key"),
+			component: new("my-project-key"),
 			want: &sonar.SettingsSetOptions{
 				Key:       "sonar.coverage.jacoco.xmlReportPaths",
 				Value:     "target/site/jacoco/jacoco.xml",
@@ -62,7 +61,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		"SetOptionWithValues": {
 			key: "sonar.exclusions",
 			params: v1alpha1.SettingParameters{
-				Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
+				Values: new([]string{"**/*.test.js", "**/*.spec.js"}),
 			},
 			component: nil,
 			want: &sonar.SettingsSetOptions{
@@ -73,7 +72,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		"SetOptionWithFieldValues": {
 			key: "sonar.issue.enforce.multicriteria",
 			params: v1alpha1.SettingParameters{
-				FieldValues: ptr.To(map[string]string{
+				FieldValues: new(map[string]string{
 					"1.ruleKey":         "squid:S1134",
 					"1.resourceKey":     "**/*.java",
 					"1.enforceProperty": "severity",
@@ -94,7 +93,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		"SetOptionWithEmptyValues": {
 			key: "sonar.test.empty",
 			params: v1alpha1.SettingParameters{
-				Values: ptr.To([]string{}),
+				Values: new([]string{}),
 			},
 			component: nil,
 			want: &sonar.SettingsSetOptions{
@@ -104,7 +103,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		"SetOptionWithEmptyFieldValues": {
 			key: "sonar.test.empty.fields",
 			params: v1alpha1.SettingParameters{
-				FieldValues: ptr.To(map[string]string{}),
+				FieldValues: new(map[string]string{}),
 			},
 			component: nil,
 			want: &sonar.SettingsSetOptions{
@@ -114,14 +113,14 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 		"SetOptionWithAllFields": {
 			key: "sonar.multifield.setting",
 			params: v1alpha1.SettingParameters{
-				Value:  ptr.To("base-value"),
-				Values: ptr.To([]string{"value1", "value2"}),
-				FieldValues: ptr.To(map[string]string{
+				Value:  new("base-value"),
+				Values: new([]string{"value1", "value2"}),
+				FieldValues: new(map[string]string{
 					"field1": "val1",
 					"field2": "val2",
 				}),
 			},
-			component: ptr.To("project-key"),
+			component: new("project-key"),
 			want: &sonar.SettingsSetOptions{
 				Key:       "sonar.multifield.setting",
 				Value:     "base-value",
@@ -159,7 +158,7 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 			params: &v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 				},
 			},
@@ -169,10 +168,10 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 		},
 		"ValuesOptionWithComponent": {
 			params: &v1alpha1.SettingsParameters{
-				Component: ptr.To("my-project-key"),
+				Component: new("my-project-key"),
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.coverage.jacoco.xmlReportPaths": {
-						Value: ptr.To("target/site/jacoco/jacoco.xml"),
+						Value: new("target/site/jacoco/jacoco.xml"),
 					},
 				},
 			},
@@ -185,13 +184,13 @@ func TestGenerateSettingsValuesOptions(t *testing.T) {
 			params: &v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Values: ptr.To([]string{"**/*.test.js"}),
+						Values: new([]string{"**/*.test.js"}),
 					},
 					"sonar.coverage.exclusions": {
-						Values: ptr.To([]string{"**/*.spec.js"}),
+						Values: new([]string{"**/*.spec.js"}),
 					},
 				},
 			},
@@ -247,7 +246,7 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 				},
 			},
@@ -257,10 +256,10 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 		},
 		"ResetOptionWithComponent": {
 			params: v1alpha1.SettingsParameters{
-				Component: ptr.To("my-project-key"),
+				Component: new("my-project-key"),
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.coverage.jacoco.xmlReportPaths": {
-						Value: ptr.To("target/site/jacoco/jacoco.xml"),
+						Value: new("target/site/jacoco/jacoco.xml"),
 					},
 				},
 			},
@@ -273,10 +272,10 @@ func TestGenerateSettingsResetOptions(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Values: ptr.To([]string{"**/*.test.js"}),
+						Values: new([]string{"**/*.test.js"}),
 					},
 				},
 			},
@@ -338,7 +337,7 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 		},
 		"ResetFromListWithComponent": {
 			keys:      []string{"sonar.coverage.jacoco.xmlReportPaths"},
-			component: ptr.To("my-project-key"),
+			component: new("my-project-key"),
 			want: &sonar.SettingsResetOptions{
 				Keys:      []string{"sonar.coverage.jacoco.xmlReportPaths"},
 				Component: "my-project-key",
@@ -346,7 +345,7 @@ func TestGenerateSettingsResetOptionsFromList(t *testing.T) {
 		},
 		"ResetFromListWithMultipleKeys": {
 			keys:      []string{"sonar.core.serverBaseURL", "sonar.exclusions", "sonar.coverage.exclusions"},
-			component: ptr.To("another-project"),
+			component: new("another-project"),
 			want: &sonar.SettingsResetOptions{
 				Keys:      []string{"sonar.core.serverBaseURL", "sonar.exclusions", "sonar.coverage.exclusions"},
 				Component: "another-project",
@@ -559,7 +558,7 @@ func TestIsSettingUpToDate(t *testing.T) {
 	}{
 		"MatchingValue": {
 			params: v1alpha1.SettingParameters{
-				Value: ptr.To("https://sonarqube.example.com"),
+				Value: new("https://sonarqube.example.com"),
 			},
 			observation: v1alpha1.SettingObservation{
 				Value: "https://sonarqube.example.com",
@@ -568,7 +567,7 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"DifferentValue": {
 			params: v1alpha1.SettingParameters{
-				Value: ptr.To("https://sonarqube.example.com"),
+				Value: new("https://sonarqube.example.com"),
 			},
 			observation: v1alpha1.SettingObservation{
 				Value: "https://different-url.com",
@@ -586,7 +585,7 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"MatchingValues": {
 			params: v1alpha1.SettingParameters{
-				Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
+				Values: new([]string{"**/*.test.js", "**/*.spec.js"}),
 			},
 			observation: v1alpha1.SettingObservation{
 				Values: []string{"**/*.test.js", "**/*.spec.js"},
@@ -595,7 +594,7 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"DifferentValues": {
 			params: v1alpha1.SettingParameters{
-				Values: ptr.To([]string{"**/*.test.js", "**/*.spec.js"}),
+				Values: new([]string{"**/*.test.js", "**/*.spec.js"}),
 			},
 			observation: v1alpha1.SettingObservation{
 				Values: []string{"**/*.test.js"},
@@ -613,7 +612,7 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"MatchingFieldValues": {
 			params: v1alpha1.SettingParameters{
-				FieldValues: ptr.To(map[string]string{
+				FieldValues: new(map[string]string{
 					"1.ruleKey":     "squid:S1134",
 					"1.resourceKey": "**/*.java",
 				}),
@@ -628,7 +627,7 @@ func TestIsSettingUpToDate(t *testing.T) {
 		},
 		"DifferentFieldValues": {
 			params: v1alpha1.SettingParameters{
-				FieldValues: ptr.To(map[string]string{
+				FieldValues: new(map[string]string{
 					"1.ruleKey":     "squid:S1134",
 					"1.resourceKey": "**/*.java",
 				}),
@@ -697,10 +696,10 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Values: ptr.To([]string{"**/*.test.js"}),
+						Values: new([]string{"**/*.test.js"}),
 					},
 				},
 			},
@@ -720,10 +719,10 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Values: ptr.To([]string{"**/*.test.js"}),
+						Values: new([]string{"**/*.test.js"}),
 					},
 				},
 			},
@@ -743,10 +742,10 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 					"sonar.exclusions": {
-						Values: ptr.To([]string{"**/*.test.js"}),
+						Values: new([]string{"**/*.test.js"}),
 					},
 				},
 			},
@@ -772,7 +771,7 @@ func TestAreSettingsUpToDate(t *testing.T) {
 			params: v1alpha1.SettingsParameters{
 				Settings: map[string]v1alpha1.SettingParameters{
 					"sonar.core.serverBaseURL": {
-						Value: ptr.To("https://sonarqube.example.com"),
+						Value: new("https://sonarqube.example.com"),
 					},
 				},
 			},

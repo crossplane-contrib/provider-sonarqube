@@ -48,7 +48,7 @@ func TestGenerateCreateQualityProfileOption(t *testing.T) {
 			params: v1alpha1.QualityProfileParameters{
 				Name:     "default-profile",
 				Language: "go",
-				Default:  ptr.To(true),
+				Default:  new(true),
 			},
 			want: &sonar.QualityprofilesCreateOptions{
 				Name:     "default-profile",
@@ -188,7 +188,7 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 			spec: &v1alpha1.QualityProfileParameters{
 				Name:     "my-profile",
 				Language: "java",
-				Default:  ptr.To(true),
+				Default:  new(true),
 			},
 			observation: &v1alpha1.QualityProfileObservation{
 				Name:      "my-profile",
@@ -202,7 +202,7 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 			spec: &v1alpha1.QualityProfileParameters{
 				Name:     "my-profile",
 				Language: "java",
-				Default:  ptr.To(true),
+				Default:  new(true),
 			},
 			observation: &v1alpha1.QualityProfileObservation{
 				Name:      "my-profile",
@@ -212,7 +212,7 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 			associations: map[string]QualityProfileRuleAssociation{
 				"java:S1144": {
 					Spec: &v1alpha1.QualityProfileRuleParameters{
-						Rule: ptr.To("java:S1144"),
+						Rule: new("java:S1144"),
 					},
 					Observation: &v1alpha1.QualityProfileRuleObservation{
 						Key: "java:S1144",
@@ -234,8 +234,8 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 			associations: map[string]QualityProfileRuleAssociation{
 				"java:S1144": {
 					Spec: &v1alpha1.QualityProfileRuleParameters{
-						Rule:     ptr.To("java:S1144"),
-						Severity: ptr.To("CRITICAL"),
+						Rule:     new("java:S1144"),
+						Severity: new("CRITICAL"),
 					},
 					Observation: &v1alpha1.QualityProfileRuleObservation{
 						Key:      "java:S1144",
@@ -290,8 +290,8 @@ func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
 		},
 		"OnlySpecs": {
 			specs: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144")},
-				{Rule: ptr.To("java:S1145")},
+				{Rule: new("java:S1144")},
+				{Rule: new("java:S1145")},
 			},
 			observations: []v1alpha1.QualityProfileRuleObservation{},
 			wantKeys:     []string{"java:S1144", "java:S1145"},
@@ -314,7 +314,7 @@ func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
 		},
 		"MatchingSpecsAndObservations": {
 			specs: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144")},
+				{Rule: new("java:S1144")},
 			},
 			observations: []v1alpha1.QualityProfileRuleObservation{
 				{Key: "java:S1144"},
@@ -326,8 +326,8 @@ func TestGenerateQualityProfileRulesAssociation(t *testing.T) {
 		},
 		"MixedSpecsAndObservations": {
 			specs: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144")},
-				{Rule: ptr.To("java:S1146")}, // New rule to be activated
+				{Rule: new("java:S1144")},
+				{Rule: new("java:S1146")}, // New rule to be activated
 			},
 			observations: []v1alpha1.QualityProfileRuleObservation{
 				{Key: "java:S1144"},
@@ -388,7 +388,7 @@ func TestFindNonExistingQualityProfileRules(t *testing.T) {
 		"NoNonExisting": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"java:S1144": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144"},
 					UpToDate:    true,
 				},
@@ -399,12 +399,12 @@ func TestFindNonExistingQualityProfileRules(t *testing.T) {
 		"SomeNonExisting": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"java:S1144": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 					Observation: nil, // No observation means needs activation
 					UpToDate:    false,
 				},
 				"java:S1145": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1145")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1145")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1145"},
 					UpToDate:    true,
 				},
@@ -459,7 +459,7 @@ func TestFindMissingQualityProfileRules(t *testing.T) {
 		"NoMissing": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"java:S1144": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144"},
 					UpToDate:    true,
 				},
@@ -475,7 +475,7 @@ func TestFindMissingQualityProfileRules(t *testing.T) {
 					UpToDate:    false,
 				},
 				"java:S1145": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1145")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1145")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1145"},
 					UpToDate:    true,
 				},
@@ -530,7 +530,7 @@ func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 		"AllUpToDate": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"java:S1144": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144"},
 					UpToDate:    true,
 				},
@@ -541,12 +541,12 @@ func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 		"SomeNotUpToDate": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"java:S1144": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144"), Severity: ptr.To("CRITICAL")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144"), Severity: new("CRITICAL")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144", Severity: "MAJOR"},
 					UpToDate:    false,
 				},
 				"java:S1145": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1145")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1145")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1145"},
 					UpToDate:    true,
 				},
@@ -562,7 +562,7 @@ func TestFindNotUpToDateQualityProfileRules(t *testing.T) {
 					UpToDate:    false,
 				},
 				"java:S1145": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1145")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1145")},
 					Observation: nil, // Should be ignored
 					UpToDate:    false,
 				},
@@ -663,47 +663,47 @@ func TestWereQualityProfileRulesLateInitialized(t *testing.T) {
 		},
 		"LengthMismatch": {
 			original: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144")},
+				{Rule: new("java:S1144")},
 			},
 			updated: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144")},
-				{Rule: ptr.To("java:S1145")},
+				{Rule: new("java:S1144")},
+				{Rule: new("java:S1145")},
 			},
 			want: true,
 		},
 		"RuleKeyMissing": {
 			original: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144")},
+				{Rule: new("java:S1144")},
 			},
 			updated: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1145")},
+				{Rule: new("java:S1145")},
 			},
 			want: true,
 		},
 		"SeverityLateInitialized": {
 			original: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144"), Severity: nil},
+				{Rule: new("java:S1144"), Severity: nil},
 			},
 			updated: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144"), Severity: ptr.To("MAJOR")},
+				{Rule: new("java:S1144"), Severity: new("MAJOR")},
 			},
 			want: true,
 		},
 		"PrioritizedLateInitialized": {
 			original: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144"), Prioritized: nil},
+				{Rule: new("java:S1144"), Prioritized: nil},
 			},
 			updated: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144"), Prioritized: ptr.To(true)},
+				{Rule: new("java:S1144"), Prioritized: new(true)},
 			},
 			want: true,
 		},
 		"NoChange": {
 			original: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144"), Severity: ptr.To("MAJOR"), Prioritized: ptr.To(false)},
+				{Rule: new("java:S1144"), Severity: new("MAJOR"), Prioritized: new(false)},
 			},
 			updated: []v1alpha1.QualityProfileRuleParameters{
-				{Rule: ptr.To("java:S1144"), Severity: ptr.To("MAJOR"), Prioritized: ptr.To(false)},
+				{Rule: new("java:S1144"), Severity: new("MAJOR"), Prioritized: new(false)},
 			},
 			want: false,
 		},
@@ -733,7 +733,7 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 		"BasicRule": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
-				Rule: ptr.To("java:S1144"),
+				Rule: new("java:S1144"),
 			},
 			want: &sonar.QualityprofilesActivateRuleOptions{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
@@ -744,8 +744,8 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 		"RuleWithSeverity": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
-				Rule:     ptr.To("java:S1144"),
-				Severity: ptr.To("CRITICAL"),
+				Rule:     new("java:S1144"),
+				Severity: new("CRITICAL"),
 			},
 			want: &sonar.QualityprofilesActivateRuleOptions{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
@@ -757,8 +757,8 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 		"RuleWithPrioritized": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
-				Rule:        ptr.To("java:S1144"),
-				Prioritized: ptr.To(true),
+				Rule:        new("java:S1144"),
+				Prioritized: new(true),
 			},
 			want: &sonar.QualityprofilesActivateRuleOptions{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
@@ -769,7 +769,7 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 		"RuleWithImpacts": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
-				Rule:    ptr.To("java:S1144"),
+				Rule:    new("java:S1144"),
 				Impacts: &map[string]string{"MAINTAINABILITY": "HIGH"},
 			},
 			want: &sonar.QualityprofilesActivateRuleOptions{
@@ -782,7 +782,7 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 		"RuleWithParams": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
-				Rule:       ptr.To("java:S1144"),
+				Rule:       new("java:S1144"),
 				Parameters: &map[string]string{"max": "10"},
 			},
 			want: &sonar.QualityprofilesActivateRuleOptions{
@@ -795,8 +795,8 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 		"RuleWithBothImpactsAndSeverityPrioritizesImpacts": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
-				Rule:     ptr.To("java:S1144"),
-				Severity: ptr.To("CRITICAL"),
+				Rule:     new("java:S1144"),
+				Severity: new("CRITICAL"),
 				Impacts:  &map[string]string{"MAINTAINABILITY": "HIGH"},
 			},
 			want: &sonar.QualityprofilesActivateRuleOptions{
@@ -810,8 +810,8 @@ func TestGenerateQualityProfileActivateRuleOption(t *testing.T) {
 		"RuleWithOnlySeverityNoImpacts": {
 			profileKey: "AU-TpxcA-iU5OvuD2FLz",
 			params: v1alpha1.QualityProfileRuleParameters{
-				Rule:     ptr.To("java:S1144"),
-				Severity: ptr.To("BLOCKER"),
+				Rule:     new("java:S1144"),
+				Severity: new("BLOCKER"),
 			},
 			want: &sonar.QualityprofilesActivateRuleOptions{
 				Key:             "AU-TpxcA-iU5OvuD2FLz",
@@ -887,12 +887,12 @@ func TestLateInitializeQualityProfile(t *testing.T) {
 		"DefaultNotSet": {
 			spec:        &v1alpha1.QualityProfileParameters{Name: "test", Language: "java"},
 			observation: &v1alpha1.QualityProfileObservation{IsDefault: true},
-			wantDefault: ptr.To(true),
+			wantDefault: new(true),
 		},
 		"DefaultAlreadySet": {
-			spec:        &v1alpha1.QualityProfileParameters{Name: "test", Language: "java", Default: ptr.To(false)},
+			spec:        &v1alpha1.QualityProfileParameters{Name: "test", Language: "java", Default: new(false)},
 			observation: &v1alpha1.QualityProfileObservation{IsDefault: true},
-			wantDefault: ptr.To(false),
+			wantDefault: new(false),
 		},
 	}
 
@@ -1019,7 +1019,7 @@ func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 		// Spec declares a profile for java and the observation has the same UUID → up to date.
 		"SpecMatchesObservation_UpToDate": {
 			spec: map[string]v1alpha1.ProjectQualityProfileReference{
-				"java": {Id: ptr.To("uuid-java")},
+				"java": {Id: new("uuid-java")},
 			},
 			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
 				"java": {Id: "uuid-java", Name: "Sonar way"},
@@ -1029,7 +1029,7 @@ func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 		// Spec declares java but the UUID in observations differs → not up to date.
 		"SpecIDMismatch_NotUpToDate": {
 			spec: map[string]v1alpha1.ProjectQualityProfileReference{
-				"java": {Id: ptr.To("uuid-new-java")},
+				"java": {Id: new("uuid-new-java")},
 			},
 			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
 				"java": {Id: "uuid-old-java", Name: "Sonar way"},
@@ -1039,7 +1039,7 @@ func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 		// Spec declares a language that is not in the observation → not up to date.
 		"SpecLanguageMissingFromObservation_NotUpToDate": {
 			spec: map[string]v1alpha1.ProjectQualityProfileReference{
-				"go": {Id: ptr.To("uuid-go")},
+				"go": {Id: new("uuid-go")},
 			},
 			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
 				"java": {Id: "uuid-java", Name: "Sonar way"},
@@ -1049,7 +1049,7 @@ func TestAreProjectQualityProfilesUpToDate(t *testing.T) {
 		// Observation has extra languages not in spec → still up to date (unmanaged profiles).
 		"ObservationHasExtraLanguages_UpToDate": {
 			spec: map[string]v1alpha1.ProjectQualityProfileReference{
-				"java": {Id: ptr.To("uuid-java")},
+				"java": {Id: new("uuid-java")},
 			},
 			observation: map[string]v1alpha1.ProjectQualityProfileObservation{
 				"java": {Id: "uuid-java", Name: "Sonar way"},
@@ -1302,13 +1302,13 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 		"SpecWithoutObservationSkipped": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1")},
 					Observation: nil,
 				},
 			},
 			wantUpdated: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1")},
 					Observation: nil,
 				},
 			},
@@ -1330,13 +1330,13 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 		"SeverityLateInitialized": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Severity: "MAJOR"},
 				},
 			},
 			wantUpdated: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1"), Severity: ptr.To("MAJOR"), Prioritized: ptr.To(false)},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1"), Severity: new("MAJOR"), Prioritized: new(false)},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Severity: "MAJOR"},
 				},
 			},
@@ -1344,13 +1344,13 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 		"PrioritizedLateInitialized": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Prioritized: true},
 				},
 			},
 			wantUpdated: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1"), Severity: ptr.To(""), Prioritized: ptr.To(true)},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1"), Severity: new(""), Prioritized: new(true)},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Prioritized: true},
 				},
 			},
@@ -1358,7 +1358,7 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 		"ImpactsLateInitialized": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec: &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1")},
+					Spec: &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{
 						Key: "rule1",
 						Impacts: []v1alpha1.QualityProfileRuleImpact{
@@ -1370,9 +1370,9 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 			wantUpdated: map[string]QualityProfileRuleAssociation{
 				"rule1": {
 					Spec: &v1alpha1.QualityProfileRuleParameters{
-						Rule:        ptr.To("rule1"),
-						Severity:    ptr.To(""),
-						Prioritized: ptr.To(false),
+						Rule:        new("rule1"),
+						Severity:    new(""),
+						Prioritized: new(false),
 						Impacts:     &map[string]string{"SECURITY": "HIGH"},
 					},
 					Observation: &v1alpha1.QualityProfileRuleObservation{
@@ -1388,7 +1388,7 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 			associations: map[string]QualityProfileRuleAssociation{
 				"rule1": {
 					Spec: &v1alpha1.QualityProfileRuleParameters{
-						Rule:    ptr.To("rule1"),
+						Rule:    new("rule1"),
 						Impacts: &map[string]string{"MAINTAINABILITY": "LOW"},
 					},
 					Observation: &v1alpha1.QualityProfileRuleObservation{
@@ -1402,9 +1402,9 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 			wantUpdated: map[string]QualityProfileRuleAssociation{
 				"rule1": {
 					Spec: &v1alpha1.QualityProfileRuleParameters{
-						Rule:        ptr.To("rule1"),
-						Severity:    ptr.To(""),
-						Prioritized: ptr.To(false),
+						Rule:        new("rule1"),
+						Severity:    new(""),
+						Prioritized: new(false),
 						Impacts:     &map[string]string{"MAINTAINABILITY": "LOW"},
 					},
 					Observation: &v1alpha1.QualityProfileRuleObservation{
@@ -1419,13 +1419,13 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 		"EmptyObservationImpactsNotAssigned": {
 			associations: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1")},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1")},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Impacts: []v1alpha1.QualityProfileRuleImpact{}},
 				},
 			},
 			wantUpdated: map[string]QualityProfileRuleAssociation{
 				"rule1": {
-					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("rule1"), Severity: ptr.To(""), Prioritized: ptr.To(false)},
+					Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("rule1"), Severity: new(""), Prioritized: new(false)},
 					Observation: &v1alpha1.QualityProfileRuleObservation{Key: "rule1", Impacts: []v1alpha1.QualityProfileRuleImpact{}},
 				},
 			},

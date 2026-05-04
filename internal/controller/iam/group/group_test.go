@@ -37,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
@@ -987,31 +986,31 @@ func TestComputePermissionsDelta(t *testing.T) {
 			wantRemove:          nil,
 		},
 		"IdenticalReturnsNoChanges": {
-			specPermissions:     ptr.To([]string{"admin", "scan"}),
+			specPermissions:     new([]string{"admin", "scan"}),
 			observedPermissions: []string{"scan", "admin"},
 			wantAdd:             nil,
 			wantRemove:          nil,
 		},
 		"AddsMissingPermissions": {
-			specPermissions:     ptr.To([]string{adminPerm, scanPerm, provisioningPerm}),
+			specPermissions:     new([]string{adminPerm, scanPerm, provisioningPerm}),
 			observedPermissions: []string{"admin", "scan"},
 			wantAdd:             []string{"provisioning"},
 			wantRemove:          nil,
 		},
 		"RemovesExtraPermissions": {
-			specPermissions:     ptr.To([]string{adminPerm}),
+			specPermissions:     new([]string{adminPerm}),
 			observedPermissions: []string{"admin", "scan"},
 			wantAdd:             nil,
 			wantRemove:          []string{"scan"},
 		},
 		"AddsAndRemoves": {
-			specPermissions:     ptr.To([]string{adminPerm, provisioningPerm}),
+			specPermissions:     new([]string{adminPerm, provisioningPerm}),
 			observedPermissions: []string{"admin", "scan"},
 			wantAdd:             []string{"provisioning"},
 			wantRemove:          []string{"scan"},
 		},
 		"EmptySpecRemovesAllObserved": {
-			specPermissions:     ptr.To([]string{}),
+			specPermissions:     new([]string{}),
 			observedPermissions: []string{"admin", "scan"},
 			wantAdd:             nil,
 			wantRemove:          []string{"admin", "scan"},

@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -768,7 +767,7 @@ func TestGetConfigModernManagedSuccess(t *testing.T) {
 						},
 						Spec: v1alpha1.ProviderConfigSpec{
 							BaseURL:            "http://localhost:9000",
-							InsecureSkipVerify: ptr.To(true),
+							InsecureSkipVerify: new(true),
 							Username: &v1alpha1.ProviderCredentials{
 								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 									SecretRef: &xpv1.SecretKeySelector{

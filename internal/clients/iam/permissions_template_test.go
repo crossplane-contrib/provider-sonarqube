@@ -22,7 +22,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -65,18 +64,18 @@ func TestLateInitializePermissionsTemplate(t *testing.T) {
 			},
 			want: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To("generated"),
-				ProjectKeyPattern:  ptr.To(projectKeyPattern),
-				Default:            ptr.To(false),
+				Description:        new("generated"),
+				ProjectKeyPattern:  new(projectKeyPattern),
+				Default:            new(false),
 				CreatorPermissions: &[]string{"scan", "admin"},
 			},
 		},
 		"PreservesExistingValues": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To("custom"),
-				ProjectKeyPattern:  ptr.To("existing"),
-				Default:            ptr.To(true),
+				Description:        new("custom"),
+				ProjectKeyPattern:  new("existing"),
+				Default:            new(true),
 				CreatorPermissions: &[]string{"user"},
 			},
 			observation: &v1alpha1.PermissionsTemplateObservation{
@@ -87,9 +86,9 @@ func TestLateInitializePermissionsTemplate(t *testing.T) {
 			},
 			want: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To("custom"),
-				ProjectKeyPattern:  ptr.To("existing"),
-				Default:            ptr.To(true),
+				Description:        new("custom"),
+				ProjectKeyPattern:  new("existing"),
+				Default:            new(true),
 				CreatorPermissions: &[]string{"user"},
 			},
 		},
@@ -133,24 +132,24 @@ func TestIsPermissionsTemplateLateInitialized(t *testing.T) {
 		},
 		"SameValuesReturnsFalse": {
 			former: &v1alpha1.PermissionsTemplateParameters{
-				Description:        ptr.To(templateDescription),
-				ProjectKeyPattern:  ptr.To("pattern"),
+				Description:        new(templateDescription),
+				ProjectKeyPattern:  new("pattern"),
 				CreatorPermissions: &[]string{"scan"},
 			},
 			current: &v1alpha1.PermissionsTemplateParameters{
-				Description:        ptr.To(templateDescription),
-				ProjectKeyPattern:  ptr.To("pattern"),
+				Description:        new(templateDescription),
+				ProjectKeyPattern:  new("pattern"),
 				CreatorPermissions: &[]string{"scan"},
 			},
 			want: false,
 		},
 		"DescriptionChangedReturnsTrue": {
-			former:  &v1alpha1.PermissionsTemplateParameters{Description: ptr.To("former")},
+			former:  &v1alpha1.PermissionsTemplateParameters{Description: new("former")},
 			current: &v1alpha1.PermissionsTemplateParameters{Description: &currentDescription},
 			want:    true,
 		},
 		"ProjectKeyPatternChangedReturnsTrue": {
-			former:  &v1alpha1.PermissionsTemplateParameters{ProjectKeyPattern: ptr.To("former")},
+			former:  &v1alpha1.PermissionsTemplateParameters{ProjectKeyPattern: new("former")},
 			current: &v1alpha1.PermissionsTemplateParameters{ProjectKeyPattern: &currentPattern},
 			want:    true,
 		},
@@ -175,8 +174,8 @@ func TestIsPermissionsTemplateLateInitialized(t *testing.T) {
 			want:    false,
 		},
 		"DefaultChangedReturnsTrue": {
-			former:  &v1alpha1.PermissionsTemplateParameters{Default: ptr.To(false)},
-			current: &v1alpha1.PermissionsTemplateParameters{Default: ptr.To(true)},
+			former:  &v1alpha1.PermissionsTemplateParameters{Default: new(false)},
+			current: &v1alpha1.PermissionsTemplateParameters{Default: new(true)},
 			want:    true,
 		},
 	}
@@ -228,9 +227,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		"EverythingMatchesReturnsTrue": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To(templateDescription),
-				ProjectKeyPattern:  ptr.To(projectKeyPattern),
-				Default:            ptr.To(true),
+				Description:        new(templateDescription),
+				ProjectKeyPattern:  new(projectKeyPattern),
+				Default:            new(true),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &groupPermissions,
 				UserPermissions:    &userPermissions,
@@ -241,9 +240,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		"DefaultDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To(templateDescription),
-				ProjectKeyPattern:  ptr.To(projectKeyPattern),
-				Default:            ptr.To(false),
+				Description:        new(templateDescription),
+				ProjectKeyPattern:  new(projectKeyPattern),
+				Default:            new(false),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &groupPermissions,
 				UserPermissions:    &userPermissions,
@@ -254,9 +253,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		"CreatorPermissionsDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To(templateDescription),
-				ProjectKeyPattern:  ptr.To(projectKeyPattern),
-				Default:            ptr.To(true),
+				Description:        new(templateDescription),
+				ProjectKeyPattern:  new(projectKeyPattern),
+				Default:            new(true),
 				CreatorPermissions: &[]string{"admin"},
 				GroupPermissions:   &groupPermissions,
 				UserPermissions:    &userPermissions,
@@ -267,9 +266,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		"GroupPermissionsDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To(templateDescription),
-				ProjectKeyPattern:  ptr.To(projectKeyPattern),
-				Default:            ptr.To(true),
+				Description:        new(templateDescription),
+				ProjectKeyPattern:  new(projectKeyPattern),
+				Default:            new(true),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &[]v1alpha1.PermissionsTemplateGroupParameters{{Name: "devs", Permissions: &[]string{"admin"}}},
 				UserPermissions:    &userPermissions,
@@ -280,9 +279,9 @@ func TestIsPermissionsTemplateUpToDate(t *testing.T) {
 		"UserPermissionsDiffReturnsFalse": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
 				Name:               templateNameA,
-				Description:        ptr.To(templateDescription),
-				ProjectKeyPattern:  ptr.To(projectKeyPattern),
-				Default:            ptr.To(true),
+				Description:        new(templateDescription),
+				ProjectKeyPattern:  new(projectKeyPattern),
+				Default:            new(true),
 				CreatorPermissions: &creatorPermissions,
 				GroupPermissions:   &groupPermissions,
 				UserPermissions:    &[]v1alpha1.PermissionsTemplateUserParameters{{Login: "alice", Permissions: &[]string{"admin"}}},
@@ -324,8 +323,8 @@ func TestArePermissionsTemplateBaseFieldsUpToDate(t *testing.T) {
 		"MatchingValuesReturnsTrue": {
 			spec: &v1alpha1.PermissionsTemplateParameters{
 				Name:              templateNameA,
-				Description:       ptr.To(templateDescription),
-				ProjectKeyPattern: ptr.To(projectKeyPattern),
+				Description:       new(templateDescription),
+				ProjectKeyPattern: new(projectKeyPattern),
 			},
 			observation: &v1alpha1.PermissionsTemplateObservation{
 				Name:              templateNameA,
@@ -340,12 +339,12 @@ func TestArePermissionsTemplateBaseFieldsUpToDate(t *testing.T) {
 			want:        false,
 		},
 		"DescriptionDiffReturnsFalse": {
-			spec:        &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, Description: ptr.To("spec")},
+			spec:        &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, Description: new("spec")},
 			observation: &v1alpha1.PermissionsTemplateObservation{Name: templateNameA, Description: "obs"},
 			want:        false,
 		},
 		"PatternDiffReturnsFalse": {
-			spec:        &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, ProjectKeyPattern: ptr.To("spec")},
+			spec:        &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, ProjectKeyPattern: new("spec")},
 			observation: &v1alpha1.PermissionsTemplateObservation{Name: templateNameA, ProjectKeyPattern: "obs"},
 			want:        false,
 		},
@@ -391,8 +390,8 @@ func TestGeneratePermissionsTemplateUpdateOptions(t *testing.T) {
 
 	spec := &v1alpha1.PermissionsTemplateParameters{
 		Name:              templateNameA,
-		Description:       ptr.To(templateDescription),
-		ProjectKeyPattern: ptr.To(projectKeyPattern),
+		Description:       new(templateDescription),
+		ProjectKeyPattern: new(projectKeyPattern),
 	}
 
 	got := GeneratePermissionsTemplateUpdateOptions(permissionsTemplateID, spec)
@@ -593,7 +592,7 @@ func TestCreatePermissionsTemplateUserMapping(t *testing.T) {
 func TestGeneratePermissionsTemplateOptions(t *testing.T) {
 	t.Parallel()
 
-	creationSpec := &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, Description: ptr.To(templateDescription), ProjectKeyPattern: ptr.To(projectKeyPattern)}
+	creationSpec := &v1alpha1.PermissionsTemplateParameters{Name: templateNameA, Description: new(templateDescription), ProjectKeyPattern: new(projectKeyPattern)}
 
 	gotCreate := GeneratePermissionsTemplateCreationOptions(creationSpec)
 	if gotCreate.Name != templateNameA || gotCreate.Description != templateDescription || gotCreate.ProjectKeyPattern != projectKeyPattern {

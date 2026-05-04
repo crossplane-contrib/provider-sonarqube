@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -204,7 +203,7 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 		},
 		"SpecBranchNotInObservation": {
 			spec: map[string]*v1alpha1.ProjectNewCodePeriodParameters{
-				"feature": {Type: "NUMBER_OF_DAYS", Value: ptr.To("30")},
+				"feature": {Type: "NUMBER_OF_DAYS", Value: new("30")},
 			},
 			observation: map[string]v1alpha1.ProjectBranchObservation{
 				"main": {},
@@ -213,7 +212,7 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 		},
 		"MatchingBranchNewCodePeriod": {
 			spec: map[string]*v1alpha1.ProjectNewCodePeriodParameters{
-				"main": {Type: "NUMBER_OF_DAYS", Value: ptr.To("30")},
+				"main": {Type: "NUMBER_OF_DAYS", Value: new("30")},
 			},
 			observation: map[string]v1alpha1.ProjectBranchObservation{
 				"main": {
@@ -227,7 +226,7 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 		},
 		"MismatchedBranchNewCodePeriod": {
 			spec: map[string]*v1alpha1.ProjectNewCodePeriodParameters{
-				"main": {Type: "NUMBER_OF_DAYS", Value: ptr.To("30")},
+				"main": {Type: "NUMBER_OF_DAYS", Value: new("30")},
 			},
 			observation: map[string]v1alpha1.ProjectBranchObservation{
 				"main": {

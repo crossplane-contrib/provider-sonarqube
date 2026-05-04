@@ -76,7 +76,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			reason: "When GroupId is already set and no ref/selector exists, it is preserved.",
 			user: func() *User {
 				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupId: ptr.To("devs")}}
+				groups := []UserGroupsParameters{{GroupId: new("devs")}}
 				u.Spec.ForProvider.Groups = &groups
 
 				return u
@@ -163,7 +163,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			reason: "A stale cached GroupId (K8s name) must be overwritten when GroupIdRef is set.",
 			user: func() *User {
 				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupId: ptr.To("example-group"), GroupIdRef: &xpv1.NamespacedReference{Name: "example-group"}}}
+				groups := []UserGroupsParameters{{GroupId: new("example-group"), GroupIdRef: &xpv1.NamespacedReference{Name: "example-group"}}}
 				u.Spec.ForProvider.Groups = &groups
 
 				return u
@@ -182,7 +182,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			user: func() *User {
 				u := newTestUser(testNamespace)
 				groups := []UserGroupsParameters{
-					{GroupId: ptr.To("devs")},
+					{GroupId: new("devs")},
 					{GroupIdRef: &xpv1.NamespacedReference{Name: "group-ref-ops"}},
 					{GroupIdSelector: &xpv1.Selector{MatchLabels: map[string]string{"team": "sec"}}},
 				}

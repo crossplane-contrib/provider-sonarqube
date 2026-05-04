@@ -29,7 +29,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
@@ -311,7 +310,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
 					Name:       "test-project",
 					Key:        "test-key",
-					Visibility: ptr.To("public"),
+					Visibility: new("public"),
 				}),
 			},
 			want: want{
@@ -472,7 +471,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
 					Name:       "test-project",
 					Key:        "test-key",
-					Visibility: ptr.To("public"),
+					Visibility: new("public"),
 					// No qualityProfiles field — user did not specify any
 				}),
 			},
@@ -504,9 +503,9 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
 					Name:       "test-project",
 					Key:        "test-key",
-					Visibility: ptr.To("public"),
+					Visibility: new("public"),
 					Links: []v1alpha1.ProjectLinkParameters{
-						{ID: ptr.To("link-uuid-1"), Name: "GitHub Repository", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
+						{ID: new("link-uuid-1"), Name: "GitHub Repository", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
 					},
 				}),
 			},
@@ -536,9 +535,9 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
 					Name:       "test-project",
 					Key:        "test-key",
-					Visibility: ptr.To("public"),
+					Visibility: new("public"),
 					Links: []v1alpha1.ProjectLinkParameters{
-						{ID: ptr.To("link-uuid-1"), Name: "GitHub Repository", URL: "https://github.com/new-url"},
+						{ID: new("link-uuid-1"), Name: "GitHub Repository", URL: "https://github.com/new-url"},
 					},
 				}),
 			},
@@ -595,7 +594,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
 					Name:       "test-project",
 					Key:        "test-key",
-					Visibility: ptr.To("public"),
+					Visibility: new("public"),
 					Links: []v1alpha1.ProjectLinkParameters{
 						// ID is nil: should be back-filled by LateInitializeProjectLinks
 						{Name: "GitHub Repository", URL: "https://github.com/crossplane-contrib/provider-sonarqube"},
@@ -632,7 +631,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
 					Name:       "test-project",
 					Key:        "test-key",
-					Visibility: ptr.To("public"),
+					Visibility: new("public"),
 					NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 						Type: "NUMBER_OF_DAYS",
 						// Value intentionally nil: should be back-filled to "30"
@@ -858,7 +857,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
 						Name:       "test-project",
 						Key:        "test-key",
-						Visibility: ptr.To("private"),
+						Visibility: new("private"),
 					})
 					proj.Status.AtProvider.Visibility = projectVisibilityPublic
 
@@ -911,7 +910,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
 						Name:       "test-project",
 						Key:        "test-key",
-						Visibility: ptr.To("private"),
+						Visibility: new("private"),
 					})
 					proj.Status.AtProvider.Visibility = projectVisibilityPublic
 
@@ -937,7 +936,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
 						Name:          "test-project",
 						Key:           "test-key",
-						DefaultBranch: ptr.To("develop"),
+						DefaultBranch: new("develop"),
 					})
 					proj.Status.AtProvider.DefaultBranch = "main"
 
@@ -964,7 +963,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
 						Name:            "test-project",
 						Key:             "test-key",
-						QualityGateName: ptr.To("new-gate"),
+						QualityGateName: new("new-gate"),
 					})
 					proj.Status.AtProvider.QualityGateName = "old-gate"
 
@@ -993,7 +992,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 						Key:  "test-key",
 						NewCodePeriod: &v1alpha1.ProjectNewCodePeriodParameters{
 							Type:  "NUMBER_OF_DAYS",
-							Value: ptr.To("30"),
+							Value: new("30"),
 						},
 					})
 					proj.Status.AtProvider.NewCodePeriod = v1alpha1.ProjectNewCodePeriodObservation{
@@ -1053,7 +1052,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 						Name: "test-project",
 						Key:  "test-key",
 						QualityProfiles: map[string]v1alpha1.ProjectQualityProfileReference{
-							"java": {Id: ptr.To("new-profile-id")},
+							"java": {Id: new("new-profile-id")},
 						},
 					})
 					proj.Status.AtProvider.QualityProfiles = map[string]v1alpha1.ProjectQualityProfileObservation{

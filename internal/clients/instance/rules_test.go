@@ -23,7 +23,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -256,7 +255,7 @@ func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 				},
 			},
 			wantNil:        false,
-			wantSeverity:   ptr.To("MAJOR"),
+			wantSeverity:   new("MAJOR"),
 			wantParamCount: 0,
 		},
 		"MatchingProfileWithParams": {
@@ -272,7 +271,7 @@ func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 				},
 			},
 			wantNil:        false,
-			wantSeverity:   ptr.To("CRITICAL"),
+			wantSeverity:   new("CRITICAL"),
 			wantParamCount: 2,
 		},
 	}
@@ -335,7 +334,7 @@ func TestGenerateQualityProfileRuleObservation(t *testing.T) {
 				Severity: "INFO",
 			},
 			activatedSettings: &ruleActiveSettings{
-				Severity: ptr.To("MAJOR"),
+				Severity: new("MAJOR"),
 				Params:   &map[string]string{"max": "10"},
 			},
 			wantKey:        "java:S1144",
@@ -348,7 +347,7 @@ func TestGenerateQualityProfileRuleObservation(t *testing.T) {
 				Severity: "MINOR",
 			},
 			activatedSettings: &ruleActiveSettings{
-				Severity: ptr.To("BLOCKER"),
+				Severity: new("BLOCKER"),
 			},
 			wantKey:        "java:S1145",
 			wantSeverity:   "BLOCKER",
@@ -483,24 +482,24 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 			want:        true,
 		},
 		"NilObservationReturnsFalse": {
-			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 			observation: nil,
 			want:        false,
 		},
 		"DifferentRuleKeyReturnsFalse": {
-			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 			observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1145"},
 			want:        false,
 		},
 		"MatchingRuleNoSeverityNoParams": {
-			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+			spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 			observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144"},
 			want:        true,
 		},
 		"MatchingRuleWithMatchingSeverity": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:     ptr.To("java:S1144"),
-				Severity: ptr.To("MAJOR"),
+				Rule:     new("java:S1144"),
+				Severity: new("MAJOR"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:      "java:S1144",
@@ -510,8 +509,8 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"DifferentSeverityReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:     ptr.To("java:S1144"),
-				Severity: ptr.To("MAJOR"),
+				Rule:     new("java:S1144"),
+				Severity: new("MAJOR"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:      "java:S1144",
@@ -521,7 +520,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"MatchingParameters": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       ptr.To("java:S1144"),
+				Rule:       new("java:S1144"),
 				Parameters: &map[string]string{"max": "10"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -532,7 +531,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"DifferentParametersReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       ptr.To("java:S1144"),
+				Rule:       new("java:S1144"),
 				Parameters: &map[string]string{"max": "10"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -543,7 +542,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"NilSpecParametersDoesNotCheck": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule: ptr.To("java:S1144"),
+				Rule: new("java:S1144"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:        "java:S1144",
@@ -553,7 +552,7 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"EmptySpecParametersMatchesEmptyObservation": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       ptr.To("java:S1144"),
+				Rule:       new("java:S1144"),
 				Parameters: &map[string]string{},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -564,8 +563,8 @@ func TestIsQualityProfileRuleUpToDate(t *testing.T) {
 		},
 		"AllFieldsMatching": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:       ptr.To("java:S1144"),
-				Severity:   ptr.To("CRITICAL"),
+				Rule:       new("java:S1144"),
+				Severity:   new("CRITICAL"),
 				Parameters: &map[string]string{"max": "15", "min": "5"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -601,8 +600,8 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 	}{
 		"PrioritizedMatchReturnsTrue": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:        ptr.To("java:S1000"),
-				Prioritized: ptr.To(true),
+				Rule:        new("java:S1000"),
+				Prioritized: new(true),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:         "java:S1000",
@@ -612,8 +611,8 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"PrioritizedMismatchReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:        ptr.To("java:S1000"),
-				Prioritized: ptr.To(true),
+				Rule:        new("java:S1000"),
+				Prioritized: new(true),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:         "java:S1000",
@@ -623,7 +622,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"ImpactsMatchReturnsTrue": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:    ptr.To("java:S1000"),
+				Rule:    new("java:S1000"),
 				Impacts: &map[string]string{"SECURITY": "HIGH"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -634,7 +633,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"ImpactsMismatchReturnsFalse": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule:    ptr.To("java:S1000"),
+				Rule:    new("java:S1000"),
 				Impacts: &map[string]string{"SECURITY": "HIGH"},
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
@@ -645,7 +644,7 @@ func TestIsQualityProfileRuleUpToDatePrioritized(t *testing.T) {
 		},
 		"SpecImpactsNilObservationHasImpactsReturnsTrue": {
 			spec: &v1alpha1.QualityProfileRuleParameters{
-				Rule: ptr.To("java:S1000"),
+				Rule: new("java:S1000"),
 			},
 			observation: &v1alpha1.QualityProfileRuleObservation{
 				Key:     "java:S1000",
@@ -877,7 +876,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 				Severity: "MINOR",
 			},
 			activatedSettings: &ruleActiveSettings{
-				Severity: ptr.To("MAJOR"),
+				Severity: new("MAJOR"),
 			},
 			want: v1alpha1.QualityProfileRuleObservation{
 				Key:      "java:S1000",
@@ -925,7 +924,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 				Name: "Rule 1",
 			},
 			activatedSettings: &ruleActiveSettings{
-				Prioritized: ptr.To(true),
+				Prioritized: new(true),
 			},
 			want: v1alpha1.QualityProfileRuleObservation{
 				Key:         "java:S1000",
@@ -941,9 +940,9 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 				Severity: "MINOR",
 			},
 			activatedSettings: &ruleActiveSettings{
-				Severity:    ptr.To("CRITICAL"),
+				Severity:    new("CRITICAL"),
 				Params:      &map[string]string{"max": "10"},
-				Prioritized: ptr.To(true),
+				Prioritized: new(true),
 				Impacts: []v1alpha1.QualityProfileRuleImpact{
 					{SoftwareQuality: "SECURITY", Severity: "HIGH"},
 				},
@@ -999,7 +998,7 @@ func TestGenerateRuleCreateOptions(t *testing.T) {
 				Name:                "My Rule",
 				TemplateKey:         "java:template",
 				MarkdownDescription: "some description",
-				Severity:            ptr.To("MAJOR"),
+				Severity:            new("MAJOR"),
 			},
 			wantKey:      "my-rule",
 			wantName:     "My Rule",
@@ -1029,7 +1028,7 @@ func TestGenerateRuleCreateOptions(t *testing.T) {
 				Name:                "My Rule 3",
 				TemplateKey:         "java:template3",
 				MarkdownDescription: "desc3",
-				Severity:            ptr.To("BLOCKER"),
+				Severity:            new("BLOCKER"),
 				Impacts:             &map[string]string{"RELIABILITY": "MEDIUM"},
 			},
 			wantKey:      "my-rule3",
@@ -1045,7 +1044,7 @@ func TestGenerateRuleCreateOptions(t *testing.T) {
 				Name:                "My Rule 4",
 				TemplateKey:         "java:template4",
 				MarkdownDescription: "desc4",
-				Severity:            ptr.To("MINOR"),
+				Severity:            new("MINOR"),
 				Impacts:             &map[string]string{},
 			},
 			wantKey:      "my-rule4",
@@ -1060,9 +1059,9 @@ func TestGenerateRuleCreateOptions(t *testing.T) {
 				Name:                "Full Rule",
 				TemplateKey:         "java:full",
 				MarkdownDescription: "full desc",
-				CleanCodeAttribute:  ptr.To("CLEAR"),
-				Status:              ptr.To("READY"),
-				Type:                ptr.To("BUG"),
+				CleanCodeAttribute:  new("CLEAR"),
+				Status:              new("READY"),
+				Type:                new("BUG"),
 				Impacts:             &map[string]string{"SECURITY": "HIGH", "MAINTAINABILITY": "LOW"},
 				Parameters: &map[string]v1alpha1.RuleParameterConfiguration{
 					"param1": {DefaultValue: "val1"},
@@ -1145,7 +1144,7 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 				Name:                "Rule Name",
 				TemplateKey:         "tpl",
 				MarkdownDescription: "desc",
-				Severity:            ptr.To("CRITICAL"),
+				Severity:            new("CRITICAL"),
 			},
 			wantKey:      "rule-key",
 			wantName:     "Rule Name",
@@ -1175,7 +1174,7 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 				Name:                "Rule 3",
 				TemplateKey:         "tpl3",
 				MarkdownDescription: "desc3",
-				Severity:            ptr.To("BLOCKER"),
+				Severity:            new("BLOCKER"),
 				Impacts:             &map[string]string{"RELIABILITY": "HIGH"},
 			},
 			wantKey:      "rule-key3",
@@ -1191,7 +1190,7 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 				Name:                "Rule 4",
 				TemplateKey:         "tpl4",
 				MarkdownDescription: "desc4",
-				Severity:            ptr.To("LOW"),
+				Severity:            new("LOW"),
 				Impacts:             &map[string]string{},
 			},
 			wantKey:      "rule-key4",
@@ -1206,11 +1205,11 @@ func TestGenerateRuleUpdateOptions(t *testing.T) {
 				Name:                       "Full Rule",
 				TemplateKey:                "tpl",
 				MarkdownDescription:        "full desc",
-				MarkdownNote:               ptr.To("note"),
-				Status:                     ptr.To("READY"),
-				RemediationFnBaseEffort:    ptr.To("1h"),
-				RemediationFnType:          ptr.To("LINEAR"),
-				RemediationFyGapMultiplier: ptr.To("5min"),
+				MarkdownNote:               new("note"),
+				Status:                     new("READY"),
+				RemediationFnBaseEffort:    new("1h"),
+				RemediationFnType:          new("LINEAR"),
+				RemediationFyGapMultiplier: new("5min"),
 				Impacts:                    &map[string]string{"SECURITY": "MEDIUM"},
 				Tags:                       &[]string{"tag1", "tag2"},
 				Parameters: &map[string]v1alpha1.RuleParameterConfiguration{
@@ -1795,7 +1794,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:                "k",
 					Name:               "n",
 					TemplateKey:        "t",
-					CleanCodeAttribute: ptr.To("CLEAR"),
+					CleanCodeAttribute: new("CLEAR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:                "k",
@@ -1812,7 +1811,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:                "k",
 					Name:               "n",
 					TemplateKey:        "t",
-					CleanCodeAttribute: ptr.To("CLEAR"),
+					CleanCodeAttribute: new("CLEAR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:                "k",
@@ -1864,7 +1863,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Name:        "n",
 					TemplateKey: "t",
 					Impacts:     &map[string]string{"SECURITY": "HIGH"},
-					Severity:    ptr.To("MAJOR"),
+					Severity:    new("MAJOR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -1883,7 +1882,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Name:        "n",
 					TemplateKey: "t",
 					Impacts:     &map[string]string{"SECURITY": "HIGH"},
-					Severity:    ptr.To("MAJOR"),
+					Severity:    new("MAJOR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -1902,7 +1901,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Name:        "n",
 					TemplateKey: "t",
 					Impacts:     &map[string]string{},
-					Severity:    ptr.To("MAJOR"),
+					Severity:    new("MAJOR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -1921,7 +1920,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Name:        "n",
 					TemplateKey: "t",
 					Impacts:     &map[string]string{},
-					Severity:    ptr.To("MAJOR"),
+					Severity:    new("MAJOR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -1957,7 +1956,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:         "k",
 					Name:        "n",
 					TemplateKey: "t",
-					Severity:    ptr.To("MAJOR"),
+					Severity:    new("MAJOR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -1974,7 +1973,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:         "k",
 					Name:        "n",
 					TemplateKey: "t",
-					Severity:    ptr.To("MAJOR"),
+					Severity:    new("MAJOR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -1991,7 +1990,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:         "k",
 					Name:        "n",
 					TemplateKey: "t",
-					Status:      ptr.To("READY"),
+					Status:      new("READY"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -2008,7 +2007,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:         "k",
 					Name:        "n",
 					TemplateKey: "t",
-					Status:      ptr.To("READY"),
+					Status:      new("READY"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -2025,7 +2024,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:                     "k",
 					Name:                    "n",
 					TemplateKey:             "t",
-					RemediationFnBaseEffort: ptr.To("1h"),
+					RemediationFnBaseEffort: new("1h"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:             "k",
@@ -2042,7 +2041,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:                     "k",
 					Name:                    "n",
 					TemplateKey:             "t",
-					RemediationFnBaseEffort: ptr.To("1h"),
+					RemediationFnBaseEffort: new("1h"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:             "k",
@@ -2059,7 +2058,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:               "k",
 					Name:              "n",
 					TemplateKey:       "t",
-					RemediationFnType: ptr.To("LINEAR"),
+					RemediationFnType: new("LINEAR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -2076,7 +2075,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:               "k",
 					Name:              "n",
 					TemplateKey:       "t",
-					RemediationFnType: ptr.To("LINEAR"),
+					RemediationFnType: new("LINEAR"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -2093,7 +2092,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:                        "k",
 					Name:                       "n",
 					TemplateKey:                "t",
-					RemediationFyGapMultiplier: ptr.To("5min"),
+					RemediationFyGapMultiplier: new("5min"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:                "k",
@@ -2110,7 +2109,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:                        "k",
 					Name:                       "n",
 					TemplateKey:                "t",
-					RemediationFyGapMultiplier: ptr.To("5min"),
+					RemediationFyGapMultiplier: new("5min"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:                "k",
@@ -2127,7 +2126,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:         "k",
 					Name:        "n",
 					TemplateKey: "t",
-					Type:        ptr.To("BUG"),
+					Type:        new("BUG"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -2144,7 +2143,7 @@ func TestIsRuleUpToDate(t *testing.T) { //nolint:maintidx // comprehensive table
 					Key:         "k",
 					Name:        "n",
 					TemplateKey: "t",
-					Type:        ptr.To("BUG"),
+					Type:        new("BUG"),
 				},
 				observation: &v1alpha1.RuleObservation{
 					Key:         "k",
@@ -2404,7 +2403,7 @@ func TestLateInitializeRule(t *testing.T) { //nolint:gocognit,maintidx // comple
 				Key:         "k",
 				Name:        "n",
 				TemplateKey: "t",
-				Severity:    ptr.To("MINOR"),
+				Severity:    new("MINOR"),
 			},
 			observation: &v1alpha1.RuleObservation{Severity: "MAJOR"},
 			checkFn: func(t *testing.T, spec *v1alpha1.RuleParameters) {
@@ -2648,7 +2647,7 @@ func TestIsRuleLateInitialized(t *testing.T) {
 				Key:         "k",
 				Name:        "n",
 				TemplateKey: "t",
-				Severity:    ptr.To("MAJOR"),
+				Severity:    new("MAJOR"),
 			},
 			want: true,
 		},
@@ -2656,12 +2655,12 @@ func TestIsRuleLateInitialized(t *testing.T) {
 			before: &v1alpha1.RuleParameters{
 				Key:      "k",
 				Name:     "n",
-				Severity: ptr.To("MAJOR"),
+				Severity: new("MAJOR"),
 			},
 			after: &v1alpha1.RuleParameters{
 				Key:      "k",
 				Name:     "n",
-				Severity: ptr.To("MAJOR"),
+				Severity: new("MAJOR"),
 			},
 			want: false,
 		},

@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -140,12 +139,12 @@ func TestIsUserLateInitialized(t *testing.T) {
 		},
 		"same values": {
 			former:  &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: &email, Local: &local, ScmAccounts: &accounts},
-			current: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: ptr.To(email), Local: ptr.To(local), ScmAccounts: &[]string{"gitlab:alice", "github:alice"}},
+			current: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: new(email), Local: new(local), ScmAccounts: &[]string{"gitlab:alice", "github:alice"}},
 			want:    false,
 		},
 		"different external fields are ignored": {
-			former:  &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: &email, Local: &local, ScmAccounts: &accounts, ExternalId: ptr.To("former-id"), ExternalLogin: ptr.To("former-login"), ExternalProvider: ptr.To("github")},
-			current: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: ptr.To(email), Local: ptr.To(local), ScmAccounts: &[]string{"github:alice", "gitlab:alice"}, ExternalId: ptr.To("current-id"), ExternalLogin: ptr.To("current-login"), ExternalProvider: ptr.To("gitlab")},
+			former:  &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: &email, Local: &local, ScmAccounts: &accounts, ExternalId: new("former-id"), ExternalLogin: new("former-login"), ExternalProvider: new("github")},
+			current: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: new(email), Local: new(local), ScmAccounts: &[]string{"github:alice", "gitlab:alice"}, ExternalId: new("current-id"), ExternalLogin: new("current-login"), ExternalProvider: new("gitlab")},
 			want:    false,
 		},
 		"different login": {
@@ -177,7 +176,7 @@ func TestIsUserUpToDate(t *testing.T) {
 
 	email := testEmail
 	local := true
-	specGroups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("devs")}, {GroupId: ptr.To("ops")}}
+	specGroups := []v1alpha1.UserGroupsParameters{{GroupId: new("devs")}, {GroupId: new("ops")}}
 
 	cases := map[string]struct {
 		spec *v1alpha1.UserParameters
@@ -198,17 +197,17 @@ func TestIsUserUpToDate(t *testing.T) {
 			want: true,
 		},
 		"different external fields are ignored": {
-			spec: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: &email, Local: &local, ExternalId: ptr.To("wanted-id"), ExternalLogin: ptr.To("wanted-login"), ExternalProvider: ptr.To("wanted-provider"), ScmAccounts: &[]string{"gitlab:alice", "github:alice"}, Groups: &specGroups},
+			spec: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Email: &email, Local: &local, ExternalId: new("wanted-id"), ExternalLogin: new("wanted-login"), ExternalProvider: new("wanted-provider"), ScmAccounts: &[]string{"gitlab:alice", "github:alice"}, Groups: &specGroups},
 			obs:  &v1alpha1.UserObservation{Login: "alice", Name: "Alice", Email: testEmail, Local: true, ExternalId: "actual-id", ExternalLogin: "actual-login", ExternalProvider: "actual-provider", ScmAccounts: []string{"github:alice", "gitlab:alice"}, Groups: map[string]string{"ops": "membership-2", "devs": "membership-1"}},
 			want: true,
 		},
 		"group mismatch": {
-			spec: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Groups: &[]v1alpha1.UserGroupsParameters{{GroupId: ptr.To("devs")}}},
+			spec: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Groups: &[]v1alpha1.UserGroupsParameters{{GroupId: new("devs")}}},
 			obs:  &v1alpha1.UserObservation{Login: "alice", Name: "Alice", Groups: map[string]string{"ops": "membership-2"}},
 			want: false,
 		},
 		"nil group id entries are ignored": {
-			spec: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Groups: &[]v1alpha1.UserGroupsParameters{{GroupId: nil}, {GroupId: ptr.To("")}}},
+			spec: &v1alpha1.UserParameters{Login: "alice", Name: "Alice", Groups: &[]v1alpha1.UserGroupsParameters{{GroupId: nil}, {GroupId: new("")}}},
 			obs:  &v1alpha1.UserObservation{Login: "alice", Name: "Alice", Groups: map[string]string{}},
 			want: false,
 		},
@@ -251,11 +250,11 @@ func TestAreUserGroupsUpToDate(t *testing.T) {
 		t.Fatal("AreUserGroupsUpToDate(nil,nil) = false, want true")
 	}
 
-	if AreUserGroupsUpToDate(&[]v1alpha1.UserGroupsParameters{{GroupId: ptr.To("g1")}}, nil) {
+	if AreUserGroupsUpToDate(&[]v1alpha1.UserGroupsParameters{{GroupId: new("g1")}}, nil) {
 		t.Fatal("AreUserGroupsUpToDate(spec,nil) = true, want false")
 	}
 
-	groups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("g1")}, {GroupId: nil}, {GroupId: ptr.To("")}, {GroupId: ptr.To("g2")}}
+	groups := []v1alpha1.UserGroupsParameters{{GroupId: new("g1")}, {GroupId: nil}, {GroupId: new("")}, {GroupId: new("g2")}}
 	obs := map[string]string{"g2": "m2", "g1": "m1"}
 
 	if !AreUserGroupsUpToDate(&groups, &obs) {

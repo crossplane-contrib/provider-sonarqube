@@ -27,7 +27,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
@@ -58,7 +57,7 @@ func TestUpdate(t *testing.T) {
 	t.Run("updates fields and group memberships", func(t *testing.T) {
 		t.Parallel()
 
-		desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("ops")}}
+		desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: new("ops")}}
 		user := newUserWithSpec(v1alpha1.UserParameters{
 			Login:  testUserLogin,
 			Name:   "Alice Updated",
@@ -136,7 +135,7 @@ func TestDesiredGroupIDs(t *testing.T) {
 		t.Fatal("desiredGroupIDs(nil) must return nil")
 	}
 
-	groups := []v1alpha1.UserGroupsParameters{{GroupId: nil}, {GroupId: ptr.To("")}, {GroupId: ptr.To("devs")}}
+	groups := []v1alpha1.UserGroupsParameters{{GroupId: nil}, {GroupId: new("")}, {GroupId: new("devs")}}
 	if diff := cmp.Diff([]string{"devs"}, desiredGroupIDs(&groups)); diff != "" {
 		t.Fatalf("desiredGroupIDs() mismatch (-want +got):\n%s", diff)
 	}
@@ -146,7 +145,7 @@ func TestDesiredGroupIDs(t *testing.T) {
 func TestUpdateAggregatesFieldAndGroupErrors(t *testing.T) {
 	t.Parallel()
 
-	desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: ptr.To("ops")}}
+	desiredGroups := []v1alpha1.UserGroupsParameters{{GroupId: new("ops")}}
 	user := newUserWithSpec(v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice", Groups: &desiredGroups})
 	meta.SetExternalName(user, testUserID)
 

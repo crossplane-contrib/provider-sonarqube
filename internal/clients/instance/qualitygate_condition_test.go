@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -149,7 +148,7 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 			params: v1alpha1.QualityGateConditionParameters{
 				Metric: "coverage",
 				Error:  "80",
-				Op:     ptr.To("LT"),
+				Op:     new("LT"),
 			},
 			want: &sonar.QualitygatesCreateConditionOptions{
 				GateName: "my-gate",
@@ -162,7 +161,7 @@ func TestGenerateCreateQualityGateConditionOption(t *testing.T) {
 			params: v1alpha1.QualityGateConditionParameters{
 				Metric: "duplicated_lines_density",
 				Error:  "3",
-				Op:     ptr.To("GT"),
+				Op:     new("GT"),
 			},
 			want: &sonar.QualitygatesCreateConditionOptions{
 				GateName: "another-gate",
@@ -211,7 +210,7 @@ func TestGenerateUpdateQualityGateConditionOption(t *testing.T) {
 			params: v1alpha1.QualityGateConditionParameters{
 				Metric: "duplicated_lines_density",
 				Error:  "5",
-				Op:     ptr.To("GT"),
+				Op:     new("GT"),
 			},
 			want: &sonar.QualitygatesUpdateConditionOptions{
 				ID:     "456",
@@ -287,7 +286,7 @@ func TestIsQualityGateConditionUpToDate(t *testing.T) {
 			params: &v1alpha1.QualityGateConditionParameters{
 				Metric: "coverage",
 				Error:  "80",
-				Op:     ptr.To("LT"),
+				Op:     new("LT"),
 			},
 			observation: &v1alpha1.QualityGateConditionObservation{
 				Metric: "coverage",
@@ -300,7 +299,7 @@ func TestIsQualityGateConditionUpToDate(t *testing.T) {
 			params: &v1alpha1.QualityGateConditionParameters{
 				Metric: "coverage",
 				Error:  "80",
-				Op:     ptr.To("LT"),
+				Op:     new("LT"),
 			},
 			observation: &v1alpha1.QualityGateConditionObservation{
 				Metric: "coverage",
@@ -324,7 +323,7 @@ func TestIsQualityGateConditionUpToDate(t *testing.T) {
 			params: &v1alpha1.QualityGateConditionParameters{
 				Metric: "coverage",
 				Error:  "80",
-				Op:     ptr.To("LT"),
+				Op:     new("LT"),
 			},
 			observation: &v1alpha1.QualityGateConditionObservation{
 				Metric: "coverage",
@@ -382,12 +381,12 @@ func TestLateInitializeQualityGateCondition(t *testing.T) {
 		"NilOpGetsInitialized": {
 			params:      &v1alpha1.QualityGateConditionParameters{Metric: "coverage", Op: nil},
 			observation: &v1alpha1.QualityGateConditionObservation{Op: "LT"},
-			wantOp:      ptr.To("LT"),
+			wantOp:      new("LT"),
 		},
 		"ExistingOpNotOverwritten": {
-			params:      &v1alpha1.QualityGateConditionParameters{Metric: "coverage", Op: ptr.To("GT")},
+			params:      &v1alpha1.QualityGateConditionParameters{Metric: "coverage", Op: new("GT")},
 			observation: &v1alpha1.QualityGateConditionObservation{Op: "LT"},
-			wantOp:      ptr.To("GT"),
+			wantOp:      new("GT"),
 		},
 	}
 
@@ -444,7 +443,7 @@ func TestGenerateQualityGateConditionsAssociation(t *testing.T) {
 		},
 		"SpecsWithIDsMatchObservations": {
 			specs: []v1alpha1.QualityGateConditionParameters{
-				{Id: ptr.To("1"), Metric: "coverage", Error: "80"},
+				{Id: new("1"), Metric: "coverage", Error: "80"},
 			},
 			observations: []v1alpha1.QualityGateConditionObservation{
 				{ID: "1", Metric: "coverage", Error: "80"},
@@ -460,7 +459,7 @@ func TestGenerateQualityGateConditionsAssociation(t *testing.T) {
 		},
 		"MixedSpecsAndObservations": {
 			specs: []v1alpha1.QualityGateConditionParameters{
-				{Id: ptr.To("1"), Metric: "coverage", Error: "80"},
+				{Id: new("1"), Metric: "coverage", Error: "80"},
 				{Metric: "new_metric", Error: "50"},
 			},
 			observations: []v1alpha1.QualityGateConditionObservation{
@@ -471,7 +470,7 @@ func TestGenerateQualityGateConditionsAssociation(t *testing.T) {
 		},
 		"SpecWithStaleIDCreatesAssociation": {
 			specs: []v1alpha1.QualityGateConditionParameters{
-				{Id: ptr.To("stale-999"), Metric: "coverage", Error: "80"},
+				{Id: new("stale-999"), Metric: "coverage", Error: "80"},
 			},
 			observations: []v1alpha1.QualityGateConditionObservation{
 				{ID: "1", Metric: "coverage", Error: "80"},
@@ -564,7 +563,7 @@ func TestFindNonExistingQualityGateConditions(t *testing.T) {
 			associations: map[string]QualityGateConditionAssociation{
 				"1": {
 					Observation: &v1alpha1.QualityGateConditionObservation{ID: "1"},
-					Spec:        &v1alpha1.QualityGateConditionParameters{Id: ptr.To("1")},
+					Spec:        &v1alpha1.QualityGateConditionParameters{Id: new("1")},
 				},
 			},
 			wantCount: 0,
@@ -582,7 +581,7 @@ func TestFindNonExistingQualityGateConditions(t *testing.T) {
 			associations: map[string]QualityGateConditionAssociation{
 				"1": {
 					Observation: &v1alpha1.QualityGateConditionObservation{ID: "1"},
-					Spec:        &v1alpha1.QualityGateConditionParameters{Id: ptr.To("1")},
+					Spec:        &v1alpha1.QualityGateConditionParameters{Id: new("1")},
 				},
 				"new:metric": {
 					Observation: nil,
@@ -621,7 +620,7 @@ func TestFindMissingQualityGateConditions(t *testing.T) {
 			associations: map[string]QualityGateConditionAssociation{
 				"1": {
 					Observation: &v1alpha1.QualityGateConditionObservation{ID: "1"},
-					Spec:        &v1alpha1.QualityGateConditionParameters{Id: ptr.To("1")},
+					Spec:        &v1alpha1.QualityGateConditionParameters{Id: new("1")},
 				},
 			},
 			wantCount: 0,
@@ -639,7 +638,7 @@ func TestFindMissingQualityGateConditions(t *testing.T) {
 			associations: map[string]QualityGateConditionAssociation{
 				"1": {
 					Observation: &v1alpha1.QualityGateConditionObservation{ID: "1"},
-					Spec:        &v1alpha1.QualityGateConditionParameters{Id: ptr.To("1")},
+					Spec:        &v1alpha1.QualityGateConditionParameters{Id: new("1")},
 				},
 				"2": {
 					Observation: &v1alpha1.QualityGateConditionObservation{ID: "2"},
@@ -678,7 +677,7 @@ func TestFindNotUpToDateQualityGateConditions(t *testing.T) {
 			associations: map[string]QualityGateConditionAssociation{
 				"1": {
 					Observation: &v1alpha1.QualityGateConditionObservation{ID: "1"},
-					Spec:        &v1alpha1.QualityGateConditionParameters{Id: ptr.To("1")},
+					Spec:        &v1alpha1.QualityGateConditionParameters{Id: new("1")},
 					UpToDate:    true,
 				},
 			},
@@ -688,7 +687,7 @@ func TestFindNotUpToDateQualityGateConditions(t *testing.T) {
 			associations: map[string]QualityGateConditionAssociation{
 				"1": {
 					Observation: &v1alpha1.QualityGateConditionObservation{ID: "1", Error: "80"},
-					Spec:        &v1alpha1.QualityGateConditionParameters{Id: ptr.To("1"), Error: "90"},
+					Spec:        &v1alpha1.QualityGateConditionParameters{Id: new("1"), Error: "90"},
 					UpToDate:    false,
 				},
 			},

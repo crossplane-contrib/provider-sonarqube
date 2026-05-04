@@ -28,7 +28,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
@@ -183,7 +182,7 @@ func TestObserve(t *testing.T) {
 							ForProvider: v1alpha1.QualityProfileParameters{
 								Name:     "test-profile",
 								Language: "java",
-								Default:  ptr.To(false),
+								Default:  new(false),
 							},
 						},
 					}
@@ -238,7 +237,7 @@ func TestObserve(t *testing.T) {
 							ForProvider: v1alpha1.QualityProfileParameters{
 								Name:     "test-profile",
 								Language: "java",
-								Default:  ptr.To(false),
+								Default:  new(false),
 							},
 						},
 					}
@@ -448,7 +447,7 @@ func TestCreate(t *testing.T) {
 						ForProvider: v1alpha1.QualityProfileParameters{
 							Name:     "test-profile",
 							Language: "java",
-							Default:  ptr.To(true),
+							Default:  new(true),
 						},
 					},
 				},
@@ -656,7 +655,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
 					"java:S1144": {
-						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144")},
+						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144")},
 						Observation: nil,
 						UpToDate:    false,
 					},
@@ -702,7 +701,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				}(),
 				associations: map[string]instance.QualityProfileRuleAssociation{
 					"java:S1144": {
-						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1144"), Severity: ptr.To("CRITICAL")},
+						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1144"), Severity: new("CRITICAL")},
 						Observation: &v1alpha1.QualityProfileRuleObservation{Key: "java:S1144", Severity: "MAJOR"},
 						UpToDate:    false,
 					},
@@ -733,7 +732,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 						UpToDate:    false,
 					},
 					"java:S1145": {
-						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: ptr.To("java:S1145")},
+						Spec:        &v1alpha1.QualityProfileRuleParameters{Rule: new("java:S1145")},
 						Observation: nil,
 						UpToDate:    false,
 					},

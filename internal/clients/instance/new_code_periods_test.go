@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -41,15 +40,15 @@ func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
 			want:       &sonar.NewCodePeriodsShowOptions{},
 		},
 		"ProjectKeyOnly": {
-			projectKey: ptr.To("my-project"),
+			projectKey: new("my-project"),
 			branch:     nil,
 			want: &sonar.NewCodePeriodsShowOptions{
 				Project: "my-project",
 			},
 		},
 		"BothSet": {
-			projectKey: ptr.To("my-project"),
-			branch:     ptr.To("main"),
+			projectKey: new("my-project"),
+			branch:     new("main"),
 			want: &sonar.NewCodePeriodsShowOptions{
 				Project: "my-project",
 				Branch:  "main",
@@ -57,7 +56,7 @@ func TestGenerateNewCodePeriodsShowOptions(t *testing.T) {
 		},
 		"BranchOnly": {
 			projectKey: nil,
-			branch:     ptr.To("develop"),
+			branch:     new("develop"),
 			want: &sonar.NewCodePeriodsShowOptions{
 				Branch: "develop",
 			},
@@ -107,7 +106,7 @@ func TestGenerateProjectNewCodePeriodsSetOptions(t *testing.T) {
 			projectKey: "my-project",
 			params: &v1alpha1.ProjectNewCodePeriodParameters{
 				Type:  "NUMBER_OF_DAYS",
-				Value: ptr.To("30"),
+				Value: new("30"),
 			},
 			want: &sonar.NewCodePeriodsSetOptions{
 				Project: "my-project",
@@ -153,7 +152,7 @@ func TestGenerateBranchNewCodePeriodsSetOptions(t *testing.T) {
 			branchName: "develop",
 			params: &v1alpha1.ProjectNewCodePeriodParameters{
 				Type:  "REFERENCE_BRANCH",
-				Value: ptr.To("main"),
+				Value: new("main"),
 			},
 			want: &sonar.NewCodePeriodsSetOptions{
 				Project: "my-project",
@@ -247,7 +246,7 @@ func TestIsNewCodePeriodUpToDate(t *testing.T) {
 		"MatchingTypeAndValue": {
 			spec: &v1alpha1.ProjectNewCodePeriodParameters{
 				Type:  "NUMBER_OF_DAYS",
-				Value: ptr.To("30"),
+				Value: new("30"),
 			},
 			observation: &v1alpha1.ProjectNewCodePeriodObservation{
 				Type:  "NUMBER_OF_DAYS",
@@ -267,7 +266,7 @@ func TestIsNewCodePeriodUpToDate(t *testing.T) {
 		"DifferentValue": {
 			spec: &v1alpha1.ProjectNewCodePeriodParameters{
 				Type:  "NUMBER_OF_DAYS",
-				Value: ptr.To("30"),
+				Value: new("30"),
 			},
 			observation: &v1alpha1.ProjectNewCodePeriodObservation{
 				Type:  "NUMBER_OF_DAYS",
@@ -399,12 +398,12 @@ func TestLateInitializeProjectNewCodePeriod(t *testing.T) {
 		"ValueAlreadySet": {
 			spec: &v1alpha1.ProjectNewCodePeriodParameters{
 				Type:  "NUMBER_OF_DAYS",
-				Value: ptr.To("30"),
+				Value: new("30"),
 			},
 			observation: &v1alpha1.ProjectNewCodePeriodObservation{
 				Value: "60",
 			},
-			wantValue: ptr.To("30"),
+			wantValue: new("30"),
 		},
 		"ValueNilGetsInitialized": {
 			spec: &v1alpha1.ProjectNewCodePeriodParameters{
@@ -413,7 +412,7 @@ func TestLateInitializeProjectNewCodePeriod(t *testing.T) {
 			observation: &v1alpha1.ProjectNewCodePeriodObservation{
 				Value: "45",
 			},
-			wantValue: ptr.To("45"),
+			wantValue: new("45"),
 		},
 		"EmptyObservationValue": {
 			spec: &v1alpha1.ProjectNewCodePeriodParameters{
@@ -422,7 +421,7 @@ func TestLateInitializeProjectNewCodePeriod(t *testing.T) {
 			observation: &v1alpha1.ProjectNewCodePeriodObservation{
 				Value: "",
 			},
-			wantValue: ptr.To(""),
+			wantValue: new(""),
 		},
 	}
 

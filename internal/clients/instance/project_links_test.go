@@ -21,7 +21,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -50,7 +49,7 @@ func TestGenerateProjectLinksCreateOptions(t *testing.T) {
 		"WithID": {
 			projectID: "my-project",
 			link: v1alpha1.ProjectLinkParameters{
-				ID:   ptr.To("link-1"),
+				ID:   new("link-1"),
 				Name: "ci",
 				URL:  "https://ci.example.com",
 			},
@@ -147,14 +146,14 @@ func TestLateInitializeProjectLinks(t *testing.T) {
 		"LinkAlreadyHasID": {
 			spec: &v1alpha1.ProjectParameters{
 				Links: []v1alpha1.ProjectLinkParameters{
-					{ID: ptr.To("existing-id"), Name: "homepage", URL: "https://example.com"},
+					{ID: new("existing-id"), Name: "homepage", URL: "https://example.com"},
 				},
 			},
 			observation: map[string]v1alpha1.ProjectLinkObservation{
 				"homepage": {ID: "observed-id", Name: "homepage", URL: "https://example.com"},
 			},
 			wantLinks: []v1alpha1.ProjectLinkParameters{
-				{ID: ptr.To("existing-id"), Name: "homepage", URL: "https://example.com"},
+				{ID: new("existing-id"), Name: "homepage", URL: "https://example.com"},
 			},
 		},
 		"LinkGetsIDFromObservation": {
@@ -167,7 +166,7 @@ func TestLateInitializeProjectLinks(t *testing.T) {
 				"homepage": {ID: "observed-id", Name: "homepage", URL: "https://example.com"},
 			},
 			wantLinks: []v1alpha1.ProjectLinkParameters{
-				{ID: ptr.To("observed-id"), Name: "homepage", URL: "https://example.com"},
+				{ID: new("observed-id"), Name: "homepage", URL: "https://example.com"},
 			},
 		},
 		"NoMatchingObservation": {
@@ -292,7 +291,7 @@ func TestAreProjectLinksUpToDate(t *testing.T) {
 		},
 		"MatchingLinks": {
 			specLinks: []v1alpha1.ProjectLinkParameters{
-				{Name: "homepage", URL: "https://example.com", ID: ptr.To("link-1")},
+				{Name: "homepage", URL: "https://example.com", ID: new("link-1")},
 			},
 			observedLinks: map[string]v1alpha1.ProjectLinkObservation{
 				"homepage": {ID: "link-1", Name: "homepage", URL: "https://example.com"},
@@ -354,7 +353,7 @@ func TestIsProjectLinkUpToDate(t *testing.T) {
 		},
 		"MatchingWithID": {
 			specLink: v1alpha1.ProjectLinkParameters{
-				ID: ptr.To("link-1"), Name: "homepage", URL: "https://example.com",
+				ID: new("link-1"), Name: "homepage", URL: "https://example.com",
 			},
 			observedLink: &v1alpha1.ProjectLinkObservation{
 				ID: "link-1", Name: "homepage", URL: "https://example.com",
@@ -363,7 +362,7 @@ func TestIsProjectLinkUpToDate(t *testing.T) {
 		},
 		"IDMismatch": {
 			specLink: v1alpha1.ProjectLinkParameters{
-				ID: ptr.To("link-2"), Name: "homepage", URL: "https://example.com",
+				ID: new("link-2"), Name: "homepage", URL: "https://example.com",
 			},
 			observedLink: &v1alpha1.ProjectLinkObservation{
 				ID: "link-1", Name: "homepage", URL: "https://example.com",

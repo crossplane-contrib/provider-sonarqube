@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -83,7 +82,7 @@ func LateInitializeProjectLinks(spec *v1alpha1.ProjectParameters, observation ma
 			for _, observedLink := range observation {
 				if link.Name == observedLink.Name && link.URL == observedLink.URL {
 					// Use ptr.To to create an independent copy of the ID string.
-					spec.Links[linkIdx].ID = ptr.To(observedLink.ID)
+					spec.Links[linkIdx].ID = new(observedLink.ID)
 
 					break
 				}

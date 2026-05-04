@@ -189,7 +189,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			webhook: func() *Webhook {
 				w := newTestWebhook()
 				// Stale cached value set by the NameAsExternalName initializer.
-				w.Spec.ForProvider.ProjectKey = ptr.To(testProjectK8sName)
+				w.Spec.ForProvider.ProjectKey = new(testProjectK8sName)
 				// Ref still points to the same resource.
 				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
 

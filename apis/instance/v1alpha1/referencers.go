@@ -66,7 +66,7 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 	// Storing &response.ResolvedValue would be a pointer into the local response
 	// struct; any subsequent resolver.Resolve call reassigns that struct in-place,
 	// silently overwriting every field pointer that was stored from a previous call.
-	project.Spec.ForProvider.QualityGateName = ptr.To(response.ResolvedValue)
+	project.Spec.ForProvider.QualityGateName = new(response.ResolvedValue)
 	project.Spec.ForProvider.QualityGateNameRef = response.ResolvedReference
 
 	// Resolve Quality Profile Id for each language.
@@ -101,7 +101,7 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 
 		// ptr.To allocates an independent copy per language, preventing each loop
 		// iteration from overwriting pointers stored in previous iterations.
-		qualityProfile.Id = ptr.To(profileResponse.ResolvedValue)
+		qualityProfile.Id = new(profileResponse.ResolvedValue)
 		qualityProfile.IdRef = profileResponse.ResolvedReference
 		project.Spec.ForProvider.QualityProfiles[language] = qualityProfile
 	}
@@ -141,7 +141,7 @@ func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, rea
 		rule := qualityProfile.Spec.ForProvider.Rules[ruleIdx]
 
 		// ptr.To allocates an independent copy per rule, preventing each loop iteration from overwriting pointers stored in previous iterations.
-		rule.Rule = ptr.To(ruleResponse.ResolvedValue)
+		rule.Rule = new(ruleResponse.ResolvedValue)
 		rule.RuleRef = ruleResponse.ResolvedReference
 		qualityProfile.Spec.ForProvider.Rules[ruleIdx] = rule
 	}

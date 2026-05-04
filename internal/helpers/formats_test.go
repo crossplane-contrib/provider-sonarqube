@@ -22,8 +22,6 @@ import (
 	"net/http"
 	"testing"
 	"time"
-
-	"k8s.io/utils/ptr"
 )
 
 const (
@@ -52,22 +50,22 @@ func TestIsComparablePtrEqualComparable(t *testing.T) {
 			want:    true,
 		},
 		"MatchingValueReturnsTrue": {
-			pointer: ptr.To("hello"),
+			pointer: new("hello"),
 			val:     "hello",
 			want:    true,
 		},
 		"DifferentValueReturnsFalse": {
-			pointer: ptr.To("hello"),
+			pointer: new("hello"),
 			val:     "world",
 			want:    false,
 		},
 		"EmptyStringMatch": {
-			pointer: ptr.To(""),
+			pointer: new(""),
 			val:     "",
 			want:    true,
 		},
 		"EmptyStringNoMatch": {
-			pointer: ptr.To(""),
+			pointer: new(""),
 			val:     "nonempty",
 			want:    false,
 		},
@@ -100,17 +98,17 @@ func TestIsComparablePtrEqualComparableInt(t *testing.T) {
 			want:    true,
 		},
 		"MatchingValueReturnsTrue": {
-			pointer: ptr.To(42),
+			pointer: new(42),
 			val:     42,
 			want:    true,
 		},
 		"DifferentValueReturnsFalse": {
-			pointer: ptr.To(42),
+			pointer: new(42),
 			val:     24,
 			want:    false,
 		},
 		"ZeroValueMatch": {
-			pointer: ptr.To(0),
+			pointer: new(0),
 			val:     0,
 			want:    true,
 		},
@@ -144,27 +142,27 @@ func TestIsComparablePtrEqualComparablePtr(t *testing.T) {
 		},
 		"FirstNilReturnsFalse": {
 			ptr1: nil,
-			ptr2: ptr.To("hello"),
+			ptr2: new("hello"),
 			want: false,
 		},
 		"SecondNilReturnsFalse": {
-			ptr1: ptr.To("hello"),
+			ptr1: new("hello"),
 			ptr2: nil,
 			want: false,
 		},
 		"MatchingValuesReturnsTrue": {
-			ptr1: ptr.To("hello"),
-			ptr2: ptr.To("hello"),
+			ptr1: new("hello"),
+			ptr2: new("hello"),
 			want: true,
 		},
 		"DifferentValuesReturnsFalse": {
-			ptr1: ptr.To("hello"),
-			ptr2: ptr.To("world"),
+			ptr1: new("hello"),
+			ptr2: new("world"),
 			want: false,
 		},
 		"EmptyStringMatch": {
-			ptr1: ptr.To(""),
-			ptr2: ptr.To(""),
+			ptr1: new(""),
+			ptr2: new(""),
 			want: true,
 		},
 	}
@@ -197,22 +195,22 @@ func TestIsComparablePtrEqualComparablePtrInt(t *testing.T) {
 		},
 		"FirstNilReturnsFalse": {
 			ptr1: nil,
-			ptr2: ptr.To(42),
+			ptr2: new(42),
 			want: false,
 		},
 		"SecondNilReturnsFalse": {
-			ptr1: ptr.To(42),
+			ptr1: new(42),
 			ptr2: nil,
 			want: false,
 		},
 		"MatchingValuesReturnsTrue": {
-			ptr1: ptr.To(42),
-			ptr2: ptr.To(42),
+			ptr1: new(42),
+			ptr2: new(42),
 			want: true,
 		},
 		"DifferentValuesReturnsFalse": {
-			ptr1: ptr.To(42),
-			ptr2: ptr.To(24),
+			ptr1: new(42),
+			ptr2: new(24),
 			want: false,
 		},
 	}
@@ -504,22 +502,22 @@ func TestIsComparableSlicePtrEqualComparableSlice(t *testing.T) {
 			want:    true,
 		},
 		"MatchingSlicesReturnsTrue": {
-			pointer: ptr.To([]string{"a", "b", "c"}),
+			pointer: new([]string{"a", "b", "c"}),
 			val:     []string{"a", "b", "c"},
 			want:    true,
 		},
 		"DifferentSlicesReturnsFalse": {
-			pointer: ptr.To([]string{"a", "b"}),
+			pointer: new([]string{"a", "b"}),
 			val:     []string{"a", "c"},
 			want:    false,
 		},
 		"EmptySliceMatch": {
-			pointer: ptr.To([]string{}),
+			pointer: new([]string{}),
 			val:     []string{},
 			want:    true,
 		},
 		"NilSliceAndEmptySliceMatch": {
-			pointer: ptr.To([]string(nil)),
+			pointer: new([]string(nil)),
 			val:     []string{},
 			want:    true,
 		},
@@ -552,27 +550,27 @@ func TestIsComparableMapPtrEqualComparableMap(t *testing.T) {
 			want:    true,
 		},
 		"MatchingMapsReturnsTrue": {
-			pointer: ptr.To(map[string]int{"a": 1, "b": 2}),
+			pointer: new(map[string]int{"a": 1, "b": 2}),
 			val:     map[string]int{"a": 1, "b": 2},
 			want:    true,
 		},
 		"DifferentMapsReturnsFalse": {
-			pointer: ptr.To(map[string]int{"a": 1}),
+			pointer: new(map[string]int{"a": 1}),
 			val:     map[string]int{"a": 2},
 			want:    false,
 		},
 		"EmptyMapMatch": {
-			pointer: ptr.To(map[string]int{}),
+			pointer: new(map[string]int{}),
 			val:     map[string]int{},
 			want:    true,
 		},
 		"NilMapAndEmptyMapMatch": {
-			pointer: ptr.To(map[string]int(nil)),
+			pointer: new(map[string]int(nil)),
 			val:     map[string]int{},
 			want:    true,
 		},
 		"DifferentKeysReturnsFalse": {
-			pointer: ptr.To(map[string]int{"a": 1}),
+			pointer: new(map[string]int{"a": 1}),
 			val:     map[string]int{"b": 1},
 			want:    false,
 		},
