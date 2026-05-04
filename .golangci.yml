@@ -143,6 +143,9 @@ linters:
           - staticcheck
         text: "SA1019: mgr.GetEventRecorderFor is deprecated:"
       - linters:
+          - staticcheck
+        text: "SA1019: scheme.Builder is deprecated:"
+      - linters:
           - gosec
         text: "G101:"
       - linters:
