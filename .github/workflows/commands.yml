@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Extract Command
         id: command
-        uses: xt0rted/slash-command-action@v2
+        uses: xt0rted/slash-command-action@bf51f8f5f4ea3d58abc7eca58f77104182b23e88 # v2.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           command: points
@@ -19,7 +19,7 @@ jobs:
           allow-edits: "false"
           permission-level: write
       - name: Handle Command
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           POINTS: ${{ steps.command.outputs.command-arguments }}
         with:
@@ -70,7 +70,7 @@ jobs:
     steps:
       - name: Extract Command
         id: command
-        uses: xt0rted/slash-command-action@v2
+        uses: xt0rted/slash-command-action@bf51f8f5f4ea3d58abc7eca58f77104182b23e88 # v2.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           command: backport
@@ -80,7 +80,7 @@ jobs:
           permission-level: write
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Open Backport PR
-        uses: korthout/backport-action@v4
+        uses: korthout/backport-action@7c3f6cd5843cac11bc59a04a1b7699af93261670 # v4.5.0
