@@ -59,6 +59,8 @@ type WebhookParameters struct {
 
 	// SecretRef references a Kubernetes Secret containing the HMAC signing secret.
 	// The secret value must be 16-200 characters (SonarQube requirement).
+	// WARNING: This must be used together with writeConnectionSecretToRef to
+	// avoid permanent reconcile state due to missing secret.
 	// +kubebuilder:validation:Optional
 	SecretRef *xpv1.LocalSecretKeySelector `json:"secretRef,omitempty"`
 }
