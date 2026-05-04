@@ -38,7 +38,6 @@ spec:
       name: example-webhook-secret
       key: secret
   writeConnectionSecretToRef:
-    namespace: default
     name: example-global-webhook-with-secret-connection
   providerConfigRef:
     name: example
