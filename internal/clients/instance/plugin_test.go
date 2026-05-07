@@ -454,6 +454,128 @@ func TestGeneratePluginObservationFromPending(t *testing.T) {
 	}
 }
 
+// TestIsPluginPendingRemoval tests detecting plugins queued for removal.
+func TestIsPluginPendingRemoval(t *testing.T) {
+	t.Parallel()
+
+	twoRemoving := []sonar.PluginPending{
+		{Key: "findbugs"},
+		{Key: "checkstyle"},
+	}
+
+	cases := map[string]struct {
+		pending *sonar.PluginsPending
+		key     string
+		want    bool
+	}{
+		"NilPendingReturnsFalse": {
+			pending: nil,
+			key:     "findbugs",
+			want:    false,
+		},
+		"EmptyRemovingReturnsFalse": {
+			pending: &sonar.PluginsPending{},
+			key:     "findbugs",
+			want:    false,
+		},
+		"KeyAbsentReturnsFalse": {
+			pending: &sonar.PluginsPending{Removing: twoRemoving},
+			key:     "pmd",
+			want:    false,
+		},
+		"FirstKeyFound": {
+			pending: &sonar.PluginsPending{Removing: twoRemoving},
+			key:     "findbugs",
+			want:    true,
+		},
+		"SecondKeyFound": {
+			pending: &sonar.PluginsPending{Removing: twoRemoving},
+			key:     "checkstyle",
+			want:    true,
+		},
+		"NotSearchedInInstalling": {
+			pending: &sonar.PluginsPending{
+				Installing: twoRemoving,
+				Removing:   []sonar.PluginPending{},
+			},
+			key:  "findbugs",
+			want: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsPluginPendingRemoval(tc.pending, tc.key)
+			if got != tc.want {
+				t.Errorf("IsPluginPendingRemoval() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestIsPluginPendingUpdate tests detecting plugins queued for update.
+func TestIsPluginPendingUpdate(t *testing.T) {
+	t.Parallel()
+
+	twoUpdating := []sonar.PluginPendingUpdate{
+		{Key: "findbugs"},
+		{Key: "checkstyle"},
+	}
+
+	cases := map[string]struct {
+		pending *sonar.PluginsPending
+		key     string
+		want    bool
+	}{
+		"NilPendingReturnsFalse": {
+			pending: nil,
+			key:     "findbugs",
+			want:    false,
+		},
+		"EmptyUpdatingReturnsFalse": {
+			pending: &sonar.PluginsPending{},
+			key:     "findbugs",
+			want:    false,
+		},
+		"KeyAbsentReturnsFalse": {
+			pending: &sonar.PluginsPending{Updating: twoUpdating},
+			key:     "pmd",
+			want:    false,
+		},
+		"FirstKeyFound": {
+			pending: &sonar.PluginsPending{Updating: twoUpdating},
+			key:     "findbugs",
+			want:    true,
+		},
+		"SecondKeyFound": {
+			pending: &sonar.PluginsPending{Updating: twoUpdating},
+			key:     "checkstyle",
+			want:    true,
+		},
+		"NotSearchedInInstalling": {
+			pending: &sonar.PluginsPending{
+				Installing: []sonar.PluginPending{{Key: "findbugs"}},
+				Updating:   []sonar.PluginPendingUpdate{},
+			},
+			key:  "findbugs",
+			want: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsPluginPendingUpdate(tc.pending, tc.key)
+			if got != tc.want {
+				t.Errorf("IsPluginPendingUpdate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 // TestIsPluginUpToDate tests checking if a plugin spec is up to date.
 func TestIsPluginUpToDate(t *testing.T) {
 	t.Parallel()

@@ -86,6 +86,16 @@ func mockHTTPOK() *http.Response {
 	return &http.Response{StatusCode: http.StatusOK, Status: "200 OK"}
 }
 
+// newPluginDeleting builds a Plugin with DeletionTimestamp set,
+// simulating a CR that has been marked for deletion.
+func newPluginDeleting(key, externalName string) *v1alpha1.Plugin {
+	p := newPlugin(key, externalName)
+	now := metav1.Now()
+	p.DeletionTimestamp = &now
+
+	return p
+}
+
 // newPlugin builds a Plugin resource with the given key and optional
 // external name.
 func newPlugin(key, externalName string) *v1alpha1.Plugin {
@@ -114,214 +124,25 @@ var errComparer = cmp.Comparer(func(x, y error) bool {
 	return x.Error() == y.Error()
 })
 
-// TestObserve tests the Observe method.
-func TestObserve(t *testing.T) {
-	t.Parallel()
+// observeArgs holds the inputs for an Observe table-driven test case.
+type observeArgs struct {
+	ctx context.Context
+	mg  resource.Managed
+}
 
-	type args struct {
-		ctx context.Context
-		mg  resource.Managed
-	}
+// observeWant holds the expected outputs for an Observe test case.
+type observeWant struct {
+	o   managed.ExternalObservation
+	err error
+}
 
-	type want struct {
-		o   managed.ExternalObservation
-		err error
-	}
-
-	cases := map[string]struct {
-		client *fake.MockPluginsClient
-		args   args
-		want   want
-	}{
-		"NotPluginError": {
-			client: &fake.MockPluginsClient{},
-			args:   args{ctx: context.Background(), mg: &notPlugin{}},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.New(errNotPlugin),
-			},
-		},
-		"EmptyExternalNameReturnsNotExists": {
-			client: &fake.MockPluginsClient{},
-			args:   args{ctx: context.Background(), mg: newPlugin(testPluginKey, "")},
-			want: want{
-				o:   managed.ExternalObservation{ResourceExists: false},
-				err: nil,
-			},
-		},
-		"InstalledAPIError": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return nil, nil, errBoom
-				},
-			},
-			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.Wrap(errBoom, errObservePlugin),
-			},
-		},
-		"PluginNotInInstalledNorPending": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return &sonar.PluginsInstalled{
-						Plugins: []sonar.PluginInstalled{{Key: "other-plugin"}},
-					}, mockHTTPOK(), nil
-				},
-				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
-					return &sonar.PluginsPending{}, mockHTTPOK(), nil
-				},
-			},
-			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
-			want: want{
-				o:   managed.ExternalObservation{ResourceExists: false},
-				err: nil,
-			},
-		},
-		"PluginPendingInstall": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return &sonar.PluginsInstalled{Plugins: []sonar.PluginInstalled{}}, mockHTTPOK(), nil
-				},
-				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
-					return &sonar.PluginsPending{
-						Installing: []sonar.PluginPending{{Key: testPluginKey, Name: "FindBugs"}},
-					}, mockHTTPOK(), nil
-				},
-			},
-			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
-			want: want{
-				o: managed.ExternalObservation{
-					ResourceExists:    true,
-					ResourceUpToDate:  true,
-					ConnectionDetails: managed.ConnectionDetails{},
-				},
-				err: nil,
-			},
-		},
-		"PendingAPIError": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return &sonar.PluginsInstalled{Plugins: []sonar.PluginInstalled{}}, mockHTTPOK(), nil
-				},
-				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
-					return nil, nil, errBoom
-				},
-			},
-			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.Wrap(errBoom, errObservePlugin),
-			},
-		},
-		"UpdatesAPIError": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return &sonar.PluginsInstalled{
-						Plugins: []sonar.PluginInstalled{{Key: testPluginKey}},
-					}, mockHTTPOK(), nil
-				},
-				UpdatesFn: func() (*sonar.PluginsUpdates, *http.Response, error) {
-					return nil, nil, errBoom
-				},
-			},
-			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
-			want: want{
-				o: managed.ExternalObservation{
-					ResourceExists: true,
-				},
-				err: errors.Wrap(errBoom, "cannot get plugin updates from SonarQube"),
-			},
-		},
-		"PluginAtLatestVersion": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return &sonar.PluginsInstalled{
-						Plugins: []sonar.PluginInstalled{{Key: testPluginKey}},
-					}, mockHTTPOK(), nil
-				},
-				UpdatesFn: func() (*sonar.PluginsUpdates, *http.Response, error) {
-					return &sonar.PluginsUpdates{Plugins: []sonar.PluginWithUpdates{}}, mockHTTPOK(), nil
-				},
-			},
-			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
-			want: want{
-				o: managed.ExternalObservation{
-					ResourceExists:          true,
-					ResourceUpToDate:        true,
-					ResourceLateInitialized: false,
-					ConnectionDetails:       managed.ConnectionDetails{},
-				},
-				err: nil,
-			},
-		},
-		"PluginHasUpdateAutoUpdateEnabled": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return &sonar.PluginsInstalled{
-						Plugins: []sonar.PluginInstalled{{Key: testPluginKey}},
-					}, mockHTTPOK(), nil
-				},
-				UpdatesFn: func() (*sonar.PluginsUpdates, *http.Response, error) {
-					return &sonar.PluginsUpdates{
-						Plugins: []sonar.PluginWithUpdates{{Key: testPluginKey}},
-					}, mockHTTPOK(), nil
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				mg: func() *v1alpha1.Plugin {
-					p := newPlugin(testPluginKey, testPluginKey)
-					autoUpdate := true
-					p.Spec.ForProvider.AutoUpdate = &autoUpdate
-
-					return p
-				}(),
-			},
-			want: want{
-				o: managed.ExternalObservation{
-					ResourceExists:          true,
-					ResourceUpToDate:        false,
-					ResourceLateInitialized: false,
-					ConnectionDetails:       managed.ConnectionDetails{},
-				},
-				err: nil,
-			},
-		},
-		"PluginHasUpdateAutoUpdateDisabled": {
-			client: &fake.MockPluginsClient{
-				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-					return &sonar.PluginsInstalled{
-						Plugins: []sonar.PluginInstalled{{Key: testPluginKey}},
-					}, mockHTTPOK(), nil
-				},
-				UpdatesFn: func() (*sonar.PluginsUpdates, *http.Response, error) {
-					return &sonar.PluginsUpdates{
-						Plugins: []sonar.PluginWithUpdates{{Key: testPluginKey}},
-					}, mockHTTPOK(), nil
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				mg: func() *v1alpha1.Plugin {
-					p := newPlugin(testPluginKey, testPluginKey)
-					autoUpdate := false
-					p.Spec.ForProvider.AutoUpdate = &autoUpdate
-
-					return p
-				}(),
-			},
-			want: want{
-				o: managed.ExternalObservation{
-					ResourceExists:          true,
-					ResourceUpToDate:        true,
-					ResourceLateInitialized: false,
-					ConnectionDetails:       managed.ConnectionDetails{},
-				},
-				err: nil,
-			},
-		},
-	}
+// runObserveCases runs a table of Observe test cases in parallel.
+func runObserveCases(t *testing.T, cases map[string]struct {
+	client *fake.MockPluginsClient
+	args   observeArgs
+	want   observeWant
+}) {
+	t.Helper()
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -338,51 +159,6 @@ func TestObserve(t *testing.T) {
 				t.Errorf("Observe() observation -want +got:\n%s", diff)
 			}
 		})
-	}
-}
-
-// TestObservePopulatesAtProvider verifies Observe writes all
-// observation fields.
-func TestObservePopulatesAtProvider(t *testing.T) {
-	t.Parallel()
-
-	mg := newPlugin(testPluginKey, testPluginKey)
-	e := &external{client: &fake.MockPluginsClient{
-		InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
-			return &sonar.PluginsInstalled{
-				Plugins: []sonar.PluginInstalled{
-					{
-						Key:         testPluginKey,
-						Name:        "FindBugs",
-						Version:     "4.0.0",
-						Description: "Find bugs",
-						Filename:    "findbugs.jar",
-						License:     "LGPL",
-					},
-				},
-			}, mockHTTPOK(), nil
-		},
-		UpdatesFn: func() (*sonar.PluginsUpdates, *http.Response, error) {
-			return &sonar.PluginsUpdates{Plugins: []sonar.PluginWithUpdates{}}, mockHTTPOK(), nil
-		},
-	}}
-
-	_, err := e.Observe(context.Background(), mg)
-	if err != nil {
-		t.Fatalf("Observe() error = %v", err)
-	}
-
-	obs := mg.Status.AtProvider
-	if obs.Name != "FindBugs" {
-		t.Errorf("AtProvider.Name = %q, want %q", obs.Name, "FindBugs")
-	}
-
-	if obs.Version != "4.0.0" {
-		t.Errorf("AtProvider.Version = %q, want %q", obs.Version, "4.0.0")
-	}
-
-	if !obs.IsLatest {
-		t.Errorf("AtProvider.IsLatest = false, want true (no updates available)")
 	}
 }
 
@@ -428,7 +204,7 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessSetsExternalNameToKey": {
 			client: &fake.MockPluginsClient{
-				InstallFn: func(opt *sonar.PluginsInstallOptions) (*http.Response, error) {
+				InstallFn: func(_ *sonar.PluginsInstallOptions) (*http.Response, error) {
 					return mockHTTPOK(), nil
 				},
 			},
@@ -505,6 +281,10 @@ func TestUpdate(t *testing.T) {
 		err error
 	}
 
+	emptyPending := func() (*sonar.PluginsPending, *http.Response, error) {
+		return &sonar.PluginsPending{}, mockHTTPOK(), nil
+	}
+
 	cases := map[string]struct {
 		client *fake.MockPluginsClient
 		args   args
@@ -523,8 +303,35 @@ func TestUpdate(t *testing.T) {
 				err: errors.New("cannot update SonarQube Plugin without external name"),
 			},
 		},
+		"PendingAPIError": {
+			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return nil, nil, errBoom
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{
+				o:   managed.ExternalUpdate{},
+				err: errors.Wrap(errBoom, "cannot update SonarQube Plugin"),
+			},
+		},
+		"AlreadyPendingUpdate": {
+			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{
+						Updating: []sonar.PluginPendingUpdate{{Key: testPluginKey}},
+					}, mockHTTPOK(), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{
+				o:   managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}},
+				err: nil,
+			},
+		},
 		"UpdateAPIError": {
 			client: &fake.MockPluginsClient{
+				PendingFn: emptyPending,
 				UpdateFn: func(_ *sonar.PluginsUpdateOptions) (*http.Response, error) {
 					return nil, errBoom
 				},
@@ -537,6 +344,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"Success": {
 			client: &fake.MockPluginsClient{
+				PendingFn: emptyPending,
 				UpdateFn: func(_ *sonar.PluginsUpdateOptions) (*http.Response, error) {
 					return mockHTTPOK(), nil
 				},
@@ -575,6 +383,9 @@ func TestUpdatePassesExternalNameAsKey(t *testing.T) {
 	var capturedKey string
 
 	e := &external{client: &fake.MockPluginsClient{
+		PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+			return &sonar.PluginsPending{}, mockHTTPOK(), nil
+		},
 		UpdateFn: func(opt *sonar.PluginsUpdateOptions) (*http.Response, error) {
 			capturedKey = opt.Key
 
@@ -621,8 +432,31 @@ func TestDelete(t *testing.T) {
 			args:   args{ctx: context.Background(), mg: newPlugin(testPluginKey, "")},
 			want:   want{o: managed.ExternalDelete{}, err: nil},
 		},
+		"PendingAPIError": {
+			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return nil, nil, errBoom
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{o: managed.ExternalDelete{}, err: errors.Wrap(errBoom, errUninstallPlugin)},
+		},
+		"AlreadyPendingRemoval": {
+			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{
+						Removing: []sonar.PluginPending{{Key: testPluginKey}},
+					}, mockHTTPOK(), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{o: managed.ExternalDelete{}, err: nil},
+		},
 		"UninstallAPIError": {
 			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{}, mockHTTPOK(), nil
+				},
 				UninstallFn: func(_ *sonar.PluginsUninstallOptions) (*http.Response, error) {
 					return nil, errBoom
 				},
@@ -632,6 +466,9 @@ func TestDelete(t *testing.T) {
 		},
 		"Success": {
 			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{}, mockHTTPOK(), nil
+				},
 				UninstallFn: func(_ *sonar.PluginsUninstallOptions) (*http.Response, error) {
 					return mockHTTPOK(), nil
 				},
@@ -667,6 +504,9 @@ func TestDeletePassesExternalNameAsKey(t *testing.T) {
 	var capturedKey string
 
 	e := &external{client: &fake.MockPluginsClient{
+		PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+			return &sonar.PluginsPending{}, mockHTTPOK(), nil
+		},
 		UninstallFn: func(opt *sonar.PluginsUninstallOptions) (*http.Response, error) {
 			capturedKey = opt.Key
 

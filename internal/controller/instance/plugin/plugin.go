@@ -21,20 +21,18 @@ import (
 	"context"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
-
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	"github.com/pkg/errors"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
+	"github.com/pkg/errors"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -162,59 +160,6 @@ type external struct {
 	client instance.PluginsClient
 }
 
-// Observe checks whether the plugin is installed in SonarQube and
-// populates status.atProvider.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	managedPlugin, ok := mg.(*v1alpha1.Plugin)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotPlugin)
-	}
-
-	externalName := meta.GetExternalName(managedPlugin)
-	if externalName == "" {
-		return managed.ExternalObservation{ResourceExists: false}, nil
-	}
-
-	installedList, resp, err := c.client.Installed(nil) //nolint:bodyclose // closed via helpers.CloseBody
-	defer helpers.CloseBody(resp)
-
-	if err != nil {
-		return managed.ExternalObservation{}, errors.Wrap(err, errObservePlugin)
-	}
-
-	found := instance.FindInstalledPlugin(installedList.Plugins, externalName)
-	if found == nil {
-		return c.observePending(managedPlugin, externalName)
-	}
-
-	managedPlugin.Status.AtProvider = instance.GeneratePluginObservation(found)
-
-	pluginsToUpdate, resp, err := c.client.Updates() //nolint:bodyclose // closed via helpers.CloseBody
-	defer helpers.CloseBody(resp)
-
-	if err != nil {
-		return managed.ExternalObservation{
-			ResourceExists: true,
-		}, errors.Wrap(err, "cannot get plugin updates from SonarQube")
-	}
-
-	// IsPluginUpdatable returns true when updates are available, so IsLatest is
-	// the inverse: true means already at the latest version.
-	managedPlugin.Status.AtProvider.IsLatest = !instance.IsPluginUpdatable(&pluginsToUpdate.Plugins, found.Key)
-
-	former := managedPlugin.Spec.ForProvider.DeepCopy()
-	instance.LateInitializePlugin(&managedPlugin.Spec.ForProvider, &managedPlugin.Status.AtProvider)
-
-	managedPlugin.SetConditions(xpv1.Available())
-
-	return managed.ExternalObservation{
-		ResourceExists:          true,
-		ResourceUpToDate:        instance.IsPluginUpToDate(&managedPlugin.Spec.ForProvider, &managedPlugin.Status.AtProvider),
-		ResourceLateInitialized: !instance.IsPluginLateInitialized(former, &managedPlugin.Spec.ForProvider),
-		ConnectionDetails:       managed.ConnectionDetails{},
-	}, nil
-}
-
 // Create installs the plugin in SonarQube and sets the external name to
 // the plugin key.
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
@@ -234,23 +179,32 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	meta.SetExternalName(managedPlugin, managedPlugin.Spec.ForProvider.Key)
 
-	return managed.ExternalCreation{
-		ConnectionDetails: managed.ConnectionDetails{},
-	}, nil
+	return managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{}}, nil
 }
 
-// Update is responsible for upgrading the plugin in SonarQube when
-// a new version is available and AutoUpdate is not explicitly disabled.
+// Update upgrades the plugin in SonarQube. If the upgrade is already
+// queued (pending a restart), the Update call is skipped to avoid
+// re-queuing the same operation.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	plugin, ok := mg.(*v1alpha1.Plugin)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotPlugin)
 	}
 
-	// Use external name as the identifier to update the resource
 	externalName := meta.GetExternalName(plugin)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, errors.New("cannot update SonarQube Plugin without external name")
+	}
+
+	pendingList, pendingResp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(pendingResp)
+
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot update SonarQube Plugin")
+	}
+
+	if instance.IsPluginPendingUpdate(pendingList, externalName) {
+		return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}}, nil
 	}
 
 	resp, err := c.client.Update(&sonar.PluginsUpdateOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
@@ -260,12 +214,12 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot update SonarQube Plugin")
 	}
 
-	return managed.ExternalUpdate{
-		ConnectionDetails: managed.ConnectionDetails{},
-	}, nil
+	return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}}, nil
 }
 
-// Delete uninstalls the plugin from SonarQube.
+// Delete uninstalls the plugin from SonarQube. If the removal is already
+// queued (pending a restart), the Uninstall call is skipped to avoid
+// re-queuing the same operation.
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
 	managedPlugin, ok := mg.(*v1alpha1.Plugin)
 	if !ok {
@@ -276,6 +230,17 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	externalName := meta.GetExternalName(managedPlugin)
 	if externalName == "" {
+		return managed.ExternalDelete{}, nil
+	}
+
+	pendingList, pendingResp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(pendingResp)
+
+	if err != nil {
+		return managed.ExternalDelete{}, errors.Wrap(err, errUninstallPlugin)
+	}
+
+	if instance.IsPluginPendingRemoval(pendingList, externalName) {
 		return managed.ExternalDelete{}, nil
 	}
 
@@ -292,30 +257,4 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 // Disconnect is a no-op because the SonarQube client is stateless.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
-}
-
-// observePending checks whether the plugin is queued for installation
-// (pending a SonarQube restart). It returns a not-exists observation
-// when the key is absent from the pending list.
-func (c *external) observePending(managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, error) {
-	pending, resp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
-	defer helpers.CloseBody(resp)
-
-	if err != nil {
-		return managed.ExternalObservation{}, errors.Wrap(err, errObservePlugin)
-	}
-
-	pendingPlugin := instance.FindPendingInstallPlugin(pending, key)
-	if pendingPlugin == nil {
-		return managed.ExternalObservation{ResourceExists: false}, nil
-	}
-
-	managedPlugin.Status.AtProvider = instance.GeneratePluginObservationFromPending(pendingPlugin)
-	managedPlugin.SetConditions(xpv1.Available())
-
-	return managed.ExternalObservation{
-		ResourceExists:    true,
-		ResourceUpToDate:  true,
-		ConnectionDetails: managed.ConnectionDetails{},
-	}, nil
 }

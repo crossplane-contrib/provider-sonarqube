@@ -206,6 +206,11 @@ spec:
                   version:
                     description: Version is the plugin version.
                     type: string
+                required:
+                - editionBundled
+                - isLatest
+                - pending
+                - sonarLintSupported
                 type: object
               conditions:
                 description: Conditions of the resource.

@@ -138,6 +138,40 @@ func GeneratePluginObservationFromPending(pending *sonar.PluginPending) v1alpha1
 	}
 }
 
+// IsPluginPendingUpdate returns true if the plugin is in the
+// pending-update list, meaning Update was called but SonarQube
+// has not yet restarted to apply it.
+func IsPluginPendingUpdate(pending *sonar.PluginsPending, key string) bool {
+	if pending == nil {
+		return false
+	}
+
+	for _, p := range pending.Updating {
+		if p.Key == key {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsPluginPendingRemoval returns true if the plugin is in the
+// pending-removal list, meaning Uninstall was called but SonarQube
+// has not yet restarted to apply it.
+func IsPluginPendingRemoval(pending *sonar.PluginsPending, key string) bool {
+	if pending == nil {
+		return false
+	}
+
+	for _, p := range pending.Removing {
+		if p.Key == key {
+			return true
+		}
+	}
+
+	return false
+}
+
 // IsPluginUpdatable returns true if a plugin is in the list of
 // updatable plugins by its key.
 func IsPluginUpdatable(plugins *[]sonar.PluginWithUpdates, key string) bool {

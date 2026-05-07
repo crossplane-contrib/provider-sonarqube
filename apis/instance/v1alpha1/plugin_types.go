@@ -43,7 +43,7 @@ type PluginObservation struct {
 	// Description is the plugin description.
 	Description string `json:"description,omitempty"`
 	// EditionBundled indicates if the plugin is bundled with an edition.
-	EditionBundled bool `json:"editionBundled,omitempty"`
+	EditionBundled bool `json:"editionBundled"`
 	// Filename is the plugin filename.
 	Filename string `json:"filename,omitempty"`
 	// Hash is the file hash.
@@ -67,17 +67,17 @@ type PluginObservation struct {
 	// RequiredForLanguages is the list of languages requiring this plugin.
 	RequiredForLanguages []string `json:"requiredForLanguages,omitempty"`
 	// SonarLintSupported indicates if SonarLint is supported.
-	SonarLintSupported bool `json:"sonarLintSupported,omitempty"`
+	SonarLintSupported bool `json:"sonarLintSupported"`
 	// UpdatedAt is the timestamp when the plugin was updated.
 	UpdatedAt *metav1.Time `json:"updatedAt,omitempty"`
 	// Version is the plugin version.
 	Version string `json:"version,omitempty"`
 	// IsLatest indicates if the installed plugin is the latest
 	// version available in the marketplace.
-	IsLatest bool `json:"isLatest,omitempty"`
+	IsLatest bool `json:"isLatest"`
 	// Pending is true when the plugin installation has been queued
 	// but SonarQube has not yet restarted to apply it.
-	Pending bool `json:"pending,omitempty"`
+	Pending bool `json:"pending"`
 }
 
 // A PluginSpec defines the desired state of a Plugin.
