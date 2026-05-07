@@ -6,9 +6,10 @@
 #   2. wait for the Deployment to become Available
 #   3. open a port-forward and wait for SonarQube to report status=UP
 #   4. set the admin password (tolerates already-changed state)
-#   5. (re)generate a deterministic API token
-#   6. write the token to a Kubernetes Secret
-#   7. apply a ClusterProviderConfig wired to the in-cluster Service
+#   5. accept the plugin risk consent (required before any plugin install)
+#   6. (re)generate a deterministic API token
+#   7. write the token to a Kubernetes Secret
+#   8. apply a ClusterProviderConfig wired to the in-cluster Service
 #
 # Required environment:
 #   KUBECTL (path to kubectl, falls back to "kubectl")
@@ -95,6 +96,10 @@ case "${http_status}" in
 esac
 
 auth=(-u "admin:${SONARQUBE_ADMIN_PASSWORD}")
+
+log "Accepting plugin risk consent"
+curl -s -o /dev/null "${auth[@]}" -X POST \
+    "${SONARQUBE_LOCAL_URL}/api/plugins/accept_risk" || true
 
 log "Revoking any pre-existing token named '${SONARQUBE_TOKEN_NAME}'"
 curl -s -o /dev/null "${auth[@]}" -X POST \
