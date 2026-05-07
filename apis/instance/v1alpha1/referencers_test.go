@@ -377,7 +377,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		// the controller runs and sets the real SonarQube value.  If
 		// ResolveReferences passed CurrentValue to the resolver, the non-empty
 		// stale K8s name would be treated as a cache hit and re-resolution would
-		// be skipped forever — even after the referenced resource was reconciled
+		// be skipped forever - even after the referenced resource was reconciled
 		// and its annotation updated.
 		// Fix: when a ref or selector is present, always pass CurrentValue="" so
 		// the resolver re-reads the referenced resource's annotation on every call.
@@ -656,7 +656,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 
 		gotGate := ptr.Deref(p.Spec.ForProvider.QualityGateName, "")
 		if gotGate != gateExtName {
-			t.Errorf("QualityGateName: want %q, got %q — pointer aliasing bug: profile resolution overwrote gate value", gateExtName, gotGate)
+			t.Errorf("QualityGateName: want %q, got %q - pointer aliasing bug: profile resolution overwrote gate value", gateExtName, gotGate)
 		}
 
 		gotProfile := ptr.Deref(p.Spec.ForProvider.QualityProfiles["go"].Id, "")
@@ -712,14 +712,14 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 
 			got := ptr.Deref(prof.Id, "")
 			if got != wantID {
-				t.Errorf("QualityProfiles[%s].Id: want %q, got %q — pointer aliasing: loop iterations overwrite each other", lang, wantID, got)
+				t.Errorf("QualityProfiles[%s].Id: want %q, got %q - pointer aliasing: loop iterations overwrite each other", lang, wantID, got)
 			}
 		}
 	})
 
 	// Regression: exact scenario reported by user.
 	// The project had qualityGateName="example-qualitygate" and
-	// qualityProfiles.go.id="example-qualityprofile-go" — both are the K8s
+	// qualityProfiles.go.id="example-qualityprofile-go" - both are the K8s
 	// object names that Crossplane's NameAsExternalName initializer sets before
 	// the individual controllers run.  After those controllers create the
 	// resources in SonarQube and update the annotations, the project must pick
@@ -765,11 +765,11 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		}
 
 		if got := ptr.Deref(p.Spec.ForProvider.QualityGateName, ""); got != "TestQualityGate" {
-			t.Errorf("QualityGateName: want \"TestQualityGate\", got %q — stale K8s name was not overwritten", got)
+			t.Errorf("QualityGateName: want \"TestQualityGate\", got %q - stale K8s name was not overwritten", got)
 		}
 
 		if got := ptr.Deref(p.Spec.ForProvider.QualityProfiles["go"].Id, ""); got != "e58153d8-075a-4968-ace2-d7afd38c867b" {
-			t.Errorf("QualityProfiles[go].Id: want UUID, got %q — stale K8s name was not overwritten", got)
+			t.Errorf("QualityProfiles[go].Id: want UUID, got %q - stale K8s name was not overwritten", got)
 		}
 
 		if callCount != 2 {

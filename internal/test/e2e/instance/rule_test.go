@@ -33,7 +33,7 @@ import (
 )
 
 // TestRuleCRUD creates a custom rule based on the java:S124 template
-// (comment-regexp matcher — stock in SonarJava), waits for Ready, and
+// (comment-regexp matcher - stock in SonarJava), waits for Ready, and
 // verifies the rule exists in SonarQube with the expected name. SonarQube
 // prefixes the custom rule key with the template's language+repo, so we
 // look up by key with a java: prefix.

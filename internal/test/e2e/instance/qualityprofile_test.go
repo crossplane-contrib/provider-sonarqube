@@ -33,7 +33,7 @@ import (
 
 // TestQualityProfileCRUD creates an empty (no custom rules) Go quality
 // profile and verifies SonarQube knows about it at the expected name +
-// language. Leaving rules out keeps the test hermetic — rule references
+// language. Leaving rules out keeps the test hermetic - rule references
 // are exercised separately in the rule_test.go suite.
 func TestQualityProfileCRUD(t *testing.T) {
 	t.Parallel()

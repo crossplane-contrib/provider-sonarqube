@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:build e2e
-
 package e2e
 
 import (
@@ -26,8 +26,8 @@ import (
 )
 
 // FetchGroup returns the SonarQube group with the given ID, or (nil, nil)
-// if no such group exists. Use the resource's external-name annotation —
-// the provider stores the SonarQube-assigned ID there — as the lookup key.
+// if no such group exists. Use the resource's external-name annotation -
+// the provider stores the SonarQube-assigned ID there - as the lookup key.
 func (f *Framework) FetchGroup(id string) (*sonar.Group, error) {
 	g, resp, err := f.Sonar.V2.Authorizations.FetchGroup(id)
 	defer helpers.CloseBody(resp)
@@ -76,7 +76,7 @@ func (f *Framework) FindProjectByKey(key string) (*sonar.ProjectSearchComponent,
 
 // FindQualityGate returns the quality gate with the given name, or (nil, nil)
 // if no such gate exists. SonarQube exposes only a List endpoint, so this
-// iterates the full list — fine for the handful of gates used in e2e tests.
+// iterates the full list - fine for the handful of gates used in e2e tests.
 func (f *Framework) FindQualityGate(name string) (*sonar.QualityGate, error) {
 	res, resp, err := f.Sonar.Qualitygates.List()
 	defer helpers.CloseBody(resp)
@@ -123,7 +123,7 @@ func (f *Framework) FetchRule(key string) (*sonar.RuleDetails, error) {
 
 // FetchSettingValue returns the SettingValue for the given key (scoped to
 // component when non-empty), or (nil, nil) if SonarQube did not return a
-// value for that key. Settings that were never set return (nil, nil) —
+// value for that key. Settings that were never set return (nil, nil) -
 // callers treat that as the natural "not yet reconciled" state.
 func (f *Framework) FetchSettingValue(component, key string) (*sonar.SettingValue, error) {
 	opts := &sonar.SettingsValuesOptions{Keys: []string{key}}

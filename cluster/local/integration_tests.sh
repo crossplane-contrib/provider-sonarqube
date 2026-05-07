@@ -38,7 +38,7 @@ if [ "${skipcleanup}" != "true" ]; then
 fi
 
 if [ ! -f "${OUTPUT_DIR}/xpkg/${PLATFORM}/${PACKAGE_NAME}-${VERSION}.xpkg" ]; then
-    echo_error "xpkg not built — run 'make build' first"
+    echo_error "xpkg not built - run 'make build' first"
 fi
 
 echo_step "creating kind controlplane and installing crossplane"

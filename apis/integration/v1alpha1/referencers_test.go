@@ -343,7 +343,7 @@ func TestWebhookResolveReferences_RefTakesPrecedenceOverSelector(t *testing.T) {
 
 	got := ptr.Deref(w.Spec.ForProvider.ProjectKey, "")
 	if got != refExtName {
-		t.Errorf("ProjectKey: want %q (from ref), got %q — ref did not take precedence over selector", refExtName, got)
+		t.Errorf("ProjectKey: want %q (from ref), got %q - ref did not take precedence over selector", refExtName, got)
 	}
 
 	if listCalled {

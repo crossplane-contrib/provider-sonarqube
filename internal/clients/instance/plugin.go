@@ -99,7 +99,7 @@ func FindInstalledPlugin(plugins []sonar.PluginInstalled, key string) *sonar.Plu
 
 // FindPendingInstallPlugin returns a pointer to the plugin with the
 // given key in the pending-installation list, or nil if not found.
-// It only checks pending.Installing — not Updating or Removing.
+// It only checks pending.Installing - not Updating or Removing.
 func FindPendingInstallPlugin(pending *sonar.PluginsPending, key string) *sonar.PluginPending {
 	if pending == nil {
 		return nil

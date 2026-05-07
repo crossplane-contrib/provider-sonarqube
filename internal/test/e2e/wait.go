@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -13,8 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-//go:build e2e
 
 package e2e
 
@@ -35,7 +35,7 @@ import (
 const pollInterval = 2 * time.Second
 
 // Conditioned is the slim contract every Crossplane managed resource
-// already satisfies — a Kubernetes object whose status exposes the
+// already satisfies - a Kubernetes object whose status exposes the
 // standard Crossplane condition set.
 type Conditioned interface {
 	client.Object

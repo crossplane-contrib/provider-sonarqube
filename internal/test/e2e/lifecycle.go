@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -13,8 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-//go:build e2e
 
 package e2e
 
@@ -82,7 +82,7 @@ func (f *Framework) CreateAndWaitForReady(t *testing.T, obj Conditioned, timeout
 }
 
 // cleanup deletes obj and waits for the API server to confirm its removal.
-// Failures are logged rather than failing the test — by the time cleanup
+// Failures are logged rather than failing the test - by the time cleanup
 // runs the assertions of interest have already happened.
 func (f *Framework) cleanup(t *testing.T, obj client.Object) {
 	ctx := context.Background()

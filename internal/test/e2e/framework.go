@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -13,8 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-//go:build e2e
 
 package e2e
 
@@ -60,7 +60,7 @@ type Framework struct {
 }
 
 // New constructs a Framework, failing the test immediately on missing config
-// or unreachable cluster — there is no value in deferring those errors.
+// or unreachable cluster - there is no value in deferring those errors.
 func New(t *testing.T) *Framework {
 	t.Helper()
 

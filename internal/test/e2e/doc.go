@@ -27,9 +27,9 @@ limitations under the License.
 // environment variables to be set, which `cluster/local/integration_tests.sh`
 // exports automatically:
 //
-//	KUBECONFIG       — points at a cluster running the provider
-//	SONARQUBE_URL    — base URL of the SonarQube API (e.g. http://localhost:9000/api)
-//	SONARQUBE_TOKEN  — admin-scoped SonarQube token used to verify state
+//	KUBECONFIG       - points at a cluster running the provider
+//	SONARQUBE_URL    - base URL of the SonarQube API (e.g. http://localhost:9000/api)
+//	SONARQUBE_TOKEN  - admin-scoped SonarQube token used to verify state
 //
 // The companion ClusterProviderConfig used by the managed resources under
 // test is named `e2e` and is created by `cluster/local/sonarqube_setup.sh`.

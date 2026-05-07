@@ -472,7 +472,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					Name:       "test-project",
 					Key:        "test-key",
 					Visibility: new("public"),
-					// No qualityProfiles field — user did not specify any
+					// No qualityProfiles field - user did not specify any
 				}),
 			},
 			want: want{
