@@ -101,7 +101,7 @@ func (c *external) observeInstalled(
 	return managed.ExternalObservation{
 		ResourceExists:          true,
 		ResourceUpToDate:        instance.IsPluginUpToDate(&managedPlugin.Spec.ForProvider, &managedPlugin.Status.AtProvider),
-		ResourceLateInitialized: !instance.IsPluginLateInitialized(former, &managedPlugin.Spec.ForProvider),
+		ResourceLateInitialized: instance.IsPluginLateInitialized(former, &managedPlugin.Spec.ForProvider),
 		ConnectionDetails:       managed.ConnectionDetails{},
 	}, nil
 }

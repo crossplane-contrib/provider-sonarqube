@@ -287,30 +287,30 @@ func TestIsPluginLateInitialized(t *testing.T) {
 		current *v1alpha1.PluginParameters
 		want    bool
 	}{
-		"BothNilReturnsTrue": {
+		"BothNilReturnsFalse": {
 			former:  nil,
 			current: nil,
-			want:    true,
+			want:    false,
 		},
-		"FormerNilReturnsTrue": {
+		"FormerNilReturnsFalse": {
 			former:  nil,
 			current: &v1alpha1.PluginParameters{Key: "findbugs"},
-			want:    true,
+			want:    false,
 		},
-		"CurrentNilReturnsTrue": {
+		"CurrentNilReturnsFalse": {
 			former:  &v1alpha1.PluginParameters{Key: "findbugs"},
 			current: nil,
-			want:    true,
+			want:    false,
 		},
-		"EqualSpecsReturnTrue": {
+		"EqualSpecsReturnFalse": {
 			former:  &v1alpha1.PluginParameters{Key: "findbugs"},
 			current: &v1alpha1.PluginParameters{Key: "findbugs"},
-			want:    true,
+			want:    false,
 		},
-		"EqualSpecsWithAutoUpdateReturnTrue": {
+		"EqualSpecsWithAutoUpdateReturnFalse": {
 			former:  &v1alpha1.PluginParameters{Key: "findbugs", AutoUpdate: new(true)},
 			current: &v1alpha1.PluginParameters{Key: "findbugs", AutoUpdate: new(true)},
-			want:    true,
+			want:    false,
 		},
 	}
 

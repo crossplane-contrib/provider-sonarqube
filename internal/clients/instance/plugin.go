@@ -196,14 +196,14 @@ func LateInitializePlugin(spec *v1alpha1.PluginParameters, observation *v1alpha1
 	}
 }
 
-// IsPluginLateInitialized returns true when the spec has not changed
-// (i.e., no late initialization occurred).
+// IsPluginLateInitialized returns true when the spec changed
+// as a result of late initialization.
 func IsPluginLateInitialized(former, current *v1alpha1.PluginParameters) bool {
 	if former == nil || current == nil {
-		return true
+		return false
 	}
 
-	return cmp.Equal(former, current)
+	return !cmp.Equal(former, current)
 }
 
 // IsPluginUpToDate returns true when no upgrade should be performed.
