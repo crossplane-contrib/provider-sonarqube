@@ -230,6 +230,24 @@ func (f *Framework) FindGlobalWebhookByKey(key string) (*sonar.Webhook, error) {
 	return nil, nil //nolint:nilnil // intentional: absence is the natural "not found" sentinel
 }
 
+// FindInstalledPlugin returns the installed plugin with the given key,
+// or (nil, nil) if no such plugin is installed.
+func (f *Framework) FindInstalledPlugin(key string) (*sonar.PluginInstalled, error) {
+	res, resp, err := f.Sonar.Plugins.Installed(nil)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range res.Plugins {
+		if res.Plugins[i].Key == key {
+			return &res.Plugins[i], nil
+		}
+	}
+
+	return nil, nil //nolint:nilnil // intentional: absence is the natural "not installed" sentinel
+}
+
 // FindALMGitHubDefinitionByKey returns the GitHub ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
 func (f *Framework) FindALMGitHubDefinitionByKey(key string) (*sonar.GithubDefinition, error) {

@@ -1,0 +1,13 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Plugin
+metadata:
+  name: example-plugin
+  namespace: default
+spec:
+  forProvider:
+    # Key of the plugin in the SonarQube marketplace
+    key: findbugs
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

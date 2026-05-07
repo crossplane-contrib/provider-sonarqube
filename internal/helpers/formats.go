@@ -166,6 +166,18 @@ func AssignIfNil[T any](ptr **T, val T) {
 	}
 }
 
+// IntTimestampToMetaTime returns nil if timestamp is nil, else returns the
+// Converted metav1.Time from timestamp. Timestamp must be in milliseconds.
+func IntTimestampToMetaTime(timestamp *int64) *metav1.Time {
+	result := metav1.Time{}
+
+	if timestamp != nil {
+		result.Time = time.UnixMilli(*timestamp)
+	}
+
+	return &result
+}
+
 // TimeToMetaTime returns nil if parameter is nil, otherwise metav1.Time value.
 func TimeToMetaTime(t *time.Time) *metav1.Time {
 	if t == nil {
