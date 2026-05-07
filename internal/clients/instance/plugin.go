@@ -38,7 +38,7 @@ type PluginsClient interface {
 	Uninstall(opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error)
 	// Update updates a plugin by key.
 	Update(opt *sonar.PluginsUpdateOptions) (*http.Response, error)
-	// Updates Retrieves all updates available for installed plugins.
+	// Updates retrieves all updates available for installed plugins.
 	Updates() (*sonar.PluginsUpdates, *http.Response, error)
 }
 

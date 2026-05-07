@@ -237,7 +237,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}, nil
 }
 
-// Update is a no-op because SonarQube plugins have no mutable fields.
+// Update is responsible for upgrading the plugin in SonarQube when
+// a new version is available and AutoUpdate is not explicitly disabled.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	plugin, ok := mg.(*v1alpha1.Plugin)
 	if !ok {
