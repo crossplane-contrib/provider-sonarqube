@@ -71,6 +71,7 @@ spec:
                     type: boolean
                   key:
                     description: Key is the plugin key in the SonarQube marketplace.
+                    minLength: 1
                     type: string
                     x-kubernetes-validations:
                     - message: Key is immutable

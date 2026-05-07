@@ -31,6 +31,7 @@ type PluginParameters struct {
 	// Key is the plugin key in the SonarQube marketplace.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Key is immutable"
+	// +kubebuilder:validation:MinLength=1
 	Key string `json:"key"`
 	// AutoUpdate indicates if the plugin should be automatically updated when a new version is available.
 	// Defaults to true if unset
