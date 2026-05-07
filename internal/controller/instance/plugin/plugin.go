@@ -223,6 +223,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalCreation{}, errors.New(errNotPlugin)
 	}
 
+	managedPlugin.Status.SetConditions(xpv1.Creating())
+
 	resp, err := c.client.Install(&sonar.PluginsInstallOptions{Key: managedPlugin.Spec.ForProvider.Key}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
