@@ -161,18 +161,57 @@ func TestObserve(t *testing.T) {
 				err: errors.Wrap(errBoom, errObservePlugin),
 			},
 		},
-		"PluginNotInInstalledList": {
+		"PluginNotInInstalledNorPending": {
 			client: &fake.MockPluginsClient{
 				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
 					return &sonar.PluginsInstalled{
 						Plugins: []sonar.PluginInstalled{{Key: "other-plugin"}},
 					}, mockHTTPOK(), nil
 				},
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{}, mockHTTPOK(), nil
+				},
 			},
 			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
 			want: want{
 				o:   managed.ExternalObservation{ResourceExists: false},
 				err: nil,
+			},
+		},
+		"PluginPendingInstall": {
+			client: &fake.MockPluginsClient{
+				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
+					return &sonar.PluginsInstalled{Plugins: []sonar.PluginInstalled{}}, mockHTTPOK(), nil
+				},
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{
+						Installing: []sonar.PluginPending{{Key: testPluginKey, Name: "FindBugs"}},
+					}, mockHTTPOK(), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{
+				o: managed.ExternalObservation{
+					ResourceExists:    true,
+					ResourceUpToDate:  true,
+					ConnectionDetails: managed.ConnectionDetails{},
+				},
+				err: nil,
+			},
+		},
+		"PendingAPIError": {
+			client: &fake.MockPluginsClient{
+				InstalledFn: func(_ *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
+					return &sonar.PluginsInstalled{Plugins: []sonar.PluginInstalled{}}, mockHTTPOK(), nil
+				},
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return nil, nil, errBoom
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{
+				o:   managed.ExternalObservation{},
+				err: errors.Wrap(errBoom, errObservePlugin),
 			},
 		},
 		"UpdatesAPIError": {

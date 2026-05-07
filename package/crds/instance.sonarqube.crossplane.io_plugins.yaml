@@ -28,6 +28,9 @@ spec:
     - jsonPath: .metadata.annotations.crossplane\.io/external-name
       name: EXTERNAL-NAME
       type: string
+    - jsonPath: .status.atProvider.pending
+      name: PENDING
+      type: boolean
     - jsonPath: .metadata.creationTimestamp
       name: AGE
       type: date
@@ -160,8 +163,9 @@ spec:
                     description: ImplementationBuild is the implementation build.
                     type: string
                   isLatest:
-                    description: IsLatest indicates if the installed plugin is the
-                      latest version available in the marketplace.
+                    description: |-
+                      IsLatest indicates if the installed plugin is the latest
+                      version available in the marketplace.
                     type: boolean
                   issueTrackerUrl:
                     description: IssueTrackerURL is the issue tracker URL.
@@ -181,6 +185,11 @@ spec:
                   organizationUrl:
                     description: OrganizationURL is the organization URL.
                     type: string
+                  pending:
+                    description: |-
+                      Pending is true when the plugin installation has been queued
+                      but SonarQube has not yet restarted to apply it.
+                    type: boolean
                   requiredForLanguages:
                     description: RequiredForLanguages is the list of languages requiring
                       this plugin.

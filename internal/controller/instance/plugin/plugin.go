@@ -184,7 +184,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	found := instance.FindInstalledPlugin(installedList.Plugins, externalName)
 	if found == nil {
-		return managed.ExternalObservation{ResourceExists: false}, nil
+		return c.observePending(managedPlugin, externalName)
 	}
 
 	managedPlugin.Status.AtProvider = instance.GeneratePluginObservation(found)
@@ -292,4 +292,30 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 // Disconnect is a no-op because the SonarQube client is stateless.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
+}
+
+// observePending checks whether the plugin is queued for installation
+// (pending a SonarQube restart). It returns a not-exists observation
+// when the key is absent from the pending list.
+func (c *external) observePending(managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, error) {
+	pending, resp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
+
+	if err != nil {
+		return managed.ExternalObservation{}, errors.Wrap(err, errObservePlugin)
+	}
+
+	pendingPlugin := instance.FindPendingInstallPlugin(pending, key)
+	if pendingPlugin == nil {
+		return managed.ExternalObservation{ResourceExists: false}, nil
+	}
+
+	managedPlugin.Status.AtProvider = instance.GeneratePluginObservationFromPending(pendingPlugin)
+	managedPlugin.SetConditions(xpv1.Available())
+
+	return managed.ExternalObservation{
+		ResourceExists:    true,
+		ResourceUpToDate:  true,
+		ConnectionDetails: managed.ConnectionDetails{},
+	}, nil
 }

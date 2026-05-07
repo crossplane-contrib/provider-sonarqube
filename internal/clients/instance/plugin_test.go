@@ -326,6 +326,134 @@ func TestIsPluginLateInitialized(t *testing.T) {
 	}
 }
 
+// TestFindPendingInstallPlugin tests finding a plugin in the pending list.
+func TestFindPendingInstallPlugin(t *testing.T) {
+	t.Parallel()
+
+	twoPending := []sonar.PluginPending{
+		{Key: "findbugs", Name: "FindBugs"},
+		{Key: "checkstyle", Name: "Checkstyle"},
+	}
+
+	cases := map[string]struct {
+		pending *sonar.PluginsPending
+		key     string
+		wantNil bool
+		wantKey string
+	}{
+		"NilPendingReturnsNil": {
+			pending: nil,
+			key:     "findbugs",
+			wantNil: true,
+		},
+		"EmptyInstallingReturnsNil": {
+			pending: &sonar.PluginsPending{},
+			key:     "findbugs",
+			wantNil: true,
+		},
+		"KeyAbsentReturnsNil": {
+			pending: &sonar.PluginsPending{Installing: twoPending},
+			key:     "pmd",
+			wantNil: true,
+		},
+		"FirstKeyFound": {
+			pending: &sonar.PluginsPending{Installing: twoPending},
+			key:     "findbugs",
+			wantKey: "findbugs",
+		},
+		"SecondKeyFound": {
+			pending: &sonar.PluginsPending{Installing: twoPending},
+			key:     "checkstyle",
+			wantKey: "checkstyle",
+		},
+		"NotSearchedInRemoving": {
+			pending: &sonar.PluginsPending{
+				Installing: []sonar.PluginPending{},
+				Removing:   twoPending,
+			},
+			key:     "findbugs",
+			wantNil: true,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := FindPendingInstallPlugin(tc.pending, tc.key)
+			if tc.wantNil {
+				if got != nil {
+					t.Errorf("FindPendingInstallPlugin() = %v, want nil", got)
+				}
+
+				return
+			}
+
+			if got == nil {
+				t.Fatal("FindPendingInstallPlugin() = nil, want non-nil")
+			}
+
+			if got.Key != tc.wantKey {
+				t.Errorf("FindPendingInstallPlugin() key = %q, want %q", got.Key, tc.wantKey)
+			}
+		})
+	}
+}
+
+// TestGeneratePluginObservationFromPending tests building an observation
+// from a pending plugin entry.
+func TestGeneratePluginObservationFromPending(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		pending *sonar.PluginPending
+		want    v1alpha1.PluginObservation
+	}{
+		"NilReturnsEmpty": {
+			pending: nil,
+			want:    v1alpha1.PluginObservation{},
+		},
+		"AllFieldsMapped": {
+			pending: &sonar.PluginPending{
+				Key:                 "findbugs",
+				Name:                "FindBugs",
+				Version:             "4.0.0",
+				Description:         "Find bugs in Java code",
+				HomepageURL:         "https://findbugs.example.com",
+				ImplementationBuild: "build-42",
+				IssueTrackerURL:     "https://issues.example.com",
+				License:             "LGPL",
+				OrganizationName:    "SpotBugs",
+				OrganizationURL:     "https://spotbugs.example.com",
+			},
+			want: v1alpha1.PluginObservation{
+				Key:                 "findbugs",
+				Name:                "FindBugs",
+				Version:             "4.0.0",
+				Description:         "Find bugs in Java code",
+				HomepageURL:         "https://findbugs.example.com",
+				ImplementationBuild: "build-42",
+				IssueTrackerURL:     "https://issues.example.com",
+				License:             "LGPL",
+				OrganizationName:    "SpotBugs",
+				OrganizationURL:     "https://spotbugs.example.com",
+				Pending:             true,
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GeneratePluginObservationFromPending(tc.pending)
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("GeneratePluginObservationFromPending() -want +got:\n%s", diff)
+			}
+		})
+	}
+}
+
 // TestIsPluginUpToDate tests checking if a plugin spec is up to date.
 func TestIsPluginUpToDate(t *testing.T) {
 	t.Parallel()

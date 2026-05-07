@@ -72,8 +72,12 @@ type PluginObservation struct {
 	UpdatedAt *metav1.Time `json:"updatedAt,omitempty"`
 	// Version is the plugin version.
 	Version string `json:"version,omitempty"`
-	// IsLatest indicates if the installed plugin is the latest version available in the marketplace.
+	// IsLatest indicates if the installed plugin is the latest
+	// version available in the marketplace.
 	IsLatest bool `json:"isLatest,omitempty"`
+	// Pending is true when the plugin installation has been queued
+	// but SonarQube has not yet restarted to apply it.
+	Pending bool `json:"pending,omitempty"`
 }
 
 // A PluginSpec defines the desired state of a Plugin.
@@ -98,6 +102,7 @@ type PluginStatus struct {
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="EXTERNAL-NAME",type="string",JSONPath=".metadata.annotations.crossplane\\.io/external-name"
+// +kubebuilder:printcolumn:name="PENDING",type="boolean",JSONPath=".status.atProvider.pending"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}

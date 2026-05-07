@@ -34,6 +34,9 @@ type PluginsClient interface {
 	Install(opt *sonar.PluginsInstallOptions) (resp *http.Response, err error)
 	// Installed returns the list of all installed plugins.
 	Installed(opt *sonar.PluginsInstalledOptions) (v *sonar.PluginsInstalled, resp *http.Response, err error)
+	// Pending returns plugins queued for install/update/removal
+	// (pending a SonarQube restart).
+	Pending() (v *sonar.PluginsPending, resp *http.Response, err error)
 	// Uninstall removes a plugin by key.
 	Uninstall(opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error)
 	// Update updates a plugin by key.
@@ -92,6 +95,47 @@ func FindInstalledPlugin(plugins []sonar.PluginInstalled, key string) *sonar.Plu
 	}
 
 	return nil
+}
+
+// FindPendingInstallPlugin returns a pointer to the plugin with the
+// given key in the pending-installation list, or nil if not found.
+// It only checks pending.Installing — not Updating or Removing.
+func FindPendingInstallPlugin(pending *sonar.PluginsPending, key string) *sonar.PluginPending {
+	if pending == nil {
+		return nil
+	}
+
+	for i := range pending.Installing {
+		if pending.Installing[i].Key == key {
+			return &pending.Installing[i]
+		}
+	}
+
+	return nil
+}
+
+// GeneratePluginObservationFromPending builds a PluginObservation from
+// a PluginPending entry. Fields not available before installation
+// (EditionBundled, Filename, Hash, RequiredForLanguages, SonarLintSupported,
+// UpdatedAt) are left at their zero values.
+func GeneratePluginObservationFromPending(pending *sonar.PluginPending) v1alpha1.PluginObservation {
+	if pending == nil {
+		return v1alpha1.PluginObservation{}
+	}
+
+	return v1alpha1.PluginObservation{
+		Description:         pending.Description,
+		HomepageURL:         pending.HomepageURL,
+		ImplementationBuild: pending.ImplementationBuild,
+		IssueTrackerURL:     pending.IssueTrackerURL,
+		Key:                 pending.Key,
+		License:             pending.License,
+		Name:                pending.Name,
+		OrganizationName:    pending.OrganizationName,
+		OrganizationURL:     pending.OrganizationURL,
+		Pending:             true,
+		Version:             pending.Version,
+	}
 }
 
 // IsPluginUpdatable returns true if a plugin is in the list of

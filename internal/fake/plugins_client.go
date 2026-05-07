@@ -30,6 +30,8 @@ type MockPluginsClient struct {
 	InstallFn func(opt *sonar.PluginsInstallOptions) (resp *http.Response, err error)
 	// InstalledFn backs the Installed method.
 	InstalledFn func(opt *sonar.PluginsInstalledOptions) (v *sonar.PluginsInstalled, resp *http.Response, err error)
+	// PendingFn backs the Pending method.
+	PendingFn func() (v *sonar.PluginsPending, resp *http.Response, err error)
 	// UninstallFn backs the Uninstall method.
 	UninstallFn func(opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error)
 	// UpdateFn backs the Update method.
@@ -54,6 +56,15 @@ func (m *MockPluginsClient) Install(opt *sonar.PluginsInstallOptions) (resp *htt
 func (m *MockPluginsClient) Installed(opt *sonar.PluginsInstalledOptions) (v *sonar.PluginsInstalled, resp *http.Response, err error) {
 	if m.InstalledFn != nil {
 		return m.InstalledFn(opt)
+	}
+
+	return nil, nil, errNotImplemented
+}
+
+// Pending implements PluginsClient.Pending.
+func (m *MockPluginsClient) Pending() (v *sonar.PluginsPending, resp *http.Response, err error) {
+	if m.PendingFn != nil {
+		return m.PendingFn()
 	}
 
 	return nil, nil, errNotImplemented
