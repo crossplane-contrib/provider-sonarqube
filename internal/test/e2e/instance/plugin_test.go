@@ -61,16 +61,26 @@ func TestPluginInstall(t *testing.T) {
 	e2e.AssertSynced(t, plugin)
 	e2e.AssertExternalName(t, plugin, pluginKey)
 
-	got, err := f.FindInstalledPlugin(pluginKey)
+	installed, err := f.FindInstalledPlugin(pluginKey)
 	if err != nil {
 		t.Fatalf("searching installed plugins: %v", err)
 	}
 
-	if got == nil {
-		t.Fatalf("plugin %q not found in SonarQube installed plugins", pluginKey)
+	if installed != nil {
+		if installed.Key != pluginKey {
+			t.Errorf("plugin key = %q, want %q", installed.Key, pluginKey)
+		}
+		return
 	}
 
-	if got.Key != pluginKey {
-		t.Errorf("plugin key = %q, want %q", got.Key, pluginKey)
+	// Plugins require a SonarQube restart to move from pending to installed;
+	// accept pending-install as equivalent for e2e purposes.
+	pending, err := f.FindPendingInstallPlugin(pluginKey)
+	if err != nil {
+		t.Fatalf("searching pending plugins: %v", err)
+	}
+
+	if pending == nil {
+		t.Fatalf("plugin %q not found in SonarQube installed or pending-install plugins", pluginKey)
 	}
 }

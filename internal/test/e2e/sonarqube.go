@@ -248,6 +248,25 @@ func (f *Framework) FindInstalledPlugin(key string) (*sonar.PluginInstalled, err
 	return nil, nil //nolint:nilnil // intentional: absence is the natural "not installed" sentinel
 }
 
+// FindPendingInstallPlugin returns the pending-install entry for the given key,
+// or (nil, nil) if no such plugin is queued. Plugins remain pending until
+// SonarQube is restarted, so this is the expected state in e2e tests.
+func (f *Framework) FindPendingInstallPlugin(key string) (*sonar.PluginPending, error) {
+	res, resp, err := f.Sonar.Plugins.Pending()
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range res.Installing {
+		if res.Installing[i].Key == key {
+			return &res.Installing[i], nil
+		}
+	}
+
+	return nil, nil //nolint:nilnil // intentional: absence is the natural "not queued" sentinel
+}
+
 // FindALMGitHubDefinitionByKey returns the GitHub ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
 func (f *Framework) FindALMGitHubDefinitionByKey(key string) (*sonar.GithubDefinition, error) {
