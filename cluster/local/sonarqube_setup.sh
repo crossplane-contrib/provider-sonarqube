@@ -99,7 +99,9 @@ auth=(-u "admin:${SONARQUBE_ADMIN_PASSWORD}")
 
 log "Accepting plugin risk consent"
 curl -s -o /dev/null "${auth[@]}" -X POST \
-    "${SONARQUBE_LOCAL_URL}/api/plugins/accept_risk" || true
+    "${SONARQUBE_LOCAL_URL}/api/settings/set" \
+    --data-urlencode "key=sonar.plugins.risk.consent" \
+    --data-urlencode "value=ACCEPTED"
 
 log "Revoking any pre-existing token named '${SONARQUBE_TOKEN_NAME}'"
 curl -s -o /dev/null "${auth[@]}" -X POST \
