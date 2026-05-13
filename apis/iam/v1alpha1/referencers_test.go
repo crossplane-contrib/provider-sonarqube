@@ -84,6 +84,49 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			client:     test.NewMockClient(),
 			wantGroups: map[int]string{0: "devs"},
 		},
+		// With the default IfNotPresent policy, a non-empty GroupId is treated as a
+		// cached resolved value and is preserved without re-fetching the referenced
+		// resource. To force re-resolution on every reconcile, set policy.resolve=Always
+		// on the reference.
+		"GroupId_WithRef_IfNotPresent_UsesCachedValue": {
+			reason: "When GroupId is set and ref is present with IfNotPresent policy, the cached value is preserved.",
+			user: func() *User {
+				u := newTestUser(testNamespace)
+				groups := []UserGroupsParameters{{
+					GroupId:    new("cached-group"),
+					GroupIdRef: &xpv1.NamespacedReference{Name: "example-group"},
+				}}
+				u.Spec.ForProvider.Groups = &groups
+
+				return u
+			}(),
+			client:     test.NewMockClient(), // no Get should be called
+			wantGroups: map[int]string{0: "cached-group"},
+		},
+		"GroupId_WithRef_PolicyAlways_Resolves": {
+			reason: "When ref has policy.resolve=Always, resolver re-fetches even if GroupId is already set.",
+			user: func() *User {
+				u := newTestUser(testNamespace)
+				groups := []UserGroupsParameters{{
+					GroupId: new("stale-group"),
+					GroupIdRef: &xpv1.NamespacedReference{
+						Name:   "example-group",
+						Policy: &xpv1.Policy{Resolve: new(xpv1.ResolvePolicyAlways)},
+					},
+				}}
+				u.Spec.ForProvider.Groups = &groups
+
+				return u
+			}(),
+			client: &test.MockClient{
+				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+					setExtName(obj, "fresh-group")
+
+					return nil
+				}),
+			},
+			wantGroups: map[int]string{0: "fresh-group"},
+		},
 		"GroupIdRef_ResolvesToExternalName": {
 			reason: "GroupIdRef.Name is the Kubernetes object name and resolves to the external name.",
 			user: func() *User {
@@ -158,24 +201,6 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 				}),
 			},
 			wantGroups: map[int]string{0: "platform"},
-		},
-		"GroupId_StaleCachedK8sName_IsOverwrittenByAnnotation": {
-			reason: "A stale cached GroupId (K8s name) must be overwritten when GroupIdRef is set.",
-			user: func() *User {
-				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupId: new("example-group"), GroupIdRef: &xpv1.NamespacedReference{Name: "example-group"}}}
-				u.Spec.ForProvider.Groups = &groups
-
-				return u
-			}(),
-			client: &test.MockClient{
-				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
-					setExtName(obj, "devs")
-
-					return nil
-				}),
-			},
-			wantGroups: map[int]string{0: "devs"},
 		},
 		"MultipleGroups_MixedInputs_AllResolvedIndependently": {
 			reason: "Direct, ref and selector based groups are each resolved and retained independently.",

@@ -89,11 +89,48 @@ func TestWebhookResolveReferences(t *testing.T) {
 			reason: "When ProjectKey is set but no ref/selector exists, it is preserved.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKey = ptr.To(projectExternalName)
+				w.Spec.ForProvider.ProjectKey = new(projectExternalName)
 
 				return w
 			}(),
 			client:  test.NewMockClient(),
+			wantKey: projectExternalName,
+		},
+		// With the default IfNotPresent policy, a non-empty ProjectKey is treated as
+		// a cached resolved value and is preserved without re-fetching the referenced
+		// resource. To force re-resolution on every reconcile, set policy.resolve=Always
+		// on the reference.
+		"ProjectKey_WithRef_IfNotPresent_UsesCachedValue": {
+			reason: "When ProjectKey is set and ref is present with IfNotPresent policy, the cached value is preserved.",
+			webhook: func() *Webhook {
+				w := newTestWebhook()
+				w.Spec.ForProvider.ProjectKey = new(projectExternalName)
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
+
+				return w
+			}(),
+			client:  test.NewMockClient(), // no Get should be called
+			wantKey: projectExternalName,
+		},
+		"ProjectKey_WithRef_PolicyAlways_Resolves": {
+			reason: "When ref has policy.resolve=Always, resolver re-fetches even if ProjectKey is already set.",
+			webhook: func() *Webhook {
+				w := newTestWebhook()
+				w.Spec.ForProvider.ProjectKey = new("stale-project-key")
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{
+					Name:   testProjectK8sName,
+					Policy: &xpv1.Policy{Resolve: new(xpv1.ResolvePolicyAlways)},
+				}
+
+				return w
+			}(),
+			client: &test.MockClient{
+				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+					setExtName(obj, projectExternalName)
+
+					return nil
+				}),
+			},
 			wantKey: projectExternalName,
 		},
 		"ProjectKeyRef_ResolvesToExternalName": {
@@ -146,7 +183,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			client: &test.MockClient{
 				MockGet: test.NewMockGetFn(notFoundProject),
 			},
-			errSubstr: "failed to resolve Webhook.Spec.ForProvider.ProjectKey",
+			errSubstr: "mg.Spec.ForProvider.ProjectKey",
 		},
 		"ProjectKeySelector_ResolvesToExternalName": {
 			reason: "A selector lists matching Projects and resolves the ExternalName.",
@@ -179,32 +216,6 @@ func TestWebhookResolveReferences(t *testing.T) {
 			},
 			wantKey: projectExternalName,
 		},
-		// Regression: Crossplane's NameAsExternalName initializer defaults
-		// crossplane.io/external-name to the K8s metadata.name before the
-		// Project controller runs. If the stale K8s name is passed as
-		// CurrentValue, the resolver treats it as a cache hit and skips
-		// re-resolution. Fix: pass CurrentValue="" when a ref is present.
-		"ProjectKeyRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
-			reason: "A stale ProjectKey must be overwritten when a ref is present.",
-			webhook: func() *Webhook {
-				w := newTestWebhook()
-				// Stale cached value set by the NameAsExternalName initializer.
-				w.Spec.ForProvider.ProjectKey = new(testProjectK8sName)
-				// Ref still points to the same resource.
-				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
-
-				return w
-			}(),
-			client: &test.MockClient{
-				// The Project now has its real annotation: the SonarQube key.
-				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
-					setExtName(obj, projectExternalName)
-
-					return nil
-				}),
-			},
-			wantKey: projectExternalName,
-		},
 		"ProjectKeySelector_EmptyList_ReturnsError": {
 			reason: "A selector that matches no Projects returns an error.",
 			webhook: func() *Webhook {
@@ -227,7 +238,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 					return nil
 				}),
 			},
-			errSubstr: "failed to resolve Webhook.Spec.ForProvider.ProjectKey",
+			errSubstr: "mg.Spec.ForProvider.ProjectKey",
 		},
 		"ProjectKeySelector_ListAPIError_ReturnsError": {
 			reason: "A List API failure during selector resolution propagates as an error.",
@@ -242,7 +253,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			client: &test.MockClient{
 				MockList: test.NewMockListFn(errors.New("list API failure")),
 			},
-			errSubstr: "failed to resolve Webhook.Spec.ForProvider.ProjectKey",
+			errSubstr: "mg.Spec.ForProvider.ProjectKey",
 		},
 		"ProjectKeyRef_GetAPIError_ReturnsError": {
 			reason: "A Get API failure during ref resolution propagates as an error.",
@@ -255,7 +266,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			client: &test.MockClient{
 				MockGet: test.NewMockGetFn(errors.New("get API failure")),
 			},
-			errSubstr: "failed to resolve Webhook.Spec.ForProvider.ProjectKey",
+			errSubstr: "mg.Spec.ForProvider.ProjectKey",
 		},
 	}
 

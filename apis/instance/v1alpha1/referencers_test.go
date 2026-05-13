@@ -105,6 +105,51 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 				0: "go:S100",
 			},
 		},
+		// With the default IfNotPresent policy, a non-empty Rule is treated as a
+		// cached resolved value and is preserved without re-fetching the referenced
+		// resource. To force re-resolution on every reconcile, set policy.resolve=Always
+		// on the reference.
+		"Rule_WithRef_IfNotPresent_UsesCachedValue": {
+			reason: "When Rule is set and ref is present with IfNotPresent policy, the cached value is preserved.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(testNamespace)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
+					Rule:    new("cached-rule"),
+					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
+				}}
+
+				return qp
+			}(),
+			client: test.NewMockClient(), // no Get should be called
+			wantRules: map[int]string{
+				0: "cached-rule",
+			},
+		},
+		"Rule_WithRef_PolicyAlways_Resolves": {
+			reason: "When ref has policy.resolve=Always, resolver re-fetches even if Rule is already set.",
+			profile: func() *QualityProfile {
+				qp := newTestQualityProfile(testNamespace)
+				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
+					Rule: new("stale-rule"),
+					RuleRef: &xpv1.NamespacedReference{
+						Name:   "example-rule",
+						Policy: &xpv1.Policy{Resolve: new(xpv1.ResolvePolicyAlways)},
+					},
+				}}
+
+				return qp
+			}(),
+			client: &test.MockClient{
+				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+					setExtName(obj, "ts:S1128")
+
+					return nil
+				}),
+			},
+			wantRules: map[int]string{
+				0: "ts:S1128",
+			},
+		},
 		"RuleRef_ResolvesToExternalName": {
 			reason: "RuleRef.Name uses the Kubernetes object name and resolves to external-name.",
 			profile: func() *QualityProfile {
@@ -190,28 +235,6 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 				0: "py:S101",
 			},
 		},
-		"RuleRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
-			reason: "A stale cached Rule value (K8s name) must be overwritten when RuleRef is set.",
-			profile: func() *QualityProfile {
-				qp := newTestQualityProfile(testNamespace)
-				qp.Spec.ForProvider.Rules = []QualityProfileRuleParameters{{
-					Rule:    new("example-rule"),
-					RuleRef: &xpv1.NamespacedReference{Name: "example-rule"},
-				}}
-
-				return qp
-			}(),
-			client: &test.MockClient{
-				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
-					setExtName(obj, "ts:S1128")
-
-					return nil
-				}),
-			},
-			wantRules: map[int]string{
-				0: "ts:S1128",
-			},
-		},
 		"MultipleRules_MixedInputs_AllResolvedIndependently": {
 			reason: "Direct, ref and selector based rules are each resolved and retained independently.",
 			profile: func() *QualityProfile {
@@ -288,7 +311,7 @@ func TestQualityProfileResolveReferences(t *testing.T) { //nolint:gocognit,maint
 					continue
 				}
 
-				if got := *tc.profile.Spec.ForProvider.Rules[idx].Rule; got != wantRule {
+				if got := ptr.Deref(tc.profile.Spec.ForProvider.Rules[idx].Rule, ""); got != wantRule {
 					t.Errorf("[%s] (%s) Rules[%d].Rule: want %q, got %q", name, tc.reason, idx, wantRule, got)
 				}
 			}
@@ -372,29 +395,35 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			client:  test.NewMockClient(),
 			wantQGN: "Sonar way",
 		},
-		// Regression: Crossplane's NameAsExternalName initializer defaults the
-		// crossplane.io/external-name annotation to the K8s metadata.name before
-		// the controller runs and sets the real SonarQube value.  If
-		// ResolveReferences passed CurrentValue to the resolver, the non-empty
-		// stale K8s name would be treated as a cache hit and re-resolution would
-		// be skipped forever - even after the referenced resource was reconciled
-		// and its annotation updated.
-		// Fix: when a ref or selector is present, always pass CurrentValue="" so
-		// the resolver re-reads the referenced resource's annotation on every call.
-		"QualityGateNameRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
-			reason: "A stale qualityGateName (K8s name) must be overwritten when a ref is present; the live annotation value wins.",
+		// With the default IfNotPresent policy, a non-empty QualityGateName is
+		// treated as a cached resolved value and is preserved without re-fetching
+		// the referenced resource. To force re-resolution on every reconcile, set
+		// policy.resolve=Always on the reference.
+		"QualityGateName_WithRef_IfNotPresent_UsesCachedValue": {
+			reason: "When QualityGateName is set and ref is present with IfNotPresent policy, the cached value is preserved.",
 			project: func() *Project {
 				p := newTestProject(testNamespace)
-				// Stale cached value: set to the K8s object name by a previous
-				// reconcile before the QualityGate controller had run.
-				p.Spec.ForProvider.QualityGateName = ptr.To(qgK8s)
-				// Ref still points to the same resource.
+				p.Spec.ForProvider.QualityGateName = new("cached-gate-name")
 				p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: qgK8s}
 
 				return p
 			}(),
+			client:  test.NewMockClient(), // no Get should be called
+			wantQGN: "cached-gate-name",
+		},
+		"QualityGateName_WithRef_PolicyAlways_Resolves": {
+			reason: "When ref has policy.resolve=Always, resolver re-fetches even if QualityGateName is already set.",
+			project: func() *Project {
+				p := newTestProject(testNamespace)
+				p.Spec.ForProvider.QualityGateName = new("stale-gate-name")
+				p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{
+					Name:   qgK8s,
+					Policy: &xpv1.Policy{Resolve: new(xpv1.ResolvePolicyAlways)},
+				}
+
+				return p
+			}(),
 			client: &test.MockClient{
-				// The QualityGate resource now has its real annotation: the SonarQube name.
 				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 					setExtName(obj, "TestQualityGate")
 
@@ -403,22 +432,39 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			},
 			wantQGN: "TestQualityGate",
 		},
-		"QualityProfileIdRef_StaleCachedK8sName_IsOverwrittenByAnnotation": {
-			reason: "A stale qualityProfile.id (K8s name) must be overwritten when a ref is present; the live annotation value wins.",
+		"QualityProfileId_WithRef_IfNotPresent_UsesCachedValue": {
+			reason: "When Id is set and ref is present with IfNotPresent policy, the cached value is preserved.",
 			project: func() *Project {
 				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
 					"go": {
-						// Stale: was set to K8s name before the profile controller ran.
-						Id:    ptr.To(qpK8s),
+						Id:    new("cached-profile-id"),
 						IdRef: &xpv1.NamespacedReference{Name: qpK8s},
 					},
 				}
 
 				return p
 			}(),
+			client:   test.NewMockClient(), // no Get should be called
+			wantQPID: "cached-profile-id",
+		},
+		"QualityProfileId_WithRef_PolicyAlways_Resolves": {
+			reason: "When ref has policy.resolve=Always, resolver re-fetches even if Id is already set.",
+			project: func() *Project {
+				p := newTestProject(testNamespace)
+				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
+					"go": {
+						Id: new("stale-profile-id"),
+						IdRef: &xpv1.NamespacedReference{
+							Name:   qpK8s,
+							Policy: &xpv1.Policy{Resolve: new(xpv1.ResolvePolicyAlways)},
+						},
+					},
+				}
+
+				return p
+			}(),
 			client: &test.MockClient{
-				// The QualityProfile resource now has its real annotation: the UUID key.
 				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 					setExtName(obj, "e58153d8-075a-4968-ace2-d7afd38c867b")
 
@@ -567,7 +613,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			project: func() *Project {
 				p := newTestProject(testNamespace)
 				p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
-					"go": {Id: ptr.To(qpUUID)},
+					"go": {Id: new(qpUUID)},
 				}
 
 				return p
@@ -605,26 +651,15 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		},
 	}
 
-	// -------------------------------------------------------------------------
-	// Regression: pointer aliasing when both QualityGateNameRef and a profile
-	// IdRef are present.
-	//
-	// Root cause: ResolveReferences stored &response.ResolvedValue directly into
-	// project.Spec.ForProvider.QualityGateName.  The `response` local variable
-	// was then reused (reassigned in-place) for each quality-profile resolution,
-	// overwriting the memory the gate pointer was pointing at.  The result was
-	// that QualityGateName silently received the last profile's resolved UUID.
-	//
-	// Fix: use ptr.To(response.ResolvedValue) which allocates an independent copy
-	// for each resolved string, making every stored pointer stable.
-	// -------------------------------------------------------------------------
-
+	// Regression: pointer aliasing when both QualityGateNameRef and a profile IdRef are present.
+	// The resolver must allocate independent string copies for each resolved value so that
+	// resolving the profile does not overwrite the gate name pointer.
 	t.Run("BothQualityGateRefAndProfileRef_GateNameNotOverwrittenByProfileId", func(t *testing.T) {
 		t.Parallel()
 
 		const (
-			gateExtName    = "Sonar way"         // what the quality gate resolves to
-			profileExtName = "qp-uuid-different" // what the quality profile resolves to
+			gateExtName    = "Sonar way"
+			profileExtName = "qp-uuid-different"
 		)
 
 		p := newTestProject(testNamespace)
@@ -638,10 +673,8 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			MockGet: func(_ context.Context, _ client.ObjectKey, obj client.Object) error {
 				callCount++
 				if callCount == 1 {
-					// First call: quality gate lookup
 					setExtName(obj, gateExtName)
 				} else {
-					// Second call: quality profile lookup
 					setExtName(obj, profileExtName)
 				}
 
@@ -656,7 +689,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 
 		gotGate := ptr.Deref(p.Spec.ForProvider.QualityGateName, "")
 		if gotGate != gateExtName {
-			t.Errorf("QualityGateName: want %q, got %q - pointer aliasing bug: profile resolution overwrote gate value", gateExtName, gotGate)
+			t.Errorf("QualityGateName: want %q, got %q - profile resolution overwrote gate value", gateExtName, gotGate)
 		}
 
 		gotProfile := ptr.Deref(p.Spec.ForProvider.QualityProfiles["go"].Id, "")
@@ -712,68 +745,8 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 
 			got := ptr.Deref(prof.Id, "")
 			if got != wantID {
-				t.Errorf("QualityProfiles[%s].Id: want %q, got %q - pointer aliasing: loop iterations overwrite each other", lang, wantID, got)
+				t.Errorf("QualityProfiles[%s].Id: want %q, got %q", lang, wantID, got)
 			}
-		}
-	})
-
-	// Regression: exact scenario reported by user.
-	// The project had qualityGateName="example-qualitygate" and
-	// qualityProfiles.go.id="example-qualityprofile-go" - both are the K8s
-	// object names that Crossplane's NameAsExternalName initializer sets before
-	// the individual controllers run.  After those controllers create the
-	// resources in SonarQube and update the annotations, the project must pick
-	// up the real values on the next reconcile regardless of the previously
-	// cached (wrong) values.
-	t.Run("BothRefs_StaleCachedK8sNames_OverwrittenByRealAnnotations", func(t *testing.T) {
-		t.Parallel()
-
-		p := newTestProject(testNamespace)
-		// Pre-set stale cached values (what Crossplane's initializer writes).
-		p.Spec.ForProvider.QualityGateName = new("example-qualitygate")
-		p.Spec.ForProvider.QualityGateNameRef = &xpv1.NamespacedReference{Name: "example-qualitygate"}
-		p.Spec.ForProvider.QualityProfiles = map[string]ProjectQualityProfileReference{
-			"go": {
-				Id:    new("example-qualityprofile-go"),
-				IdRef: &xpv1.NamespacedReference{Name: "example-qualityprofile-go"},
-			},
-		}
-
-		callCount := 0
-		c := &test.MockClient{
-			MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
-				callCount++
-
-				switch key.Name {
-				case "example-qualitygate":
-					// Real SonarQube quality gate name, set by qualitygate controller.
-					setExtName(obj, "TestQualityGate")
-				case "example-qualityprofile-go":
-					// Real SonarQube profile key (UUID), set by qualityprofile controller.
-					setExtName(obj, "e58153d8-075a-4968-ace2-d7afd38c867b")
-				default:
-					t.Errorf("unexpected Get for key %q", key.Name)
-				}
-
-				return nil
-			},
-		}
-
-		err := p.ResolveReferences(context.Background(), c)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		if got := ptr.Deref(p.Spec.ForProvider.QualityGateName, ""); got != "TestQualityGate" {
-			t.Errorf("QualityGateName: want \"TestQualityGate\", got %q - stale K8s name was not overwritten", got)
-		}
-
-		if got := ptr.Deref(p.Spec.ForProvider.QualityProfiles["go"].Id, ""); got != "e58153d8-075a-4968-ace2-d7afd38c867b" {
-			t.Errorf("QualityProfiles[go].Id: want UUID, got %q - stale K8s name was not overwritten", got)
-		}
-
-		if callCount != 2 {
-			t.Errorf("expected 2 Get calls, got %d", callCount)
 		}
 	})
 

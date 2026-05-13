@@ -19,15 +19,15 @@ package v1alpha1
 import (
 	"context"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ResolveReferences parses the references to other custom resources and
-// resolves them to the actual values.
+// ResolveReferences resolves references to other managed resources for User.
+// Resolution respects the ref/selector Policy: with the default IfNotPresent
+// policy a resolved value is cached and not re-fetched on every reconcile;
+// set policy.resolve=Always on a reference to force re-resolution each time.
 func (user *User) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
 	resolver := reference.NewAPINamespacedResolver(readerClient, user)
 
@@ -36,25 +36,10 @@ func (user *User) ResolveReferences(ctx context.Context, readerClient client.Rea
 	}
 
 	for groupIdx, userGroup := range *user.Spec.ForProvider.Groups {
-		currentGroupID := ""
-		if userGroup.GroupIdRef == nil && userGroup.GroupIdSelector == nil {
-			currentGroupID = ptr.Deref(userGroup.GroupId, "")
-		}
-
-		var groupSelector *xpv1.NamespacedSelector
-		if userGroup.GroupIdSelector != nil {
-			groupSelector = &xpv1.NamespacedSelector{
-				MatchLabels:        userGroup.GroupIdSelector.MatchLabels,
-				MatchControllerRef: userGroup.GroupIdSelector.MatchControllerRef,
-				Policy:             userGroup.GroupIdSelector.Policy,
-				Namespace:          user.GetNamespace(),
-			}
-		}
-
 		groupResponse, groupErr := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
-			CurrentValue: currentGroupID,
+			CurrentValue: reference.FromPtrValue(userGroup.GroupId),
 			Reference:    userGroup.GroupIdRef,
-			Selector:     groupSelector,
+			Selector:     userGroup.GroupIdSelector,
 			To: reference.To{
 				List:    &GroupList{},
 				Managed: &Group{},
@@ -65,11 +50,7 @@ func (user *User) ResolveReferences(ctx context.Context, readerClient client.Rea
 			return errors.Wrap(groupErr, "spec.forProvider.groups.groupId")
 		}
 
-		if (userGroup.GroupIdRef != nil || userGroup.GroupIdSelector != nil) && groupResponse.ResolvedValue == "" {
-			return errors.Errorf("unable to resolve spec.forProvider.groups[%d]: resolved value is empty", groupIdx)
-		}
-
-		userGroup.GroupId = new(groupResponse.ResolvedValue)
+		userGroup.GroupId = reference.ToPtrValue(groupResponse.ResolvedValue)
 		userGroup.GroupIdRef = groupResponse.ResolvedReference
 		(*user.Spec.ForProvider.Groups)[groupIdx] = userGroup
 	}
