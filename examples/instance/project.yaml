@@ -33,11 +33,17 @@ spec:
     # Quality gate to apply to the project in SonarQube
     qualityGateNameRef:
       name: example-qualitygate
+      namespace: default
+      policy:
+        resolve: Always
     # Quality profiles to apply to the project in SonarQube, keyed by language
     qualityProfiles:
       go:
         idRef:
           name: example-qualityprofile-go
+          namespace: default
+          policy:
+            resolve: Always
 
   providerConfigRef:
     name: example

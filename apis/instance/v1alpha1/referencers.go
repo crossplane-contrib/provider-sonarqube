@@ -33,13 +33,14 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 
 	response, err := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
 		CurrentValue: reference.FromPtrValue(project.Spec.ForProvider.QualityGateName),
+		Extract:      reference.ExternalName(),
+		Namespace:    project.GetNamespace(),
 		Reference:    project.Spec.ForProvider.QualityGateNameRef,
 		Selector:     project.Spec.ForProvider.QualityGateNameSelector,
 		To: reference.To{
 			List:    &QualityGateList{},
 			Managed: &QualityGate{},
 		},
-		Extract: reference.ExternalName(),
 	})
 	if err != nil {
 		return errors.Wrap(err, "spec.forProvider.qualityGateName")
@@ -51,13 +52,14 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 	for language, profile := range project.Spec.ForProvider.QualityProfiles {
 		profileResponse, profileErr := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
 			CurrentValue: reference.FromPtrValue(profile.Id),
+			Extract:      reference.ExternalName(),
+			Namespace:    project.GetNamespace(),
 			Reference:    profile.IdRef,
 			Selector:     profile.IdSelector,
 			To: reference.To{
 				List:    &QualityProfileList{},
 				Managed: &QualityProfile{},
 			},
-			Extract: reference.ExternalName(),
 		})
 		if profileErr != nil {
 			return errors.Wrap(profileErr, "spec.forProvider.qualityProfileId")

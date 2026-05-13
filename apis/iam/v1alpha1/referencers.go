@@ -38,13 +38,14 @@ func (user *User) ResolveReferences(ctx context.Context, readerClient client.Rea
 	for groupIdx, userGroup := range *user.Spec.ForProvider.Groups {
 		groupResponse, groupErr := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
 			CurrentValue: reference.FromPtrValue(userGroup.GroupId),
+			Extract:      reference.ExternalName(),
+			Namespace:    user.GetNamespace(),
 			Reference:    userGroup.GroupIdRef,
 			Selector:     userGroup.GroupIdSelector,
 			To: reference.To{
 				List:    &GroupList{},
 				Managed: &Group{},
 			},
-			Extract: reference.ExternalName(),
 		})
 		if groupErr != nil {
 			return errors.Wrap(groupErr, "spec.forProvider.groups.groupId")
