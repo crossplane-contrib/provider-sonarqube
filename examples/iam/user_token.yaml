@@ -1,0 +1,34 @@
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: UserToken
+metadata:
+  name: example-usertoken
+spec:
+  forProvider:
+    # Name is the SonarQube token name. Immutable after creation.
+    name: my-ci-token
+    # Type is the token type. Defaults to USER_TOKEN.
+    # Allowed values: USER_TOKEN, GLOBAL_ANALYSIS_TOKEN, PROJECT_ANALYSIS_TOKEN
+    type: USER_TOKEN
+    # --- Expiration mode (choose exactly one, or omit both for no expiration) ---
+    # Option 1 (active): Automatically renew every 90 days when the token expires.
+    renewalPeriodDays: 90
+    # Option 2: Set an explicit expiration date (YYYY-MM-DD). Uncomment to use.
+    # expirationDate: "2027-12-31"
+    # Option 3: No expiration — omit both renewalPeriodDays and expirationDate.
+    # Define the "early" renewal window (in days) before the token expires.
+    # Optional, defaults to 0 (renew on expiration).
+    renewBeforeDays: 3
+    loginRef:
+      # Resolve from User metadata.name -> crossplane.io/external-name.
+      # This references the User example in examples/iam/user.yaml.
+      name: example-user
+      policy:
+        resolve: Always
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+
+  # writeConnectionSecretToRef is required — the token value is stored here.
+  writeConnectionSecretToRef:
+    name: example-usertoken-secret

@@ -380,45 +380,110 @@ func TestTimeToMetaTime(t *testing.T) {
 	})
 }
 
-// TestStringToMetaTime tests converting RFC3339 strings to MetaTime.
+// mustParseTime parses a time string with the given layout, panicking on error.
+func mustParseTime(layout, value string) time.Time {
+	parsedTime, err := time.Parse(layout, value)
+	if err != nil {
+		panic(err)
+	}
+
+	return parsedTime.UTC()
+}
+
+// TestStringToMetaTime tests multi-format datetime string parsing.
 func TestStringToMetaTime(t *testing.T) {
 	t.Parallel()
 
-	t.Run("NilStringReturnsNil", func(t *testing.T) {
-		t.Parallel()
+	cases := map[string]struct {
+		input   *string
+		wantNil bool
+		wantUTC time.Time
+	}{
+		"NilPointerReturnsNil": {
+			input:   nil,
+			wantNil: true,
+		},
+		"EmptyStringReturnsNil": {
+			input:   new(""),
+			wantNil: true,
+		},
+		"InvalidStringReturnsNil": {
+			input:   new("not-a-valid-time"),
+			wantNil: true,
+		},
+		"PartialDatetimeReturnsNil": {
+			input:   new("2026-01-20T22"),
+			wantNil: true,
+		},
+		"DateTimeWithoutTZReturnsNil": {
+			input:   new("2026-01-20T22:00:00"),
+			wantNil: true,
+		},
+		"RFC3339UTCSuffix": {
+			input:   new("2026-01-20T22:00:00Z"),
+			wantUTC: mustParseTime(time.RFC3339, "2026-01-20T22:00:00Z"),
+		},
+		"RFC3339PositiveColonOffset": {
+			input:   new("2026-06-01T08:00:00+05:30"),
+			wantUTC: mustParseTime(time.RFC3339, "2026-06-01T08:00:00+05:30"),
+		},
+		"RFC3339NegativeColonOffset": {
+			input:   new("2026-03-15T10:00:00-07:00"),
+			wantUTC: mustParseTime(time.RFC3339, "2026-03-15T10:00:00-07:00"),
+		},
+		"SonarQubeFormatUTCOffset": {
+			input:   new("2026-01-30T22:02:16+0000"),
+			wantUTC: mustParseTime("2006-01-02T15:04:05-0700", "2026-01-30T22:02:16+0000"),
+		},
+		"SonarQubeFormatPositiveOffset": {
+			input:   new("2026-05-14T12:30:00+0530"),
+			wantUTC: mustParseTime("2006-01-02T15:04:05-0700", "2026-05-14T12:30:00+0530"),
+		},
+		"SonarQubeFormatNegativeOffset": {
+			input:   new("2026-05-14T15:30:45-0500"),
+			wantUTC: mustParseTime("2006-01-02T15:04:05-0700", "2026-05-14T15:30:45-0500"),
+		},
+		"DateOnly": {
+			input:   new("2026-04-15"),
+			wantUTC: mustParseTime(time.DateOnly, "2026-04-15"),
+		},
+		"DateOnlyFirstDayOfYear": {
+			input:   new("2026-01-01"),
+			wantUTC: mustParseTime(time.DateOnly, "2026-01-01"),
+		},
+		"DateOnlyLastDayOfYear": {
+			input:   new("2026-12-31"),
+			wantUTC: mustParseTime(time.DateOnly, "2026-12-31"),
+		},
+		"ResultIsAlwaysUTC": {
+			input:   new("2026-01-30T22:02:16+0530"),
+			wantUTC: mustParseTime("2006-01-02T15:04:05-0700", "2026-01-30T22:02:16+0530"),
+		},
+	}
 
-		result := StringToMetaTime(nil)
-		if result != nil {
-			t.Errorf("StringToMetaTime(nil) = %v, want nil", result)
-		}
-	})
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	t.Run("InvalidStringReturnsNil", func(t *testing.T) {
-		t.Parallel()
+			result := StringToMetaTime(tc.input)
 
-		invalid := "not-a-valid-time"
+			if tc.wantNil {
+				if result != nil {
+					t.Errorf("StringToMetaTime() = %v, want nil", result)
+				}
 
-		result := StringToMetaTime(&invalid)
-		if result != nil {
-			t.Errorf("StringToMetaTime(invalid) = %v, want nil", result)
-		}
-	})
+				return
+			}
 
-	t.Run("ValidRFC3339StringReturnsMetaTime", func(t *testing.T) {
-		t.Parallel()
+			if result == nil {
+				t.Fatal("StringToMetaTime() = nil, want non-nil")
+			}
 
-		rfc3339 := "2026-01-20T22:00:00Z"
-
-		result := StringToMetaTime(&rfc3339)
-		if result == nil {
-			t.Fatal("StringToMetaTime() returned nil, want non-nil")
-		}
-
-		expected, _ := time.Parse(time.RFC3339, rfc3339)
-		if !result.Time.Equal(expected) {
-			t.Errorf("StringToMetaTime() time = %v, want %v", result.Time, expected)
-		}
-	})
+			if !result.Time.Equal(tc.wantUTC) {
+				t.Errorf("StringToMetaTime() = %v, want %v", result.Time, tc.wantUTC)
+			}
+		})
+	}
 }
 
 // TestAnySliceToStringSlice tests converting any slice to string slice.

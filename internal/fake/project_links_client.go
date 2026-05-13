@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:dupl // Mock clients intentionally share this three-method structure.
 package fake
 
 import (

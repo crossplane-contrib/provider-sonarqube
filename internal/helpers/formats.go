@@ -185,20 +185,28 @@ func TimeToMetaTime(t *time.Time) *metav1.Time {
 	return &metav1.Time{Time: *t}
 }
 
-// StringToMetaTime converts a string pointer representing a time in RFC3339
-// format to a metav1.Time pointer.
-// Returns nil if the input string pointer is nil or if parsing fails.
-func StringToMetaTime(s *string) *metav1.Time {
-	if s == nil {
+// StringToMetaTime converts a string pointer to a *metav1.Time.
+// It tries the following formats in order: RFC3339 (with colon TZ offset),
+// ISO 8601 without colon TZ offset (e.g. SonarQube's "+0000" format),
+// and date-only ("2006-01-02").
+// Returns nil if the input is nil or cannot be parsed by any format.
+func StringToMetaTime(value *string) *metav1.Time {
+	if value == nil {
 		return nil
 	}
 
-	parsedTime, err := time.Parse(time.RFC3339, *s)
-	if err != nil {
-		return nil
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05-0700", time.DateOnly} {
+		parsedTime, err := time.Parse(layout, *value)
+		if err != nil {
+			continue
+		}
+
+		mt := metav1.NewTime(parsedTime.UTC())
+
+		return &mt
 	}
 
-	return &metav1.Time{Time: parsedTime}
+	return nil
 }
 
 // AnySliceToStringSlice converts a []any to []string, skipping non-string

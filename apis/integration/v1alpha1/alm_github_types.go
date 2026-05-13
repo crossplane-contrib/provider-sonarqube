@@ -54,7 +54,7 @@ type ALMGitHubParameters struct {
 	// +kubebuilder:validation:Required
 	PrivateKeyRef *xpv1.LocalSecretKeySelector `json:"privateKeyRef"`
 	// WebhookSecretRef references a Secret containing the GitHub App Webhook Secret.
-	// +optional
+	// +kubebuilder:validation:Optional
 	WebhookSecretRef *xpv1.LocalSecretKeySelector `json:"webhookSecretRef,omitempty"`
 }
 

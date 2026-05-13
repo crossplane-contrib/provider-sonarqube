@@ -50,11 +50,11 @@ func LateInitialize{{ .Env.KIND }}(spec *{{ .Env.APIVERSION | strings.ToLower }}
 // Is{{ .Env.KIND }}LateInitialized checks if two {{ .Env.KIND }} specs are equal after late initialization. It returns true if the specs are equal, and false if they are not.
 func Is{{ .Env.KIND }}LateInitialized(former, current *{{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Parameters) bool {
 	if former == nil || current == nil {
-		return true
+		return false
 	}
 
 	// Compare the two {{ .Env.KIND }} specs after late initialization. This typically involves using a comparison function that ignores fields that are not relevant for determining if the specs are up to date.
-	return cmp.Equal(former, current, cmpopts.IgnoreFields({{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Parameters{}))
+	return !cmp.Equal(former, current, cmpopts.IgnoreFields({{ .Env.APIVERSION | strings.ToLower }}.{{ .Env.KIND }}Parameters{}))
 }
 
 // Is{{ .Env.KIND }}UpToDate checks if the {{ .Env.KIND }} spec is up to date with the SonarQube API response.

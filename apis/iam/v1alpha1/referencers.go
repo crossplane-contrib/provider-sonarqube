@@ -21,6 +21,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reference"
+	resource "github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -57,4 +58,16 @@ func (user *User) ResolveReferences(ctx context.Context, readerClient client.Rea
 	}
 
 	return nil
+}
+
+// UserLogin extracts the value of the login from the referenced User resource.
+func UserLogin() reference.ExtractValueFn {
+	return func(mg resource.Managed) string {
+		cr, ok := mg.(*User)
+		if !ok {
+			return ""
+		}
+
+		return cr.Spec.ForProvider.Login
+	}
 }
