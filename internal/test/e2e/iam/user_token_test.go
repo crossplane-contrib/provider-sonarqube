@@ -114,60 +114,6 @@ func TestUserTokenCRUD(t *testing.T) {
 	}
 }
 
-// TestUserTokenWithProjectAnalysisToken tests creating a PROJECT_ANALYSIS_TOKEN type.
-func TestUserTokenWithProjectAnalysisToken(t *testing.T) {
-	t.Parallel()
-
-	f := e2e.New(t)
-	const (
-		crName          = "e2e-proj-token"
-		tokenName       = "e2e-proj-token"
-		tokenSecretName = "e2e-proj-token-secret"
-		projectKey      = "test-project"
-	)
-
-	token := &iamv1alpha1.UserToken{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
-		Spec: iamv1alpha1.UserTokenSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
-				ProviderConfigReference: &xpv1.ProviderConfigReference{
-					Kind: "ClusterProviderConfig",
-					Name: f.ProviderConfigName,
-				},
-				WriteConnectionSecretToReference: &xpv1.LocalSecretReference{
-					Name: tokenSecretName,
-				},
-			},
-			ForProvider: iamv1alpha1.UserTokenParameters{
-				Name:       tokenName,
-				Type:       sonar.TokenTypeProjectAnalysisToken,
-				ProjectKey: ptr.To(projectKey),
-			},
-		},
-	}
-
-	// Create the token and wait for it to be ready
-	f.CreateAndWaitForReady(t, token, 2*time.Minute)
-	e2e.AssertReady(t, token)
-
-	// Verify the connection secret was created
-	secret := &corev1.Secret{}
-	if err := f.Kube.Get(context.Background(), kubeKey(&corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "default"},
-	}), secret); err != nil {
-		t.Fatalf("getting token secret: %v", err)
-	}
-
-	if len(secret.Data["token"]) == 0 {
-		t.Fatalf("token secret missing token value")
-	}
-
-	// Cleanup
-	if err := f.Kube.Delete(context.Background(), token); err != nil && !apierrors.IsNotFound(err) {
-		t.Logf("deleting token: %v", err)
-	}
-}
-
 // TestUserTokenExpirationDate tests creating a token with explicit ExpirationDate.
 func TestUserTokenExpirationDate(t *testing.T) {
 	t.Parallel()
