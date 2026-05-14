@@ -355,10 +355,13 @@ func TestUpdate(t *testing.T) {
 				err: errors.Wrap(errBoom, errRenewToken),
 			},
 		},
-		"SuccessReturnsEmptyUpdate": {
+		"GenerateAPIErrorAfterRevoke": {
 			client: &fake.MockUserTokensClient{
 				RevokeFn: func(_ *sonar.UserTokensRevokeOptions) (*http.Response, error) {
 					return mockHTTPNoContent(), nil
+				},
+				GenerateFn: func(_ *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
+					return nil, nil, errBoom
 				},
 			},
 			args: args{
@@ -366,7 +369,32 @@ func TestUpdate(t *testing.T) {
 				mg:  withRenewalDays(newToken(testTokenName, testTokenName), 30),
 			},
 			want: want{
-				o: managed.ExternalUpdate{},
+				o:   managed.ExternalUpdate{},
+				err: errors.Wrap(errBoom, errRegenerateToken),
+			},
+		},
+		"SuccessReturnsNewTokenInConnectionDetails": {
+			client: &fake.MockUserTokensClient{
+				RevokeFn: func(_ *sonar.UserTokensRevokeOptions) (*http.Response, error) {
+					return mockHTTPNoContent(), nil
+				},
+				GenerateFn: func(_ *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
+					return &sonar.UserTokensGenerate{
+						Name:  testTokenName,
+						Token: "new-secret-token-value",
+					}, mockHTTPOK(), nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				mg:  withRenewalDays(newToken(testTokenName, testTokenName), 30),
+			},
+			want: want{
+				o: managed.ExternalUpdate{
+					ConnectionDetails: managed.ConnectionDetails{
+						connectionSecretTokenKey: []byte("new-secret-token-value"),
+					},
+				},
 			},
 		},
 	}
@@ -694,7 +722,8 @@ func TestCreateWithProjectAnalysisToken(t *testing.T) {
 	}
 }
 
-// TestUpdateWithLogin verifies Update passes login to Revoke.
+// TestUpdateWithLogin verifies Update passes login to Revoke and then
+// regenerates the token.
 func TestUpdateWithLogin(t *testing.T) {
 	t.Parallel()
 
@@ -705,6 +734,9 @@ func TestUpdateWithLogin(t *testing.T) {
 			capturedRevokeOpt = opt
 
 			return mockHTTPNoContent(), nil
+		},
+		GenerateFn: func(_ *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
+			return &sonar.UserTokensGenerate{Name: testTokenName, Token: "renewed-token"}, mockHTTPOK(), nil
 		},
 	}}
 

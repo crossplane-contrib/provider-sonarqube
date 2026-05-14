@@ -53,8 +53,10 @@ const (
 	errCreateToken = "cannot create SonarQube UserToken"
 	// errDeleteToken indicates UserToken deletion failed.
 	errDeleteToken = "cannot delete SonarQube UserToken"
-	// errRenewToken indicates UserToken renewal failed.
+	// errRenewToken indicates UserToken revocation during renewal failed.
 	errRenewToken = "cannot renew SonarQube UserToken"
+	// errRegenerateToken indicates UserToken regeneration after revoke failed.
+	errRegenerateToken = "cannot regenerate SonarQube UserToken after revoke"
 
 	// connectionSecretTokenKey is the key used in the connection secret.
 	connectionSecretTokenKey = "token"
@@ -229,8 +231,9 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Update is only triggered for RenewalPeriodDays mode when the token has
-// expired. It revokes the old token, which forces SonarQube to generate a
-// new token.
+// expired or proactive rotation is due. It revokes the old token and
+// immediately generates a replacement, returning the new value in
+// ConnectionDetails so the secret is refreshed atomically in one reconcile.
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
 	usertoken, ok := mg.(*v1alpha1.UserToken)
 	if !ok {
@@ -249,7 +252,20 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.Wrap(err, errRenewToken)
 	}
 
-	return managed.ExternalUpdate{}, nil
+	generated, generateResp, err := c.client.Generate(iam.GenerateUserTokenCreateOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(generateResp)
+
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, errRegenerateToken)
+	}
+
+	meta.SetExternalName(usertoken, generated.Name)
+
+	return managed.ExternalUpdate{
+		ConnectionDetails: managed.ConnectionDetails{
+			connectionSecretTokenKey: []byte(generated.Token),
+		},
+	}, nil
 }
 
 // Delete revokes the token in SonarQube.
