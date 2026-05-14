@@ -32,6 +32,9 @@ import (
 const (
 	// maxRulesPerPage is the maximum number of rules that can be fetched per page.
 	maxRulesPerPage = 500
+	// severityKey is the key used in the parameters map to
+	// specify severity for a rule activation.
+	severityKey = "severity"
 )
 
 // RulesClient is the client for SonarQube Rules API.
@@ -76,7 +79,7 @@ func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesS
 			"internalKey",
 			"name",
 			"params",
-			"severity",
+			severityKey,
 			"status",
 			"updatedAt",
 		},

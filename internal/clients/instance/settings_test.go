@@ -75,7 +75,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				FieldValues: new(map[string]string{
 					"1.ruleKey":         "squid:S1134",
 					"1.resourceKey":     "**/*.java",
-					"1.enforceProperty": "severity",
+					"1.enforceProperty": severityKey,
 					"1.enforceValue":    "CRITICAL",
 				}),
 			},
@@ -85,7 +85,7 @@ func TestGenerateSettingSetOptions(t *testing.T) {
 				FieldValues: sonar.JSONEncodedMap{
 					"1.ruleKey":         "squid:S1134",
 					"1.resourceKey":     "**/*.java",
-					"1.enforceProperty": "severity",
+					"1.enforceProperty": severityKey,
 					"1.enforceValue":    "CRITICAL",
 				},
 			},
@@ -406,7 +406,7 @@ func TestGenerateSettingObservation(t *testing.T) {
 					{
 						"1.ruleKey":         "squid:S1134",
 						"1.resourceKey":     "**/*.java",
-						"1.enforceProperty": "severity",
+						"1.enforceProperty": severityKey,
 						"1.enforceValue":    "CRITICAL",
 					},
 				},
@@ -417,7 +417,7 @@ func TestGenerateSettingObservation(t *testing.T) {
 				FieldValues: map[string]string{
 					"1.ruleKey":         "squid:S1134",
 					"1.resourceKey":     "**/*.java",
-					"1.enforceProperty": "severity",
+					"1.enforceProperty": severityKey,
 					"1.enforceValue":    "CRITICAL",
 				},
 			},

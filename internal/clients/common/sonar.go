@@ -32,6 +32,12 @@ import (
 	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 )
 
+const (
+	// clusterProviderConfigKind is the kind name for
+	// ClusterProviderConfig resources.
+	clusterProviderConfigKind = "ClusterProviderConfig"
+)
+
 // BasicAuthArgs is the expected struct that can be passed in the Config.Token
 // field to add support for BasicAuth AuthMethod.
 type BasicAuthArgs struct {
@@ -143,7 +149,7 @@ func UseProviderConfig(ctx context.Context, kubeClient client.Client, managedRes
 	providerConfigRef := managedResource.GetProviderConfigReference()
 
 	switch providerConfigRef.Kind {
-	case "ClusterProviderConfig":
+	case clusterProviderConfigKind:
 		cpc := &v1alpha1.ClusterProviderConfig{}
 
 		err := kubeClient.Get(ctx, types.NamespacedName{Name: providerConfigRef.Name}, cpc)

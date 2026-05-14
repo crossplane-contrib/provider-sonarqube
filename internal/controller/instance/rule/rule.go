@@ -21,6 +21,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
@@ -195,7 +196,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// SonarQube may still return a rule entry after deletion with status REMOVED.
 	// Treat it as non-existent so Crossplane can finalize deletion.
-	if ruleShow != nil && ruleShow.Rule.Status == "REMOVED" {
+	if ruleShow != nil && ruleShow.Rule.Status == sonar.RuleStatusRemoved {
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 

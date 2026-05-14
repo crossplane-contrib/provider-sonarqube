@@ -137,8 +137,6 @@ func newTestGroup(externalName string, spec v1alpha1.GroupParameters) *v1alpha1.
 }
 
 // TestObserve tests observing Group resource state.
-//
-//nolint:goconst // Test readability with explicit literals in table entries.
 func TestObserve(t *testing.T) {
 	t.Parallel()
 

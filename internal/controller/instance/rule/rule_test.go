@@ -238,7 +238,7 @@ func TestObserve(t *testing.T) {
 					return &sonar.RulesShow{
 						Rule: sonar.RuleDetails{
 							Key:    "custom:rule",
-							Status: "REMOVED",
+							Status: sonar.RuleStatusRemoved,
 						},
 					}, mockHTTPResponse(), nil
 				},

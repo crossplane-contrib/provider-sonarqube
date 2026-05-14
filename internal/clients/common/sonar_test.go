@@ -435,7 +435,7 @@ func TestGetConfigModernManagedRefErrors(t *testing.T) {
 		"ClusterProviderConfigNotFoundReturnsError": {
 			managed: func() *fake.ModernManaged {
 				m := &fake.ModernManaged{}
-				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "nonexistent", Kind: "ClusterProviderConfig"})
+				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "nonexistent", Kind: clusterProviderConfigKind})
 
 				return m
 			}(),
@@ -826,7 +826,7 @@ func TestGetConfigModernManagedSuccess(t *testing.T) {
 						UID:       "test-uid-3",
 					},
 				}
-				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "my-cpc", Kind: "ClusterProviderConfig"})
+				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "my-cpc", Kind: clusterProviderConfigKind})
 
 				return m
 			}(),
