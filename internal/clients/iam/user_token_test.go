@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
 // pastTime returns a metav1.Time set to one hour ago.
@@ -440,6 +441,197 @@ func TestIsUserTokenLateInitialized(t *testing.T) {
 			got := IsUserTokenLateInitialized(tc.former, tc.current)
 			if got != tc.want {
 				t.Errorf("IsUserTokenLateInitialized() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestNewUserTokensClient tests creating a new UserTokens client.
+func TestNewUserTokensClient(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ReturnsValidClient", func(t *testing.T) {
+		t.Parallel()
+
+		config := common.Config{
+			AuthType: common.PersonalAccessToken,
+			BaseURL:  "http://localhost:9000",
+			Token:    "test-token",
+		}
+
+		client := NewUserTokensClient(config)
+		if client == nil {
+			t.Fatal("NewUserTokensClient() returned nil")
+		}
+	})
+}
+
+// TestGenerateUserTokenCreateOptions tests building create options from spec.
+func TestGenerateUserTokenCreateOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		spec *v1alpha1.UserTokenParameters
+		want *sonar.UserTokensGenerateOptions
+	}{
+		"NilSpec": {
+			spec: nil,
+			want: &sonar.UserTokensGenerateOptions{},
+		},
+		"MinimalSpec": {
+			spec: &v1alpha1.UserTokenParameters{
+				Name: "test-token",
+				Type: sonar.TokenTypeUserToken,
+			},
+			want: &sonar.UserTokensGenerateOptions{
+				Name: "test-token",
+				Type: sonar.TokenTypeUserToken,
+			},
+		},
+		"SpecWithLogin": {
+			spec: &v1alpha1.UserTokenParameters{
+				Name:  "test-token",
+				Type:  sonar.TokenTypeUserToken,
+				Login: new("user1"),
+			},
+			want: &sonar.UserTokensGenerateOptions{
+				Name:  "test-token",
+				Type:  sonar.TokenTypeUserToken,
+				Login: "user1",
+			},
+		},
+		"SpecWithExpirationDate": {
+			spec: &v1alpha1.UserTokenParameters{
+				Name:           "test-token",
+				Type:           sonar.TokenTypeUserToken,
+				ExpirationDate: new("2026-12-31"),
+			},
+			want: &sonar.UserTokensGenerateOptions{
+				Name:           "test-token",
+				Type:           sonar.TokenTypeUserToken,
+				ExpirationDate: "2026-12-31",
+			},
+		},
+		"SpecWithProjectKey": {
+			spec: &v1alpha1.UserTokenParameters{
+				Name:       "test-token",
+				Type:       sonar.TokenTypeProjectAnalysisToken,
+				ProjectKey: new("my-project"),
+			},
+			want: &sonar.UserTokensGenerateOptions{
+				Name:       "test-token",
+				Type:       sonar.TokenTypeProjectAnalysisToken,
+				ProjectKey: "my-project",
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateUserTokenCreateOptions(tc.spec)
+
+			if tc.want.Name != got.Name {
+				t.Errorf("GenerateUserTokenCreateOptions() Name = %q, want %q", got.Name, tc.want.Name)
+			}
+
+			if tc.want.Type != got.Type {
+				t.Errorf("GenerateUserTokenCreateOptions() Type = %q, want %q", got.Type, tc.want.Type)
+			}
+
+			if tc.want.Login != got.Login {
+				t.Errorf("GenerateUserTokenCreateOptions() Login = %q, want %q", got.Login, tc.want.Login)
+			}
+
+			if tc.want.ProjectKey != got.ProjectKey {
+				t.Errorf("GenerateUserTokenCreateOptions() ProjectKey = %q, want %q", got.ProjectKey, tc.want.ProjectKey)
+			}
+
+			if tc.spec != nil && tc.spec.ExpirationDate != nil {
+				if *tc.spec.ExpirationDate != got.ExpirationDate {
+					t.Errorf("GenerateUserTokenCreateOptions() ExpirationDate = %q, want %q", got.ExpirationDate, *tc.spec.ExpirationDate)
+				}
+			}
+		})
+	}
+}
+
+// TestGenerateUserTokenRevokeOptions tests building revoke options.
+func TestGenerateUserTokenRevokeOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		externalName string
+		spec         *v1alpha1.UserTokenParameters
+		want         *sonar.UserTokensRevokeOptions
+	}{
+		"NilSpec": {
+			externalName: "token-name",
+			spec:         nil,
+			want: &sonar.UserTokensRevokeOptions{
+				Name: "token-name",
+			},
+		},
+		"SpecWithLogin": {
+			externalName: "token-name",
+			spec: &v1alpha1.UserTokenParameters{
+				Login: new("user1"),
+			},
+			want: &sonar.UserTokensRevokeOptions{
+				Name:  "token-name",
+				Login: "user1",
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateUserTokenRevokeOptions(tc.externalName, tc.spec)
+
+			if tc.want.Name != got.Name {
+				t.Errorf("GenerateUserTokenRevokeOptions() Name = %q, want %q", got.Name, tc.want.Name)
+			}
+
+			if tc.want.Login != got.Login {
+				t.Errorf("GenerateUserTokenRevokeOptions() Login = %q, want %q", got.Login, tc.want.Login)
+			}
+		})
+	}
+}
+
+// TestGenerateUserTokenSearchOptions tests building search options.
+func TestGenerateUserTokenSearchOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		spec *v1alpha1.UserTokenParameters
+		want *sonar.UserTokensSearchOptions
+	}{
+		"NilSpec": {
+			spec: nil,
+			want: &sonar.UserTokensSearchOptions{},
+		},
+		"SpecWithLogin": {
+			spec: &v1alpha1.UserTokenParameters{
+				Login: new("user1"),
+			},
+			want: &sonar.UserTokensSearchOptions{
+				Login: "user1",
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateUserTokenSearchOptions(tc.spec)
+
+			if tc.want.Login != got.Login {
+				t.Errorf("GenerateUserTokenSearchOptions() Login = %q, want %q", got.Login, tc.want.Login)
 			}
 		})
 	}

@@ -31,6 +31,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
@@ -607,5 +609,189 @@ func TestDisconnect(t *testing.T) {
 	err := e.Disconnect(context.Background())
 	if err != nil {
 		t.Errorf("Disconnect() error = %v, want nil", err)
+	}
+}
+
+const (
+	// testProjectKey is a project key used in tests.
+	testProjectKey = "test-project"
+	// testLoginUser is a test user login name.
+	testLoginUser = "testuser"
+)
+
+// TestCreateWithRenewalPeriod verifies Create computes ExpirationDate.
+func TestCreateWithRenewalPeriod(t *testing.T) {
+	t.Parallel()
+
+	renewalDays := int64(30)
+
+	e := &external{client: &fake.MockUserTokensClient{
+		GenerateFn: func(opt *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
+			if opt.ExpirationDate == "" {
+				t.Error("GenerateFn called with empty ExpirationDate")
+			}
+
+			return &sonar.UserTokensGenerate{
+				Name:  testTokenName,
+				Token: "secret",
+			}, mockHTTPOK(), nil
+		},
+	}}
+
+	token := &v1alpha1.UserToken{
+		ObjectMeta: metav1.ObjectMeta{Name: testTokenName},
+		Spec: v1alpha1.UserTokenSpec{
+			ForProvider: v1alpha1.UserTokenParameters{
+				Name:              testTokenName,
+				Type:              sonar.TokenTypeUserToken,
+				RenewalPeriodDays: &renewalDays,
+			},
+		},
+	}
+
+	_, err := e.Create(context.Background(), token)
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+}
+
+// TestCreateWithProjectAnalysisToken tests PROJECT_ANALYSIS_TOKEN.
+func TestCreateWithProjectAnalysisToken(t *testing.T) {
+	t.Parallel()
+
+	e := &external{client: &fake.MockUserTokensClient{
+		GenerateFn: func(opt *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
+			if opt.Type != sonar.TokenTypeProjectAnalysisToken {
+				t.Errorf("GenerateFn Type = %q, want %q", opt.Type, sonar.TokenTypeProjectAnalysisToken)
+			}
+
+			if opt.ProjectKey != testProjectKey {
+				t.Errorf("GenerateFn ProjectKey = %q, want %q", opt.ProjectKey, testProjectKey)
+			}
+
+			return &sonar.UserTokensGenerate{
+				Name:  testTokenName,
+				Token: "secret",
+			}, mockHTTPOK(), nil
+		},
+	}}
+
+	token := &v1alpha1.UserToken{
+		ObjectMeta: metav1.ObjectMeta{Name: testTokenName},
+		Spec: v1alpha1.UserTokenSpec{
+			ForProvider: v1alpha1.UserTokenParameters{
+				Name:       testTokenName,
+				Type:       sonar.TokenTypeProjectAnalysisToken,
+				ProjectKey: new(string),
+			},
+		},
+	}
+	*token.Spec.ForProvider.ProjectKey = testProjectKey
+
+	_, err := e.Create(context.Background(), token)
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+}
+
+// TestUpdateWithLogin verifies Update passes login to Revoke.
+func TestUpdateWithLogin(t *testing.T) {
+	t.Parallel()
+
+	var capturedRevokeOpt *sonar.UserTokensRevokeOptions
+
+	e := &external{client: &fake.MockUserTokensClient{
+		RevokeFn: func(opt *sonar.UserTokensRevokeOptions) (*http.Response, error) {
+			capturedRevokeOpt = opt
+
+			return mockHTTPNoContent(), nil
+		},
+	}}
+
+	token := &v1alpha1.UserToken{
+		ObjectMeta: metav1.ObjectMeta{Name: testTokenName},
+		Spec: v1alpha1.UserTokenSpec{
+			ForProvider: v1alpha1.UserTokenParameters{
+				Name:  testTokenName,
+				Type:  sonar.TokenTypeUserToken,
+				Login: new(string),
+			},
+		},
+	}
+	*token.Spec.ForProvider.Login = testLoginUser
+	meta.SetExternalName(token, testTokenName)
+
+	_, err := e.Update(context.Background(), token)
+	if err != nil {
+		t.Fatalf("Update() error = %v", err)
+	}
+
+	if capturedRevokeOpt == nil {
+		t.Fatal("Update() did not call Revoke")
+	}
+
+	if capturedRevokeOpt.Login != testLoginUser {
+		t.Errorf("Update() Revoke Login = %q, want %q", capturedRevokeOpt.Login, testLoginUser)
+	}
+}
+
+// TestDeleteWithLogin verifies Delete passes login to Revoke.
+func TestDeleteWithLogin(t *testing.T) {
+	t.Parallel()
+
+	var capturedRevokeOpt *sonar.UserTokensRevokeOptions
+
+	e := &external{client: &fake.MockUserTokensClient{
+		RevokeFn: func(opt *sonar.UserTokensRevokeOptions) (*http.Response, error) {
+			capturedRevokeOpt = opt
+
+			return mockHTTPNoContent(), nil
+		},
+	}}
+
+	token := &v1alpha1.UserToken{
+		ObjectMeta: metav1.ObjectMeta{Name: testTokenName},
+		Spec: v1alpha1.UserTokenSpec{
+			ForProvider: v1alpha1.UserTokenParameters{
+				Name:  testTokenName,
+				Type:  sonar.TokenTypeUserToken,
+				Login: new(string),
+			},
+		},
+	}
+	*token.Spec.ForProvider.Login = testLoginUser
+	meta.SetExternalName(token, testTokenName)
+
+	_, err := e.Delete(context.Background(), token)
+	if err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+
+	if capturedRevokeOpt == nil {
+		t.Fatal("Delete() did not call Revoke")
+	}
+
+	if capturedRevokeOpt.Login != testLoginUser {
+		t.Errorf("Delete() Revoke Login = %q, want %q", capturedRevokeOpt.Login, testLoginUser)
+	}
+}
+
+// TestConnectNotUserToken verifies Connect rejects non-UserToken resources.
+func TestConnectNotUserToken(t *testing.T) {
+	t.Parallel()
+
+	c := &connector{
+		kube:         nil,
+		usage:        nil,
+		newServiceFn: func(config common.Config) iam.UserTokensClient { return nil },
+	}
+
+	_, err := c.Connect(context.Background(), &notUserToken{})
+	if err == nil {
+		t.Fatal("Connect() error = nil, want error")
+	}
+
+	if err.Error() != errNotUserToken {
+		t.Errorf("Connect() error = %q, want %q", err.Error(), errNotUserToken)
 	}
 }
