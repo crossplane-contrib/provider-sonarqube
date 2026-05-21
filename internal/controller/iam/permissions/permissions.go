@@ -52,8 +52,6 @@ const (
 	errGetPC = "cannot get ProviderConfig"
 	// errExternalNameNotSet indicates the external name is missing.
 	errExternalNameNotSet = "external name is not set for Permissions resource %s"
-	// errInvalidExternalName indicates the external name cannot be parsed.
-	errInvalidExternalName = "invalid external name for Permissions resource"
 	// errObservePermissions indicates Permissions observation failed.
 	errObservePermissions = "cannot observe Permissions"
 	// errCreatePermissions indicates Permissions creation failed.

@@ -44,14 +44,20 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	subjectType, subject, projectKey, err := parseExternalName(externalName)
-	if err != nil {
-		return managed.ExternalObservation{}, errors.Wrap(err, errInvalidExternalName)
+	// parseExternalName returns "" for subjectType on any error (invalid
+	// format or unknown type). Crossplane defaults the external name to
+	// metadata.name before Create runs, so an unparseable name means the
+	// resource does not exist yet - trigger Create to set the proper name.
+	subjectType, subject, projectKey, _ := parseExternalName(externalName)
+	if subjectType == "" {
+		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	var observedPermissions []string
-
-	var found bool
+	var (
+		observedPermissions []string
+		found               bool
+		err                 error
+	)
 
 	if subjectType == subjectTypeGroup {
 		observedPermissions, found, err = getObservedGroupPermissions(c.client, subject, projectKey)

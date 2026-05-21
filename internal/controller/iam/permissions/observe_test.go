@@ -72,7 +72,10 @@ func TestObserve(t *testing.T) {
 				ctx: context.Background(),
 				mg:  newTestGroupPermissions("no-colon", "devs", []string{"scan"}),
 			},
-			want: want{errSubstr: errInvalidExternalName},
+			// Crossplane defaults the external name to metadata.name before
+			// Create runs; an unparseable name must not error - it means the
+			// resource does not exist yet.
+			want: want{observation: managed.ExternalObservation{ResourceExists: false}},
 		},
 		"InvalidExternalNameUnknownType": {
 			client: &fake.MockPermissionsClient{},
@@ -80,7 +83,8 @@ func TestObserve(t *testing.T) {
 				ctx: context.Background(),
 				mg:  newTestGroupPermissions("robot:r2d2", "devs", []string{"scan"}),
 			},
-			want: want{errSubstr: errInvalidExternalName},
+			// Same rationale: an unrecognised subject type triggers Create.
+			want: want{observation: managed.ExternalObservation{ResourceExists: false}},
 		},
 		"GroupNotFoundReturnsNotExists": {
 			client: &fake.MockPermissionsClient{
