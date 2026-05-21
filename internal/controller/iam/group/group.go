@@ -340,7 +340,7 @@ func (c *external) addGroupPermissions(groupName string, permissions []string, e
 		go func(permission string) {
 			defer waitGroup.Done()
 
-			resp, err := c.permissionsClient.AddGroup(iam.GeneratePermissionsAddGroupOptions(groupName, permission)) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.permissionsClient.AddGroup(iam.GeneratePermissionsAddGroupOptions(groupName, permission, nil)) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -364,7 +364,7 @@ func (c *external) removeGroupPermissions(groupName string, permissions []string
 		go func(permission string) {
 			defer waitGroup.Done()
 
-			resp, err := c.permissionsClient.RemoveGroup(iam.GeneratePermissionsRemoveGroupOptions(groupName, permission)) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.permissionsClient.RemoveGroup(iam.GeneratePermissionsRemoveGroupOptions(groupName, permission, nil)) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -415,7 +415,7 @@ func getGroupPermissions(permissionsClient iam.PermissionsClient, groupName stri
 	const maxPageSize = int64(100)
 
 	for page := int64(1); ; page++ {
-		options := iam.GeneratePermissionsGroupsOptions(groupName, new(sonar.PaginationArgs{
+		options := iam.GeneratePermissionsGroupsOptions(groupName, nil, new(sonar.PaginationArgs{
 			Page:     page,
 			PageSize: maxPageSize,
 		}))

@@ -234,7 +234,7 @@ func TestNewPermissionsClient(t *testing.T) {
 func TestGeneratePermissionsAddGroupOptions(t *testing.T) {
 	t.Parallel()
 
-	got := GeneratePermissionsAddGroupOptions(testGroupName, "read")
+	got := GeneratePermissionsAddGroupOptions(testGroupName, "read", nil)
 	if got == nil {
 		t.Fatal("GeneratePermissionsAddGroupOptions() expected non-nil options")
 	}
@@ -253,7 +253,7 @@ func TestGeneratePermissionsAddGroupOptions(t *testing.T) {
 func TestGeneratePermissionsRemoveGroupOptions(t *testing.T) {
 	t.Parallel()
 
-	got := GeneratePermissionsRemoveGroupOptions(testGroupName, lateInitWritePerm)
+	got := GeneratePermissionsRemoveGroupOptions(testGroupName, lateInitWritePerm, nil)
 	if got == nil {
 		t.Fatal("GeneratePermissionsRemoveGroupOptions() expected non-nil options")
 	}
@@ -296,7 +296,7 @@ func TestGeneratePermissionsGroupsOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GeneratePermissionsGroupsOptions(tc.groupName, tc.pagination)
+			got := GeneratePermissionsGroupsOptions(tc.groupName, nil, tc.pagination)
 			if got == nil {
 				t.Fatal("GeneratePermissionsGroupsOptions() expected non-nil options")
 			}

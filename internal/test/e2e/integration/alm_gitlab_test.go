@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2026 The Crossplane Authors.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:build e2e
-
 package integration_test
 
 import (
@@ -25,8 +25,8 @@ import (
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	integrationv1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
@@ -41,11 +41,11 @@ func TestALMGitLabCRUD(t *testing.T) {
 
 	f := e2e.New(t)
 	const (
-		crName        = "e2e-almgitlab-crud"
-		almKey        = "e2e-almgitlab-crud"
-		almURL        = "https://gitlab.example.com"
-		secretName    = "e2e-almgitlab-crud-token"
-		secretKey     = "token"
+		crName         = "e2e-almgitlab-crud"
+		almKey         = "e2e-almgitlab-crud"
+		almURL         = "https://gitlab.example.com"
+		secretName     = "e2e-almgitlab-crud-token"
+		secretKey      = "token"
 		connSecretName = "e2e-almgitlab-crud-connection"
 	)
 

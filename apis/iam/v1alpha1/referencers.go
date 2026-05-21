@@ -71,3 +71,17 @@ func UserLogin() reference.ExtractValueFn {
 		return cr.Spec.ForProvider.Login
 	}
 }
+
+// GroupName extracts the name of the group from the referenced Group resource.
+// Note: the Group external name is the SonarQube-assigned ID, not the
+// human-readable name, so a custom extractor is required.
+func GroupName() reference.ExtractValueFn {
+	return func(mg resource.Managed) string {
+		cr, ok := mg.(*Group)
+		if !ok {
+			return ""
+		}
+
+		return cr.Spec.ForProvider.Name
+	}
+}

@@ -22,6 +22,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/internal/controller/config"
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/group"
+	"github.com/crossplane/provider-sonarqube/internal/controller/iam/permissions"
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/permissionstemplate"
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/user"
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/usertoken"
@@ -50,6 +51,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		user.SetupGated,
 		usertoken.SetupGated,
 		group.SetupGated,
+		permissions.SetupGated,
 		permissionstemplate.SetupGated,
 		almgitlab.SetupGated,
 		almgithub.SetupGated,

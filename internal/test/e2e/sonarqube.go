@@ -195,6 +195,25 @@ func (f *Framework) GroupPermissions(groupName string) ([]string, error) {
 	return []string{}, nil
 }
 
+// UserPermissions returns the global permissions assigned to the named user.
+// Returns an empty (non-nil) slice when SonarQube knows the user but it has
+// no global permissions, and an error when the API call fails.
+func (f *Framework) UserPermissions(login string) ([]string, error) {
+	res, resp, err := f.Sonar.Permissions.Users(&sonar.PermissionsUsersOptions{Query: login})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.Users {
+		if res.Users[i].Login == login {
+			perms := make([]string, len(res.Users[i].Permissions))
+			copy(perms, res.Users[i].Permissions)
+			return perms, nil
+		}
+	}
+	return []string{}, nil
+}
+
 // FindALMGitLabDefinitionByKey returns the GitLab ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
 func (f *Framework) FindALMGitLabDefinitionByKey(key string) (*sonar.GitlabDefinition, error) {

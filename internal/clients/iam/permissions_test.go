@@ -21,12 +21,15 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 
+	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
 const (
 	// testGroupName is a test constant for group names.
 	testGroupName = "devs"
+	// testProjectKey is a test constant for project keys.
+	testProjectKey = "my-project"
 )
 
 // permissionScan is defined in permissions_template_test.go as permissionScan
@@ -71,7 +74,7 @@ func TestPermissionsGenerateAddGroupOptions(t *testing.T) {
 	t.Run("RegularValues", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsAddGroupOptions(testGroupName, permissionScan)
+		got := GeneratePermissionsAddGroupOptions(testGroupName, permissionScan, nil)
 		if got == nil {
 			t.Fatal("GeneratePermissionsAddGroupOptions() expected non-nil options")
 		}
@@ -79,12 +82,16 @@ func TestPermissionsGenerateAddGroupOptions(t *testing.T) {
 		if got.GroupName != testGroupName || got.Permission != permissionScan {
 			t.Fatalf("GeneratePermissionsAddGroupOptions() got = %+v, want GroupName=%s Permission=%s", got, testGroupName, permissionScan)
 		}
+
+		if got.ProjectKey != "" {
+			t.Fatalf("GeneratePermissionsAddGroupOptions() unexpected ProjectKey %q", got.ProjectKey)
+		}
 	})
 
 	t.Run("EmptyValues", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsAddGroupOptions("", "")
+		got := GeneratePermissionsAddGroupOptions("", "", nil)
 		if got == nil {
 			t.Fatal("GeneratePermissionsAddGroupOptions() expected non-nil options")
 		}
@@ -93,17 +100,30 @@ func TestPermissionsGenerateAddGroupOptions(t *testing.T) {
 			t.Fatalf("GeneratePermissionsAddGroupOptions() got = %+v, want empty values", got)
 		}
 	})
+
+	t.Run("WithProjectKey", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsAddGroupOptions(testGroupName, permissionScan, new(testProjectKey))
+		if got == nil {
+			t.Fatal("GeneratePermissionsAddGroupOptions() expected non-nil options")
+		}
+
+		if got.ProjectKey != testProjectKey {
+			t.Fatalf("GeneratePermissionsAddGroupOptions() ProjectKey = %q, want %q", got.ProjectKey, testProjectKey)
+		}
+	})
 }
 
-// TestPermissionsGenerateRemoveGroupOptions tests generating
-// remove group options.
+// TestPermissionsGenerateRemoveGroupOptions tests generating remove group
+// options.
 func TestPermissionsGenerateRemoveGroupOptions(t *testing.T) {
 	t.Parallel()
 
 	t.Run("RegularValues", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsRemoveGroupOptions(testGroupName, permissionScan)
+		got := GeneratePermissionsRemoveGroupOptions(testGroupName, permissionScan, nil)
 		if got == nil {
 			t.Fatal("GeneratePermissionsRemoveGroupOptions() expected non-nil options")
 		}
@@ -111,18 +131,35 @@ func TestPermissionsGenerateRemoveGroupOptions(t *testing.T) {
 		if got.GroupName != testGroupName || got.Permission != permissionScan {
 			t.Fatalf("GeneratePermissionsRemoveGroupOptions() got = %+v, want GroupName=%s Permission=%s", got, testGroupName, permissionScan)
 		}
+
+		if got.ProjectKey != "" {
+			t.Fatalf("GeneratePermissionsRemoveGroupOptions() unexpected ProjectKey %q", got.ProjectKey)
+		}
 	})
 
 	t.Run("EmptyValues", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsRemoveGroupOptions("", "")
+		got := GeneratePermissionsRemoveGroupOptions("", "", nil)
 		if got == nil {
 			t.Fatal("GeneratePermissionsRemoveGroupOptions() expected non-nil options")
 		}
 
 		if got.GroupName != "" || got.Permission != "" {
 			t.Fatalf("GeneratePermissionsRemoveGroupOptions() got = %+v, want empty values", got)
+		}
+	})
+
+	t.Run("WithProjectKey", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsRemoveGroupOptions(testGroupName, permissionScan, new(testProjectKey))
+		if got == nil {
+			t.Fatal("GeneratePermissionsRemoveGroupOptions() expected non-nil options")
+		}
+
+		if got.ProjectKey != testProjectKey {
+			t.Fatalf("GeneratePermissionsRemoveGroupOptions() ProjectKey = %q, want %q", got.ProjectKey, testProjectKey)
 		}
 	})
 }
@@ -134,7 +171,7 @@ func TestPermissionsGenerateGroupsOptions(t *testing.T) {
 	t.Run("WithoutPagination", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsGroupsOptions(testGroupName, nil)
+		got := GeneratePermissionsGroupsOptions(testGroupName, nil, nil)
 		if got == nil {
 			t.Fatal("GeneratePermissionsGroupsOptions() expected non-nil options")
 		}
@@ -146,12 +183,16 @@ func TestPermissionsGenerateGroupsOptions(t *testing.T) {
 		if got.Page != 0 || got.PageSize != 0 {
 			t.Fatalf("GeneratePermissionsGroupsOptions() pagination unexpectedly set: page=%d pageSize=%d", got.Page, got.PageSize)
 		}
+
+		if got.ProjectKey != "" {
+			t.Fatalf("GeneratePermissionsGroupsOptions() unexpected ProjectKey %q", got.ProjectKey)
+		}
 	})
 
 	t.Run("WithPagination", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsGroupsOptions(testGroupName, &sonar.PaginationArgs{Page: 2, PageSize: 100})
+		got := GeneratePermissionsGroupsOptions(testGroupName, nil, &sonar.PaginationArgs{Page: 2, PageSize: 100})
 		if got == nil {
 			t.Fatal("GeneratePermissionsGroupsOptions() expected non-nil options")
 		}
@@ -165,10 +206,23 @@ func TestPermissionsGenerateGroupsOptions(t *testing.T) {
 		}
 	})
 
+	t.Run("WithProjectKey", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsGroupsOptions(testGroupName, new(testProjectKey), nil)
+		if got == nil {
+			t.Fatal("GeneratePermissionsGroupsOptions() expected non-nil options")
+		}
+
+		if got.ProjectKey != testProjectKey {
+			t.Fatalf("GeneratePermissionsGroupsOptions() ProjectKey = %q, want %q", got.ProjectKey, testProjectKey)
+		}
+	})
+
 	t.Run("EmptyGroupName", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsGroupsOptions("", &sonar.PaginationArgs{Page: 1, PageSize: 50})
+		got := GeneratePermissionsGroupsOptions("", nil, &sonar.PaginationArgs{Page: 1, PageSize: 50})
 		if got == nil {
 			t.Fatal("GeneratePermissionsGroupsOptions() expected non-nil options")
 		}
@@ -177,6 +231,283 @@ func TestPermissionsGenerateGroupsOptions(t *testing.T) {
 			t.Fatalf("GeneratePermissionsGroupsOptions() Query = %q, want empty string", got.Query)
 		}
 	})
+}
+
+// TestPermissionsGenerateAddUserOptions tests generating add user options.
+func TestPermissionsGenerateAddUserOptions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("RegularValues", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsAddUserOptions(testUserLogin, permissionScan, nil)
+		if got == nil {
+			t.Fatal("GeneratePermissionsAddUserOptions() expected non-nil options")
+		}
+
+		if got.Login != testUserLogin || got.Permission != permissionScan {
+			t.Fatalf("GeneratePermissionsAddUserOptions() got = %+v, want Login=%s Permission=%s", got, testUserLogin, permissionScan)
+		}
+
+		if got.ProjectKey != "" {
+			t.Fatalf("GeneratePermissionsAddUserOptions() unexpected ProjectKey %q", got.ProjectKey)
+		}
+	})
+
+	t.Run("EmptyValues", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsAddUserOptions("", "", nil)
+		if got == nil {
+			t.Fatal("GeneratePermissionsAddUserOptions() expected non-nil options")
+		}
+
+		if got.Login != "" || got.Permission != "" {
+			t.Fatalf("GeneratePermissionsAddUserOptions() got = %+v, want empty values", got)
+		}
+	})
+
+	t.Run("WithProjectKey", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsAddUserOptions(testUserLogin, permissionScan, new(testProjectKey))
+		if got == nil {
+			t.Fatal("GeneratePermissionsAddUserOptions() expected non-nil options")
+		}
+
+		if got.ProjectKey != testProjectKey {
+			t.Fatalf("GeneratePermissionsAddUserOptions() ProjectKey = %q, want %q", got.ProjectKey, testProjectKey)
+		}
+	})
+}
+
+// TestPermissionsGenerateRemoveUserOptions tests generating remove user
+// options.
+func TestPermissionsGenerateRemoveUserOptions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("RegularValues", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsRemoveUserOptions(testUserLogin, permissionScan, nil)
+		if got == nil {
+			t.Fatal("GeneratePermissionsRemoveUserOptions() expected non-nil options")
+		}
+
+		if got.Login != testUserLogin || got.Permission != permissionScan {
+			t.Fatalf("GeneratePermissionsRemoveUserOptions() got = %+v, want Login=%s Permission=%s", got, testUserLogin, permissionScan)
+		}
+
+		if got.ProjectKey != "" {
+			t.Fatalf("GeneratePermissionsRemoveUserOptions() unexpected ProjectKey %q", got.ProjectKey)
+		}
+	})
+
+	t.Run("EmptyValues", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsRemoveUserOptions("", "", nil)
+		if got == nil {
+			t.Fatal("GeneratePermissionsRemoveUserOptions() expected non-nil options")
+		}
+
+		if got.Login != "" || got.Permission != "" {
+			t.Fatalf("GeneratePermissionsRemoveUserOptions() got = %+v, want empty values", got)
+		}
+	})
+
+	t.Run("WithProjectKey", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsRemoveUserOptions(testUserLogin, permissionScan, new(testProjectKey))
+		if got == nil {
+			t.Fatal("GeneratePermissionsRemoveUserOptions() expected non-nil options")
+		}
+
+		if got.ProjectKey != testProjectKey {
+			t.Fatalf("GeneratePermissionsRemoveUserOptions() ProjectKey = %q, want %q", got.ProjectKey, testProjectKey)
+		}
+	})
+}
+
+// TestPermissionsGenerateUsersOptions tests generating users options.
+func TestPermissionsGenerateUsersOptions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("WithoutPagination", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsUsersOptions(testUserLogin, nil, nil)
+		if got == nil {
+			t.Fatal("GeneratePermissionsUsersOptions() expected non-nil options")
+		}
+
+		if got.Query != testUserLogin {
+			t.Fatalf("GeneratePermissionsUsersOptions() Query = %q, want %q", got.Query, testUserLogin)
+		}
+
+		if got.Page != 0 || got.PageSize != 0 {
+			t.Fatalf("GeneratePermissionsUsersOptions() pagination unexpectedly set: page=%d pageSize=%d", got.Page, got.PageSize)
+		}
+
+		if got.ProjectKey != "" {
+			t.Fatalf("GeneratePermissionsUsersOptions() unexpected ProjectKey %q", got.ProjectKey)
+		}
+	})
+
+	t.Run("WithPagination", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsUsersOptions(testUserLogin, nil, &sonar.PaginationArgs{Page: 2, PageSize: 100})
+		if got == nil {
+			t.Fatal("GeneratePermissionsUsersOptions() expected non-nil options")
+		}
+
+		if got.Page != 2 || got.PageSize != 100 {
+			t.Fatalf("GeneratePermissionsUsersOptions() pagination got page=%d pageSize=%d, want page=2 pageSize=100", got.Page, got.PageSize)
+		}
+	})
+
+	t.Run("WithProjectKey", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsUsersOptions(testUserLogin, new(testProjectKey), nil)
+		if got == nil {
+			t.Fatal("GeneratePermissionsUsersOptions() expected non-nil options")
+		}
+
+		if got.ProjectKey != testProjectKey {
+			t.Fatalf("GeneratePermissionsUsersOptions() ProjectKey = %q, want %q", got.ProjectKey, testProjectKey)
+		}
+	})
+
+	t.Run("EmptyLogin", func(t *testing.T) {
+		t.Parallel()
+
+		got := GeneratePermissionsUsersOptions("", nil, &sonar.PaginationArgs{Page: 1, PageSize: 50})
+		if got == nil {
+			t.Fatal("GeneratePermissionsUsersOptions() expected non-nil options")
+		}
+
+		if got.Query != "" {
+			t.Fatalf("GeneratePermissionsUsersOptions() Query = %q, want empty string", got.Query)
+		}
+	})
+}
+
+// TestLateInitializePermissions tests that LateInitializePermissions is a
+// no-op.
+func TestLateInitializePermissions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("DoesNotPanic", func(t *testing.T) {
+		t.Parallel()
+
+		devs := "devs"
+		spec := &v1alpha1.PermissionsParameters{
+			GroupName:   &devs,
+			Permissions: []string{"scan"},
+		}
+		obs := &v1alpha1.PermissionsObservation{
+			Permissions: []string{"admin"},
+		}
+
+		// Should not panic or modify the spec.
+		LateInitializePermissions(spec, obs)
+
+		if len(spec.Permissions) != 1 || spec.Permissions[0] != "scan" {
+			t.Fatalf("LateInitializePermissions() modified spec unexpectedly: %+v", spec.Permissions)
+		}
+	})
+
+	t.Run("NilInputsDoNotPanic", func(t *testing.T) {
+		t.Parallel()
+
+		LateInitializePermissions(nil, nil)
+	})
+}
+
+// TestIsPermissionsLateInitialized tests that IsPermissionsLateInitialized
+// always returns false.
+func TestIsPermissionsLateInitialized(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		former  *v1alpha1.PermissionsParameters
+		current *v1alpha1.PermissionsParameters
+	}{
+		"BothNil":    {former: nil, current: nil},
+		"FormerNil":  {former: nil, current: &v1alpha1.PermissionsParameters{Permissions: []string{"scan"}}},
+		"CurrentNil": {former: &v1alpha1.PermissionsParameters{Permissions: []string{"scan"}}, current: nil},
+		"BothNonNil": {former: &v1alpha1.PermissionsParameters{Permissions: []string{"scan"}}, current: &v1alpha1.PermissionsParameters{Permissions: []string{"admin"}}},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := IsPermissionsLateInitialized(tc.former, tc.current); got != false {
+				t.Fatalf("IsPermissionsLateInitialized() = %v, want false", got)
+			}
+		})
+	}
+}
+
+// TestIsPermissionsUpToDate tests checking if permissions spec is up to date.
+func TestIsPermissionsUpToDate(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		spec *v1alpha1.PermissionsParameters
+		obs  *v1alpha1.PermissionsObservation
+		want bool
+	}{
+		"NilSpec": {
+			spec: nil,
+			obs:  &v1alpha1.PermissionsObservation{Permissions: []string{"admin"}},
+			want: true,
+		},
+		"NilObs": {
+			spec: &v1alpha1.PermissionsParameters{Permissions: []string{"admin"}},
+			obs:  nil,
+			want: false,
+		},
+		"MatchExact": {
+			spec: &v1alpha1.PermissionsParameters{Permissions: []string{"scan", "admin"}},
+			obs:  &v1alpha1.PermissionsObservation{Permissions: []string{"admin", "scan"}},
+			want: true,
+		},
+		"MatchEmpty": {
+			spec: &v1alpha1.PermissionsParameters{Permissions: []string{}},
+			obs:  &v1alpha1.PermissionsObservation{Permissions: []string{}},
+			want: true,
+		},
+		"ExtraObserved": {
+			spec: &v1alpha1.PermissionsParameters{Permissions: []string{"scan"}},
+			obs:  &v1alpha1.PermissionsObservation{Permissions: []string{"scan", "admin"}},
+			want: false,
+		},
+		"ExtraSpec": {
+			spec: &v1alpha1.PermissionsParameters{Permissions: []string{"scan", "admin"}},
+			obs:  &v1alpha1.PermissionsObservation{Permissions: []string{"scan"}},
+			want: false,
+		},
+		"Mismatch": {
+			spec: &v1alpha1.PermissionsParameters{Permissions: []string{"admin"}},
+			obs:  &v1alpha1.PermissionsObservation{Permissions: []string{"scan"}},
+			want: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := IsPermissionsUpToDate(tc.spec, tc.obs); got != tc.want {
+				t.Fatalf("IsPermissionsUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
 }
 
 // TestPermissionsAreEqual tests checking if permissions are equal.

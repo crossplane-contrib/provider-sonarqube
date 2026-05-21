@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,11 +43,11 @@ func TestUserTokenCRUD(t *testing.T) {
 
 	f := e2e.New(t)
 	const (
-		crName                 = "e2e-usertoken-crud"
-		tokenName              = "e2e-usertoken-crud"
-		tokenSecretName        = "e2e-usertoken-secret"
-		tokenSecretKey         = "token"
-		renewalDays      int64 = 90
+		crName                = "e2e-usertoken-crud"
+		tokenName             = "e2e-usertoken-crud"
+		tokenSecretName       = "e2e-usertoken-secret"
+		tokenSecretKey        = "token"
+		renewalDays     int64 = 90
 	)
 
 	token := &iamv1alpha1.UserToken{
