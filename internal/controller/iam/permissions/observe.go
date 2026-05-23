@@ -103,8 +103,16 @@ func getObservedGroupPermissions(permClient iam.PermissionsClient, groupName, pr
 		projectKeyPtr = &projectKey
 	}
 
+	// SonarQube returns empty project-scoped permissions when the name query
+	// (q) is combined with projectKey. Omit the name filter in that case and
+	// find the group by iterating the full result set.
+	queryName := groupName
+	if projectKey != "" {
+		queryName = ""
+	}
+
 	for page := int64(1); ; page++ {
-		opts := iam.GeneratePermissionsGroupsOptions(groupName, projectKeyPtr, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
+		opts := iam.GeneratePermissionsGroupsOptions(queryName, projectKeyPtr, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
 
 		result, resp, err := permClient.Groups(opts) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)

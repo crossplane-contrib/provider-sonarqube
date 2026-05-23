@@ -372,6 +372,27 @@ func TestGetObservedGroupPermissions(t *testing.T) {
 			wantPermissions: []string{"user"},
 			wantFound:       true,
 		},
+		// SonarQube ignores the q (name) filter when projectKey is set and
+		// returns empty permissions; the helper must omit q in that case.
+		"ProjectKeyOmitsQueryFilter": {
+			client: &fake.MockPermissionsClient{GroupsFn: func(opt *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
+				if opt.Query != "" {
+					return nil, nil, errors.New("query filter must not be sent with projectKey")
+				}
+
+				return &sonar.PermissionsGroups{
+					Groups: []sonar.PermissionGroup{
+						{Name: "other", Permissions: []string{"admin"}},
+						{Name: "devs", Permissions: []string{"codeviewer", "user"}},
+					},
+					Paging: sonar.PermissionsPaging{Total: 2, PageIndex: 1, PageSize: 100},
+				}, mockHTTPResponse(http.StatusOK), nil
+			}},
+			groupName:       "devs",
+			projectKey:      "proj-1",
+			wantPermissions: []string{"codeviewer", "user"},
+			wantFound:       true,
+		},
 	}
 
 	for name, tc := range cases {
