@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -244,17 +245,21 @@ func TestPermissionsUpdateGroup(t *testing.T) {
 	perms.Spec.ForProvider.Permissions = updatedPerms
 	f.Update(t, perms)
 
-	if err := f.WaitForReady(context.Background(), perms, 2*time.Minute); err != nil {
-		t.Fatalf("waiting for updated permissions to be Ready: %v\n  conditions: %s",
-			err, e2e.SummariseConditions(perms))
-	}
-
-	gotPerms, err := f.GroupPermissions(groupName)
-	if err != nil {
-		t.Fatalf("fetching group permissions after update: %v", err)
-	}
-	if !equalStringSets(gotPerms, updatedPerms) {
-		t.Errorf("group permissions after update = %v, want %v (order ignored)", gotPerms, updatedPerms)
+	// WaitForReady returns immediately when conditions are already True from
+	// the previous reconcile; poll GroupPermissions directly until the
+	// controller has applied the spec change.
+	var gotPerms []string
+	pollCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	if pollErr := wait.PollUntilContextTimeout(pollCtx, 2*time.Second, 2*time.Minute, false, func(_ context.Context) (bool, error) {
+		var fetchErr error
+		gotPerms, fetchErr = f.GroupPermissions(groupName)
+		if fetchErr != nil {
+			return false, fetchErr
+		}
+		return equalStringSets(gotPerms, updatedPerms), nil
+	}); pollErr != nil {
+		t.Fatalf("group permissions did not update within timeout: last=%v want=%v: %v", gotPerms, updatedPerms, pollErr)
 	}
 }
 
