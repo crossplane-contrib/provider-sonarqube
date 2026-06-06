@@ -73,6 +73,13 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
+	// Deleting: Check that the resource has no permissions left; mark the
+	// external resource as non-existent so the managed reconciler can
+	// remove the finalizer and allow the CR to be deleted.
+	if !permissions.DeletionTimestamp.IsZero() && len(observedPermissions) == 0 {
+		return managed.ExternalObservation{ResourceExists: false}, nil
+	}
+
 	permissions.Status.AtProvider.Permissions = observedPermissions
 
 	former := permissions.Spec.ForProvider.DeepCopy()
