@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // ALMGitHubParameters are the configurable fields of a ALMGitHub.
@@ -71,14 +70,14 @@ type ALMGitHubObservation struct {
 // A ALMGitHubSpec defines the desired state of a ALMGitHub.
 // +kubebuilder:validation:XValidation:rule="has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name) > 0",message="writeConnectionSecretToRef with a non-empty name is required"
 type ALMGitHubSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	ForProvider ALMGitHubParameters `json:"forProvider"`
 }
 
 // A ALMGitHubStatus represents the observed state of a ALMGitHub.
 type ALMGitHubStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	AtProvider ALMGitHubObservation `json:"atProvider,omitempty"`
 }

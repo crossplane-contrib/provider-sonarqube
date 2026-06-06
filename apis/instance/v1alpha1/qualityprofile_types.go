@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // QualityProfileParameters are the configurable fields of a QualityProfile.
@@ -128,14 +127,14 @@ type QualityProfileRuleImpact struct {
 
 // A QualityProfileSpec defines the desired state of a QualityProfile.
 type QualityProfileSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	ForProvider QualityProfileParameters `json:"forProvider"`
 }
 
 // A QualityProfileStatus represents the observed state of a QualityProfile.
 type QualityProfileStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	AtProvider QualityProfileObservation `json:"atProvider,omitempty"`
 }

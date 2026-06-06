@@ -24,8 +24,7 @@ import (
 	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,7 +54,7 @@ func TestPermissionsCRUDGroup(t *testing.T) {
 	group := &iamv1alpha1.Group{
 		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: "default"},
 		Spec: iamv1alpha1.GroupSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -73,7 +72,7 @@ func TestPermissionsCRUDGroup(t *testing.T) {
 	perms := &iamv1alpha1.Permissions{
 		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
 		Spec: iamv1alpha1.PermissionsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -131,7 +130,7 @@ func TestPermissionsCRUDUser(t *testing.T) {
 	user := &iamv1alpha1.User{
 		ObjectMeta: metav1.ObjectMeta{Name: userCRName, Namespace: "default"},
 		Spec: iamv1alpha1.UserSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -159,7 +158,7 @@ func TestPermissionsCRUDUser(t *testing.T) {
 	perms := &iamv1alpha1.Permissions{
 		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
 		Spec: iamv1alpha1.PermissionsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -203,7 +202,7 @@ func TestPermissionsUpdateGroup(t *testing.T) {
 	group := &iamv1alpha1.Group{
 		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: "default"},
 		Spec: iamv1alpha1.GroupSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -221,7 +220,7 @@ func TestPermissionsUpdateGroup(t *testing.T) {
 	perms := &iamv1alpha1.Permissions{
 		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
 		Spec: iamv1alpha1.PermissionsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -282,7 +281,7 @@ func TestPermissionsProjectScoped(t *testing.T) {
 	project := &instancev1alpha1.Project{
 		ObjectMeta: metav1.ObjectMeta{Name: projectCRName, Namespace: "default"},
 		Spec: instancev1alpha1.ProjectSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -299,7 +298,7 @@ func TestPermissionsProjectScoped(t *testing.T) {
 	group := &iamv1alpha1.Group{
 		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: "default"},
 		Spec: iamv1alpha1.GroupSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -319,7 +318,7 @@ func TestPermissionsProjectScoped(t *testing.T) {
 	perms := &iamv1alpha1.Permissions{
 		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
 		Spec: iamv1alpha1.PermissionsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,

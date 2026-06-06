@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // ProjectParameters are the configurable fields of a Project.
@@ -229,14 +228,14 @@ type ProjectBranchStatusObservation struct {
 
 // A ProjectSpec defines the desired state of a Project.
 type ProjectSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	ForProvider ProjectParameters `json:"forProvider"`
 }
 
 // A ProjectStatus represents the observed state of a Project.
 type ProjectStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	AtProvider ProjectObservation `json:"atProvider,omitempty"`
 }

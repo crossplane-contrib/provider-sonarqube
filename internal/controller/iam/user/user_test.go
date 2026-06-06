@@ -25,9 +25,8 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -369,7 +368,7 @@ func TestConnectGetConfigError(t *testing.T) {
 			Namespace: "default",
 			UID:       types.UID("user-uid"),
 		},
-		Spec: v1alpha1.UserSpec{ManagedResourceSpec: xpv2.ManagedResourceSpec{}, ForProvider: v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice"}},
+		Spec: v1alpha1.UserSpec{ManagedResourceSpec: xpv1.ManagedResourceSpec{}, ForProvider: v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice"}},
 	}
 	user.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "missing-pc", Kind: "ProviderConfig"})
 
@@ -420,7 +419,7 @@ func TestConnectSuccess(t *testing.T) {
 			Namespace: "default",
 			UID:       types.UID("user-uid"),
 		},
-		Spec: v1alpha1.UserSpec{ManagedResourceSpec: xpv2.ManagedResourceSpec{}, ForProvider: v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice"}},
+		Spec: v1alpha1.UserSpec{ManagedResourceSpec: xpv1.ManagedResourceSpec{}, ForProvider: v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice"}},
 	}
 	user.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "pc", Kind: "ProviderConfig"})
 

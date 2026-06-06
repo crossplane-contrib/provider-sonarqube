@@ -24,12 +24,11 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -535,7 +534,7 @@ func TestConnectTrackUsageError(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{APIVersion: v1alpha1.PermissionsGroupVersionKind.GroupVersion().String(), Kind: v1alpha1.PermissionsKind},
 		ObjectMeta: metav1.ObjectMeta{Name: "test-perms", Namespace: "default", UID: types.UID("perms-uid")},
 		Spec: v1alpha1.PermissionsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{},
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{},
 			ForProvider:         v1alpha1.PermissionsParameters{GroupName: new("devs"), Permissions: []string{"scan"}},
 		},
 	}
@@ -578,7 +577,7 @@ func TestConnectGetConfigError(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{APIVersion: v1alpha1.PermissionsGroupVersionKind.GroupVersion().String(), Kind: v1alpha1.PermissionsKind},
 		ObjectMeta: metav1.ObjectMeta{Name: "test-perms", Namespace: "default", UID: types.UID("perms-uid")},
 		Spec: v1alpha1.PermissionsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{},
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{},
 			ForProvider:         v1alpha1.PermissionsParameters{GroupName: new("devs"), Permissions: []string{"scan"}},
 		},
 	}
@@ -648,7 +647,7 @@ func TestConnectSuccess(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{APIVersion: v1alpha1.PermissionsGroupVersionKind.GroupVersion().String(), Kind: v1alpha1.PermissionsKind},
 		ObjectMeta: metav1.ObjectMeta{Name: "test-perms", Namespace: "default", UID: types.UID("perms-uid")},
 		Spec: v1alpha1.PermissionsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{},
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{},
 			ForProvider:         v1alpha1.PermissionsParameters{GroupName: new("devs"), Permissions: []string{"scan"}},
 		},
 	}

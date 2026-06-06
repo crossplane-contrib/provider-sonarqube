@@ -23,12 +23,11 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -134,7 +133,7 @@ func newTestALMGitHub(externalName string, clientSecretRef, privateKeyRef *xpv1.
 			UID:         types.UID("alm-github-uid"),
 		},
 		Spec: v1alpha1.ALMGitHubSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{},
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{},
 			ForProvider: v1alpha1.ALMGitHubParameters{
 				URL:             testGitHubURL,
 				Key:             testExternalName,

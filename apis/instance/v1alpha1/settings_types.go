@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // SettingsParameters represent the desired state of SonarQube Settings.
@@ -80,14 +79,14 @@ type SettingObservation struct {
 
 // A SettingsSpec defines the desired state of a Settings.
 type SettingsSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	ForProvider SettingsParameters `json:"forProvider"`
 }
 
 // A SettingsStatus represents the observed state of a Settings.
 type SettingsStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	AtProvider SettingsObservation `json:"atProvider,omitempty"`
 }

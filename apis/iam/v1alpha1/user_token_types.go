@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // UserTokenParameters are the configurable fields of a UserToken.
@@ -117,14 +116,14 @@ type UserTokenObservation struct {
 // A UserTokenSpec defines the desired state of a UserToken.
 // +kubebuilder:validation:XValidation:rule="has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name) > 0",message="writeConnectionSecretToRef with a non-empty name is required"
 type UserTokenSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	ForProvider UserTokenParameters `json:"forProvider"`
 }
 
 // A UserTokenStatus represents the observed state of a UserToken.
 type UserTokenStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	AtProvider UserTokenObservation `json:"atProvider,omitempty"`
 }

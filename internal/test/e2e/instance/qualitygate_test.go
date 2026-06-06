@@ -23,8 +23,7 @@ import (
 	"testing"
 	"time"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -48,7 +47,7 @@ func TestQualityGateCRUD(t *testing.T) {
 	qg := &instancev1alpha1.QualityGate{
 		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
 		Spec: instancev1alpha1.QualityGateSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,
@@ -96,7 +95,7 @@ func TestQualityGateInvalidMetric(t *testing.T) {
 	qg := &instancev1alpha1.QualityGate{
 		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
 		Spec: instancev1alpha1.QualityGateSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,

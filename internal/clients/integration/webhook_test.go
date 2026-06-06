@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
