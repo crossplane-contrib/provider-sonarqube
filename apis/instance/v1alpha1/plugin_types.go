@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // PluginParameters are the configurable fields of a Plugin.
@@ -83,7 +82,7 @@ type PluginObservation struct {
 
 // A PluginSpec defines the desired state of a Plugin.
 type PluginSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	// ForProvider holds the provider-specific configuration for this Plugin.
 	ForProvider PluginParameters `json:"forProvider"`
@@ -91,7 +90,7 @@ type PluginSpec struct {
 
 // A PluginStatus represents the observed state of a Plugin.
 type PluginStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	// AtProvider holds the provider-specific observed state of this Plugin.
 	AtProvider PluginObservation `json:"atProvider,omitempty"`

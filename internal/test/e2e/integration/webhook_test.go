@@ -22,9 +22,8 @@ import (
 	"testing"
 	"time"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	integrationv1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
@@ -48,7 +47,7 @@ func TestWebhookGlobalCRUD(t *testing.T) {
 	webhook := &integrationv1alpha1.Webhook{
 		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
 		Spec: integrationv1alpha1.WebhookSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: framework.ProviderConfigName,

@@ -22,8 +22,7 @@ import (
 	"testing"
 	"time"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
@@ -48,7 +47,7 @@ func TestSettingsGlobalScalar(t *testing.T) {
 	settings := &instancev1alpha1.Settings{
 		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
 		Spec: instancev1alpha1.SettingsSpec{
-			ManagedResourceSpec: xpv2.ManagedResourceSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
 					Kind: "ClusterProviderConfig",
 					Name: f.ProviderConfigName,

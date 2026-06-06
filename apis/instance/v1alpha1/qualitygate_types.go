@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // QualityGateParameters represent the desired state of a QualityGate.
@@ -64,7 +63,7 @@ type QualityGateObservation struct {
 
 // A QualityGateSpec defines the desired state of a QualityGate.
 type QualityGateSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	// ForProvider represents the desired state of the Quality Gate.
 	ForProvider QualityGateParameters `json:"forProvider"`
@@ -72,7 +71,7 @@ type QualityGateSpec struct {
 
 // A QualityGateStatus represents the observed state of a QualityGate.
 type QualityGateStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	// AtProvider represents the observed state of the Quality Gate.
 	AtProvider QualityGateObservation `json:"atProvider,omitempty"`

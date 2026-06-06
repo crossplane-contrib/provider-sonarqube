@@ -21,8 +21,8 @@ import (
 	"crypto/tls"
 
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"

@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // PermissionsTemplateParameters are the configurable fields of a
@@ -132,7 +131,7 @@ type PermissionsTemplateGroupObservation struct {
 
 // A PermissionsTemplateSpec defines the desired state of a PermissionsTemplate.
 type PermissionsTemplateSpec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 
 	ForProvider PermissionsTemplateParameters `json:"forProvider"`
 }
@@ -140,7 +139,7 @@ type PermissionsTemplateSpec struct {
 // A PermissionsTemplateStatus represents the observed state of a
 // PermissionsTemplate.
 type PermissionsTemplateStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 
 	AtProvider PermissionsTemplateObservation `json:"atProvider,omitempty"`
 }
