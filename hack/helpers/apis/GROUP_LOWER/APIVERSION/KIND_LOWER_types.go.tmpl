@@ -22,8 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	xpv2 "github.com/crossplane/crossplane-runtime/v2/apis/common/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // {{ .Env.KIND }}Parameters are the configurable fields of a {{ .Env.KIND }}.
@@ -39,13 +38,13 @@ type {{ .Env.KIND }}Observation struct {
 
 // A {{ .Env.KIND }}Spec defines the desired state of a {{ .Env.KIND }}.
 type {{ .Env.KIND }}Spec struct {
-	xpv2.ManagedResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 	ForProvider              {{ .Env.KIND }}Parameters `json:"forProvider"`
 }
 
 // A {{ .Env.KIND }}Status represents the observed state of a {{ .Env.KIND }}.
 type {{ .Env.KIND }}Status struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 	AtProvider          {{ .Env.KIND }}Observation `json:"atProvider,omitempty"`
 }
 

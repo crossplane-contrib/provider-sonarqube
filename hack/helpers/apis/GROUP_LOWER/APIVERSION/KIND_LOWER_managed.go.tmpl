@@ -1,0 +1,78 @@
+/*
+Copyright 2026 The Crossplane Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// NOTE: angryjet (crossplane-tools) does not yet support the
+// github.com/crossplane/crossplane/apis/v2/core/v2 type paths used by this
+// project, so these managed-interface methods cannot be auto-generated into
+// zz_generated.managed.go. They are scaffolded here instead.
+// Track: https://github.com/crossplane/crossplane-tools (update angryjet matchers)
+
+package {{ .Env.APIVERSION | strings.ToLower }}
+
+import (
+	resource "github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+)
+
+// GetCondition of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
+	return mg.Status.GetCondition(ct)
+}
+
+// GetManagementPolicies of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) GetManagementPolicies() xpv1.ManagementPolicies {
+	return mg.Spec.ManagementPolicies
+}
+
+// GetProviderConfigReference of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) GetProviderConfigReference() *xpv1.ProviderConfigReference {
+	return mg.Spec.ProviderConfigReference
+}
+
+// GetWriteConnectionSecretToReference of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+	return mg.Spec.WriteConnectionSecretToReference
+}
+
+// SetConditions of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) SetConditions(c ...xpv1.Condition) {
+	mg.Status.SetConditions(c...)
+}
+
+// SetManagementPolicies of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) SetManagementPolicies(r xpv1.ManagementPolicies) {
+	mg.Spec.ManagementPolicies = r
+}
+
+// SetProviderConfigReference of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
+	mg.Spec.ProviderConfigReference = r
+}
+
+// SetWriteConnectionSecretToReference of this {{ .Env.KIND }}.
+func (mg *{{ .Env.KIND }}) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+	mg.Spec.WriteConnectionSecretToReference = r
+}
+
+// GetItems of this {{ .Env.KIND }}List.
+func (l *{{ .Env.KIND }}List) GetItems() []resource.Managed {
+	items := make([]resource.Managed, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+
+	return items
+}

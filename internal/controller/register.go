@@ -28,6 +28,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/usertoken"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/license"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/plugin"
+	"github.com/crossplane/provider-sonarqube/internal/controller/instance/portfolio"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/project"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualitygate"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualityprofile"
@@ -48,6 +49,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		qualityprofile.SetupGated,
 		settings.SetupGated,
 		plugin.SetupGated,
+		portfolio.SetupGated,
 		project.SetupGated,
 		rule.SetupGated,
 		user.SetupGated,
