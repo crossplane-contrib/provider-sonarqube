@@ -1,0 +1,79 @@
+# --- Option 1: source the license key from a static Secret. ---
+# The provider watches the secret and reconciles the SonarQube instance
+# whenever the key drifts.
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: License
+metadata:
+  name: example-license
+  namespace: default
+spec:
+  forProvider:
+    licenseKeySecretRef:
+      name: example-license-key
+      namespace: default
+      key: licenseKey
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+
+  # writeConnectionSecretToRef is required: it is where the provider records
+  # the license key it last applied. Without it, the provider cannot tell
+  # whether the SonarQube instance is still in sync and will re-apply the
+  # license on every reconcile even when nothing has changed.
+  writeConnectionSecretToRef:
+    name: example-license-conn
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-license-key
+  namespace: default
+type: Opaque
+stringData:
+  licenseKey: example-license-key-value
+
+---
+# --- Option 2: fetch the license key from an HTTP(S) endpoint. ---
+# Useful when a vendor license portal exposes a stable URL that always
+# serves the current license, so renewals are picked up automatically.
+# The fetched key is stored in writeConnectionSecretToRef so the provider
+# can withstand a period without access to the endpoint.
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: License
+metadata:
+  name: example-license-endpoint
+  namespace: default
+spec:
+  forProvider:
+    endpoint:
+      url: https://license.example.com/api/license
+      # Authentication is optional. Choose either bearer token or basic
+      # auth, or omit both for an unauthenticated endpoint.
+      bearerTokenSecretRef:
+        name: example-license-endpoint-token
+        namespace: default
+        key: token
+      # basicAuthUsername: example-user
+      # basicAuthPasswordSecretRef:
+      #   name: example-license-endpoint-password
+      #   namespace: default
+      #   key: password
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+
+  writeConnectionSecretToRef:
+    name: example-license-endpoint-conn
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-license-endpoint-token
+  namespace: default
+type: Opaque
+stringData:
+  token: example-bearer-token
