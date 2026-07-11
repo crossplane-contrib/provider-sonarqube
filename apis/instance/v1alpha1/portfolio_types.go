@@ -51,7 +51,7 @@ type PortfolioParameters struct {
 
 	// SelectionMode describes how projects are selected for this portfolio.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=MANUAL
+	// +kubebuilder:default=NONE
 	// +kubebuilder:validation:Enum=MANUAL;NONE;REGEXP;REMAINING;TAGS
 	SelectionMode string `json:"selectionMode,omitempty"`
 
