@@ -69,9 +69,12 @@ func FetchFromEndpoint(ctx context.Context, url string, auth *EndpointAuth) (str
 		return "", errors.Errorf("endpoint returned unexpected status code %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, endpointMaxResponseSize))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, endpointMaxResponseSize+1))
 	if err != nil {
 		return "", errors.Wrap(err, "cannot read endpoint response")
+	}
+	if int64(len(body)) > endpointMaxResponseSize {
+		return "", errors.Errorf("endpoint response exceeds %d bytes", endpointMaxResponseSize)
 	}
 
 	value := strings.TrimSpace(string(body))
