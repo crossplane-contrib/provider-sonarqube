@@ -22,6 +22,7 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
+	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
@@ -63,4 +64,103 @@ func NewALMSettingsBitbucketClient(clientConfig common.Config) ALMSettingsBitbuc
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.AlmSettings
+}
+
+// LateInitializeALMBitbucket fills the empty fields in the ALMBitbucket
+// spec with the values from the SonarQube API response.
+// The API response should be the result of a "Get" operation for the
+// ALMBitbucket resource.
+func LateInitializeALMBitbucket(spec *v1alpha1.ALMBitbucketParameters, observation *v1alpha1.ALMBitbucketObservation) {
+	if spec == nil || observation == nil {
+		return
+	}
+
+	LateInitializeALM(&spec.ALMCommonParameters, &observation.ALMCommonObservation)
+}
+
+// IsALMBitbucketLateInitialized checks if two ALMBitbucket specs are equal
+// after late initialization. It returns true if the specs are equal,
+// and false if they are not.
+func IsALMBitbucketLateInitialized(former, current *v1alpha1.ALMBitbucketParameters) bool {
+	if former == nil || current == nil {
+		return true
+	}
+
+	return IsALMLateInitialized(&former.ALMCommonParameters, &current.ALMCommonParameters)
+}
+
+// IsALMBitbucketUpToDate checks if the ALMBitbucket spec is up to date
+// with the SonarQube API response.
+// It returns true if the spec is up to date, and false if it is not.
+func IsALMBitbucketUpToDate(spec *v1alpha1.ALMBitbucketParameters, specAPIToken string, observation *v1alpha1.ALMBitbucketObservation, savedAPIToken string) bool {
+	if spec == nil {
+		return true
+	}
+
+	if observation == nil {
+		return false
+	}
+
+	return IsALMUpToDate(&spec.ALMCommonParameters, specAPIToken, &observation.ALMCommonObservation, savedAPIToken)
+}
+
+// GenerateALMBitbucketCreateOptions generates the options for creating an
+// ALMBitbucket resource in SonarQube API based on the desired state in the
+// ALMBitbucketParameters and the provided API token.
+func GenerateALMBitbucketCreateOptions(spec *v1alpha1.ALMBitbucketParameters, apiToken string) *sonar.AlmSettingsCreateBitbucketOptions {
+	return &sonar.AlmSettingsCreateBitbucketOptions{
+		URL:                 spec.URL,
+		Key:                 spec.Key,
+		PersonalAccessToken: apiToken,
+	}
+}
+
+// GenerateALMBitbucketUpdateOptions generates the options for updating an
+// ALMBitbucket resource in SonarQube API based on the desired state in the
+// ALMBitbucketParameters, the provided API token, and the identifier of
+// the ALMBitbucket resource in SonarQube.
+func GenerateALMBitbucketUpdateOptions(key string, spec *v1alpha1.ALMBitbucketParameters, apiToken string) *sonar.AlmSettingsUpdateBitbucketOptions {
+	updateOptions := sonar.AlmSettingsUpdateBitbucketOptions{
+		URL:                 spec.URL,
+		Key:                 key,
+		PersonalAccessToken: apiToken,
+	}
+
+	if spec.Key != key {
+		updateOptions.NewKey = spec.Key
+	}
+
+	return &updateOptions
+}
+
+// FindBitbucketALMDefinitionByKey searches for an ALM settings definition
+// in the list of definitions by its key.
+// It returns the definition if found, and nil if not found.
+func FindBitbucketALMDefinitionByKey(definitions *[]sonar.BitbucketDefinition, key string) *sonar.BitbucketDefinition {
+	if definitions == nil {
+		return nil
+	}
+
+	for i := range *definitions {
+		if (*definitions)[i].Key == key {
+			return &(*definitions)[i]
+		}
+	}
+
+	return nil
+}
+
+// GenerateALMBitbucketObservation generates the ALMBitbucketObservation
+// based on the ALM settings definition retrieved from SonarQube API.
+func GenerateALMBitbucketObservation(definition *sonar.BitbucketDefinition) v1alpha1.ALMBitbucketObservation {
+	if definition == nil {
+		return v1alpha1.ALMBitbucketObservation{}
+	}
+
+	return v1alpha1.ALMBitbucketObservation{
+		ALMCommonObservation: v1alpha1.ALMCommonObservation{
+			URL: definition.URL,
+			Key: definition.Key,
+		},
+	}
 }

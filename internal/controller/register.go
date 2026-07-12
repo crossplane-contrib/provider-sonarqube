@@ -35,6 +35,8 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/rule"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/settings"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almazure"
+	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almbitbucket"
+	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almbitbucketcloud"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgithub"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/webhook"
@@ -59,6 +61,8 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		permissions.SetupGated,
 		permissionstemplate.SetupGated,
 		almazure.SetupGated,
+		almbitbucket.SetupGated,
+		almbitbucketcloud.SetupGated,
 		almgitlab.SetupGated,
 		almgithub.SetupGated,
 		webhook.SetupGated,

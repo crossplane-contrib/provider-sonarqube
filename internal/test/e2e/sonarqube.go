@@ -248,6 +248,40 @@ func (f *Framework) FindALMAzureDefinitionByKey(ctx context.Context, key string)
 	return nil, nil //nolint:nilnil // intentional: absence of definition is the natural "not yet created" sentinel
 }
 
+// FindALMBitbucketDefinitionByKey returns the Bitbucket Server ALM setting
+// definition whose key exactly matches key, or (nil, nil) if no such
+// definition exists.
+func (f *Framework) FindALMBitbucketDefinitionByKey(ctx context.Context, key string) (*sonar.BitbucketDefinition, error) {
+	res, resp, err := f.Sonar.AlmSettings.ListDefinitions(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.Bitbucket {
+		if res.Bitbucket[i].Key == key {
+			return &res.Bitbucket[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional: absence of definition is the natural "not yet created" sentinel
+}
+
+// FindALMBitbucketCloudDefinitionByKey returns the Bitbucket Cloud ALM
+// setting definition whose key exactly matches key, or (nil, nil) if no such
+// definition exists.
+func (f *Framework) FindALMBitbucketCloudDefinitionByKey(ctx context.Context, key string) (*sonar.BitbucketCloudDefinition, error) {
+	res, resp, err := f.Sonar.AlmSettings.ListDefinitions(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.BitbucketCloud {
+		if res.BitbucketCloud[i].Key == key {
+			return &res.BitbucketCloud[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional: absence of definition is the natural "not yet created" sentinel
+}
+
 // FindGlobalWebhookByKey returns the global SonarQube webhook whose key
 // exactly matches key, or (nil, nil) if no such webhook exists.
 func (f *Framework) FindGlobalWebhookByKey(ctx context.Context, key string) (*sonar.WebhooksDefinition, error) {

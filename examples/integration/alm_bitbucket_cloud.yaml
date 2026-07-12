@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: example-almbitbucketcloud-client-secret
+type: Opaque
+stringData:
+  clientSecret: example-client-secret
+---
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: ALMBitbucketCloud
+metadata:
+  namespace: default
+  name: example-almbitbucketcloud
+spec:
+  forProvider:
+    key: bitbucket-cloud-main
+    clientId: "abc123"
+    clientSecretRef:
+      name: example-almbitbucketcloud-client-secret
+      key: clientSecret
+    workspace: example-workspace
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+  writeConnectionSecretToRef:
+    name: example-almbitbucketcloud-connection

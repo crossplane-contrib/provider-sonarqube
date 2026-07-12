@@ -15,6 +15,8 @@ limitations under the License.
 */
 
 // Package fake provides mock client implementations for testing.
+//
+//nolint:dupl // Provider-specific ALM mock clients intentionally share this structure.
 package fake
 
 import (

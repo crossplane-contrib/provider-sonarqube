@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: example-almbitbucket-token
+type: Opaque
+stringData:
+  token: example
+---
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: ALMBitbucket
+metadata:
+  namespace: default
+  name: example-almbitbucket
+spec:
+  forProvider:
+    key: bitbucket-main
+    url: https://bitbucket.example.com
+    personalAccessTokenSecretRef:
+      name: example-almbitbucket-token
+      key: token
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+  writeConnectionSecretToRef:
+    name: example-almbitbucket-connection
