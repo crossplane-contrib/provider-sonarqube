@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -29,11 +30,11 @@ import (
 // ProjectBranchesClient is the interface for interacting with
 // SonarQube Project Branches API.
 type ProjectBranchesClient interface {
-	Delete(opt *sonar.ProjectBranchesDeleteOptions) (*http.Response, error)
-	List(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error)
-	Rename(opt *sonar.ProjectBranchesRenameOptions) (*http.Response, error)
-	SetAutomaticDeletionProtection(opt *sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions) (*http.Response, error)
-	SetMain(opt *sonar.ProjectBranchesSetMainOptions) (*http.Response, error)
+	Delete(ctx context.Context, opt *sonar.ProjectBranchesDeleteOptions) (*http.Response, error)
+	List(ctx context.Context, opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error)
+	Rename(ctx context.Context, opt *sonar.ProjectBranchesRenameOptions) (*http.Response, error)
+	SetAutomaticDeletionProtection(ctx context.Context, opt *sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions) (*http.Response, error)
+	SetMain(ctx context.Context, opt *sonar.ProjectBranchesSetMainOptions) (*http.Response, error)
 }
 
 // NewProjectBranchesClient creates a new ProjectBranchesClient with

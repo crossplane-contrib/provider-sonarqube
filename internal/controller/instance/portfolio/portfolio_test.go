@@ -19,10 +19,11 @@ package portfolio
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -842,7 +843,7 @@ func TestSetSelectionModePassesCorrectOptions(t *testing.T) {
 
 		spec := &v1alpha1.PortfolioParameters{SelectionMode: selectionModeNone}
 
-		err := e.setSelectionMode(testPortfolioKey, spec)
+		err := e.setSelectionMode(context.Background(), testPortfolioKey, spec)
 		if err != nil {
 			t.Fatalf("setSelectionMode() error = %v", err)
 		}
@@ -868,7 +869,7 @@ func TestSetSelectionModePassesCorrectOptions(t *testing.T) {
 
 		spec := &v1alpha1.PortfolioParameters{SelectionMode: selectionModeRegexp, Regexp: ".*-service", Branch: "main"}
 
-		err := e.setSelectionMode(testPortfolioKey, spec)
+		err := e.setSelectionMode(context.Background(), testPortfolioKey, spec)
 		if err != nil {
 			t.Fatalf("setSelectionMode() error = %v", err)
 		}
@@ -885,7 +886,7 @@ func TestSetSelectionModePassesCorrectOptions(t *testing.T) {
 	t.Run("TAGSMode", func(t *testing.T) {
 		t.Parallel()
 
-		var capturedTags string
+		var capturedTags []string
 
 		e := &external{client: &fake.MockPortfoliosClient{
 			SetTagsModeFn: func(opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error) {
@@ -897,13 +898,13 @@ func TestSetSelectionModePassesCorrectOptions(t *testing.T) {
 
 		spec := &v1alpha1.PortfolioParameters{SelectionMode: selectionModeTags, Tags: "java,go"}
 
-		err := e.setSelectionMode(testPortfolioKey, spec)
+		err := e.setSelectionMode(context.Background(), testPortfolioKey, spec)
 		if err != nil {
 			t.Fatalf("setSelectionMode() error = %v", err)
 		}
 
-		if capturedTags != "java,go" {
-			t.Errorf("SetTagsMode() Tags = %q, want %q", capturedTags, "java,go")
+		if want := []string{"java", "go"}; !reflect.DeepEqual(capturedTags, want) {
+			t.Errorf("SetTagsMode() Tags = %q, want %q", capturedTags, want)
 		}
 	})
 
@@ -922,7 +923,7 @@ func TestSetSelectionModePassesCorrectOptions(t *testing.T) {
 
 		spec := &v1alpha1.PortfolioParameters{SelectionMode: ""}
 
-		err := e.setSelectionMode(testPortfolioKey, spec)
+		err := e.setSelectionMode(context.Background(), testPortfolioKey, spec)
 		if err != nil {
 			t.Fatalf("setSelectionMode() error = %v", err)
 		}
@@ -939,7 +940,7 @@ func TestSetSelectionModePassesCorrectOptions(t *testing.T) {
 
 		spec := &v1alpha1.PortfolioParameters{SelectionMode: "UNKNOWN_MODE"}
 
-		err := e.setSelectionMode(testPortfolioKey, spec)
+		err := e.setSelectionMode(context.Background(), testPortfolioKey, spec)
 		if err != nil {
 			t.Errorf("setSelectionMode() with unknown mode error = %v, want nil", err)
 		}

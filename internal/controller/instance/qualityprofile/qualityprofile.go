@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
@@ -191,7 +191,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	}
 
 	// Retrieve the Quality Profile from SonarQube
-	qualityProfile, resp, err := c.qualityProfilesClient.Show(&sonar.QualityprofilesShowOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+	qualityProfile, resp, err := c.qualityProfilesClient.Show(ctx, &sonar.QualityprofilesShowOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Key: externalName,
 	})
 	defer helpers.CloseBody(resp)
@@ -202,7 +202,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	}
 
 	// Retrieve Quality Profile Rules (paginated)
-	rules, err := instance.FetchAllQualityProfileRules(c.rulesClient, externalName)
+	rules, err := instance.FetchAllQualityProfileRules(ctx, c.rulesClient, externalName)
 	if err != nil {
 		return managed.ExternalObservation{}, errors.Wrap(err, errShowQualityProfile)
 	}
@@ -242,7 +242,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 	profile.Status.SetConditions(xpv1.Creating())
 
-	qualityProfile, resp, err := c.qualityProfilesClient.Create(instance.GenerateCreateQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	qualityProfile, resp, err := c.qualityProfilesClient.Create(ctx, instance.GenerateCreateQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -254,7 +254,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 	// Set Quality Profile as default if specified in the spec
 	if ptr.Deref(profile.Spec.ForProvider.Default, false) {
-		setDefaultResp, err := c.qualityProfilesClient.SetDefault(instance.GenerateQualityprofilesSetDefaultOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+		setDefaultResp, err := c.qualityProfilesClient.SetDefault(ctx, instance.GenerateQualityprofilesSetDefaultOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(setDefaultResp)
 
 		if err != nil {
@@ -280,7 +280,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 
 	// Set Quality Profile as default if specified in the spec (idempotent)
 	if ptr.Deref(profile.Spec.ForProvider.Default, false) {
-		updateSetDefaultResp, err := c.qualityProfilesClient.SetDefault(instance.GenerateQualityprofilesSetDefaultOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+		updateSetDefaultResp, err := c.qualityProfilesClient.SetDefault(ctx, instance.GenerateQualityprofilesSetDefaultOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(updateSetDefaultResp)
 
 		if err != nil {
@@ -290,7 +290,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 
 	// Set Quality Profile name if it has changed
 	if profile.Spec.ForProvider.Name != profile.Status.AtProvider.Name {
-		updateResp, err := c.qualityProfilesClient.Rename(instance.GenerateRenameQualityProfileOption(externalName, profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+		updateResp, err := c.qualityProfilesClient.Rename(ctx, instance.GenerateRenameQualityProfileOption(externalName, profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(updateResp)
 
 		if err != nil {
@@ -301,7 +301,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 	associations := instance.GenerateQualityProfileRulesAssociation(profile.Spec.ForProvider.Rules, profile.Status.AtProvider.Rules)
 
 	// Sync Quality Profile Rules
-	err := c.syncQualityProfileRules(profile, associations)
+	err := c.syncQualityProfileRules(ctx, profile, associations)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot sync Quality Profile Rules")
 	}
@@ -324,7 +324,7 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 		return managed.ExternalDelete{}, nil
 	}
 
-	destroyResp, err := c.qualityProfilesClient.Delete(instance.GenerateDeleteQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	destroyResp, err := c.qualityProfilesClient.Delete(ctx, instance.GenerateDeleteQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(destroyResp)
 
 	if err != nil {
@@ -340,7 +340,7 @@ func (c *external) Disconnect(ctx context.Context) error {
 }
 
 // syncQualityProfileRules syncs QualityProfile rules with associations.
-func (c *external) syncQualityProfileRules(profile *v1alpha1.QualityProfile, associations map[string]instance.QualityProfileRuleAssociation) error {
+func (c *external) syncQualityProfileRules(ctx context.Context, profile *v1alpha1.QualityProfile, associations map[string]instance.QualityProfileRuleAssociation) error {
 	if len(associations) == 0 {
 		return nil
 	}
@@ -351,14 +351,14 @@ func (c *external) syncQualityProfileRules(profile *v1alpha1.QualityProfile, ass
 	}
 
 	// Phase 1: Deactivate rules that should not be active (in observation but not in spec)
-	aggregatedErrors := c.deactivateUnwantedQualityProfileRules(externalName, associations)
+	aggregatedErrors := c.deactivateUnwantedQualityProfileRules(ctx, externalName, associations)
 
 	// Phase 2: Activate rules that should be active (in spec but not in observation)
-	activateErrors := c.activateMissingQualityProfileRules(externalName, associations)
+	activateErrors := c.activateMissingQualityProfileRules(ctx, externalName, associations)
 	aggregatedErrors = append(aggregatedErrors, activateErrors...)
 
 	// Phase 3: Update rules that are out of date (in both but with different parameters)
-	updateErrors := c.updateOutdatedQualityProfileRules(externalName, associations)
+	updateErrors := c.updateOutdatedQualityProfileRules(ctx, externalName, associations)
 	aggregatedErrors = append(aggregatedErrors, updateErrors...)
 
 	if len(aggregatedErrors) > 0 {
@@ -371,7 +371,7 @@ func (c *external) syncQualityProfileRules(profile *v1alpha1.QualityProfile, ass
 // deactivateUnwantedQualityProfileRules deactivates rules that are in the
 // observation but not in the spec.
 // Returns a slice of errors encountered during deactivation.
-func (c *external) deactivateUnwantedQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
+func (c *external) deactivateUnwantedQualityProfileRules(ctx context.Context, externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
 
 	missingRules := instance.FindMissingQualityProfileRules(associations)
@@ -381,7 +381,7 @@ func (c *external) deactivateUnwantedQualityProfileRules(externalName string, as
 			continue
 		}
 
-		deactivateResp, err := c.qualityProfilesClient.DeactivateRule(instance.GenerateQualityProfileDeactivateRuleOption(externalName, ruleObservation.Key)) //nolint:bodyclose // closed via helpers.CloseBody
+		deactivateResp, err := c.qualityProfilesClient.DeactivateRule(ctx, instance.GenerateQualityProfileDeactivateRuleOption(externalName, ruleObservation.Key)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(deactivateResp)
 
 		if err != nil {
@@ -399,7 +399,7 @@ func (c *external) deactivateUnwantedQualityProfileRules(externalName string, as
 // activateMissingQualityProfileRules activates rules that are in the spec but
 // not in the observation.
 // Returns a slice of errors encountered during activation.
-func (c *external) activateMissingQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
+func (c *external) activateMissingQualityProfileRules(ctx context.Context, externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
 
 	nonExistingRules := instance.FindNonExistingQualityProfileRules(associations)
@@ -409,7 +409,7 @@ func (c *external) activateMissingQualityProfileRules(externalName string, assoc
 			continue
 		}
 
-		activateResp, err := c.qualityProfilesClient.ActivateRule(instance.GenerateQualityProfileActivateRuleOption(externalName, *ruleSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+		activateResp, err := c.qualityProfilesClient.ActivateRule(ctx, instance.GenerateQualityProfileActivateRuleOption(externalName, *ruleSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(activateResp)
 
 		if err != nil {
@@ -437,7 +437,7 @@ func (c *external) activateMissingQualityProfileRules(externalName string, assoc
 // parameters between spec and observation.
 // Updating a rule means re-activating it with the new parameters.
 // Returns a slice of errors encountered during update.
-func (c *external) updateOutdatedQualityProfileRules(externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
+func (c *external) updateOutdatedQualityProfileRules(ctx context.Context, externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
 	var errs []error
 
 	outdatedRules := instance.FindNotUpToDateQualityProfileRules(associations)
@@ -447,7 +447,7 @@ func (c *external) updateOutdatedQualityProfileRules(externalName string, associ
 			continue
 		}
 		// Re-activate rule with new parameters to update it
-		activateResp, err := c.qualityProfilesClient.ActivateRule(instance.GenerateQualityProfileActivateRuleOption(externalName, *assoc.Spec)) //nolint:bodyclose // closed via helpers.CloseBody
+		activateResp, err := c.qualityProfilesClient.ActivateRule(ctx, instance.GenerateQualityProfileActivateRuleOption(externalName, *assoc.Spec)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(activateResp)
 
 		if err != nil {

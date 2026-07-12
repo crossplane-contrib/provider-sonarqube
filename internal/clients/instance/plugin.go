@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -31,18 +32,18 @@ import (
 // PluginsClient handles SonarQube Plugin API operations.
 type PluginsClient interface {
 	// Install installs a plugin by key.
-	Install(opt *sonar.PluginsInstallOptions) (resp *http.Response, err error)
+	Install(ctx context.Context, opt *sonar.PluginsInstallOptions) (resp *http.Response, err error)
 	// Installed returns the list of all installed plugins.
-	Installed(opt *sonar.PluginsInstalledOptions) (v *sonar.PluginsInstalled, resp *http.Response, err error)
+	Installed(ctx context.Context, opt *sonar.PluginsInstalledOptions) (v *sonar.PluginsInstalled, resp *http.Response, err error)
 	// Pending returns plugins queued for install/update/removal
 	// (pending a SonarQube restart).
-	Pending() (v *sonar.PluginsPending, resp *http.Response, err error)
+	Pending(ctx context.Context) (v *sonar.PluginsPending, resp *http.Response, err error)
 	// Uninstall removes a plugin by key.
-	Uninstall(opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error)
+	Uninstall(ctx context.Context, opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error)
 	// Update updates a plugin by key.
-	Update(opt *sonar.PluginsUpdateOptions) (*http.Response, error)
+	Update(ctx context.Context, opt *sonar.PluginsUpdateOptions) (*http.Response, error)
 	// Updates retrieves all updates available for installed plugins.
-	Updates() (*sonar.PluginsUpdates, *http.Response, error)
+	Updates(ctx context.Context) (*sonar.PluginsUpdates, *http.Response, error)
 }
 
 // NewPluginsClient creates a PluginsClient from the given config.

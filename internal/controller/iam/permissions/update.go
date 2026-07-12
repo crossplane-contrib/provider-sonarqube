@@ -46,7 +46,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	toAdd, toRemove := computePermissionsDiff(permissions.Spec.ForProvider.Permissions, permissions.Status.AtProvider.Permissions)
 
-	err := c.applyPermissions(permissions.Spec.ForProvider, toAdd, toRemove)
+	err := c.applyPermissions(ctx, permissions.Spec.ForProvider, toAdd, toRemove)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdatePermissions)
 	}
@@ -59,7 +59,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 // Either slice may be nil (no-op for that direction).
 //
 //nolint:gocyclo,cyclop,nestif,funlen // Fan-out logic for two subject types and two directions requires nesting.
-func (c *external) applyPermissions(spec v1alpha1.PermissionsParameters, toAdd, toRemove []string) error {
+func (c *external) applyPermissions(ctx context.Context, spec v1alpha1.PermissionsParameters, toAdd, toRemove []string) error {
 	var projectKey *string
 	if spec.ProjectKey != nil && *spec.ProjectKey != "" {
 		projectKey = spec.ProjectKey
@@ -83,7 +83,7 @@ func (c *external) applyPermissions(spec v1alpha1.PermissionsParameters, toAdd, 
 			go func(permission string) {
 				defer waitGroup.Done()
 
-				resp, err := c.client.AddGroup(iam.GeneratePermissionsAddGroupOptions(groupName, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.client.AddGroup(ctx, iam.GeneratePermissionsAddGroupOptions(groupName, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -98,7 +98,7 @@ func (c *external) applyPermissions(spec v1alpha1.PermissionsParameters, toAdd, 
 			go func(permission string) {
 				defer waitGroup.Done()
 
-				resp, err := c.client.RemoveGroup(iam.GeneratePermissionsRemoveGroupOptions(groupName, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.client.RemoveGroup(ctx, iam.GeneratePermissionsRemoveGroupOptions(groupName, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -115,7 +115,7 @@ func (c *external) applyPermissions(spec v1alpha1.PermissionsParameters, toAdd, 
 			go func(permission string) {
 				defer waitGroup.Done()
 
-				resp, err := c.client.AddUser(iam.GeneratePermissionsAddUserOptions(login, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.client.AddUser(ctx, iam.GeneratePermissionsAddUserOptions(login, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -130,7 +130,7 @@ func (c *external) applyPermissions(spec v1alpha1.PermissionsParameters, toAdd, 
 			go func(permission string) {
 				defer waitGroup.Done()
 
-				resp, err := c.client.RemoveUser(iam.GeneratePermissionsRemoveUserOptions(login, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.client.RemoveUser(ctx, iam.GeneratePermissionsRemoveUserOptions(login, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {

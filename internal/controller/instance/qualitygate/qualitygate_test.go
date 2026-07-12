@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -389,7 +389,7 @@ func TestCreate(t *testing.T) {
 						Name: myQualityGateName, // different from k8s resource name to test the fix
 					}, nil, nil
 				},
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
+				SetDefaultFn: func(opt *sonar.QualitygatesSetDefaultOptions) (*http.Response, error) {
 					// Verify the correct SonarQube quality gate name is used, not Kubernetes resource name
 					if opt.Name != myQualityGateName {
 						return nil, errors.New("expected SonarQube gate name but got: " + opt.Name)
@@ -423,7 +423,7 @@ func TestCreate(t *testing.T) {
 						Name: opt.Name,
 					}, nil, nil
 				},
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
+				SetDefaultFn: func(opt *sonar.QualitygatesSetDefaultOptions) (*http.Response, error) {
 					return nil, errors.New("set default error")
 				},
 			},
@@ -512,7 +512,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"SetAsDefaultWhenRequested": {
 			client: &fake.MockQualityGatesClient{
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
+				SetDefaultFn: func(opt *sonar.QualitygatesSetDefaultOptions) (*http.Response, error) {
 					return mockHTTPResponse(), nil
 				},
 			},
@@ -543,7 +543,7 @@ func TestUpdate(t *testing.T) {
 		},
 		"SetAsDefaultFails": {
 			client: &fake.MockQualityGatesClient{
-				SetAsDefaultFn: func(opt *sonar.QualitygatesSetAsDefaultOptions) (*http.Response, error) {
+				SetDefaultFn: func(opt *sonar.QualitygatesSetDefaultOptions) (*http.Response, error) {
 					return nil, errors.New("set default error")
 				},
 			},
@@ -640,7 +640,7 @@ func TestDelete(t *testing.T) {
 		},
 		"SuccessfulDelete": {
 			client: &fake.MockQualityGatesClient{
-				DestroyFn: func(opt *sonar.QualitygatesDestroyOptions) (*http.Response, error) {
+				DeleteFn: func(opt *sonar.QualitygatesDeleteOptions) (*http.Response, error) {
 					// Verify the correct external name is used for deletion
 					if opt.Name != myQualityGateName {
 						return nil, errors.New("expected external name 'my-sonar-gate' but got: " + opt.Name)
@@ -670,7 +670,7 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteFails": {
 			client: &fake.MockQualityGatesClient{
-				DestroyFn: func(opt *sonar.QualitygatesDestroyOptions) (*http.Response, error) {
+				DeleteFn: func(opt *sonar.QualitygatesDeleteOptions) (*http.Response, error) {
 					return nil, errors.New("delete error")
 				},
 			},

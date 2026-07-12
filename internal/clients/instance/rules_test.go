@@ -17,11 +17,12 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -37,32 +38,32 @@ type mockRulesClient struct {
 var errMockNotImplemented = errors.New("not implemented")
 
 // App returns not implemented error for the mock.
-func (m *mockRulesClient) App() (*sonar.RulesApp, *http.Response, error) {
+func (m *mockRulesClient) App(_ context.Context) (*sonar.RulesApp, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
 // Create returns not implemented error for the mock.
-func (m *mockRulesClient) Create(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
+func (m *mockRulesClient) Create(_ context.Context, _ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
 // Delete returns not implemented error for the mock.
-func (m *mockRulesClient) Delete(_ *sonar.RulesDeleteOptions) (*http.Response, error) {
+func (m *mockRulesClient) Delete(_ context.Context, _ *sonar.RulesDeleteOptions) (*http.Response, error) {
 	return nil, errMockNotImplemented
 }
 
 // List returns not implemented error for the mock.
-func (m *mockRulesClient) List(_ *sonar.RulesListOptions) (*string, *http.Response, error) {
+func (m *mockRulesClient) List(_ context.Context, _ *sonar.RulesListOptions) (*string, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
 // Repositories returns not implemented error for the mock.
-func (m *mockRulesClient) Repositories(_ *sonar.RulesRepositoriesOptions) (*sonar.RulesRepositories, *http.Response, error) {
+func (m *mockRulesClient) Repositories(_ context.Context, _ *sonar.RulesRepositoriesOptions) (*sonar.RulesRepositories, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
 // Search returns the result of SearchFn if provided, otherwise not implemented.
-func (m *mockRulesClient) Search(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
+func (m *mockRulesClient) Search(_ context.Context, opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -71,17 +72,17 @@ func (m *mockRulesClient) Search(opt *sonar.RulesSearchOptions) (*sonar.RulesSea
 }
 
 // Show returns not implemented error for the mock.
-func (m *mockRulesClient) Show(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
+func (m *mockRulesClient) Show(_ context.Context, _ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
 // Tags returns not implemented error for the mock.
-func (m *mockRulesClient) Tags(_ *sonar.RulesTagsOptions) (*sonar.RulesTags, *http.Response, error) {
+func (m *mockRulesClient) Tags(_ context.Context, _ *sonar.RulesTagsOptions) (*sonar.RulesTags, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
 // Update calls the mock with the provided options.
-func (m *mockRulesClient) Update(opt *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
+func (m *mockRulesClient) Update(_ context.Context, opt *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
 	return nil, nil, errMockNotImplemented
 }
 
@@ -164,20 +165,20 @@ func TestGenerateQualityProfileRulesObservation(t *testing.T) {
 		"EmptyRules": {
 			qualityProfile: "test-profile",
 			rules: &sonar.RulesSearch{
-				Rules: []sonar.RuleDetails{},
+				Rules: []sonar.RulesDetails{},
 			},
 			wantCount: 0,
 		},
 		"SingleRule": {
 			qualityProfile: "test-profile",
 			rules: &sonar.RulesSearch{
-				Rules: []sonar.RuleDetails{
+				Rules: []sonar.RulesDetails{
 					{
 						Key:  "java:S1144",
 						Name: "Remove unused code",
 					},
 				},
-				Actives: map[string][]sonar.RuleActivation{
+				Actives: map[string][]sonar.RulesActivation{
 					"test-profile": {
 						{
 							QProfile: "test-profile",
@@ -191,7 +192,7 @@ func TestGenerateQualityProfileRulesObservation(t *testing.T) {
 		"MultipleRules": {
 			qualityProfile: "test-profile",
 			rules: &sonar.RulesSearch{
-				Rules: []sonar.RuleDetails{
+				Rules: []sonar.RulesDetails{
 					{Key: "java:S1144"},
 					{Key: "java:S1145"},
 					{Key: "java:S1146"},
@@ -220,7 +221,7 @@ func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 
 	tests := map[string]struct {
 		qualityProfile string
-		activeRules    *[]sonar.RuleActivation
+		activeRules    *[]sonar.RulesActivation
 		wantNil        bool
 		wantSeverity   *string
 		wantParamCount int
@@ -232,12 +233,12 @@ func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 		},
 		"EmptyActiveRules": {
 			qualityProfile: "test-profile",
-			activeRules:    &[]sonar.RuleActivation{},
+			activeRules:    &[]sonar.RulesActivation{},
 			wantNil:        true,
 		},
 		"NoMatchingProfile": {
 			qualityProfile: "test-profile",
-			activeRules: &[]sonar.RuleActivation{
+			activeRules: &[]sonar.RulesActivation{
 				{
 					QProfile: "different-profile",
 					Severity: "MAJOR",
@@ -247,11 +248,11 @@ func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 		},
 		"MatchingProfile": {
 			qualityProfile: "test-profile",
-			activeRules: &[]sonar.RuleActivation{
+			activeRules: &[]sonar.RulesActivation{
 				{
 					QProfile: "test-profile",
 					Severity: "MAJOR",
-					Params:   []sonar.ParamKV{},
+					Params:   []sonar.RulesParamKV{},
 				},
 			},
 			wantNil:        false,
@@ -260,11 +261,11 @@ func TestFindQualityProfileActiveRuleSettings(t *testing.T) {
 		},
 		"MatchingProfileWithParams": {
 			qualityProfile: "test-profile",
-			activeRules: &[]sonar.RuleActivation{
+			activeRules: &[]sonar.RulesActivation{
 				{
 					QProfile: "test-profile",
 					Severity: "CRITICAL",
-					Params: []sonar.ParamKV{
+					Params: []sonar.RulesParamKV{
 						{Key: "max", Value: "10"},
 						{Key: "min", Value: "5"},
 					},
@@ -310,14 +311,14 @@ func TestGenerateQualityProfileRuleObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		rule              sonar.RuleDetails
+		rule              sonar.RulesDetails
 		activatedSettings *ruleActiveSettings
 		wantKey           string
 		wantSeverity      string
 		wantParamCount    int
 	}{
 		"BasicRule": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:      "java:S1144",
 				Name:     "Remove unused code",
 				Severity: "INFO",
@@ -328,7 +329,7 @@ func TestGenerateQualityProfileRuleObservation(t *testing.T) {
 			wantParamCount:    0,
 		},
 		"RuleWithActivatedSettings": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:      "java:S1144",
 				Name:     "Remove unused code",
 				Severity: "INFO",
@@ -342,7 +343,7 @@ func TestGenerateQualityProfileRuleObservation(t *testing.T) {
 			wantParamCount: 1,
 		},
 		"RuleWithOnlySeverityOverride": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:      "java:S1145",
 				Severity: "MINOR",
 			},
@@ -381,7 +382,7 @@ func TestGenerateQualityProfileImpactsObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		impacts   *[]sonar.RuleImpact
+		impacts   *[]sonar.RulesImpact
 		wantCount int
 	}{
 		"NilImpacts": {
@@ -389,11 +390,11 @@ func TestGenerateQualityProfileImpactsObservation(t *testing.T) {
 			wantCount: 0,
 		},
 		"EmptyImpacts": {
-			impacts:   &[]sonar.RuleImpact{},
+			impacts:   &[]sonar.RulesImpact{},
 			wantCount: 0,
 		},
 		"SingleImpact": {
-			impacts: &[]sonar.RuleImpact{
+			impacts: &[]sonar.RulesImpact{
 				{
 					SoftwareQuality: "MAINTAINABILITY",
 					Severity:        "HIGH",
@@ -402,7 +403,7 @@ func TestGenerateQualityProfileImpactsObservation(t *testing.T) {
 			wantCount: 1,
 		},
 		"MultipleImpacts": {
-			impacts: &[]sonar.RuleImpact{
+			impacts: &[]sonar.RulesImpact{
 				{SoftwareQuality: "MAINTAINABILITY", Severity: "HIGH"},
 				{SoftwareQuality: "SECURITY", Severity: "MEDIUM"},
 				{SoftwareQuality: "RELIABILITY", Severity: "LOW"},
@@ -429,11 +430,11 @@ func TestGenerateQualityProfileRuleImpactObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		impact sonar.RuleImpact
+		impact sonar.RulesImpact
 		want   v1alpha1.QualityProfileRuleImpact
 	}{
 		"HighMaintainability": {
-			impact: sonar.RuleImpact{
+			impact: sonar.RulesImpact{
 				SoftwareQuality: "MAINTAINABILITY",
 				Severity:        "HIGH",
 			},
@@ -443,7 +444,7 @@ func TestGenerateQualityProfileRuleImpactObservation(t *testing.T) {
 			},
 		},
 		"MediumSecurity": {
-			impact: sonar.RuleImpact{
+			impact: sonar.RulesImpact{
 				SoftwareQuality: "SECURITY",
 				Severity:        "MEDIUM",
 			},
@@ -745,14 +746,14 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 			rulesClient: &mockRulesClient{
 				SearchFn: func(_ *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 					return &sonar.RulesSearch{
-						Rules: []sonar.RuleDetails{
+						Rules: []sonar.RulesDetails{
 							{Key: "java:S1000", Name: "Rule 1"},
 							{Key: "java:S1001", Name: "Rule 2"},
 						},
 						Paging: sonar.Paging{
 							Total: 2,
 						},
-						Actives: map[string][]sonar.RuleActivation{
+						Actives: map[string][]sonar.RulesActivation{
 							"java:S1000": {{QProfile: "profile-key", Severity: "MAJOR"}},
 						},
 					}, nil, nil
@@ -771,7 +772,7 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 						callCount++
 						if callCount == 1 {
 							return &sonar.RulesSearch{
-								Rules: []sonar.RuleDetails{
+								Rules: []sonar.RulesDetails{
 									{Key: "java:S1000", Name: "Rule 1"},
 									{Key: "java:S1001", Name: "Rule 2"},
 								},
@@ -782,7 +783,7 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 						}
 
 						return &sonar.RulesSearch{
-							Rules: []sonar.RuleDetails{
+							Rules: []sonar.RulesDetails{
 								{Key: "java:S1002", Name: "Rule 3"},
 							},
 							Paging: sonar.Paging{
@@ -825,7 +826,7 @@ func TestFetchAllQualityProfileRules(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := FetchAllQualityProfileRules(tc.rulesClient, tc.profileKey)
+			got, err := FetchAllQualityProfileRules(context.Background(), tc.rulesClient, tc.profileKey)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("FetchAllQualityProfileRules() error = %v, wantErr %v", err, tc.wantErr)
 
@@ -853,12 +854,12 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 	t.Parallel()
 
 	tests := map[string]struct {
-		rule              sonar.RuleDetails
+		rule              sonar.RulesDetails
 		activatedSettings *ruleActiveSettings
 		want              v1alpha1.QualityProfileRuleObservation
 	}{
 		"NilActivatedSettings": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:  "java:S1000",
 				Name: "Rule 1",
 			},
@@ -870,7 +871,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 			},
 		},
 		"ActivatedSettingsWithSeverity": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:      "java:S1000",
 				Name:     "Rule 1",
 				Severity: "MINOR",
@@ -886,7 +887,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 			},
 		},
 		"ActivatedSettingsWithParams": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:  "java:S1000",
 				Name: "Rule 1",
 			},
@@ -901,7 +902,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 			},
 		},
 		"ActivatedSettingsWithImpacts": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:  "java:S1000",
 				Name: "Rule 1",
 			},
@@ -919,7 +920,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 			},
 		},
 		"ActivatedSettingsWithPrioritized": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:  "java:S1000",
 				Name: "Rule 1",
 			},
@@ -934,7 +935,7 @@ func TestGenerateQualityProfileRuleObservationWithActivatedSettings(t *testing.T
 			},
 		},
 		"ActivatedSettingsWithAllFields": {
-			rule: sonar.RuleDetails{
+			rule: sonar.RulesDetails{
 				Key:      "java:S1000",
 				Name:     "Rule 1",
 				Severity: "MINOR",
@@ -1341,7 +1342,7 @@ func TestGenerateRuleObservation(t *testing.T) {
 		},
 		"FullRule": {
 			rule: &sonar.RulesShow{
-				Rule: sonar.RuleDetails{
+				Rule: sonar.RulesDetails{
 					Key:                        "java:S001",
 					Name:                       "Test Rule",
 					Severity:                   "MAJOR",
@@ -1372,13 +1373,13 @@ func TestGenerateRuleObservation(t *testing.T) {
 					IsTemplate:                 false,
 					IsExternal:                 false,
 					Template:                   false,
-					Impacts: []sonar.RuleImpact{
+					Impacts: []sonar.RulesImpact{
 						{SoftwareQuality: "SECURITY", Severity: "HIGH"},
 					},
-					Params: []sonar.RuleParam{
+					Params: []sonar.RulesParam{
 						{Key: "p1", DefaultValue: "dv", HTMLDesc: "html desc", Type: "STRING"},
 					},
-					DescriptionSections: []sonar.RuleDescriptionSection{
+					DescriptionSections: []sonar.RulesDescriptionSection{
 						{Content: "content", Key: "ROOT_CAUSE"},
 					},
 				},
@@ -1389,7 +1390,7 @@ func TestGenerateRuleObservation(t *testing.T) {
 		},
 		"RuleWithNonStringTags": {
 			rule: &sonar.RulesShow{
-				Rule: sonar.RuleDetails{
+				Rule: sonar.RulesDetails{
 					Key:  "java:S002",
 					Name: "Rule 2",
 					Tags: []any{"str-tag", 42, nil, "str2"},
@@ -1427,7 +1428,7 @@ func TestGenerateRuleObservationTags(t *testing.T) {
 	t.Parallel()
 
 	rule := &sonar.RulesShow{
-		Rule: sonar.RuleDetails{
+		Rule: sonar.RulesDetails{
 			Key:  "java:S001",
 			Tags: []any{"alpha", "beta"},
 		},
@@ -1449,7 +1450,7 @@ func TestGenerateRuleImpactsObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		impacts   *[]sonar.RuleImpact
+		impacts   *[]sonar.RulesImpact
 		wantCount int
 		wantMap   map[string]string
 	}{
@@ -1459,19 +1460,19 @@ func TestGenerateRuleImpactsObservation(t *testing.T) {
 			wantMap:   map[string]string{},
 		},
 		"EmptyImpacts": {
-			impacts:   &[]sonar.RuleImpact{},
+			impacts:   &[]sonar.RulesImpact{},
 			wantCount: 0,
 			wantMap:   map[string]string{},
 		},
 		"SingleImpact": {
-			impacts: &[]sonar.RuleImpact{
+			impacts: &[]sonar.RulesImpact{
 				{SoftwareQuality: "SECURITY", Severity: "HIGH"},
 			},
 			wantCount: 1,
 			wantMap:   map[string]string{"SECURITY": "HIGH"},
 		},
 		"MultipleImpacts": {
-			impacts: &[]sonar.RuleImpact{
+			impacts: &[]sonar.RulesImpact{
 				{SoftwareQuality: "SECURITY", Severity: "HIGH"},
 				{SoftwareQuality: "MAINTAINABILITY", Severity: "LOW"},
 				{SoftwareQuality: "RELIABILITY", Severity: "MEDIUM"},
@@ -1503,7 +1504,7 @@ func TestGenerateRuleParametersObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		rule      *[]sonar.RuleParam
+		rule      *[]sonar.RulesParam
 		wantCount int
 	}{
 		"NilRuleReturnsEmpty": {
@@ -1511,17 +1512,17 @@ func TestGenerateRuleParametersObservation(t *testing.T) {
 			wantCount: 0,
 		},
 		"EmptyParams": {
-			rule:      &[]sonar.RuleParam{},
+			rule:      &[]sonar.RulesParam{},
 			wantCount: 0,
 		},
 		"SingleParam": {
-			rule: &[]sonar.RuleParam{
+			rule: &[]sonar.RulesParam{
 				{Key: "p1", DefaultValue: "dv", HTMLDesc: "html", Desc: "desc", Type: "STRING"},
 			},
 			wantCount: 1,
 		},
 		"MultipleParams": {
-			rule: &[]sonar.RuleParam{
+			rule: &[]sonar.RulesParam{
 				{Key: "p1", DefaultValue: "1", Type: "INTEGER"},
 				{Key: "p2", DefaultValue: "text", Type: "STRING"},
 				{Key: "p3", DefaultValue: "true", Type: "BOOLEAN"},
@@ -1547,7 +1548,7 @@ func TestGenerateRuleParametersObservation(t *testing.T) {
 func TestGenerateRuleParametersObservationFields(t *testing.T) {
 	t.Parallel()
 
-	rule := &[]sonar.RuleParam{
+	rule := &[]sonar.RulesParam{
 		{Key: "myParam", DefaultValue: "myDefault", HTMLDesc: "myHTML", Desc: "myDesc", Type: "TEXT"},
 	}
 
@@ -1575,7 +1576,7 @@ func TestGenerateRuleDescriptionSectionsObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		sections  *[]sonar.RuleDescriptionSection
+		sections  *[]sonar.RulesDescriptionSection
 		wantCount int
 	}{
 		"NilSectionsReturnsEmpty": {
@@ -1583,17 +1584,17 @@ func TestGenerateRuleDescriptionSectionsObservation(t *testing.T) {
 			wantCount: 0,
 		},
 		"EmptySections": {
-			sections:  &[]sonar.RuleDescriptionSection{},
+			sections:  &[]sonar.RulesDescriptionSection{},
 			wantCount: 0,
 		},
 		"SingleSection": {
-			sections: &[]sonar.RuleDescriptionSection{
+			sections: &[]sonar.RulesDescriptionSection{
 				{Content: "content", Key: "ROOT_CAUSE"},
 			},
 			wantCount: 1,
 		},
 		"MultipleSections": {
-			sections: &[]sonar.RuleDescriptionSection{
+			sections: &[]sonar.RulesDescriptionSection{
 				{Content: "c1", Key: "ROOT_CAUSE"},
 				{Content: "c2", Key: "HOW_TO_FIX"},
 				{Content: "c3", Key: "ASSESS_THE_PROBLEM"},
@@ -1619,11 +1620,11 @@ func TestGenerateRuleDescriptionSectionsObservation(t *testing.T) {
 func TestGenerateRuleDescriptionSectionsObservationWithContext(t *testing.T) {
 	t.Parallel()
 
-	sections := &[]sonar.RuleDescriptionSection{
+	sections := &[]sonar.RulesDescriptionSection{
 		{
 			Content: "some content",
 			Key:     "ROOT_CAUSE",
-			Context: sonar.RuleDescriptionSectionContext{
+			Context: sonar.RulesDescriptionSectionContext{
 				DisplayName: "Spring",
 				Key:         "spring",
 			},
@@ -1650,7 +1651,7 @@ func TestGenerateRuleDescriptionContextObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		context     *sonar.RuleDescriptionSectionContext
+		context     *sonar.RulesDescriptionSectionContext
 		wantDisplay string
 		wantKey     string
 	}{
@@ -1660,7 +1661,7 @@ func TestGenerateRuleDescriptionContextObservation(t *testing.T) {
 			wantKey:     "",
 		},
 		"ValidContext": {
-			context: &sonar.RuleDescriptionSectionContext{
+			context: &sonar.RulesDescriptionSectionContext{
 				DisplayName: "Spring Boot",
 				Key:         "spring-boot",
 			},
@@ -2746,19 +2747,19 @@ func TestGenerateQualityProfileRulesObservationWithActives(t *testing.T) {
 		"RulesWithActivesForProfile": {
 			qualityProfileId: "profile-1",
 			rules: &sonar.RulesSearch{
-				Rules: []sonar.RuleDetails{
+				Rules: []sonar.RulesDetails{
 					{Key: "java:S1000", Name: "Rule 1"},
 				},
-				Actives: map[string][]sonar.RuleActivation{
+				Actives: map[string][]sonar.RulesActivation{
 					"java:S1000": {
 						{
 							QProfile:        "profile-1",
 							Severity:        "MAJOR",
 							PrioritizedRule: true,
-							Params: []sonar.ParamKV{
+							Params: []sonar.RulesParamKV{
 								{Key: "max", Value: "10"},
 							},
-							Impacts: []sonar.RuleImpact{
+							Impacts: []sonar.RulesImpact{
 								{SoftwareQuality: "SECURITY", Severity: "HIGH"},
 							},
 						},
@@ -2779,10 +2780,10 @@ func TestGenerateQualityProfileRulesObservationWithActives(t *testing.T) {
 		"RulesWithActivesForDifferentProfile": {
 			qualityProfileId: "profile-1",
 			rules: &sonar.RulesSearch{
-				Rules: []sonar.RuleDetails{
+				Rules: []sonar.RulesDetails{
 					{Key: "java:S1000", Name: "Rule 1"},
 				},
-				Actives: map[string][]sonar.RuleActivation{
+				Actives: map[string][]sonar.RulesActivation{
 					"java:S1000": {
 						{
 							QProfile: "profile-2",
@@ -2802,10 +2803,10 @@ func TestGenerateQualityProfileRulesObservationWithActives(t *testing.T) {
 		"RulesWithNoActives": {
 			qualityProfileId: "profile-1",
 			rules: &sonar.RulesSearch{
-				Rules: []sonar.RuleDetails{
+				Rules: []sonar.RulesDetails{
 					{Key: "java:S1000", Name: "Rule 1"},
 				},
-				Actives: map[string][]sonar.RuleActivation{},
+				Actives: map[string][]sonar.RulesActivation{},
 			},
 			want: []v1alpha1.QualityProfileRuleObservation{
 				{

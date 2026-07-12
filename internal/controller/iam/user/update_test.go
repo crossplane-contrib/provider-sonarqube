@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/google/go-cmp/cmp"
 
@@ -78,10 +78,10 @@ func TestUpdate(t *testing.T) {
 				return &sonar.UserV2{Id: testUserID, Login: testUserLogin, Name: "Alice Updated", Active: true}, &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil
 			}},
 			groupsClient: &sonarfake.MockGroupsClient{
-				CreateGroupMembershipFn: func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error) {
+				CreateGroupMembershipFn: func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error) {
 					createdMemberships = append(createdMemberships, opt.GroupId)
 
-					return &sonar.GroupMembership{Id: "membership-ops", GroupId: "ops", UserId: testUserID}, &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(""))}, nil
+					return &sonar.AuthorizationsGroupMembership{Id: "membership-ops", GroupId: "ops", UserId: testUserID}, &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(""))}, nil
 				},
 
 				DeleteGroupMembershipFn: func(membershipID string) (*http.Response, error) {
@@ -153,7 +153,7 @@ func TestUpdateAggregatesFieldAndGroupErrors(t *testing.T) {
 		usersClient: &sonarfake.MockUsersClient{UpdateFn: func(_ string, _ *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error) {
 			return nil, &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader(""))}, errors.New("update failed")
 		}},
-		groupsClient: &sonarfake.MockGroupsClient{CreateGroupMembershipFn: func(_ *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error) {
+		groupsClient: &sonarfake.MockGroupsClient{CreateGroupMembershipFn: func(_ *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error) {
 			return nil, &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader(""))}, errors.New("group update failed")
 		}},
 	}).Update(context.Background(), user)

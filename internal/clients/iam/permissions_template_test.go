@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
@@ -663,7 +663,7 @@ func TestUpdatePermissionsTemplateObservation(t *testing.T) {
 		ProjectKeyPattern: projectKeyPattern,
 		CreatedAt:         createdAt,
 		UpdatedAt:         updatedAt,
-		Permissions: []sonar.TemplatePermission{
+		Permissions: []sonar.PermissionsTemplatePermission{
 			{Key: "scan", WithProjectCreator: true},
 			{Key: "admin", WithProjectCreator: false},
 			{Key: "issueadmin", WithProjectCreator: true},
@@ -693,7 +693,7 @@ func TestGeneratePermissionsTemplateObservations(t *testing.T) {
 	t.Run("GroupObservations", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsTemplateGroupObservations(&[]sonar.TemplateGroup{{Name: "devs", Permissions: []string{"scan"}}, {Name: "qa", Permissions: []string{}}})
+		got := GeneratePermissionsTemplateGroupObservations(&[]sonar.PermissionsTemplateGroup{{Name: "devs", Permissions: []string{"scan"}}, {Name: "qa", Permissions: []string{}}})
 
 		want := []v1alpha1.PermissionsTemplateGroupObservation{{Name: "devs", Permissions: []string{"scan"}}, {Name: "qa", Permissions: []string{}}}
 		if diff := cmp.Diff(want, got); diff != "" {
@@ -708,7 +708,7 @@ func TestGeneratePermissionsTemplateObservations(t *testing.T) {
 	t.Run("UserObservations", func(t *testing.T) {
 		t.Parallel()
 
-		got := GeneratePermissionsTemplateUserObservations(&[]sonar.TemplateUser{{Login: "alice", Permissions: []string{"scan"}}, {Login: "bob", Permissions: []string{}}})
+		got := GeneratePermissionsTemplateUserObservations(&[]sonar.PermissionsTemplateUser{{Login: "alice", Permissions: []string{"scan"}}, {Login: "bob", Permissions: []string{}}})
 
 		want := []v1alpha1.PermissionsTemplateUserObservation{{Login: "alice", Permissions: []string{"scan"}}, {Login: "bob", Permissions: []string{}}}
 		if diff := cmp.Diff(want, got); diff != "" {
@@ -723,12 +723,12 @@ func TestGeneratePermissionsTemplateObservations(t *testing.T) {
 	t.Run("SingleObservations", func(t *testing.T) {
 		t.Parallel()
 
-		group := GeneratePermissionsTemplateGroupObservation(&sonar.TemplateGroup{Name: "devs", Permissions: []string{"scan"}})
+		group := GeneratePermissionsTemplateGroupObservation(&sonar.PermissionsTemplateGroup{Name: "devs", Permissions: []string{"scan"}})
 		if diff := cmp.Diff(&v1alpha1.PermissionsTemplateGroupObservation{Name: "devs", Permissions: []string{"scan"}}, group); diff != "" {
 			t.Fatalf("GeneratePermissionsTemplateGroupObservation() mismatch (-want +got):\n%s", diff)
 		}
 
-		user := GeneratePermissionsTemplateUserObservation(&sonar.TemplateUser{Login: "alice", Permissions: []string{"scan"}})
+		user := GeneratePermissionsTemplateUserObservation(&sonar.PermissionsTemplateUser{Login: "alice", Permissions: []string{"scan"}})
 		if diff := cmp.Diff(&v1alpha1.PermissionsTemplateUserObservation{Login: "alice", Permissions: []string{"scan"}}, user); diff != "" {
 			t.Fatalf("GeneratePermissionsTemplateUserObservation() mismatch (-want +got):\n%s", diff)
 		}

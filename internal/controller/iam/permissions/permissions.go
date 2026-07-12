@@ -188,7 +188,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	permissions.SetConditions(xpv1.Creating())
 
-	err := c.applyPermissions(permissions.Spec.ForProvider, permissions.Spec.ForProvider.Permissions, nil)
+	err := c.applyPermissions(ctx, permissions.Spec.ForProvider, permissions.Spec.ForProvider.Permissions, nil)
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreatePermissions)
 	}
@@ -212,7 +212,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	err := c.applyPermissions(permissions.Spec.ForProvider, nil, permissions.Status.AtProvider.Permissions)
+	err := c.applyPermissions(ctx, permissions.Spec.ForProvider, nil, permissions.Status.AtProvider.Permissions)
 	if err != nil {
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeletePermissions)
 	}

@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -61,7 +62,7 @@ type MockPortfoliosClient struct {
 var _ instance.PortfoliosClient = &MockPortfoliosClient{}
 
 // AddApplication implements PortfoliosClient.AddApplication.
-func (m *MockPortfoliosClient) AddApplication(opt *sonar.ViewsAddApplicationOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) AddApplication(_ context.Context, opt *sonar.ViewsAddApplicationOptions) (*http.Response, error) {
 	if m.AddApplicationFn != nil {
 		return m.AddApplicationFn(opt)
 	}
@@ -70,7 +71,7 @@ func (m *MockPortfoliosClient) AddApplication(opt *sonar.ViewsAddApplicationOpti
 }
 
 // AddApplicationBranch implements PortfoliosClient.AddApplicationBranch.
-func (m *MockPortfoliosClient) AddApplicationBranch(opt *sonar.ViewsAddApplicationBranchOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) AddApplicationBranch(_ context.Context, opt *sonar.ViewsAddApplicationBranchOptions) (*http.Response, error) {
 	if m.AddApplicationBranchFn != nil {
 		return m.AddApplicationBranchFn(opt)
 	}
@@ -79,7 +80,7 @@ func (m *MockPortfoliosClient) AddApplicationBranch(opt *sonar.ViewsAddApplicati
 }
 
 // AddPortfolio implements PortfoliosClient.AddPortfolio.
-func (m *MockPortfoliosClient) AddPortfolio(opt *sonar.ViewsAddPortfolioOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) AddPortfolio(_ context.Context, opt *sonar.ViewsAddPortfolioOptions) (*http.Response, error) {
 	if m.AddPortfolioFn != nil {
 		return m.AddPortfolioFn(opt)
 	}
@@ -88,7 +89,7 @@ func (m *MockPortfoliosClient) AddPortfolio(opt *sonar.ViewsAddPortfolioOptions)
 }
 
 // AddProject implements PortfoliosClient.AddProject.
-func (m *MockPortfoliosClient) AddProject(opt *sonar.ViewsAddProjectOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) AddProject(_ context.Context, opt *sonar.ViewsAddProjectOptions) (*http.Response, error) {
 	if m.AddProjectFn != nil {
 		return m.AddProjectFn(opt)
 	}
@@ -97,7 +98,7 @@ func (m *MockPortfoliosClient) AddProject(opt *sonar.ViewsAddProjectOptions) (*h
 }
 
 // AddProjectBranch implements PortfoliosClient.AddProjectBranch.
-func (m *MockPortfoliosClient) AddProjectBranch(opt *sonar.ViewsAddProjectBranchOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) AddProjectBranch(_ context.Context, opt *sonar.ViewsAddProjectBranchOptions) (*http.Response, error) {
 	if m.AddProjectBranchFn != nil {
 		return m.AddProjectBranchFn(opt)
 	}
@@ -106,7 +107,7 @@ func (m *MockPortfoliosClient) AddProjectBranch(opt *sonar.ViewsAddProjectBranch
 }
 
 // Applications implements PortfoliosClient.Applications.
-func (m *MockPortfoliosClient) Applications(opt *sonar.ViewsApplicationsOptions) (*sonar.ViewsApplications, *http.Response, error) {
+func (m *MockPortfoliosClient) Applications(_ context.Context, opt *sonar.ViewsApplicationsOptions) (*sonar.ViewsApplications, *http.Response, error) {
 	if m.ApplicationsFn != nil {
 		return m.ApplicationsFn(opt)
 	}
@@ -115,7 +116,7 @@ func (m *MockPortfoliosClient) Applications(opt *sonar.ViewsApplicationsOptions)
 }
 
 // Create implements PortfoliosClient.Create.
-func (m *MockPortfoliosClient) Create(opt *sonar.ViewsCreateOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) Create(_ context.Context, opt *sonar.ViewsCreateOptions) (*http.Response, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -124,7 +125,7 @@ func (m *MockPortfoliosClient) Create(opt *sonar.ViewsCreateOptions) (*http.Resp
 }
 
 // Delete implements PortfoliosClient.Delete.
-func (m *MockPortfoliosClient) Delete(opt *sonar.ViewsDeleteOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) Delete(_ context.Context, opt *sonar.ViewsDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -133,7 +134,7 @@ func (m *MockPortfoliosClient) Delete(opt *sonar.ViewsDeleteOptions) (*http.Resp
 }
 
 // List implements PortfoliosClient.List.
-func (m *MockPortfoliosClient) List() (*sonar.ViewsList, *http.Response, error) {
+func (m *MockPortfoliosClient) List(_ context.Context) (*sonar.ViewsList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn()
 	}
@@ -142,7 +143,7 @@ func (m *MockPortfoliosClient) List() (*sonar.ViewsList, *http.Response, error) 
 }
 
 // Move implements PortfoliosClient.Move.
-func (m *MockPortfoliosClient) Move(opt *sonar.ViewsMoveOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) Move(_ context.Context, opt *sonar.ViewsMoveOptions) (*http.Response, error) {
 	if m.MoveFn != nil {
 		return m.MoveFn(opt)
 	}
@@ -151,7 +152,7 @@ func (m *MockPortfoliosClient) Move(opt *sonar.ViewsMoveOptions) (*http.Response
 }
 
 // MoveOptions implements PortfoliosClient.MoveOptions.
-func (m *MockPortfoliosClient) MoveOptions(opt *sonar.ViewsMoveOptionsOptions) (*sonar.ViewsMoveDestinations, *http.Response, error) {
+func (m *MockPortfoliosClient) MoveOptions(_ context.Context, opt *sonar.ViewsMoveOptionsOptions) (*sonar.ViewsMoveDestinations, *http.Response, error) {
 	if m.MoveOptionsFn != nil {
 		return m.MoveOptionsFn(opt)
 	}
@@ -160,7 +161,7 @@ func (m *MockPortfoliosClient) MoveOptions(opt *sonar.ViewsMoveOptionsOptions) (
 }
 
 // Projects implements PortfoliosClient.Projects.
-func (m *MockPortfoliosClient) Projects(opt *sonar.ViewsProjectsOptions) (*sonar.ViewsProjects, *http.Response, error) {
+func (m *MockPortfoliosClient) Projects(_ context.Context, opt *sonar.ViewsProjectsOptions) (*sonar.ViewsProjects, *http.Response, error) {
 	if m.ProjectsFn != nil {
 		return m.ProjectsFn(opt)
 	}
@@ -169,7 +170,7 @@ func (m *MockPortfoliosClient) Projects(opt *sonar.ViewsProjectsOptions) (*sonar
 }
 
 // ProjectsStatus implements PortfoliosClient.ProjectsStatus.
-func (m *MockPortfoliosClient) ProjectsStatus(opt *sonar.ViewsProjectsStatusOptions) (*sonar.ViewsProjectsStatus, *http.Response, error) {
+func (m *MockPortfoliosClient) ProjectsStatus(_ context.Context, opt *sonar.ViewsProjectsStatusOptions) (*sonar.ViewsProjectsStatus, *http.Response, error) {
 	if m.ProjectsStatusFn != nil {
 		return m.ProjectsStatusFn(opt)
 	}
@@ -178,7 +179,7 @@ func (m *MockPortfoliosClient) ProjectsStatus(opt *sonar.ViewsProjectsStatusOpti
 }
 
 // Refresh implements PortfoliosClient.Refresh.
-func (m *MockPortfoliosClient) Refresh(opt *sonar.ViewsRefreshOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) Refresh(_ context.Context, opt *sonar.ViewsRefreshOptions) (*http.Response, error) {
 	if m.RefreshFn != nil {
 		return m.RefreshFn(opt)
 	}
@@ -187,7 +188,7 @@ func (m *MockPortfoliosClient) Refresh(opt *sonar.ViewsRefreshOptions) (*http.Re
 }
 
 // RemoveApplication implements PortfoliosClient.RemoveApplication.
-func (m *MockPortfoliosClient) RemoveApplication(opt *sonar.ViewsRemoveApplicationOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) RemoveApplication(_ context.Context, opt *sonar.ViewsRemoveApplicationOptions) (*http.Response, error) {
 	if m.RemoveApplicationFn != nil {
 		return m.RemoveApplicationFn(opt)
 	}
@@ -196,7 +197,7 @@ func (m *MockPortfoliosClient) RemoveApplication(opt *sonar.ViewsRemoveApplicati
 }
 
 // RemoveApplicationBranch implements PortfoliosClient.RemoveApplicationBranch.
-func (m *MockPortfoliosClient) RemoveApplicationBranch(opt *sonar.ViewsRemoveApplicationBranchOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) RemoveApplicationBranch(_ context.Context, opt *sonar.ViewsRemoveApplicationBranchOptions) (*http.Response, error) {
 	if m.RemoveApplicationBranchFn != nil {
 		return m.RemoveApplicationBranchFn(opt)
 	}
@@ -205,7 +206,7 @@ func (m *MockPortfoliosClient) RemoveApplicationBranch(opt *sonar.ViewsRemoveApp
 }
 
 // RemovePortfolio implements PortfoliosClient.RemovePortfolio.
-func (m *MockPortfoliosClient) RemovePortfolio(opt *sonar.ViewsRemovePortfolioOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) RemovePortfolio(_ context.Context, opt *sonar.ViewsRemovePortfolioOptions) (*http.Response, error) {
 	if m.RemovePortfolioFn != nil {
 		return m.RemovePortfolioFn(opt)
 	}
@@ -214,7 +215,7 @@ func (m *MockPortfoliosClient) RemovePortfolio(opt *sonar.ViewsRemovePortfolioOp
 }
 
 // RemoveProject implements PortfoliosClient.RemoveProject.
-func (m *MockPortfoliosClient) RemoveProject(opt *sonar.ViewsRemoveProjectOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) RemoveProject(_ context.Context, opt *sonar.ViewsRemoveProjectOptions) (*http.Response, error) {
 	if m.RemoveProjectFn != nil {
 		return m.RemoveProjectFn(opt)
 	}
@@ -223,7 +224,7 @@ func (m *MockPortfoliosClient) RemoveProject(opt *sonar.ViewsRemoveProjectOption
 }
 
 // RemoveProjectBranch implements PortfoliosClient.RemoveProjectBranch.
-func (m *MockPortfoliosClient) RemoveProjectBranch(opt *sonar.ViewsRemoveProjectBranchOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) RemoveProjectBranch(_ context.Context, opt *sonar.ViewsRemoveProjectBranchOptions) (*http.Response, error) {
 	if m.RemoveProjectBranchFn != nil {
 		return m.RemoveProjectBranchFn(opt)
 	}
@@ -232,7 +233,7 @@ func (m *MockPortfoliosClient) RemoveProjectBranch(opt *sonar.ViewsRemoveProject
 }
 
 // Search implements PortfoliosClient.Search.
-func (m *MockPortfoliosClient) Search(opt *sonar.ViewsSearchOptions) (*sonar.ViewsSearch, *http.Response, error) {
+func (m *MockPortfoliosClient) Search(_ context.Context, opt *sonar.ViewsSearchOptions) (*sonar.ViewsSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -241,7 +242,7 @@ func (m *MockPortfoliosClient) Search(opt *sonar.ViewsSearchOptions) (*sonar.Vie
 }
 
 // SetManualMode implements PortfoliosClient.SetManualMode.
-func (m *MockPortfoliosClient) SetManualMode(opt *sonar.ViewsSetManualModeOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) SetManualMode(_ context.Context, opt *sonar.ViewsSetManualModeOptions) (*http.Response, error) {
 	if m.SetManualModeFn != nil {
 		return m.SetManualModeFn(opt)
 	}
@@ -250,7 +251,7 @@ func (m *MockPortfoliosClient) SetManualMode(opt *sonar.ViewsSetManualModeOption
 }
 
 // SetNoneMode implements PortfoliosClient.SetNoneMode.
-func (m *MockPortfoliosClient) SetNoneMode(opt *sonar.ViewsSetNoneModeOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) SetNoneMode(_ context.Context, opt *sonar.ViewsSetNoneModeOptions) (*http.Response, error) {
 	if m.SetNoneModeFn != nil {
 		return m.SetNoneModeFn(opt)
 	}
@@ -259,7 +260,7 @@ func (m *MockPortfoliosClient) SetNoneMode(opt *sonar.ViewsSetNoneModeOptions) (
 }
 
 // SetRegexpMode implements PortfoliosClient.SetRegexpMode.
-func (m *MockPortfoliosClient) SetRegexpMode(opt *sonar.ViewsSetRegexpModeOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) SetRegexpMode(_ context.Context, opt *sonar.ViewsSetRegexpModeOptions) (*http.Response, error) {
 	if m.SetRegexpModeFn != nil {
 		return m.SetRegexpModeFn(opt)
 	}
@@ -269,7 +270,7 @@ func (m *MockPortfoliosClient) SetRegexpMode(opt *sonar.ViewsSetRegexpModeOption
 
 // SetRemainingProjectsMode implements
 // PortfoliosClient.SetRemainingProjectsMode.
-func (m *MockPortfoliosClient) SetRemainingProjectsMode(opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) SetRemainingProjectsMode(_ context.Context, opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error) {
 	if m.SetRemainingProjectsModeFn != nil {
 		return m.SetRemainingProjectsModeFn(opt)
 	}
@@ -278,7 +279,7 @@ func (m *MockPortfoliosClient) SetRemainingProjectsMode(opt *sonar.ViewsSetRemai
 }
 
 // SetTagsMode implements PortfoliosClient.SetTagsMode.
-func (m *MockPortfoliosClient) SetTagsMode(opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) SetTagsMode(_ context.Context, opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error) {
 	if m.SetTagsModeFn != nil {
 		return m.SetTagsModeFn(opt)
 	}
@@ -287,7 +288,7 @@ func (m *MockPortfoliosClient) SetTagsMode(opt *sonar.ViewsSetTagsModeOptions) (
 }
 
 // Show implements PortfoliosClient.Show.
-func (m *MockPortfoliosClient) Show(opt *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error) {
+func (m *MockPortfoliosClient) Show(_ context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error) {
 	if m.ShowFn != nil {
 		return m.ShowFn(opt)
 	}
@@ -296,7 +297,7 @@ func (m *MockPortfoliosClient) Show(opt *sonar.ViewsShowOptions) (*sonar.ViewsSh
 }
 
 // SubPortfolios implements PortfoliosClient.SubPortfolios.
-func (m *MockPortfoliosClient) SubPortfolios(opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error) {
+func (m *MockPortfoliosClient) SubPortfolios(_ context.Context, opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error) {
 	if m.SubPortfoliosFn != nil {
 		return m.SubPortfoliosFn(opt)
 	}
@@ -305,7 +306,7 @@ func (m *MockPortfoliosClient) SubPortfolios(opt *sonar.ViewsSubViewsOptions) (*
 }
 
 // Update implements PortfoliosClient.Update.
-func (m *MockPortfoliosClient) Update(opt *sonar.ViewsUpdateOptions) (*http.Response, error) {
+func (m *MockPortfoliosClient) Update(_ context.Context, opt *sonar.ViewsUpdateOptions) (*http.Response, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(opt)
 	}

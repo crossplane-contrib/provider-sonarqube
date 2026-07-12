@@ -17,9 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 )
@@ -29,8 +30,8 @@ import (
 // It handles all the operations related to ALM integrations in SonarQube,
 // such as creating, updating, deleting, and retrieving them.
 type ALMIntegrationsClient interface {
-	CheckPat(opt *sonar.AlmIntegrationsCheckPatOptions) (v *sonar.AlmIntegrationsCheckPat, resp *http.Response, err error)
-	SetPat(opt *sonar.AlmIntegrationsSetPatOptions) (resp *http.Response, err error)
+	CheckPat(ctx context.Context, opt *sonar.AlmIntegrationsCheckPatOptions) (v *sonar.AlmIntegrationsCheckPat, resp *http.Response, err error)
+	SetPat(ctx context.Context, opt *sonar.AlmIntegrationsSetPatOptions) (resp *http.Response, err error)
 }
 
 // ALMSettingsClient is the interface for interacting with
@@ -38,12 +39,12 @@ type ALMIntegrationsClient interface {
 // It handles all the operations related to ALM settings in SonarQube,
 // such as creating, updating, deleting, and retrieving them.
 type ALMSettingsClient interface {
-	CountBinding(opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error)
-	Delete(opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error)
-	GetBinding(opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error)
-	List(opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error)
-	ListDefinitions() (*sonar.AlmSettingsListDefinitions, *http.Response, error)
-	Validate(opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error)
+	CountBinding(ctx context.Context, opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error)
+	Delete(ctx context.Context, opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error)
+	GetBinding(ctx context.Context, opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error)
+	List(ctx context.Context, opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error)
+	ListDefinitions(ctx context.Context) (*sonar.AlmSettingsListDefinitions, *http.Response, error)
+	Validate(ctx context.Context, opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error)
 }
 
 // IsALMUpToDate checks if the ALM spec is up to date with the

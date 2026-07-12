@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -174,7 +174,7 @@ func TestObserve(t *testing.T) {
 		},
 		"FetchNotFoundReturnsNotExists": {
 			client: &fake.MockGroupsClient{
-				FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
+				GetGroupFn: func(_ string) (*sonar.AuthorizationsGroup, *http.Response, error) {
 					return nil, mockHTTPResponse(http.StatusNotFound), errors.New("not found")
 				},
 			},
@@ -186,7 +186,7 @@ func TestObserve(t *testing.T) {
 		},
 		"FetchErrorReturnsWrappedError": {
 			client: &fake.MockGroupsClient{
-				FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
+				GetGroupFn: func(_ string) (*sonar.AuthorizationsGroup, *http.Response, error) {
 					return nil, mockHTTPResponse(http.StatusInternalServerError), errors.New("api error")
 				},
 			},
@@ -198,8 +198,8 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveUpToDate": {
 			client: &fake.MockGroupsClient{
-				FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
-					return &sonar.Group{Id: "group-1", Name: "devs", Description: "engineering"}, mockHTTPResponse(http.StatusOK), nil
+				GetGroupFn: func(_ string) (*sonar.AuthorizationsGroup, *http.Response, error) {
+					return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs", Description: "engineering"}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{
@@ -213,8 +213,8 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveLateInitialization": {
 			client: &fake.MockGroupsClient{
-				FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
-					return &sonar.Group{Id: "group-1", Name: "devs", Description: "engineering"}, mockHTTPResponse(http.StatusOK), nil
+				GetGroupFn: func(_ string) (*sonar.AuthorizationsGroup, *http.Response, error) {
+					return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs", Description: "engineering"}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{
@@ -225,8 +225,8 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveNotUpToDate": {
 			client: &fake.MockGroupsClient{
-				FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
-					return &sonar.Group{Id: "group-1", Name: "admins", Description: "engineering"}, mockHTTPResponse(http.StatusOK), nil
+				GetGroupFn: func(_ string) (*sonar.AuthorizationsGroup, *http.Response, error) {
+					return &sonar.AuthorizationsGroup{Id: "group-1", Name: "admins", Description: "engineering"}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{
@@ -237,8 +237,8 @@ func TestObserve(t *testing.T) {
 		},
 		"SuccessfulObserveEmptyFieldsDoNotLateInitialize": {
 			client: &fake.MockGroupsClient{
-				FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
-					return &sonar.Group{Id: "group-1", Name: "devs", Description: ""}, mockHTTPResponse(http.StatusOK), nil
+				GetGroupFn: func(_ string) (*sonar.AuthorizationsGroup, *http.Response, error) {
+					return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs", Description: ""}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{
@@ -273,8 +273,8 @@ func TestObserve(t *testing.T) {
 
 		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs"})
 		e := &external{groupClient: &fake.MockGroupsClient{
-			FetchGroupFn: func(_ string) (*sonar.Group, *http.Response, error) {
-				return &sonar.Group{Id: "group-1", Name: "devs", Description: "engineering", Managed: true, Default: false}, mockHTTPResponse(http.StatusOK), nil
+			GetGroupFn: func(_ string) (*sonar.AuthorizationsGroup, *http.Response, error) {
+				return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs", Description: "engineering", Managed: true, Default: false}, mockHTTPResponse(http.StatusOK), nil
 			},
 		}, permissionsClient: &fake.MockPermissionsClient{}}
 
@@ -320,7 +320,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateFails": {
 			client: &fake.MockGroupsClient{
-				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error) {
+				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
 					return nil, nil, errors.New("create error")
 				},
 			},
@@ -332,7 +332,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateReturnsNilGroup": {
 			client: &fake.MockGroupsClient{
-				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error) {
+				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
 					return nil, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
@@ -344,8 +344,8 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateReturnsEmptyID": {
 			client: &fake.MockGroupsClient{
-				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error) {
-					return &sonar.Group{Id: "", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
+					return &sonar.AuthorizationsGroup{Id: "", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{
@@ -356,8 +356,8 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreate": {
 			client: &fake.MockGroupsClient{
-				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error) {
-					return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusCreated), nil
+				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
+					return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusCreated), nil
 				},
 			},
 			args: args{
@@ -402,14 +402,14 @@ func TestCreate(t *testing.T) {
 
 		called := false
 		e := &external{groupClient: &fake.MockGroupsClient{
-			CreateGroupFn: func(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error) {
+			CreateGroupFn: func(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
 				called = true
 
 				if opt == nil || opt.Name != "devs" || opt.Description != desc {
 					t.Fatalf("Create() unexpected options: %+v", opt)
 				}
 
-				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusCreated), nil
+				return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusCreated), nil
 			},
 		}, permissionsClient: &fake.MockPermissionsClient{}}
 
@@ -457,7 +457,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 		},
 		"UpdateFails": {
 			client: &fake.MockGroupsClient{
-				UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
+				UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
 					return nil, nil, errors.New("update error")
 				},
 			},
@@ -466,8 +466,8 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 		},
 		"SuccessfulUpdate": {
 			client: &fake.MockGroupsClient{
-				UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
-					return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+				UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
+					return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{ctx: context.Background(), mg: newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs"})},
@@ -501,7 +501,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 		group := newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs", Description: &desc})
 
 		e := &external{groupClient: &fake.MockGroupsClient{
-			UpdateGroupFn: func(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
+			UpdateGroupFn: func(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
 				if groupID != "group-1" {
 					t.Fatalf("Update() groupID = %q, want %q", groupID, "group-1")
 				}
@@ -510,7 +510,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 					t.Fatalf("Update() unexpected options: %+v", opt)
 				}
 
-				return &sonar.Group{Id: "group-1"}, mockHTTPResponse(http.StatusOK), nil
+				return &sonar.AuthorizationsGroup{Id: "group-1"}, mockHTTPResponse(http.StatusOK), nil
 			},
 		}, permissionsClient: &fake.MockPermissionsClient{}}
 
@@ -531,8 +531,8 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 		removed := false
 
 		e := &external{
-			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
-				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
+				return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			permissionsClient: &fake.MockPermissionsClient{
 				AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
@@ -578,8 +578,8 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 		group.Status.AtProvider.Permissions = []string{"admin"}
 
 		e := &external{
-			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
-				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
+				return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			permissionsClient: &fake.MockPermissionsClient{
 				AddGroupFn: func(_ *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
@@ -607,8 +607,8 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 		group.Status.AtProvider.Permissions = []string{adminPerm, scanPerm}
 
 		e := &external{
-			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
-				return &sonar.Group{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
+			groupClient: &fake.MockGroupsClient{UpdateGroupFn: func(_ string, _ *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
+				return &sonar.AuthorizationsGroup{Id: "group-1", Name: "devs"}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			permissionsClient: &fake.MockPermissionsClient{
 				RemoveGroupFn: func(_ *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
@@ -1056,7 +1056,7 @@ func TestGetGroupPermissions(t *testing.T) {
 			client: &fake.MockPermissionsClient{GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"admin", "scan"}}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 500},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 500},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName:       "devs",
@@ -1066,7 +1066,7 @@ func TestGetGroupPermissions(t *testing.T) {
 			client: &fake.MockPermissionsClient{GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "other", Permissions: []string{"admin"}}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 500},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 500},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName:       "devs",
@@ -1084,13 +1084,13 @@ func TestGetGroupPermissions(t *testing.T) {
 				if opt.Page == 1 {
 					return &sonar.PermissionsGroups{
 						Groups: []sonar.PermissionGroup{{Name: "other", Permissions: []string{"scan"}}},
-						Paging: sonar.PermissionsPaging{Total: 600, PageIndex: 1, PageSize: 500},
+						Paging: sonar.Paging{Total: 600, PageIndex: 1, PageSize: 500},
 					}, mockHTTPResponse(http.StatusOK), nil
 				}
 
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"provisioning"}}},
-					Paging: sonar.PermissionsPaging{Total: 600, PageIndex: 2, PageSize: 500},
+					Paging: sonar.Paging{Total: 600, PageIndex: 2, PageSize: 500},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName:       "devs",
@@ -1102,7 +1102,7 @@ func TestGetGroupPermissions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := getGroupPermissions(tc.client, tc.groupName)
+			got, err := getGroupPermissions(context.Background(), tc.client, tc.groupName)
 			if tc.wantErrSubstr != "" {
 				if err == nil {
 					t.Fatalf("getGroupPermissions() expected error containing %q, got nil", tc.wantErrSubstr)
@@ -1214,7 +1214,7 @@ func TestAddGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-driv
 			errChan := make(chan error, len(tc.permissions))
 			e := &external{groupClient: &fake.MockGroupsClient{}, permissionsClient: client}
 
-			e.addGroupPermissions("devs", tc.permissions, errChan)
+			e.addGroupPermissions(context.Background(), "devs", tc.permissions, errChan)
 			close(errChan)
 
 			var errs []error
@@ -1340,7 +1340,7 @@ func TestRemoveGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-d
 			errChan := make(chan error, len(tc.permissions))
 			e := &external{groupClient: &fake.MockGroupsClient{}, permissionsClient: client}
 
-			e.removeGroupPermissions("devs", tc.permissions, errChan)
+			e.removeGroupPermissions(context.Background(), "devs", tc.permissions, errChan)
 			close(errChan)
 
 			var errs []error

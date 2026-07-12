@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
@@ -29,8 +30,8 @@ import (
 // It handles all the operations related to Project Tags in SonarQube,
 // such as searching and setting project tags.
 type ProjectTagsClient interface {
-	Search(opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error)
-	Set(opt *sonar.ProjectTagsSetOptions) (*http.Response, error)
+	Search(ctx context.Context, opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error)
+	Set(ctx context.Context, opt *sonar.ProjectTagsSetOptions) (*http.Response, error)
 }
 
 // NewProjectTagsClient creates a new ProjectTagsClient with the provided

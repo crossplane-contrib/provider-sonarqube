@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -143,7 +143,7 @@ func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksC
 	branchesClient := &fake.MockProjectBranchesClient{
 		ListFn: func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 			return &sonar.ProjectBranchesList{
-				Branches: []sonar.Branch{
+				Branches: []sonar.ProjectBranch{
 					{Name: "main", IsMain: true, Type: "LONG"},
 				},
 			}, mockHTTPResponse(), nil
@@ -951,7 +951,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		"UpdateQualityGateFails": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg := defaultMockClients()
-				q.SelectFn = func(opt *sonar.QualitygatesSelectOptions) (*http.Response, error) {
+				q.AssignFn = func(opt *sonar.QualitygatesAssignOptions) (*http.Response, error) {
 					return nil, errors.New("qg error")
 				}
 

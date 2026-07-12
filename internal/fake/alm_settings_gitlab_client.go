@@ -18,9 +18,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 )
@@ -42,7 +43,7 @@ type MockALMSettingsGitLabClient struct {
 var _ integration.ALMSettingsGitLabClient = &MockALMSettingsGitLabClient{}
 
 // CountBinding implements ALMSettingsClient.CountBinding.
-func (m *MockALMSettingsGitLabClient) CountBinding(opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error) {
+func (m *MockALMSettingsGitLabClient) CountBinding(_ context.Context, opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error) {
 	if m.CountBindingFn != nil {
 		return m.CountBindingFn(opt)
 	}
@@ -51,7 +52,7 @@ func (m *MockALMSettingsGitLabClient) CountBinding(opt *sonar.AlmSettingsCountBi
 }
 
 // Delete implements ALMSettingsClient.Delete.
-func (m *MockALMSettingsGitLabClient) Delete(opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error) {
+func (m *MockALMSettingsGitLabClient) Delete(_ context.Context, opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -60,7 +61,7 @@ func (m *MockALMSettingsGitLabClient) Delete(opt *sonar.AlmSettingsDeleteOptions
 }
 
 // GetBinding implements ALMSettingsClient.GetBinding.
-func (m *MockALMSettingsGitLabClient) GetBinding(opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
+func (m *MockALMSettingsGitLabClient) GetBinding(_ context.Context, opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
 	if m.GetBindingFn != nil {
 		return m.GetBindingFn(opt)
 	}
@@ -69,7 +70,7 @@ func (m *MockALMSettingsGitLabClient) GetBinding(opt *sonar.AlmSettingsGetBindin
 }
 
 // List implements ALMSettingsClient.List.
-func (m *MockALMSettingsGitLabClient) List(opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error) {
+func (m *MockALMSettingsGitLabClient) List(_ context.Context, opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn(opt)
 	}
@@ -78,7 +79,7 @@ func (m *MockALMSettingsGitLabClient) List(opt *sonar.AlmSettingsListOptions) (*
 }
 
 // ListDefinitions implements ALMSettingsClient.ListDefinitions.
-func (m *MockALMSettingsGitLabClient) ListDefinitions() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
+func (m *MockALMSettingsGitLabClient) ListDefinitions(_ context.Context) (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 	if m.ListDefinitionsFn != nil {
 		return m.ListDefinitionsFn()
 	}
@@ -87,7 +88,7 @@ func (m *MockALMSettingsGitLabClient) ListDefinitions() (*sonar.AlmSettingsListD
 }
 
 // Validate implements ALMSettingsClient.Validate.
-func (m *MockALMSettingsGitLabClient) Validate(opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error) {
+func (m *MockALMSettingsGitLabClient) Validate(_ context.Context, opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error) {
 	if m.ValidateFn != nil {
 		return m.ValidateFn(opt)
 	}
@@ -96,7 +97,7 @@ func (m *MockALMSettingsGitLabClient) Validate(opt *sonar.AlmSettingsValidateOpt
 }
 
 // CreateGitlab implements ALMSettingsGitLabClient.CreateGitlab.
-func (m *MockALMSettingsGitLabClient) CreateGitlab(opt *sonar.AlmSettingsCreateGitlabOptions) (*http.Response, error) {
+func (m *MockALMSettingsGitLabClient) CreateGitlab(_ context.Context, opt *sonar.AlmSettingsCreateGitlabOptions) (*http.Response, error) {
 	if m.CreateGitlabFn != nil {
 		return m.CreateGitlabFn(opt)
 	}
@@ -105,7 +106,7 @@ func (m *MockALMSettingsGitLabClient) CreateGitlab(opt *sonar.AlmSettingsCreateG
 }
 
 // UpdateGitlab implements ALMSettingsGitLabClient.UpdateGitlab.
-func (m *MockALMSettingsGitLabClient) UpdateGitlab(opt *sonar.AlmSettingsUpdateGitlabOptions) (*http.Response, error) {
+func (m *MockALMSettingsGitLabClient) UpdateGitlab(_ context.Context, opt *sonar.AlmSettingsUpdateGitlabOptions) (*http.Response, error) {
 	if m.UpdateGitlabFn != nil {
 		return m.UpdateGitlabFn(opt)
 	}

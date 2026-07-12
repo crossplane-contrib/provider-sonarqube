@@ -25,7 +25,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
@@ -193,7 +193,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	projectKey := ptr.Deref(webhookCR.Spec.ForProvider.ProjectKey, "")
 
-	list, resp, err := c.client.List(&sonar.WebhooksListOptions{Project: projectKey}) //nolint:bodyclose // closed via helpers.CloseBody
+	list, resp, err := c.client.List(ctx, &sonar.WebhooksListOptions{Project: projectKey}) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -252,7 +252,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	createOptions := integration.GenerateWebhookCreateOptions(&webhookCR.Spec.ForProvider, projectKey, secret)
 
-	result, resp, err := c.client.Create(createOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	result, resp, err := c.client.Create(ctx, createOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -287,7 +287,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	updateOptions := integration.GenerateWebhookUpdateOptions(externalName, &webhookCR.Spec.ForProvider, secret)
 
-	resp, err := c.client.Update(updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Update(ctx, updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -311,7 +311,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	resp, err := c.client.Delete(&sonar.WebhooksDeleteOptions{Webhook: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Delete(ctx, &sonar.WebhooksDeleteOptions{Webhook: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {

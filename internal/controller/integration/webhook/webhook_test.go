@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -215,7 +215,7 @@ func TestObserve(t *testing.T) {
 			objects: []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{
 				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
-					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+					return &sonar.WebhooksList{Webhooks: []sonar.WebhooksDefinition{
 						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL},
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
@@ -229,7 +229,7 @@ func TestObserve(t *testing.T) {
 			objects: []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{
 				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
-					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+					return &sonar.WebhooksList{Webhooks: []sonar.WebhooksDefinition{
 						{Key: testExternalName, Name: "old-name", URL: testWebhookURL},
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
@@ -243,7 +243,7 @@ func TestObserve(t *testing.T) {
 			objects: []runtime.Object{testKubeSecret("hook-secret", "default", "value", testSecretValue)},
 			webhookClient: &fake.MockWebhooksClient{
 				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
-					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+					return &sonar.WebhooksList{Webhooks: []sonar.WebhooksDefinition{
 						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL, HasSecret: false},
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
@@ -257,7 +257,7 @@ func TestObserve(t *testing.T) {
 			objects: []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{
 				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
-					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+					return &sonar.WebhooksList{Webhooks: []sonar.WebhooksDefinition{
 						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL},
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
@@ -269,7 +269,7 @@ func TestObserve(t *testing.T) {
 			objects: []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{
 				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
-					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+					return &sonar.WebhooksList{Webhooks: []sonar.WebhooksDefinition{
 						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL, HasSecret: false},
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
@@ -291,7 +291,7 @@ func TestObserve(t *testing.T) {
 			},
 			webhookClient: &fake.MockWebhooksClient{
 				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
-					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+					return &sonar.WebhooksList{Webhooks: []sonar.WebhooksDefinition{
 						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL, HasSecret: true},
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
@@ -313,7 +313,7 @@ func TestObserve(t *testing.T) {
 			},
 			webhookClient: &fake.MockWebhooksClient{
 				ListFn: func(_ *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
-					return &sonar.WebhooksList{Webhooks: []sonar.Webhook{
+					return &sonar.WebhooksList{Webhooks: []sonar.WebhooksDefinition{
 						{Key: testExternalName, Name: testWebhookName, URL: testWebhookURL, HasSecret: true},
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
@@ -401,7 +401,7 @@ func TestCreate(t *testing.T) {
 			objects: []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{
 				CreateFn: func(_ *sonar.WebhooksCreateOptions) (*sonar.WebhooksCreate, *http.Response, error) {
-					return &sonar.WebhooksCreate{Webhook: sonar.Webhook{Key: testExternalName}}, mockHTTPResponse(http.StatusOK), nil
+					return &sonar.WebhooksCreate{Webhook: sonar.WebhooksDefinition{Key: testExternalName}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{ctx: context.Background(), mg: newTestWebhook("", nil)},
@@ -415,7 +415,7 @@ func TestCreate(t *testing.T) {
 						return nil, nil, errors.Errorf("unexpected secret: got %q want %q", opt.Secret, testSecretValue)
 					}
 
-					return &sonar.WebhooksCreate{Webhook: sonar.Webhook{Key: testExternalName}}, mockHTTPResponse(http.StatusOK), nil
+					return &sonar.WebhooksCreate{Webhook: sonar.WebhooksDefinition{Key: testExternalName}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
 			args: args{ctx: context.Background(), mg: newTestWebhook("", webhookSecretRef("hook-secret", "value"))},

@@ -17,9 +17,10 @@ limitations under the License.
 package iam
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -28,11 +29,11 @@ import (
 
 // UsersClient is the interface for interacting with the SonarQube v2 user API.
 type UsersClient interface {
-	Create(opt *sonar.UsersCreateOptionsV2) (*sonar.UserV2, *http.Response, error)
-	Deactivate(opt *sonar.UsersDeactivateOptionsV2) (*http.Response, error)
-	Fetch(userID string) (*sonar.UserV2, *http.Response, error)
-	Search(opt *sonar.UsersSearchOptionV2) (*sonar.UsersSearchV2, *http.Response, error)
-	Update(userID string, opt *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error)
+	Create(ctx context.Context, opt *sonar.UsersCreateOptionsV2) (*sonar.UserV2, *http.Response, error)
+	Deactivate(ctx context.Context, opt *sonar.UsersDeactivateOptionsV2) (*http.Response, error)
+	Get(ctx context.Context, userID string) (*sonar.UserV2, *http.Response, error)
+	Search(ctx context.Context, opt *sonar.UsersSearchOptionV2) (*sonar.UsersSearchV2, *http.Response, error)
+	Update(ctx context.Context, userID string, opt *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error)
 }
 
 // NewUsersClient creates a new UsersClient with the provided SonarQube

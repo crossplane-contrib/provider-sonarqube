@@ -20,7 +20,7 @@ package license
 import (
 	"context"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
@@ -189,7 +189,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalCreation{}, errors.Wrap(err, errGetLicenseKey)
 	}
 
-	resp, err := c.client.Set(&sonar.LicenseSetOptions{License: ptr.Deref(licenseKey, "")}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Set(ctx, &sonar.LicenseSetOptions{License: ptr.Deref(licenseKey, "")}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -218,7 +218,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.Wrap(err, errGetLicenseKey)
 	}
 
-	resp, err := c.client.Set(&sonar.LicenseSetOptions{License: ptr.Deref(licenseKey, "")}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Set(ctx, &sonar.LicenseSetOptions{License: ptr.Deref(licenseKey, "")}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -242,7 +242,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	license.SetConditions(xpv1.Deleting())
 
-	resp, err := c.client.UnsetLicense() //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.UnsetLicense(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

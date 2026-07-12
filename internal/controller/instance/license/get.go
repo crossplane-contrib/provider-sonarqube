@@ -39,7 +39,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotLicense)
 	}
 
-	licenseGet, resp, err := c.client.Get() //nolint:bodyclose // closed via helpers.CloseBody
+	licenseGet, resp, err := c.client.Get(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

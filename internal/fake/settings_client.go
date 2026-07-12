@@ -17,10 +17,11 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -39,7 +40,7 @@ type MockSettingsClient struct {
 var _ instance.SettingsClient = &MockSettingsClient{}
 
 // Set implements SettingsClient.Set.
-func (m *MockSettingsClient) Set(opt *sonar.SettingsSetOptions) (*http.Response, error) {
+func (m *MockSettingsClient) Set(_ context.Context, opt *sonar.SettingsSetOptions) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}
@@ -48,7 +49,7 @@ func (m *MockSettingsClient) Set(opt *sonar.SettingsSetOptions) (*http.Response,
 }
 
 // Values implements SettingsClient.Values.
-func (m *MockSettingsClient) Values(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
+func (m *MockSettingsClient) Values(_ context.Context, opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error) {
 	if m.ValuesFn != nil {
 		return m.ValuesFn(opt)
 	}
@@ -57,7 +58,7 @@ func (m *MockSettingsClient) Values(opt *sonar.SettingsValuesOptions) (*sonar.Se
 }
 
 // Reset implements SettingsClient.Reset.
-func (m *MockSettingsClient) Reset(opt *sonar.SettingsResetOptions) (*http.Response, error) {
+func (m *MockSettingsClient) Reset(_ context.Context, opt *sonar.SettingsResetOptions) (*http.Response, error) {
 	if m.ResetFn != nil {
 		return m.ResetFn(opt)
 	}

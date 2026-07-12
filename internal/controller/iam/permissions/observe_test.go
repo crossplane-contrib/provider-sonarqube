@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
@@ -91,7 +91,7 @@ func TestObserve(t *testing.T) {
 				GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 					return &sonar.PermissionsGroups{
 						Groups: []sonar.PermissionGroup{{Name: "other", Permissions: []string{"scan"}}},
-						Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
@@ -118,7 +118,7 @@ func TestObserve(t *testing.T) {
 				UsersFn: func(_ *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error) {
 					return &sonar.PermissionsUsers{
 						Users:  []sonar.PermissionUser{{Login: "bob", Permissions: []string{"scan"}}},
-						Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
@@ -145,7 +145,7 @@ func TestObserve(t *testing.T) {
 				GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 					return &sonar.PermissionsGroups{
 						Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"scan"}}},
-						Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
@@ -163,7 +163,7 @@ func TestObserve(t *testing.T) {
 				GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 					return &sonar.PermissionsGroups{
 						Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"admin"}}},
-						Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
@@ -181,7 +181,7 @@ func TestObserve(t *testing.T) {
 				UsersFn: func(_ *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error) {
 					return &sonar.PermissionsUsers{
 						Users:  []sonar.PermissionUser{{Login: "alice", Permissions: []string{"scan"}}},
-						Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
@@ -203,7 +203,7 @@ func TestObserve(t *testing.T) {
 
 					return &sonar.PermissionsGroups{
 						Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"user"}}},
-						Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
@@ -245,7 +245,7 @@ func TestObserve(t *testing.T) {
 			GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"scan", "admin"}}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			},
 		}}
@@ -272,13 +272,13 @@ func TestObserve(t *testing.T) {
 				if opt.Page == 1 {
 					return &sonar.PermissionsGroups{
 						Groups: []sonar.PermissionGroup{{Name: "other", Permissions: []string{"admin"}}},
-						Paging: sonar.PermissionsPaging{Total: 150, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 150, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				}
 
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"provisioning"}}},
-					Paging: sonar.PermissionsPaging{Total: 150, PageIndex: 2, PageSize: 100},
+					Paging: sonar.Paging{Total: 150, PageIndex: 2, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			},
 		}}
@@ -314,7 +314,7 @@ func TestGetObservedGroupPermissions(t *testing.T) {
 			client: &fake.MockPermissionsClient{GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"scan", "admin"}}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName:       "devs",
@@ -325,7 +325,7 @@ func TestGetObservedGroupPermissions(t *testing.T) {
 			client: &fake.MockPermissionsClient{GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "other"}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName: "devs",
@@ -343,13 +343,13 @@ func TestGetObservedGroupPermissions(t *testing.T) {
 				if opt.Page == 1 {
 					return &sonar.PermissionsGroups{
 						Groups: []sonar.PermissionGroup{{Name: "admins", Permissions: []string{"admin"}}},
-						Paging: sonar.PermissionsPaging{Total: 150, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 150, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				}
 
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"scan"}}},
-					Paging: sonar.PermissionsPaging{Total: 150, PageIndex: 2, PageSize: 100},
+					Paging: sonar.Paging{Total: 150, PageIndex: 2, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName:       "devs",
@@ -364,7 +364,7 @@ func TestGetObservedGroupPermissions(t *testing.T) {
 
 				return &sonar.PermissionsGroups{
 					Groups: []sonar.PermissionGroup{{Name: "devs", Permissions: []string{"user"}}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName:       "devs",
@@ -385,7 +385,7 @@ func TestGetObservedGroupPermissions(t *testing.T) {
 						{Name: "other", Permissions: []string{"admin"}},
 						{Name: "devs", Permissions: []string{"codeviewer", "user"}},
 					},
-					Paging: sonar.PermissionsPaging{Total: 2, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 2, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			groupName:       "devs",
@@ -399,7 +399,7 @@ func TestGetObservedGroupPermissions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			gotPerms, gotFound, err := getObservedGroupPermissions(tc.client, tc.groupName, tc.projectKey)
+			gotPerms, gotFound, err := getObservedGroupPermissions(context.Background(), tc.client, tc.groupName, tc.projectKey)
 
 			if tc.wantErrSubstr != "" {
 				if err == nil {
@@ -444,7 +444,7 @@ func TestGetObservedUserPermissions(t *testing.T) {
 			client: &fake.MockPermissionsClient{UsersFn: func(_ *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error) {
 				return &sonar.PermissionsUsers{
 					Users:  []sonar.PermissionUser{{Login: "alice", Permissions: []string{"scan", "admin"}}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			login:           "alice",
@@ -455,7 +455,7 @@ func TestGetObservedUserPermissions(t *testing.T) {
 			client: &fake.MockPermissionsClient{UsersFn: func(_ *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error) {
 				return &sonar.PermissionsUsers{
 					Users:  []sonar.PermissionUser{{Login: "bob"}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			login:     "alice",
@@ -473,13 +473,13 @@ func TestGetObservedUserPermissions(t *testing.T) {
 				if opt.Page == 1 {
 					return &sonar.PermissionsUsers{
 						Users:  []sonar.PermissionUser{{Login: "bob", Permissions: []string{"admin"}}},
-						Paging: sonar.PermissionsPaging{Total: 150, PageIndex: 1, PageSize: 100},
+						Paging: sonar.Paging{Total: 150, PageIndex: 1, PageSize: 100},
 					}, mockHTTPResponse(http.StatusOK), nil
 				}
 
 				return &sonar.PermissionsUsers{
 					Users:  []sonar.PermissionUser{{Login: "alice", Permissions: []string{"scan"}}},
-					Paging: sonar.PermissionsPaging{Total: 150, PageIndex: 2, PageSize: 100},
+					Paging: sonar.Paging{Total: 150, PageIndex: 2, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			login:           "alice",
@@ -494,7 +494,7 @@ func TestGetObservedUserPermissions(t *testing.T) {
 
 				return &sonar.PermissionsUsers{
 					Users:  []sonar.PermissionUser{{Login: "alice", Permissions: []string{"codeviewer"}}},
-					Paging: sonar.PermissionsPaging{Total: 1, PageIndex: 1, PageSize: 100},
+					Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
 				}, mockHTTPResponse(http.StatusOK), nil
 			}},
 			login:           "alice",
@@ -508,7 +508,7 @@ func TestGetObservedUserPermissions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			gotPerms, gotFound, err := getObservedUserPermissions(tc.client, tc.login, tc.projectKey)
+			gotPerms, gotFound, err := getObservedUserPermissions(context.Background(), tc.client, tc.login, tc.projectKey)
 
 			if tc.wantErrSubstr != "" {
 				if err == nil {

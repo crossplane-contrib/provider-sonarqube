@@ -17,9 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -28,10 +29,10 @@ import (
 // WebhooksClient is the interface for interacting with
 // the SonarQube Webhook API.
 type WebhooksClient interface {
-	List(opt *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error)
-	Create(opt *sonar.WebhooksCreateOptions) (*sonar.WebhooksCreate, *http.Response, error)
-	Update(opt *sonar.WebhooksUpdateOptions) (*http.Response, error)
-	Delete(opt *sonar.WebhooksDeleteOptions) (*http.Response, error)
+	List(ctx context.Context, opt *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error)
+	Create(ctx context.Context, opt *sonar.WebhooksCreateOptions) (*sonar.WebhooksCreate, *http.Response, error)
+	Update(ctx context.Context, opt *sonar.WebhooksUpdateOptions) (*http.Response, error)
+	Delete(ctx context.Context, opt *sonar.WebhooksDeleteOptions) (*http.Response, error)
 }
 
 // NewWebhooksClient creates a new WebhooksClient using the provided
@@ -89,7 +90,7 @@ func IsWebhookUpToDate(spec *v1alpha1.WebhookParameters, observation *v1alpha1.W
 
 // FindWebhookByKey returns the first webhook with the given key,
 // or nil if no match is found.
-func FindWebhookByKey(webhooks []sonar.Webhook, key string) *sonar.Webhook {
+func FindWebhookByKey(webhooks []sonar.WebhooksDefinition, key string) *sonar.WebhooksDefinition {
 	for index := range webhooks {
 		if webhooks[index].Key == key {
 			return &webhooks[index]
@@ -101,7 +102,7 @@ func FindWebhookByKey(webhooks []sonar.Webhook, key string) *sonar.Webhook {
 
 // GenerateWebhookObservation converts a SonarQube Webhook response
 // into the Crossplane observation type.
-func GenerateWebhookObservation(sonarWebhook *sonar.Webhook) v1alpha1.WebhookObservation {
+func GenerateWebhookObservation(sonarWebhook *sonar.WebhooksDefinition) v1alpha1.WebhookObservation {
 	if sonarWebhook == nil {
 		return v1alpha1.WebhookObservation{}
 	}

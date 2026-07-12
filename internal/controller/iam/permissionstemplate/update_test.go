@@ -25,7 +25,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -267,12 +267,12 @@ func TestBaseFieldsAndDefaultHelpers(t *testing.T) {
 	template.Status.AtProvider.ProjectKeyPattern = "proj-.*"
 	template.Status.AtProvider.Default = true
 
-	err := e.updateTemplateBaseFields("template-id", template)
+	err := e.updateTemplateBaseFields(context.Background(), "template-id", template)
 	if err != nil {
 		t.Fatalf("updateTemplateBaseFields() unexpected error: %v", err)
 	}
 
-	err = e.setTemplateAsDefaultIfNeeded("template-id", template)
+	err = e.setTemplateAsDefaultIfNeeded(context.Background(), "template-id", template)
 	if err != nil {
 		t.Fatalf("setTemplateAsDefaultIfNeeded() unexpected error: %v", err)
 	}
@@ -280,7 +280,7 @@ func TestBaseFieldsAndDefaultHelpers(t *testing.T) {
 	template.Spec.ForProvider.Default = new(false)
 	template.Status.AtProvider.Default = false
 
-	err = e.setTemplateAsDefaultIfNeeded("template-id", template)
+	err = e.setTemplateAsDefaultIfNeeded(context.Background(), "template-id", template)
 	if err != nil {
 		t.Fatalf("setTemplateAsDefaultIfNeeded() unexpected error when not requested: %v", err)
 	}
@@ -350,7 +350,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 	groupsSpec := &[]v1alpha1.PermissionsTemplateGroupParameters{{Name: "devs", Permissions: stringSlice("admin")}}
 	groupsObs := &[]v1alpha1.PermissionsTemplateGroupObservation{{Name: "devs", Permissions: []string{"scan"}}}
 
-	err := e.updatePermissionsTemplateGroups("template-id", groupsSpec, groupsObs)
+	err := e.updatePermissionsTemplateGroups(context.Background(), "template-id", groupsSpec, groupsObs)
 	if err != nil {
 		t.Fatalf("updatePermissionsTemplateGroups() unexpected error: %v", err)
 	}
@@ -358,7 +358,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 	usersSpec := &[]v1alpha1.PermissionsTemplateUserParameters{{Login: "alice", Permissions: stringSlice("admin")}}
 	usersObs := &[]v1alpha1.PermissionsTemplateUserObservation{{Login: "alice", Permissions: []string{"scan"}}}
 
-	err = e.updatePermissionsTemplateUsers("template-id", usersSpec, usersObs)
+	err = e.updatePermissionsTemplateUsers(context.Background(), "template-id", usersSpec, usersObs)
 	if err != nil {
 		t.Fatalf("updatePermissionsTemplateUsers() unexpected error: %v", err)
 	}
@@ -366,7 +366,7 @@ func TestGroupUserCreatorReconciliation(t *testing.T) {
 	creatorSpec := &[]string{"admin"}
 	creatorObs := []string{"scan"}
 
-	err = e.updatePermissionsTemplateCreator("template-id", creatorSpec, creatorObs)
+	err = e.updatePermissionsTemplateCreator(context.Background(), "template-id", creatorSpec, creatorObs)
 	if err != nil {
 		t.Fatalf("updatePermissionsTemplateCreator() unexpected error: %v", err)
 	}

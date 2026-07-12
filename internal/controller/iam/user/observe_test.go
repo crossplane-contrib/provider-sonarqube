@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/google/go-cmp/cmp"
 
@@ -64,7 +64,7 @@ func TestObserve(t *testing.T) {
 		user := newUserWithSpec(v1alpha1.UserParameters{Login: "alice", Name: "Alice"})
 		meta.SetExternalName(user, testUserID)
 
-		obs, err := (&external{usersClient: &sonarfake.MockUsersClient{FetchFn: func(_ string) (*sonar.UserV2, *http.Response, error) {
+		obs, err := (&external{usersClient: &sonarfake.MockUsersClient{GetFn: func(_ string) (*sonar.UserV2, *http.Response, error) {
 			return nil, &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(""))}, errors.New("not found")
 		}}}).Observe(context.Background(), user)
 		if err != nil {
@@ -86,7 +86,7 @@ func TestObserve(t *testing.T) {
 		meta.SetExternalName(user, testUserID)
 
 		usersClient := &sonarfake.MockUsersClient{
-			FetchFn: func(userID string) (*sonar.UserV2, *http.Response, error) {
+			GetFn: func(userID string) (*sonar.UserV2, *http.Response, error) {
 				if userID != testUserID {
 					t.Fatalf("Fetch() userID = %q, want %s", userID, testUserID)
 				}
@@ -100,7 +100,7 @@ func TestObserve(t *testing.T) {
 					t.Fatalf("SearchGroupMemberships() UserId = %q, want %s", opt.UserId, testUserID)
 				}
 
-				return &sonar.AuthorizationsGroupMembershipsSearch{GroupMemberships: []sonar.GroupMembership{{GroupId: "devs", Id: "m-devs", UserId: testUserID}, {GroupId: "ops", Id: "m-ops", UserId: testUserID}}}, &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil
+				return &sonar.AuthorizationsGroupMembershipsSearch{GroupMemberships: []sonar.AuthorizationsGroupMembership{{GroupId: "devs", Id: "m-devs", UserId: testUserID}, {GroupId: "ops", Id: "m-ops", UserId: testUserID}}}, &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil
 			},
 		}
 
@@ -129,7 +129,7 @@ func TestMembershipObservationErrors(t *testing.T) {
 
 	_, err := (&external{groupsClient: &sonarfake.MockGroupsClient{SearchGroupMembershipsFn: func(_ *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error) {
 		return nil, &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader(""))}, errors.New("boom")
-	}}}).getUserGroupsObservation(testUserID)
+	}}}).getUserGroupsObservation(context.Background(), testUserID)
 	if err == nil || !strings.Contains(err.Error(), "cannot fetch user groups") {
 		t.Fatalf("getUserGroupsObservation() error = %v", err)
 	}

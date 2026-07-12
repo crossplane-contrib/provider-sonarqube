@@ -19,7 +19,7 @@ package plugin
 import (
 	"context"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -44,7 +44,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	installedList, resp, err := c.client.Installed(nil) //nolint:bodyclose // closed via helpers.CloseBody
+	installedList, resp, err := c.client.Installed(ctx, nil) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -53,28 +53,29 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	found := instance.FindInstalledPlugin(installedList.Plugins, externalName)
 	if found == nil {
-		return c.observePending(managedPlugin, externalName)
+		return c.observePending(ctx, managedPlugin, externalName)
 	}
 
 	if managedPlugin.DeletionTimestamp != nil {
-		obs, isPendingRemoval, pendingErr := c.observePendingRemoval(managedPlugin, externalName)
+		obs, isPendingRemoval, pendingErr := c.observePendingRemoval(ctx, managedPlugin, externalName)
 		if pendingErr != nil || isPendingRemoval {
 			return obs, pendingErr
 		}
 	}
 
-	return c.observeInstalled(managedPlugin, found)
+	return c.observeInstalled(ctx, managedPlugin, found)
 }
 
 // observeInstalled handles the full observation path for a plugin that
 // is already present in the installed list.
 func (c *external) observeInstalled(
+	ctx context.Context,
 	managedPlugin *v1alpha1.Plugin,
 	found *sonar.PluginInstalled,
 ) (managed.ExternalObservation, error) {
 	managedPlugin.Status.AtProvider = instance.GeneratePluginObservation(found)
 
-	pluginsToUpdate, resp, err := c.client.Updates() //nolint:bodyclose // closed via helpers.CloseBody
+	pluginsToUpdate, resp, err := c.client.Updates(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -88,7 +89,7 @@ func (c *external) observeInstalled(
 	managedPlugin.Status.AtProvider.IsLatest = !isUpdatable
 
 	if isUpdatable {
-		obs, isPendingUpdate, pendingErr := c.observePendingUpdate(managedPlugin, found.Key)
+		obs, isPendingUpdate, pendingErr := c.observePendingUpdate(ctx, managedPlugin, found.Key)
 		if pendingErr != nil || isPendingUpdate {
 			return obs, pendingErr
 		}
@@ -109,8 +110,8 @@ func (c *external) observeInstalled(
 // observePending checks whether the plugin is queued for installation
 // (pending a SonarQube restart). It returns a not-exists observation
 // when the key is absent from the pending list.
-func (c *external) observePending(managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, error) {
-	pending, resp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observePending(ctx context.Context, managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, error) {
+	pending, resp, err := c.client.Pending(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -135,15 +136,15 @@ func (c *external) observePending(managedPlugin *v1alpha1.Plugin, key string) (m
 // observePendingRemoval checks whether the plugin is queued for removal
 // (pending a SonarQube restart). It returns (obs, true, nil) when found,
 // signalling the caller to return obs immediately.
-func (c *external) observePendingRemoval(managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, bool, error) {
-	return c.observePendingOp(managedPlugin, key, instance.IsPluginPendingRemoval, xpv1.Deleting())
+func (c *external) observePendingRemoval(ctx context.Context, managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, bool, error) {
+	return c.observePendingOp(ctx, managedPlugin, key, instance.IsPluginPendingRemoval, xpv1.Deleting())
 }
 
 // observePendingUpdate checks whether the plugin is queued for an upgrade
 // (pending a SonarQube restart). It returns (obs, true, nil) when found,
 // signalling the caller to return obs immediately.
-func (c *external) observePendingUpdate(managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, bool, error) {
-	return c.observePendingOp(managedPlugin, key, instance.IsPluginPendingUpdate, xpv1.Available())
+func (c *external) observePendingUpdate(ctx context.Context, managedPlugin *v1alpha1.Plugin, key string) (managed.ExternalObservation, bool, error) {
+	return c.observePendingOp(ctx, managedPlugin, key, instance.IsPluginPendingUpdate, xpv1.Available())
 }
 
 // observePendingOp is the shared core for observePendingRemoval
@@ -152,12 +153,13 @@ func (c *external) observePendingUpdate(managedPlugin *v1alpha1.Plugin, key stri
 // pending and applies cond. Returns (obs, true, nil) when found,
 // (zero, false, nil) otherwise.
 func (c *external) observePendingOp(
+	ctx context.Context,
 	managedPlugin *v1alpha1.Plugin,
 	key string,
 	checkFn func(*sonar.PluginsPending, string) bool,
 	cond xpv1.Condition,
 ) (managed.ExternalObservation, bool, error) {
-	pendingList, resp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
+	pendingList, resp, err := c.client.Pending(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

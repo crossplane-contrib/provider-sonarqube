@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -29,9 +30,9 @@ import (
 // ProjectLinksClient is the interface for managing project links
 // in SonarQube.
 type ProjectLinksClient interface {
-	Create(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error)
-	Delete(opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error)
-	Search(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error)
+	Create(ctx context.Context, opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error)
+	Delete(ctx context.Context, opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error)
+	Search(ctx context.Context, opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error)
 }
 
 // NewProjectLinksClient creates a new ProjectLinksClient with the provided

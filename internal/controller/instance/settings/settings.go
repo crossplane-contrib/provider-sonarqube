@@ -177,7 +177,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	sonarSettings, resp, err := c.settingsClient.Values(instance.GenerateSettingsValuesOptions(&settings.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	sonarSettings, resp, err := c.settingsClient.Values(ctx, instance.GenerateSettingsValuesOptions(&settings.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -212,7 +212,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 	for key, params := range settings.Spec.ForProvider.Settings {
 		settingSetOptions := instance.GenerateSettingSetOptions(key, params, settings.Spec.ForProvider.Component)
 
-		resp, err := c.settingsClient.Set(settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err := c.settingsClient.Set(ctx, settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
 		if err != nil {
 			errs = append(errs, errors.Errorf("failed to set setting %s: %s", key, err.Error()))
 		}
@@ -243,9 +243,9 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 	}
 
 	// Update out of date settings
-	updateErrors := c.updateOutOfDateSettings(settings)
+	updateErrors := c.updateOutOfDateSettings(ctx, settings)
 	// Reset obsolete settings
-	updateErrors = append(updateErrors, c.resetObsoleteSettings(settings)...)
+	updateErrors = append(updateErrors, c.resetObsoleteSettings(ctx, settings)...)
 
 	if len(updateErrors) == 0 {
 		return managed.ExternalUpdate{}, nil
@@ -271,7 +271,7 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 	// Reset the settings and then delete the resource. This ensures that we don't leave any orphaned settings in SonarQube after the resource is deleted.
 	settingsResetOptions := instance.GenerateSettingsResetOptions(settings.Spec.ForProvider)
 
-	resp, err := c.settingsClient.Reset(settingsResetOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.settingsClient.Reset(ctx, settingsResetOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -290,14 +290,14 @@ func (c *external) Disconnect(ctx context.Context) error {
 
 // updateOutOfDateSettings updates settings that are out of date by comparing
 // the desired settings in the CR with the observed settings in SonarQube.
-func (c *external) updateOutOfDateSettings(settings *v1alpha1.Settings) []error {
+func (c *external) updateOutOfDateSettings(ctx context.Context, settings *v1alpha1.Settings) []error {
 	var updateErrors []error
 
 	for key, params := range settings.Spec.ForProvider.Settings {
 		if !instance.IsSettingUpToDate(params, settings.Status.AtProvider.Settings[key]) {
 			settingSetOptions := instance.GenerateSettingSetOptions(key, params, settings.Spec.ForProvider.Component)
 
-			resp, err := c.settingsClient.Set(settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.settingsClient.Set(ctx, settingSetOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			if err != nil {
 				updateErrors = append(updateErrors, errors.Errorf("failed to update setting %s: %s", key, err.Error()))
 			}
@@ -312,7 +312,7 @@ func (c *external) updateOutOfDateSettings(settings *v1alpha1.Settings) []error 
 // resetObsoleteSettings resets any settings that are not in the desired
 // settings in the CR. This ensures that any settings that were manually changed
 // in SonarQube or removed from the CR are reset to their default values.
-func (c *external) resetObsoleteSettings(settings *v1alpha1.Settings) []error {
+func (c *external) resetObsoleteSettings(ctx context.Context, settings *v1alpha1.Settings) []error {
 	var resetErrors []error
 
 	toResetList := make([]string, 0)
@@ -326,7 +326,7 @@ func (c *external) resetObsoleteSettings(settings *v1alpha1.Settings) []error {
 	if len(toResetList) > 0 {
 		settingsResetOptions := instance.GenerateSettingsResetOptionsFromList(toResetList, settings.Spec.ForProvider.Component)
 
-		resp, err := c.settingsClient.Reset(settingsResetOptions) //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err := c.settingsClient.Reset(ctx, settingsResetOptions) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		if err != nil {

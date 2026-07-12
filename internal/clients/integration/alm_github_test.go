@@ -19,7 +19,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"

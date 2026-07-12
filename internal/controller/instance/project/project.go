@@ -203,7 +203,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Check if the Project exists in SonarQube and update the observation with the project details if it exists.
-	exists, err := c.observeProjectExistence(externalName, &project.Status.AtProvider)
+	exists, err := c.observeProjectExistence(ctx, externalName, &project.Status.AtProvider)
 	if err != nil {
 		return managed.ExternalObservation{}, errors.Wrap(err, "cannot observe Project existence")
 	}
@@ -215,7 +215,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Make all observation API calls concurrently, collecting results safely.
-	result := c.observeProjectDetails(externalName, project.Status.AtProvider.Uuid)
+	result := c.observeProjectDetails(ctx, externalName, project.Status.AtProvider.Uuid)
 
 	// Safely populate observation from collected results (single-threaded)
 	c.applyObserveResult(&project.Status.AtProvider, &result)
@@ -250,7 +250,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	project.SetConditions(xpv1.Creating())
 
 	// Create the SonarQube Project using the SonarQube API client
-	createdProject, resp, err := c.projectsClient.Create(instance.GenerateProjectsCreateOptions(project.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	createdProject, resp, err := c.projectsClient.Create(ctx, instance.GenerateProjectsCreateOptions(project.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -277,7 +277,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New("external name is not set for the Project")
 	}
 
-	allErrors := c.updateProjectConcurrently(project, projectKey, project.Status.AtProvider.Uuid)
+	allErrors := c.updateProjectConcurrently(ctx, project, projectKey, project.Status.AtProvider.Uuid)
 
 	if len(allErrors) > 0 {
 		return managed.ExternalUpdate{}, stderrors.Join(allErrors...)
@@ -305,7 +305,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	project.SetConditions(xpv1.Deleting())
 
 	// Delete the SonarQube Project using the SonarQube API client
-	resp, err := c.projectsClient.Delete(instance.GenerateProjectDeleteOptions(externalName)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.projectsClient.Delete(ctx, instance.GenerateProjectDeleteOptions(externalName)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

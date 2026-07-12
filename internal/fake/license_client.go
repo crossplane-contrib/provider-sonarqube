@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	instance "github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -38,7 +39,7 @@ type MockLicensesClient struct {
 var _ instance.LicensesClient = &MockLicensesClient{}
 
 // Get implements LicensesClient.Get.
-func (m *MockLicensesClient) Get() (*sonar.LicenseGet, *http.Response, error) {
+func (m *MockLicensesClient) Get(_ context.Context) (*sonar.LicenseGet, *http.Response, error) {
 	if m.GetFn != nil {
 		return m.GetFn()
 	}
@@ -47,7 +48,7 @@ func (m *MockLicensesClient) Get() (*sonar.LicenseGet, *http.Response, error) {
 }
 
 // Set implements LicensesClient.Set.
-func (m *MockLicensesClient) Set(opt *sonar.LicenseSetOptions) (*http.Response, error) {
+func (m *MockLicensesClient) Set(_ context.Context, opt *sonar.LicenseSetOptions) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}
@@ -56,7 +57,7 @@ func (m *MockLicensesClient) Set(opt *sonar.LicenseSetOptions) (*http.Response, 
 }
 
 // UnsetLicense implements LicensesClient.UnsetLicense.
-func (m *MockLicensesClient) UnsetLicense() (*http.Response, error) {
+func (m *MockLicensesClient) UnsetLicense(_ context.Context) (*http.Response, error) {
 	if m.UnsetLicenseFn != nil {
 		return m.UnsetLicenseFn()
 	}

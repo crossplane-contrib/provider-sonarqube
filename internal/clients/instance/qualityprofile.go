@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -32,32 +33,32 @@ import (
 //
 //nolint:interfacebloat // This interface wraps the SonarQube Quality Profiles API which has 26 methods
 type QualityProfilesClient interface {
-	ActivateRule(opt *sonar.QualityprofilesActivateRuleOptions) (resp *http.Response, err error)
-	ActivateRules(opt *sonar.QualityprofilesActivateRulesOptions) (resp *http.Response, err error)
-	AddGroup(opt *sonar.QualityprofilesAddGroupOptions) (resp *http.Response, err error)
-	AddProject(opt *sonar.QualityprofilesAddProjectOptions) (resp *http.Response, err error)
-	AddUser(opt *sonar.QualityprofilesAddUserOptions) (resp *http.Response, err error)
-	Backup(opt *sonar.QualityprofilesBackupOptions) (v *string, resp *http.Response, err error)
-	ChangeParent(opt *sonar.QualityprofilesChangeParentOptions) (resp *http.Response, err error)
-	Changelog(opt *sonar.QualityprofilesChangelogOptions) (v *sonar.QualityprofilesChangelog, resp *http.Response, err error)
-	Compare(opt *sonar.QualityprofilesCompareOptions) (v *sonar.QualityprofilesCompare, resp *http.Response, err error)
-	Copy(opt *sonar.QualityprofilesCopyOptions) (v *sonar.QualityprofilesCopy, resp *http.Response, err error)
-	Create(opt *sonar.QualityprofilesCreateOptions) (v *sonar.QualityprofilesCreate, resp *http.Response, err error)
-	DeactivateRule(opt *sonar.QualityprofilesDeactivateRuleOptions) (resp *http.Response, err error)
-	DeactivateRules(opt *sonar.QualityprofilesDeactivateRulesOptions) (resp *http.Response, err error)
-	Delete(opt *sonar.QualityprofilesDeleteOptions) (resp *http.Response, err error)
-	Inheritance(opt *sonar.QualityprofilesInheritanceOptions) (v *sonar.QualityprofilesInheritance, resp *http.Response, err error)
-	Projects(opt *sonar.QualityprofilesProjectsOptions) (v *sonar.QualityprofilesProjects, resp *http.Response, err error)
-	RemoveGroup(opt *sonar.QualityprofilesRemoveGroupOptions) (resp *http.Response, err error)
-	RemoveProject(opt *sonar.QualityprofilesRemoveProjectOptions) (resp *http.Response, err error)
-	RemoveUser(opt *sonar.QualityprofilesRemoveUserOptions) (resp *http.Response, err error)
-	Rename(opt *sonar.QualityprofilesRenameOptions) (resp *http.Response, err error)
-	Restore(opt *sonar.QualityprofilesRestoreOptions) (resp *http.Response, err error)
-	Search(opt *sonar.QualityprofilesSearchOptions) (v *sonar.QualityprofilesSearch, resp *http.Response, err error)
-	SearchGroups(opt *sonar.QualityprofilesSearchGroupsOptions) (v *sonar.QualityprofilesSearchGroups, resp *http.Response, err error)
-	SearchUsers(opt *sonar.QualityprofilesSearchUsersOptions) (v *sonar.QualityprofilesSearchUsers, resp *http.Response, err error)
-	SetDefault(opt *sonar.QualityprofilesSetDefaultOptions) (resp *http.Response, err error)
-	Show(opt *sonar.QualityprofilesShowOptions) (v *sonar.QualityprofilesShow, resp *http.Response, err error)
+	ActivateRule(ctx context.Context, opt *sonar.QualityprofilesActivateRuleOptions) (resp *http.Response, err error)
+	ActivateRules(ctx context.Context, opt *sonar.QualityprofilesActivateRulesOptions) (resp *http.Response, err error)
+	AddGroup(ctx context.Context, opt *sonar.QualityprofilesAddGroupOptions) (resp *http.Response, err error)
+	AddProject(ctx context.Context, opt *sonar.QualityprofilesAddProjectOptions) (resp *http.Response, err error)
+	AddUser(ctx context.Context, opt *sonar.QualityprofilesAddUserOptions) (resp *http.Response, err error)
+	Backup(ctx context.Context, opt *sonar.QualityprofilesBackupOptions) (v *string, resp *http.Response, err error)
+	ChangeParent(ctx context.Context, opt *sonar.QualityprofilesChangeParentOptions) (resp *http.Response, err error)
+	Changelog(ctx context.Context, opt *sonar.QualityprofilesChangelogOptions) (v *sonar.QualityprofilesChangelog, resp *http.Response, err error)
+	Compare(ctx context.Context, opt *sonar.QualityprofilesCompareOptions) (v *sonar.QualityprofilesCompare, resp *http.Response, err error)
+	Copy(ctx context.Context, opt *sonar.QualityprofilesCopyOptions) (v *sonar.QualityprofilesCopy, resp *http.Response, err error)
+	Create(ctx context.Context, opt *sonar.QualityprofilesCreateOptions) (v *sonar.QualityprofilesCreate, resp *http.Response, err error)
+	DeactivateRule(ctx context.Context, opt *sonar.QualityprofilesDeactivateRuleOptions) (resp *http.Response, err error)
+	DeactivateRules(ctx context.Context, opt *sonar.QualityprofilesDeactivateRulesOptions) (resp *http.Response, err error)
+	Delete(ctx context.Context, opt *sonar.QualityprofilesDeleteOptions) (resp *http.Response, err error)
+	Inheritance(ctx context.Context, opt *sonar.QualityprofilesInheritanceOptions) (v *sonar.QualityprofilesInheritance, resp *http.Response, err error)
+	Projects(ctx context.Context, opt *sonar.QualityprofilesProjectsOptions) (v *sonar.QualityprofilesProjects, resp *http.Response, err error)
+	RemoveGroup(ctx context.Context, opt *sonar.QualityprofilesRemoveGroupOptions) (resp *http.Response, err error)
+	RemoveProject(ctx context.Context, opt *sonar.QualityprofilesRemoveProjectOptions) (resp *http.Response, err error)
+	RemoveUser(ctx context.Context, opt *sonar.QualityprofilesRemoveUserOptions) (resp *http.Response, err error)
+	Rename(ctx context.Context, opt *sonar.QualityprofilesRenameOptions) (resp *http.Response, err error)
+	Restore(ctx context.Context, opt *sonar.QualityprofilesRestoreOptions) (resp *http.Response, err error)
+	Search(ctx context.Context, opt *sonar.QualityprofilesSearchOptions) (v *sonar.QualityprofilesSearch, resp *http.Response, err error)
+	SearchGroups(ctx context.Context, opt *sonar.QualityprofilesSearchGroupsOptions) (v *sonar.QualityprofilesSearchGroups, resp *http.Response, err error)
+	SearchUsers(ctx context.Context, opt *sonar.QualityprofilesSearchUsersOptions) (v *sonar.QualityprofilesSearchUsers, resp *http.Response, err error)
+	SetDefault(ctx context.Context, opt *sonar.QualityprofilesSetDefaultOptions) (resp *http.Response, err error)
+	Show(ctx context.Context, opt *sonar.QualityprofilesShowOptions) (v *sonar.QualityprofilesShow, resp *http.Response, err error)
 }
 
 // NewQualityProfilesClient creates a new QualityProfilesClient with the

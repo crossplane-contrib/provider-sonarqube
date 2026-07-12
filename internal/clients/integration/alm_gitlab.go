@@ -17,9 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -31,7 +32,7 @@ import (
 // such as creating, updating, deleting, and retrieving ALMGitLab.
 type ALMIntegrationsGitLabClient interface {
 	ALMIntegrationsClient
-	SearchGitlabRepos(opt *sonar.AlmIntegrationsSearchGitlabReposOptions) (v *sonar.AlmIntegrationsSearchGitlabRepos, resp *http.Response, err error)
+	SearchGitlabRepos(ctx context.Context, opt *sonar.AlmIntegrationsSearchGitlabReposOptions) (v *sonar.AlmIntegrationsSearchGitlabRepos, resp *http.Response, err error)
 }
 
 // ALMSettingsGitLabClient is the interface for interacting with
@@ -40,8 +41,8 @@ type ALMIntegrationsGitLabClient interface {
 // SonarQube, such as creating, updating, deleting, and retrieving them.
 type ALMSettingsGitLabClient interface {
 	ALMSettingsClient
-	CreateGitlab(opt *sonar.AlmSettingsCreateGitlabOptions) (*http.Response, error)
-	UpdateGitlab(opt *sonar.AlmSettingsUpdateGitlabOptions) (*http.Response, error)
+	CreateGitlab(ctx context.Context, opt *sonar.AlmSettingsCreateGitlabOptions) (*http.Response, error)
+	UpdateGitlab(ctx context.Context, opt *sonar.AlmSettingsUpdateGitlabOptions) (*http.Response, error)
 }
 
 // NewALMIntegrationsGitLabClient creates a new ALMIntegrationsGitLabClient

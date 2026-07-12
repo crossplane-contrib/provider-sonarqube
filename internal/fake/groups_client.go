@@ -17,30 +17,31 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
 
 // MockGroupsClient is a mock implementation of the GroupsClient interface.
 type MockGroupsClient struct {
-	CreateGroupFn            func(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error)
-	CreateGroupMembershipFn  func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error)
+	CreateGroupFn            func(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error)
+	CreateGroupMembershipFn  func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error)
 	DeleteGroupFn            func(groupID string) (*http.Response, error)
 	DeleteGroupMembershipFn  func(membershipID string) (*http.Response, error)
-	FetchGroupFn             func(groupID string) (*sonar.Group, *http.Response, error)
+	GetGroupFn               func(groupID string) (*sonar.AuthorizationsGroup, *http.Response, error)
 	SearchGroupMembershipsFn func(opt *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error)
 	SearchGroupsFn           func(opt *sonar.AuthorizationsSearchGroupsOptions) (*sonar.AuthorizationsGroupsSearch, *http.Response, error)
-	UpdateGroupFn            func(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error)
+	UpdateGroupFn            func(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error)
 }
 
 // Ensure MockGroupsClient implements GroupsClient.
 var _ iam.GroupsClient = &MockGroupsClient{}
 
 // CreateGroup implements GroupsClient.CreateGroup.
-func (m *MockGroupsClient) CreateGroup(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error) {
+func (m *MockGroupsClient) CreateGroup(_ context.Context, opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
 	if m.CreateGroupFn != nil {
 		return m.CreateGroupFn(opt)
 	}
@@ -49,7 +50,7 @@ func (m *MockGroupsClient) CreateGroup(opt *sonar.AuthorizationsCreateGroupOptio
 }
 
 // CreateGroupMembership implements GroupsClient.CreateGroupMembership.
-func (m *MockGroupsClient) CreateGroupMembership(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error) {
+func (m *MockGroupsClient) CreateGroupMembership(_ context.Context, opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error) {
 	if m.CreateGroupMembershipFn != nil {
 		return m.CreateGroupMembershipFn(opt)
 	}
@@ -58,7 +59,7 @@ func (m *MockGroupsClient) CreateGroupMembership(opt *sonar.AuthorizationsCreate
 }
 
 // DeleteGroup implements GroupsClient.DeleteGroup.
-func (m *MockGroupsClient) DeleteGroup(groupID string) (*http.Response, error) {
+func (m *MockGroupsClient) DeleteGroup(_ context.Context, groupID string) (*http.Response, error) {
 	if m.DeleteGroupFn != nil {
 		return m.DeleteGroupFn(groupID)
 	}
@@ -67,7 +68,7 @@ func (m *MockGroupsClient) DeleteGroup(groupID string) (*http.Response, error) {
 }
 
 // DeleteGroupMembership implements GroupsClient.DeleteGroupMembership.
-func (m *MockGroupsClient) DeleteGroupMembership(membershipID string) (*http.Response, error) {
+func (m *MockGroupsClient) DeleteGroupMembership(_ context.Context, membershipID string) (*http.Response, error) {
 	if m.DeleteGroupMembershipFn != nil {
 		return m.DeleteGroupMembershipFn(membershipID)
 	}
@@ -75,17 +76,17 @@ func (m *MockGroupsClient) DeleteGroupMembership(membershipID string) (*http.Res
 	return nil, errNotImplemented
 }
 
-// FetchGroup implements GroupsClient.FetchGroup.
-func (m *MockGroupsClient) FetchGroup(groupID string) (*sonar.Group, *http.Response, error) {
-	if m.FetchGroupFn != nil {
-		return m.FetchGroupFn(groupID)
+// GetGroup implements GroupsClient.GetGroup.
+func (m *MockGroupsClient) GetGroup(_ context.Context, groupID string) (*sonar.AuthorizationsGroup, *http.Response, error) {
+	if m.GetGroupFn != nil {
+		return m.GetGroupFn(groupID)
 	}
 
 	return nil, nil, errNotImplemented
 }
 
 // SearchGroupMemberships implements GroupsClient.SearchGroupMemberships.
-func (m *MockGroupsClient) SearchGroupMemberships(opt *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error) {
+func (m *MockGroupsClient) SearchGroupMemberships(_ context.Context, opt *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error) {
 	if m.SearchGroupMembershipsFn != nil {
 		return m.SearchGroupMembershipsFn(opt)
 	}
@@ -94,7 +95,7 @@ func (m *MockGroupsClient) SearchGroupMemberships(opt *sonar.AuthorizationsSearc
 }
 
 // SearchGroups implements GroupsClient.SearchGroups.
-func (m *MockGroupsClient) SearchGroups(opt *sonar.AuthorizationsSearchGroupsOptions) (*sonar.AuthorizationsGroupsSearch, *http.Response, error) {
+func (m *MockGroupsClient) SearchGroups(_ context.Context, opt *sonar.AuthorizationsSearchGroupsOptions) (*sonar.AuthorizationsGroupsSearch, *http.Response, error) {
 	if m.SearchGroupsFn != nil {
 		return m.SearchGroupsFn(opt)
 	}
@@ -103,7 +104,7 @@ func (m *MockGroupsClient) SearchGroups(opt *sonar.AuthorizationsSearchGroupsOpt
 }
 
 // UpdateGroup implements GroupsClient.UpdateGroup.
-func (m *MockGroupsClient) UpdateGroup(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error) {
+func (m *MockGroupsClient) UpdateGroup(_ context.Context, groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
 	if m.UpdateGroupFn != nil {
 		return m.UpdateGroupFn(groupID, opt)
 	}

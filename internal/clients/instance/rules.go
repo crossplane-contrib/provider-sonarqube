@@ -17,10 +17,11 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -39,15 +40,15 @@ const (
 
 // RulesClient is the client for SonarQube Rules API.
 type RulesClient interface {
-	App() (v *sonar.RulesApp, resp *http.Response, err error)
-	Create(opt *sonar.RulesCreateOptions) (v *sonar.RulesCreate, resp *http.Response, err error)
-	Delete(opt *sonar.RulesDeleteOptions) (resp *http.Response, err error)
-	List(opt *sonar.RulesListOptions) (v *string, resp *http.Response, err error)
-	Repositories(opt *sonar.RulesRepositoriesOptions) (v *sonar.RulesRepositories, resp *http.Response, err error)
-	Search(opt *sonar.RulesSearchOptions) (v *sonar.RulesSearch, resp *http.Response, err error)
-	Show(opt *sonar.RulesShowOptions) (v *sonar.RulesShow, resp *http.Response, err error)
-	Tags(opt *sonar.RulesTagsOptions) (v *sonar.RulesTags, resp *http.Response, err error)
-	Update(opt *sonar.RulesUpdateOptions) (v *sonar.RulesUpdate, resp *http.Response, err error)
+	App(ctx context.Context) (v *sonar.RulesApp, resp *http.Response, err error)
+	Create(ctx context.Context, opt *sonar.RulesCreateOptions) (v *sonar.RulesCreate, resp *http.Response, err error)
+	Delete(ctx context.Context, opt *sonar.RulesDeleteOptions) (resp *http.Response, err error)
+	List(ctx context.Context, opt *sonar.RulesListOptions) (v *string, resp *http.Response, err error)
+	Repositories(ctx context.Context, opt *sonar.RulesRepositoriesOptions) (v *sonar.RulesRepositories, resp *http.Response, err error)
+	Search(ctx context.Context, opt *sonar.RulesSearchOptions) (v *sonar.RulesSearch, resp *http.Response, err error)
+	Show(ctx context.Context, opt *sonar.RulesShowOptions) (v *sonar.RulesShow, resp *http.Response, err error)
+	Tags(ctx context.Context, opt *sonar.RulesTagsOptions) (v *sonar.RulesTags, resp *http.Response, err error)
+	Update(ctx context.Context, opt *sonar.RulesUpdateOptions) (v *sonar.RulesUpdate, resp *http.Response, err error)
 }
 
 // NewRulesClient creates a new RulesClient with the provided SonarQube client
@@ -89,15 +90,15 @@ func GenerateQualityProfileRulesSearchOption(key string, page int) *sonar.RulesS
 // FetchAllQualityProfileRules fetches all activated rules for a quality profile
 // using pagination.
 // It iterates through all pages until all rules are fetched.
-func FetchAllQualityProfileRules(rulesClient RulesClient, qualityProfileKey string) (*sonar.RulesSearch, error) {
-	var allRules []sonar.RuleDetails
+func FetchAllQualityProfileRules(ctx context.Context, rulesClient RulesClient, qualityProfileKey string) (*sonar.RulesSearch, error) {
+	var allRules []sonar.RulesDetails
 
-	allActives := make(map[string][]sonar.RuleActivation)
+	allActives := make(map[string][]sonar.RulesActivation)
 
 	page := 1
 
 	for {
-		rules, resp, err := rulesClient.Search(GenerateQualityProfileRulesSearchOption(qualityProfileKey, page)) //nolint:bodyclose // closed via helpers.CloseBody
+		rules, resp, err := rulesClient.Search(ctx, GenerateQualityProfileRulesSearchOption(qualityProfileKey, page)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {
@@ -141,7 +142,7 @@ func GenerateQualityProfileRulesObservation(qualityProfileId string, rules *sona
 	observations := make([]v1alpha1.QualityProfileRuleObservation, len(rules.Rules))
 
 	for index, rule := range rules.Rules {
-		var activatedRuleList *[]sonar.RuleActivation
+		var activatedRuleList *[]sonar.RulesActivation
 
 		activatedRuleFetch, exists := rules.Actives[rule.Key]
 		if exists {
@@ -168,7 +169,7 @@ type ruleActiveSettings struct {
 // confirms that they belong to the quality profile,
 // and returns a map of rule key to its activated settings
 // (severity and parameters).
-func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *[]sonar.RuleActivation) *ruleActiveSettings {
+func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *[]sonar.RulesActivation) *ruleActiveSettings {
 	if activeRules == nil {
 		return nil
 	}
@@ -194,7 +195,7 @@ func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *
 
 // GenerateQualityProfileRuleObservation generates observation for a
 // Quality Profile Rule.
-func GenerateQualityProfileRuleObservation(rule sonar.RuleDetails, activatedSettings *ruleActiveSettings) v1alpha1.QualityProfileRuleObservation {
+func GenerateQualityProfileRuleObservation(rule sonar.RulesDetails, activatedSettings *ruleActiveSettings) v1alpha1.QualityProfileRuleObservation {
 	ruleObservation := v1alpha1.QualityProfileRuleObservation{
 		Key:       rule.Key,
 		CreatedAt: helpers.StringToMetaTime(&rule.CreatedAt),
@@ -227,7 +228,7 @@ func GenerateQualityProfileRuleObservation(rule sonar.RuleDetails, activatedSett
 
 // GenerateQualityProfileImpactsObservation generates observations for
 // Quality Profile Rule Impacts.
-func GenerateQualityProfileImpactsObservation(impacts *[]sonar.RuleImpact) []v1alpha1.QualityProfileRuleImpact {
+func GenerateQualityProfileImpactsObservation(impacts *[]sonar.RulesImpact) []v1alpha1.QualityProfileRuleImpact {
 	if impacts == nil {
 		return []v1alpha1.QualityProfileRuleImpact{}
 	}
@@ -242,7 +243,7 @@ func GenerateQualityProfileImpactsObservation(impacts *[]sonar.RuleImpact) []v1a
 
 // GenerateQualityProfileRuleImpactObservation generates observation for
 // Quality Profile Rule Impact.
-func GenerateQualityProfileRuleImpactObservation(impact sonar.RuleImpact) v1alpha1.QualityProfileRuleImpact {
+func GenerateQualityProfileRuleImpactObservation(impact sonar.RulesImpact) v1alpha1.QualityProfileRuleImpact {
 	return v1alpha1.QualityProfileRuleImpact{
 		Severity:        impact.Severity,
 		SoftwareQuality: impact.SoftwareQuality,
@@ -449,7 +450,7 @@ func GenerateRuleObservation(rule *sonar.RulesShow) v1alpha1.RuleObservation {
 }
 
 // GenerateRuleImpactsObservation generates observations for Rule impacts.
-func GenerateRuleImpactsObservation(impacts *[]sonar.RuleImpact) map[string]string {
+func GenerateRuleImpactsObservation(impacts *[]sonar.RulesImpact) map[string]string {
 	if impacts == nil {
 		return map[string]string{}
 	}
@@ -464,7 +465,7 @@ func GenerateRuleImpactsObservation(impacts *[]sonar.RuleImpact) map[string]stri
 
 // GenerateRuleParametersObservation generates the observation of RuleParameters
 // from the SonarQube Rule Show response.
-func GenerateRuleParametersObservation(rule *[]sonar.RuleParam) []v1alpha1.RuleParameterObservation {
+func GenerateRuleParametersObservation(rule *[]sonar.RulesParam) []v1alpha1.RuleParameterObservation {
 	if rule == nil {
 		return []v1alpha1.RuleParameterObservation{}
 	}
@@ -485,7 +486,7 @@ func GenerateRuleParametersObservation(rule *[]sonar.RuleParam) []v1alpha1.RuleP
 
 // GenerateRuleDescriptionSectionsObservation generates the observation of
 // RuleDescriptionsSections from the SonarQube rule Show response.
-func GenerateRuleDescriptionSectionsObservation(sections *[]sonar.RuleDescriptionSection) []v1alpha1.RuleDescriptionSectionObservation {
+func GenerateRuleDescriptionSectionsObservation(sections *[]sonar.RulesDescriptionSection) []v1alpha1.RuleDescriptionSectionObservation {
 	if sections == nil {
 		return []v1alpha1.RuleDescriptionSectionObservation{}
 	}
@@ -504,7 +505,7 @@ func GenerateRuleDescriptionSectionsObservation(sections *[]sonar.RuleDescriptio
 
 // GenerateRuleDescriptionContextObservation generates the observation of
 // RuleDescriptionContext from the SonarQube rule Show response.
-func GenerateRuleDescriptionContextObservation(context *sonar.RuleDescriptionSectionContext) v1alpha1.RuleDescriptionContextObservation {
+func GenerateRuleDescriptionContextObservation(context *sonar.RulesDescriptionSectionContext) v1alpha1.RuleDescriptionContextObservation {
 	if context == nil {
 		return v1alpha1.RuleDescriptionContextObservation{}
 	}

@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -44,7 +45,7 @@ type MockPluginsClient struct {
 var _ instance.PluginsClient = &MockPluginsClient{}
 
 // Install implements PluginsClient.Install.
-func (m *MockPluginsClient) Install(opt *sonar.PluginsInstallOptions) (resp *http.Response, err error) {
+func (m *MockPluginsClient) Install(_ context.Context, opt *sonar.PluginsInstallOptions) (resp *http.Response, err error) {
 	if m.InstallFn != nil {
 		return m.InstallFn(opt)
 	}
@@ -53,7 +54,7 @@ func (m *MockPluginsClient) Install(opt *sonar.PluginsInstallOptions) (resp *htt
 }
 
 // Installed implements PluginsClient.Installed.
-func (m *MockPluginsClient) Installed(opt *sonar.PluginsInstalledOptions) (v *sonar.PluginsInstalled, resp *http.Response, err error) {
+func (m *MockPluginsClient) Installed(_ context.Context, opt *sonar.PluginsInstalledOptions) (v *sonar.PluginsInstalled, resp *http.Response, err error) {
 	if m.InstalledFn != nil {
 		return m.InstalledFn(opt)
 	}
@@ -62,7 +63,7 @@ func (m *MockPluginsClient) Installed(opt *sonar.PluginsInstalledOptions) (v *so
 }
 
 // Pending implements PluginsClient.Pending.
-func (m *MockPluginsClient) Pending() (v *sonar.PluginsPending, resp *http.Response, err error) {
+func (m *MockPluginsClient) Pending(_ context.Context) (v *sonar.PluginsPending, resp *http.Response, err error) {
 	if m.PendingFn != nil {
 		return m.PendingFn()
 	}
@@ -71,7 +72,7 @@ func (m *MockPluginsClient) Pending() (v *sonar.PluginsPending, resp *http.Respo
 }
 
 // Uninstall implements PluginsClient.Uninstall.
-func (m *MockPluginsClient) Uninstall(opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error) {
+func (m *MockPluginsClient) Uninstall(_ context.Context, opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error) {
 	if m.UninstallFn != nil {
 		return m.UninstallFn(opt)
 	}
@@ -80,7 +81,7 @@ func (m *MockPluginsClient) Uninstall(opt *sonar.PluginsUninstallOptions) (resp 
 }
 
 // Update implements PluginsClient.Update.
-func (m *MockPluginsClient) Update(opt *sonar.PluginsUpdateOptions) (resp *http.Response, err error) {
+func (m *MockPluginsClient) Update(_ context.Context, opt *sonar.PluginsUpdateOptions) (resp *http.Response, err error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(opt)
 	}
@@ -89,7 +90,7 @@ func (m *MockPluginsClient) Update(opt *sonar.PluginsUpdateOptions) (resp *http.
 }
 
 // Updates implements PluginsClient.Updates.
-func (m *MockPluginsClient) Updates() (v *sonar.PluginsUpdates, resp *http.Response, err error) {
+func (m *MockPluginsClient) Updates(_ context.Context) (v *sonar.PluginsUpdates, resp *http.Response, err error) {
 	if m.UpdatesFn != nil {
 		return m.UpdatesFn()
 	}

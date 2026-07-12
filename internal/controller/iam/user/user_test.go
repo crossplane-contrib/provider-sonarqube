@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
@@ -131,10 +131,10 @@ func TestCreate(t *testing.T) {
 
 				return &sonar.UserV2{Id: testUserID, Login: testUserLogin, Name: "Alice", Active: true}, &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil
 			}},
-			groupsClient: &sonarfake.MockGroupsClient{CreateGroupMembershipFn: func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error) {
+			groupsClient: &sonarfake.MockGroupsClient{CreateGroupMembershipFn: func(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error) {
 				createdMemberships[opt.GroupId] = "m-" + opt.GroupId
 
-				return &sonar.GroupMembership{Id: "m-" + opt.GroupId, GroupId: opt.GroupId, UserId: opt.UserId}, &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(""))}, nil
+				return &sonar.AuthorizationsGroupMembership{Id: "m-" + opt.GroupId, GroupId: opt.GroupId, UserId: opt.UserId}, &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(""))}, nil
 			}},
 		}).Create(context.Background(), user)
 		if err != nil {

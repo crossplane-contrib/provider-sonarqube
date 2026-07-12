@@ -19,7 +19,7 @@ package permissions
 import (
 	"context"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -60,9 +60,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	)
 
 	if subjectType == subjectTypeGroup {
-		observedPermissions, found, err = getObservedGroupPermissions(c.client, subject, projectKey)
+		observedPermissions, found, err = getObservedGroupPermissions(ctx, c.client, subject, projectKey)
 	} else {
-		observedPermissions, found, err = getObservedUserPermissions(c.client, subject, projectKey)
+		observedPermissions, found, err = getObservedUserPermissions(ctx, c.client, subject, projectKey)
 	}
 
 	if err != nil {
@@ -102,7 +102,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 // found.
 //
 //nolint:dupl // Intentional structural similarity with getObservedUserPermissions; different API types prevent abstraction.
-func getObservedGroupPermissions(permClient iam.PermissionsClient, groupName, projectKey string) ([]string, bool, error) { //nolint:gocritic // named results not helpful for pagination loops
+func getObservedGroupPermissions(ctx context.Context, permClient iam.PermissionsClient, groupName, projectKey string) ([]string, bool, error) { //nolint:gocritic // named results not helpful for pagination loops
 	const maxPageSize = int64(100)
 
 	var projectKeyPtr *string
@@ -121,7 +121,7 @@ func getObservedGroupPermissions(permClient iam.PermissionsClient, groupName, pr
 	for page := int64(1); ; page++ {
 		opts := iam.GeneratePermissionsGroupsOptions(queryName, projectKeyPtr, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
 
-		result, resp, err := permClient.Groups(opts) //nolint:bodyclose // closed via helpers.CloseBody
+		result, resp, err := permClient.Groups(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {
@@ -147,7 +147,7 @@ func getObservedGroupPermissions(permClient iam.PermissionsClient, groupName, pr
 // found.
 //
 //nolint:dupl // Intentional structural similarity with getObservedGroupPermissions; different API types prevent abstraction.
-func getObservedUserPermissions(permClient iam.PermissionsClient, login, projectKey string) ([]string, bool, error) { //nolint:gocritic // named results not helpful for pagination loops
+func getObservedUserPermissions(ctx context.Context, permClient iam.PermissionsClient, login, projectKey string) ([]string, bool, error) { //nolint:gocritic // named results not helpful for pagination loops
 	const maxPageSize = int64(100)
 
 	var projectKeyPtr *string
@@ -158,7 +158,7 @@ func getObservedUserPermissions(permClient iam.PermissionsClient, login, project
 	for page := int64(1); ; page++ {
 		opts := iam.GeneratePermissionsUsersOptions(login, projectKeyPtr, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
 
-		result, resp, err := permClient.Users(opts) //nolint:bodyclose // closed via helpers.CloseBody
+		result, resp, err := permClient.Users(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {

@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -33,35 +34,37 @@ const (
 
 // PortfoliosClient is the interface for interacting with the
 // SonarQube Portfolio (Views) API.
+//
+//nolint:interfacebloat // This interface wraps the SonarQube Views (Portfolios) API which has many methods
 type PortfoliosClient interface {
-	AddApplication(opt *sonar.ViewsAddApplicationOptions) (*http.Response, error)
-	AddApplicationBranch(opt *sonar.ViewsAddApplicationBranchOptions) (*http.Response, error)
-	AddPortfolio(opt *sonar.ViewsAddPortfolioOptions) (*http.Response, error)
-	AddProject(opt *sonar.ViewsAddProjectOptions) (*http.Response, error)
-	AddProjectBranch(opt *sonar.ViewsAddProjectBranchOptions) (*http.Response, error)
-	Applications(opt *sonar.ViewsApplicationsOptions) (*sonar.ViewsApplications, *http.Response, error)
-	Create(opt *sonar.ViewsCreateOptions) (*http.Response, error)
-	Delete(opt *sonar.ViewsDeleteOptions) (*http.Response, error)
-	List() (*sonar.ViewsList, *http.Response, error)
-	Move(opt *sonar.ViewsMoveOptions) (*http.Response, error)
-	MoveOptions(opt *sonar.ViewsMoveOptionsOptions) (*sonar.ViewsMoveDestinations, *http.Response, error)
-	Projects(opt *sonar.ViewsProjectsOptions) (*sonar.ViewsProjects, *http.Response, error)
-	ProjectsStatus(opt *sonar.ViewsProjectsStatusOptions) (*sonar.ViewsProjectsStatus, *http.Response, error)
-	Refresh(opt *sonar.ViewsRefreshOptions) (*http.Response, error)
-	RemoveApplication(opt *sonar.ViewsRemoveApplicationOptions) (*http.Response, error)
-	RemoveApplicationBranch(opt *sonar.ViewsRemoveApplicationBranchOptions) (*http.Response, error)
-	RemovePortfolio(opt *sonar.ViewsRemovePortfolioOptions) (*http.Response, error)
-	RemoveProject(opt *sonar.ViewsRemoveProjectOptions) (*http.Response, error)
-	RemoveProjectBranch(opt *sonar.ViewsRemoveProjectBranchOptions) (*http.Response, error)
-	Search(opt *sonar.ViewsSearchOptions) (*sonar.ViewsSearch, *http.Response, error)
-	SetManualMode(opt *sonar.ViewsSetManualModeOptions) (*http.Response, error)
-	SetNoneMode(opt *sonar.ViewsSetNoneModeOptions) (*http.Response, error)
-	SetRegexpMode(opt *sonar.ViewsSetRegexpModeOptions) (*http.Response, error)
-	SetRemainingProjectsMode(opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error)
-	SetTagsMode(opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error)
-	Show(opt *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error)
-	SubPortfolios(opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error)
-	Update(opt *sonar.ViewsUpdateOptions) (*http.Response, error)
+	AddApplication(ctx context.Context, opt *sonar.ViewsAddApplicationOptions) (*http.Response, error)
+	AddApplicationBranch(ctx context.Context, opt *sonar.ViewsAddApplicationBranchOptions) (*http.Response, error)
+	AddPortfolio(ctx context.Context, opt *sonar.ViewsAddPortfolioOptions) (*http.Response, error)
+	AddProject(ctx context.Context, opt *sonar.ViewsAddProjectOptions) (*http.Response, error)
+	AddProjectBranch(ctx context.Context, opt *sonar.ViewsAddProjectBranchOptions) (*http.Response, error)
+	Applications(ctx context.Context, opt *sonar.ViewsApplicationsOptions) (*sonar.ViewsApplications, *http.Response, error)
+	Create(ctx context.Context, opt *sonar.ViewsCreateOptions) (*http.Response, error)
+	Delete(ctx context.Context, opt *sonar.ViewsDeleteOptions) (*http.Response, error)
+	List(ctx context.Context) (*sonar.ViewsList, *http.Response, error)
+	Move(ctx context.Context, opt *sonar.ViewsMoveOptions) (*http.Response, error)
+	MoveOptions(ctx context.Context, opt *sonar.ViewsMoveOptionsOptions) (*sonar.ViewsMoveDestinations, *http.Response, error)
+	Projects(ctx context.Context, opt *sonar.ViewsProjectsOptions) (*sonar.ViewsProjects, *http.Response, error)
+	ProjectsStatus(ctx context.Context, opt *sonar.ViewsProjectsStatusOptions) (*sonar.ViewsProjectsStatus, *http.Response, error)
+	Refresh(ctx context.Context, opt *sonar.ViewsRefreshOptions) (*http.Response, error)
+	RemoveApplication(ctx context.Context, opt *sonar.ViewsRemoveApplicationOptions) (*http.Response, error)
+	RemoveApplicationBranch(ctx context.Context, opt *sonar.ViewsRemoveApplicationBranchOptions) (*http.Response, error)
+	RemovePortfolio(ctx context.Context, opt *sonar.ViewsRemovePortfolioOptions) (*http.Response, error)
+	RemoveProject(ctx context.Context, opt *sonar.ViewsRemoveProjectOptions) (*http.Response, error)
+	RemoveProjectBranch(ctx context.Context, opt *sonar.ViewsRemoveProjectBranchOptions) (*http.Response, error)
+	Search(ctx context.Context, opt *sonar.ViewsSearchOptions) (*sonar.ViewsSearch, *http.Response, error)
+	SetManualMode(ctx context.Context, opt *sonar.ViewsSetManualModeOptions) (*http.Response, error)
+	SetNoneMode(ctx context.Context, opt *sonar.ViewsSetNoneModeOptions) (*http.Response, error)
+	SetRegexpMode(ctx context.Context, opt *sonar.ViewsSetRegexpModeOptions) (*http.Response, error)
+	SetRemainingProjectsMode(ctx context.Context, opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error)
+	SetTagsMode(ctx context.Context, opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error)
+	Show(ctx context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error)
+	SubPortfolios(ctx context.Context, opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error)
+	Update(ctx context.Context, opt *sonar.ViewsUpdateOptions) (*http.Response, error)
 }
 
 // NewPortfoliosClient creates a new PortfoliosClient using the

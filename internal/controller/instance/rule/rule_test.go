@@ -31,7 +31,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -172,7 +172,7 @@ func TestObserve(t *testing.T) {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				ShowFn: func(opt *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
-						Rule: sonar.RuleDetails{
+						Rule: sonar.RulesDetails{
 							Key:         "custom:rule",
 							Name:        "Custom Rule",
 							TemplateKey: "java:TemplateRule",
@@ -206,7 +206,7 @@ func TestObserve(t *testing.T) {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
-						Rule: sonar.RuleDetails{
+						Rule: sonar.RulesDetails{
 							Key:         "custom:rule",
 							Name:        "Different Name",
 							TemplateKey: "java:TemplateRule",
@@ -236,7 +236,7 @@ func TestObserve(t *testing.T) {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
-						Rule: sonar.RuleDetails{
+						Rule: sonar.RulesDetails{
 							Key:    "custom:rule",
 							Status: sonar.RuleStatusRemoved,
 						},
@@ -255,7 +255,7 @@ func TestObserve(t *testing.T) {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
 					return &sonar.RulesShow{
-						Rule: sonar.RuleDetails{
+						Rule: sonar.RulesDetails{
 							Key:         "custom:rule",
 							Name:        "Custom Rule",
 							TemplateKey: "java:TemplateRule",
@@ -353,7 +353,7 @@ func TestCreate(t *testing.T) {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				CreateFn: func(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 					return &sonar.RulesCreate{
-						Rule: sonar.Rule{Key: "custom:rule"},
+						Rule: sonar.RulesDefinition{Key: "custom:rule"},
 					}, mockHTTPResponse(), nil
 				},
 			}),
@@ -369,7 +369,7 @@ func TestCreate(t *testing.T) {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				CreateFn: func(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
 					return &sonar.RulesCreate{
-						Rule: sonar.Rule{Key: "custom:generated-key"},
+						Rule: sonar.RulesDefinition{Key: "custom:generated-key"},
 					}, mockHTTPResponse(), nil
 				},
 			}),
@@ -448,7 +448,7 @@ func TestUpdate(t *testing.T) {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				UpdateFn: func(_ *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
 					return &sonar.RulesUpdate{
-						Rule: sonar.Rule{Key: "custom:rule"},
+						Rule: sonar.RulesDefinition{Key: "custom:rule"},
 					}, mockHTTPResponse(), nil
 				},
 			}),
@@ -570,7 +570,7 @@ func TestObserveSetsReadyCondition(t *testing.T) {
 
 	e := newTestExternalClient(&fake.MockRulesClient{
 		ShowFn: func(_ *sonar.RulesShowOptions) (*sonar.RulesShow, *http.Response, error) {
-			return &sonar.RulesShow{Rule: sonar.RuleDetails{
+			return &sonar.RulesShow{Rule: sonar.RulesDetails{
 				Key:         "custom:rule",
 				Name:        "Custom Rule",
 				TemplateKey: "java:TemplateRule",

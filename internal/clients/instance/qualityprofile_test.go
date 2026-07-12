@@ -19,7 +19,7 @@ package instance
 import (
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 
@@ -1083,7 +1083,7 @@ func TestGenerateQualityProfileObservation(t *testing.T) {
 	}{
 		"BasicObservation": {
 			observation: &sonar.QualityprofilesShow{
-				Profile: sonar.ShownProfile{
+				Profile: sonar.QualityprofilesShownProfile{
 					ActiveDeprecatedRuleCount: 1,
 					ActiveRuleCount:           10,
 					IsBuiltIn:                 false,
@@ -1113,14 +1113,14 @@ func TestGenerateQualityProfileObservation(t *testing.T) {
 		},
 		"ObservationWithRules": {
 			observation: &sonar.QualityprofilesShow{
-				Profile: sonar.ShownProfile{
+				Profile: sonar.QualityprofilesShownProfile{
 					Key:      "profile-key",
 					Language: "go",
 					Name:     "Go Profile",
 				},
 			},
 			rules: &sonar.RulesSearch{
-				Rules: []sonar.RuleDetails{
+				Rules: []sonar.RulesDetails{
 					{Key: "go:S1000", Name: "Rule 1"},
 				},
 			},

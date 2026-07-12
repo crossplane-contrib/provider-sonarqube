@@ -17,9 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -31,9 +32,9 @@ import (
 // such as creating, updating, deleting, and retrieving ALMGitHub.
 type ALMIntegrationsGitHubClient interface {
 	ALMIntegrationsClient
-	GetGithubClientId(opt *sonar.AlmIntegrationsGetGithubClientIdOptions) (v *sonar.AlmIntegrationsGetGithubClientId, resp *http.Response, err error)
-	ListGithubOrganizations(opt *sonar.AlmIntegrationsListGithubOrganizationsOptions) (v *sonar.AlmIntegrationsListGithubOrganizations, resp *http.Response, err error)
-	ListGithubRepositories(opt *sonar.AlmIntegrationsListGithubRepositoriesOptions) (v *sonar.AlmIntegrationsListGithubRepositories, resp *http.Response, err error)
+	GetGithubClientID(ctx context.Context, opt *sonar.AlmIntegrationsGetGithubClientIDOptions) (v *sonar.AlmIntegrationsGetGithubClientID, resp *http.Response, err error)
+	ListGithubOrganizations(ctx context.Context, opt *sonar.AlmIntegrationsListGithubOrganizationsOptions) (v *sonar.AlmIntegrationsListGithubOrganizations, resp *http.Response, err error)
+	ListGithubRepositories(ctx context.Context, opt *sonar.AlmIntegrationsListGithubRepositoriesOptions) (v *sonar.AlmIntegrationsListGithubRepositories, resp *http.Response, err error)
 }
 
 // ALMSettingsGitHubClient is the interface for interacting with SonarQube ALM
@@ -42,8 +43,8 @@ type ALMIntegrationsGitHubClient interface {
 // SonarQube, such as creating, updating, deleting, and retrieving them.
 type ALMSettingsGitHubClient interface {
 	ALMSettingsClient
-	CreateGithub(opt *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error)
-	UpdateGithub(opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error)
+	CreateGithub(ctx context.Context, opt *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error)
+	UpdateGithub(ctx context.Context, opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error)
 }
 
 // NewALMIntegrationsGitHubClient creates a new ALMIntegrationsGitHubClient

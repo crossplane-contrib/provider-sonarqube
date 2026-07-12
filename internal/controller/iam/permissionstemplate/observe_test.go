@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
@@ -119,15 +119,15 @@ func TestObserve(t *testing.T) {
 							Name:              templateNameA,
 							Description:       "desc",
 							ProjectKeyPattern: "proj-.*",
-							Permissions:       []sonar.TemplatePermission{{Key: "scan", WithProjectCreator: true}},
+							Permissions:       []sonar.PermissionsTemplatePermission{{Key: "scan", WithProjectCreator: true}},
 						}},
 					}, mockHTTPResponse(), nil
 				},
 				TemplateGroupsFn: func(opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error) {
-					return &sonar.PermissionsTemplateGroups{Groups: []sonar.TemplateGroup{{Name: "devs", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsTemplateGroups{Groups: []sonar.PermissionsTemplateGroup{{Name: "devs", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
 				},
 				TemplateUsersFn: func(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
-					return &sonar.PermissionsTemplateUsers{Users: []sonar.TemplateUser{{Login: "alice", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{{Login: "alice", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
 				},
 			},
 			mg:   baseTemplate(),
@@ -142,15 +142,15 @@ func TestObserve(t *testing.T) {
 							Name:              "template-empty",
 							Description:       "desc",
 							ProjectKeyPattern: "proj-.*",
-							Permissions:       []sonar.TemplatePermission{{Key: "scan", WithProjectCreator: true}},
+							Permissions:       []sonar.PermissionsTemplatePermission{{Key: "scan", WithProjectCreator: true}},
 						}},
 					}, mockHTTPResponse(), nil
 				},
 				TemplateGroupsFn: func(opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error) {
-					return &sonar.PermissionsTemplateGroups{Groups: []sonar.TemplateGroup{{Name: "devs", Permissions: []string{}}, {Name: "devs", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsTemplateGroups{Groups: []sonar.PermissionsTemplateGroup{{Name: "devs", Permissions: []string{}}, {Name: "devs", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
 				},
 				TemplateUsersFn: func(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
-					return &sonar.PermissionsTemplateUsers{Users: []sonar.TemplateUser{{Login: "alice", Permissions: []string{}}, {Login: "alice", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{{Login: "alice", Permissions: []string{}}, {Login: "alice", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
 				},
 			},
 			mg: func() resource.Managed {
@@ -175,15 +175,15 @@ func TestObserve(t *testing.T) {
 							Name:              "template-b",
 							Description:       "generated-desc",
 							ProjectKeyPattern: "generated-pattern",
-							Permissions:       []sonar.TemplatePermission{{Key: "scan", WithProjectCreator: true}, {Key: "admin", WithProjectCreator: true}},
+							Permissions:       []sonar.PermissionsTemplatePermission{{Key: "scan", WithProjectCreator: true}, {Key: "admin", WithProjectCreator: true}},
 						}},
 					}, mockHTTPResponse(), nil
 				},
 				TemplateGroupsFn: func(opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error) {
-					return &sonar.PermissionsTemplateGroups{Groups: []sonar.TemplateGroup{}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsTemplateGroups{Groups: []sonar.PermissionsTemplateGroup{}}, mockHTTPResponse(), nil
 				},
 				TemplateUsersFn: func(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
-					return &sonar.PermissionsTemplateUsers{Users: []sonar.TemplateUser{}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{}}, mockHTTPResponse(), nil
 				},
 			},
 			mg:   lateInitTemplate(),
@@ -200,7 +200,7 @@ func TestObserve(t *testing.T) {
 					return nil, mockHTTPResponse(), errors.New("groups failed")
 				},
 				TemplateUsersFn: func(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
-					return &sonar.PermissionsTemplateUsers{Users: []sonar.TemplateUser{}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{}}, mockHTTPResponse(), nil
 				},
 			},
 			mg:      withExternalName(newPermissionsTemplate(templateNameA), "template-id"),
@@ -250,15 +250,15 @@ func TestObserveLateInitializesDefault(t *testing.T) {
 					Name:              "template-default",
 					Description:       "desc",
 					ProjectKeyPattern: "proj-.*",
-					Permissions:       []sonar.TemplatePermission{{Key: "scan", WithProjectCreator: true}},
+					Permissions:       []sonar.PermissionsTemplatePermission{{Key: "scan", WithProjectCreator: true}},
 				}},
 			}, mockHTTPResponse(), nil
 		},
 		TemplateGroupsFn: func(opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error) {
-			return &sonar.PermissionsTemplateGroups{Groups: []sonar.TemplateGroup{}}, mockHTTPResponse(), nil
+			return &sonar.PermissionsTemplateGroups{Groups: []sonar.PermissionsTemplateGroup{}}, mockHTTPResponse(), nil
 		},
 		TemplateUsersFn: func(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
-			return &sonar.PermissionsTemplateUsers{Users: []sonar.TemplateUser{}}, mockHTTPResponse(), nil
+			return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{}}, mockHTTPResponse(), nil
 		},
 	}}
 
@@ -319,10 +319,10 @@ func TestObserveReturnsExistsWhenExternalNameIsTemplateID(t *testing.T) {
 			return &sonar.PermissionsSearchTemplates{PermissionTemplates: []sonar.PermissionTemplate{{ID: permissionsTemplateTestID, Name: templateNameA}}}, mockHTTPResponse(), nil
 		},
 		TemplateGroupsFn: func(opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error) {
-			return &sonar.PermissionsTemplateGroups{Groups: []sonar.TemplateGroup{}}, mockHTTPResponse(), nil
+			return &sonar.PermissionsTemplateGroups{Groups: []sonar.PermissionsTemplateGroup{}}, mockHTTPResponse(), nil
 		},
 		TemplateUsersFn: func(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
-			return &sonar.PermissionsTemplateUsers{Users: []sonar.TemplateUser{}}, mockHTTPResponse(), nil
+			return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{}}, mockHTTPResponse(), nil
 		},
 	}}
 
@@ -402,7 +402,7 @@ func TestObservePermissionsTemplate(t *testing.T) {
 			}
 
 			if opt.Page == 1 {
-				return &sonar.PermissionsSearchTemplates{PermissionTemplates: []sonar.PermissionTemplate{{ID: permissionsTemplateTestID, Name: templateNameA}}, DefaultTemplates: []sonar.DefaultTemplate{{TemplateID: permissionsTemplateTestID}}}, mockHTTPResponse(), nil
+				return &sonar.PermissionsSearchTemplates{PermissionTemplates: []sonar.PermissionTemplate{{ID: permissionsTemplateTestID, Name: templateNameA}}, DefaultTemplates: []sonar.PermissionsDefaultTemplate{{TemplateID: permissionsTemplateTestID}}}, mockHTTPResponse(), nil
 			}
 
 			return &sonar.PermissionsSearchTemplates{PermissionTemplates: []sonar.PermissionTemplate{}}, mockHTTPResponse(), nil
@@ -411,7 +411,7 @@ func TestObservePermissionsTemplate(t *testing.T) {
 
 	e := &external{client: idLookupClient}
 
-	got, isDefault, err := e.observePermissionsTemplate(new(permissionsTemplateTestID), nil)
+	got, isDefault, err := e.observePermissionsTemplate(context.Background(), new(permissionsTemplateTestID), nil)
 	if err != nil || got.ID != permissionsTemplateTestID || !isDefault {
 		t.Fatalf("observePermissionsTemplate() got=%+v isDefault=%v err=%v", got, isDefault, err)
 	}
@@ -422,18 +422,18 @@ func TestObservePermissionsTemplate(t *testing.T) {
 				t.Fatalf("SearchFn query = %q, want %q", opt.Query, templateNameA)
 			}
 
-			return &sonar.PermissionsSearchTemplates{PermissionTemplates: []sonar.PermissionTemplate{{ID: permissionsTemplateTestID, Name: templateNameA}}, DefaultTemplates: []sonar.DefaultTemplate{{TemplateID: permissionsTemplateTestID}}}, mockHTTPResponse(), nil
+			return &sonar.PermissionsSearchTemplates{PermissionTemplates: []sonar.PermissionTemplate{{ID: permissionsTemplateTestID, Name: templateNameA}}, DefaultTemplates: []sonar.PermissionsDefaultTemplate{{TemplateID: permissionsTemplateTestID}}}, mockHTTPResponse(), nil
 		},
 	}
 
 	e = &external{client: nameLookupClient}
 
-	got, isDefault, err = e.observePermissionsTemplate(nil, new(templateNameA))
+	got, isDefault, err = e.observePermissionsTemplate(context.Background(), nil, new(templateNameA))
 	if err != nil || got.ID != permissionsTemplateTestID || !isDefault {
 		t.Fatalf("observePermissionsTemplate() name-only got=%+v isDefault=%v err=%v", got, isDefault, err)
 	}
 
-	_, _, err = e.observePermissionsTemplate(nil, nil)
+	_, _, err = e.observePermissionsTemplate(context.Background(), nil, nil)
 	if err == nil {
 		t.Fatal("observePermissionsTemplate(nil, nil) expected error")
 	}
@@ -442,7 +442,7 @@ func TestObservePermissionsTemplate(t *testing.T) {
 		return nil, mockHTTPResponse(), errors.New("search failed")
 	}}}
 
-	_, _, err = errExternalClient.observePermissionsTemplate(new(permissionsTemplateTestID), nil)
+	_, _, err = errExternalClient.observePermissionsTemplate(context.Background(), new(permissionsTemplateTestID), nil)
 	if err == nil || !strings.Contains(err.Error(), "failed to search for PermissionsTemplate") {
 		t.Fatalf("observePermissionsTemplate() error = %v", err)
 	}
@@ -458,14 +458,14 @@ func TestObserveTemplatePermissionPagination(t *testing.T) {
 			groupsCalls++
 
 			if opt.Page == 1 {
-				return &sonar.PermissionsTemplateGroups{Groups: make([]sonar.TemplateGroup, 500)}, mockHTTPResponse(), nil
+				return &sonar.PermissionsTemplateGroups{Groups: make([]sonar.PermissionsTemplateGroup, 500)}, mockHTTPResponse(), nil
 			}
 
-			return &sonar.PermissionsTemplateGroups{Groups: []sonar.TemplateGroup{{Name: "devs", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
+			return &sonar.PermissionsTemplateGroups{Groups: []sonar.PermissionsTemplateGroup{{Name: "devs", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
 		},
 	}
 
-	groups, err := (&external{client: groupsClient}).observePermissionsTemplateGroups(permissionsTemplateTestID)
+	groups, err := (&external{client: groupsClient}).observePermissionsTemplateGroups(context.Background(), permissionsTemplateTestID)
 	if err != nil {
 		t.Fatalf("observePermissionsTemplateGroups() unexpected error: %v", err)
 	}
@@ -484,14 +484,14 @@ func TestObserveTemplatePermissionPagination(t *testing.T) {
 			usersCalls++
 
 			if opt.Page == 1 {
-				return &sonar.PermissionsTemplateUsers{Users: make([]sonar.TemplateUser, 500)}, mockHTTPResponse(), nil
+				return &sonar.PermissionsTemplateUsers{Users: make([]sonar.PermissionsTemplateUser, 500)}, mockHTTPResponse(), nil
 			}
 
-			return &sonar.PermissionsTemplateUsers{Users: []sonar.TemplateUser{{Login: "alice", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
+			return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{{Login: "alice", Permissions: []string{"scan"}}}}, mockHTTPResponse(), nil
 		},
 	}
 
-	users, err := (&external{client: usersClient}).observePermissionsTemplateUsers(permissionsTemplateTestID)
+	users, err := (&external{client: usersClient}).observePermissionsTemplateUsers(context.Background(), permissionsTemplateTestID)
 	if err != nil {
 		t.Fatalf("observePermissionsTemplateUsers() unexpected error: %v", err)
 	}

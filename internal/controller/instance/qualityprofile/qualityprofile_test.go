@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -147,7 +147,7 @@ func TestObserve(t *testing.T) {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				ShowFn: func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return &sonar.QualityprofilesShow{
-						Profile: sonar.ShownProfile{
+						Profile: sonar.QualityprofilesShownProfile{
 							Key:             "AU-TpxcA-iU5OvuD2FLz",
 							Name:            "test-profile",
 							Language:        "java",
@@ -163,7 +163,7 @@ func TestObserve(t *testing.T) {
 			rulesClient: &fake.MockRulesClient{
 				SearchFn: func(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 					return &sonar.RulesSearch{
-						Rules: []sonar.RuleDetails{},
+						Rules: []sonar.RulesDetails{},
 						Paging: sonar.Paging{
 							Total: 0,
 						},
@@ -204,7 +204,7 @@ func TestObserve(t *testing.T) {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				ShowFn: func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return &sonar.QualityprofilesShow{
-						Profile: sonar.ShownProfile{
+						Profile: sonar.QualityprofilesShownProfile{
 							Key:          "AU-TpxcA-iU5OvuD2FLz",
 							Name:         "different-name",
 							Language:     "java",
@@ -218,7 +218,7 @@ func TestObserve(t *testing.T) {
 			rulesClient: &fake.MockRulesClient{
 				SearchFn: func(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 					return &sonar.RulesSearch{
-						Rules: []sonar.RuleDetails{},
+						Rules: []sonar.RulesDetails{},
 						Paging: sonar.Paging{
 							Total: 0,
 						},
@@ -259,7 +259,7 @@ func TestObserve(t *testing.T) {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				ShowFn: func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return &sonar.QualityprofilesShow{
-						Profile: sonar.ShownProfile{
+						Profile: sonar.QualityprofilesShownProfile{
 							Key:          "AU-TpxcA-iU5OvuD2FLz",
 							Name:         "test-profile",
 							Language:     "java",
@@ -273,7 +273,7 @@ func TestObserve(t *testing.T) {
 			rulesClient: &fake.MockRulesClient{
 				SearchFn: func(opt *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
 					return &sonar.RulesSearch{
-						Rules: []sonar.RuleDetails{},
+						Rules: []sonar.RulesDetails{},
 						Paging: sonar.Paging{
 							Total: 0,
 						},
@@ -367,7 +367,7 @@ func TestCreate(t *testing.T) {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				CreateFn: func(opt *sonar.QualityprofilesCreateOptions) (*sonar.QualityprofilesCreate, *http.Response, error) {
 					return &sonar.QualityprofilesCreate{
-						Profile: sonar.CreatedProfile{
+						Profile: sonar.QualityprofilesCreatedProfile{
 							Key:          "AU-TpxcA-iU5OvuD2FLz",
 							Name:         opt.Name,
 							Language:     opt.Language,
@@ -426,7 +426,7 @@ func TestCreate(t *testing.T) {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				CreateFn: func(opt *sonar.QualityprofilesCreateOptions) (*sonar.QualityprofilesCreate, *http.Response, error) {
 					return &sonar.QualityprofilesCreate{
-						Profile: sonar.CreatedProfile{
+						Profile: sonar.QualityprofilesCreatedProfile{
 							Key:      "AU-TpxcA-iU5OvuD2FLz",
 							Name:     opt.Name,
 							Language: opt.Language,
@@ -750,7 +750,7 @@ func TestSyncQualityProfileRules(t *testing.T) {
 			t.Parallel()
 
 			e := &external{qualityProfilesClient: tc.qualityProfilesClient}
-			err := e.syncQualityProfileRules(tc.args.cr, tc.args.associations)
+			err := e.syncQualityProfileRules(context.Background(), tc.args.cr, tc.args.associations)
 
 			// Special case for error aggregation test
 			if name == "ErrorAggregation" {

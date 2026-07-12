@@ -19,8 +19,9 @@ package portfolio
 
 import (
 	"context"
+	"strings"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
@@ -184,7 +185,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	result, resp, err := c.client.Show(&sonar.ViewsShowOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
+	result, resp, err := c.client.Show(ctx, &sonar.ViewsShowOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
 	if err != nil {
 		if common.IsResponseNotFound(resp) {
 			return managed.ExternalObservation{ResourceExists: false}, nil
@@ -219,7 +220,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	portfolio.Status.SetConditions(xpv1.Creating())
 
-	resp, err := c.client.Create(&sonar.ViewsCreateOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Create(ctx, &sonar.ViewsCreateOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Key:         portfolio.Spec.ForProvider.Key,
 		Name:        portfolio.Spec.ForProvider.Name,
 		Description: portfolio.Spec.ForProvider.Description,
@@ -231,7 +232,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreatePortfolio)
 	}
 
-	err = c.setSelectionMode(portfolio.Spec.ForProvider.Key, &portfolio.Spec.ForProvider)
+	err = c.setSelectionMode(ctx, portfolio.Spec.ForProvider.Key, &portfolio.Spec.ForProvider)
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errSetSelectionMode)
 	}
@@ -254,7 +255,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.Errorf(errExternalNameNotSet, portfolio.Name)
 	}
 
-	resp, err := c.client.Update(&sonar.ViewsUpdateOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Update(ctx, &sonar.ViewsUpdateOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Key:         externalName,
 		Name:        portfolio.Spec.ForProvider.Name,
 		Description: portfolio.Spec.ForProvider.Description,
@@ -265,7 +266,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdatePortfolio)
 	}
 
-	err = c.setSelectionMode(externalName, &portfolio.Spec.ForProvider)
+	err = c.setSelectionMode(ctx, externalName, &portfolio.Spec.ForProvider)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errSetSelectionMode)
 	}
@@ -287,7 +288,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	resp, err := c.client.Delete(&sonar.ViewsDeleteOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Delete(ctx, &sonar.ViewsDeleteOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -304,7 +305,7 @@ func (c *external) Disconnect(_ context.Context) error {
 
 // setSelectionMode sets the project selection mode for the portfolio
 // in SonarQube.
-func (c *external) setSelectionMode(key string, spec *v1alpha1.PortfolioParameters) error {
+func (c *external) setSelectionMode(ctx context.Context, key string, spec *v1alpha1.PortfolioParameters) error {
 	mode := spec.SelectionMode
 	if mode == "" {
 		mode = selectionModeNone
@@ -312,17 +313,17 @@ func (c *external) setSelectionMode(key string, spec *v1alpha1.PortfolioParamete
 
 	switch mode {
 	case selectionModeNone:
-		resp, err := c.client.SetNoneMode(&sonar.ViewsSetNoneModeOptions{Portfolio: key}) //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err := c.client.SetNoneMode(ctx, &sonar.ViewsSetNoneModeOptions{Portfolio: key}) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return errors.Wrap(err, "cannot set NONE selection mode")
 	case selectionModeManual:
-		resp, err := c.client.SetManualMode(&sonar.ViewsSetManualModeOptions{Portfolio: key}) //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err := c.client.SetManualMode(ctx, &sonar.ViewsSetManualModeOptions{Portfolio: key}) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return errors.Wrap(err, "cannot set MANUAL selection mode")
 	case selectionModeRegexp:
-		resp, err := c.client.SetRegexpMode(&sonar.ViewsSetRegexpModeOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err := c.client.SetRegexpMode(ctx, &sonar.ViewsSetRegexpModeOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 			Portfolio: key,
 			Regexp:    spec.Regexp,
 			Branch:    spec.Branch,
@@ -331,7 +332,7 @@ func (c *external) setSelectionMode(key string, spec *v1alpha1.PortfolioParamete
 
 		return errors.Wrap(err, "cannot set REGEXP selection mode")
 	case selectionModeRemaining:
-		resp, err := c.client.SetRemainingProjectsMode(&sonar.ViewsSetRemainingProjectsModeOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err := c.client.SetRemainingProjectsMode(ctx, &sonar.ViewsSetRemainingProjectsModeOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 			Portfolio: key,
 			Branch:    spec.Branch,
 		})
@@ -339,9 +340,9 @@ func (c *external) setSelectionMode(key string, spec *v1alpha1.PortfolioParamete
 
 		return errors.Wrap(err, "cannot set REMAINING selection mode")
 	case selectionModeTags:
-		resp, err := c.client.SetTagsMode(&sonar.ViewsSetTagsModeOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err := c.client.SetTagsMode(ctx, &sonar.ViewsSetTagsModeOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 			Portfolio: key,
-			Tags:      spec.Tags,
+			Tags:      strings.Split(spec.Tags, ","),
 			Branch:    spec.Branch,
 		})
 		defer helpers.CloseBody(resp)

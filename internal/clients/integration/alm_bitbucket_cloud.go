@@ -17,9 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
@@ -30,7 +31,7 @@ import (
 // such as creating, updating, deleting, and retrieving ALMBitbucketCloud.
 type ALMIntegrationsBitbucketCloudClient interface {
 	ALMIntegrationsClient
-	SearchBitbucketCloudRepos(opt *sonar.AlmIntegrationsSearchBitbucketCloudReposOptions) (v *sonar.AlmIntegrationsSearchBitbucketCloudRepos, resp *http.Response, err error)
+	SearchBitbucketCloudRepos(ctx context.Context, opt *sonar.AlmIntegrationsSearchBitbucketCloudReposOptions) (v *sonar.AlmIntegrationsSearchBitbucketCloudRepos, resp *http.Response, err error)
 }
 
 // ALMSettingsBitbucketCloudClient is the interface for interacting with
@@ -39,8 +40,8 @@ type ALMIntegrationsBitbucketCloudClient interface {
 // in SonarQube, such as creating, updating, deleting, and retrieving them.
 type ALMSettingsBitbucketCloudClient interface {
 	ALMSettingsClient
-	CreateBitbucketCloud(opt *sonar.AlmSettingsCreateBitbucketCloudOptions) (*http.Response, error)
-	UpdateBitbucketCloud(opt *sonar.AlmSettingsUpdateBitbucketCloudOptions) (*http.Response, error)
+	CreateBitbucketCloud(ctx context.Context, opt *sonar.AlmSettingsCreateBitbucketCloudOptions) (*http.Response, error)
+	UpdateBitbucketCloud(ctx context.Context, opt *sonar.AlmSettingsUpdateBitbucketCloudOptions) (*http.Response, error)
 }
 
 // NewALMIntegrationsBitbucketCloudClient creates a new

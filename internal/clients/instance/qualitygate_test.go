@@ -19,7 +19,7 @@ package instance
 import (
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -654,12 +654,12 @@ func TestGenerateQualityGateSelectOptions(t *testing.T) {
 	tests := map[string]struct {
 		projectKey      string
 		qualityGateName string
-		want            *sonar.QualitygatesSelectOptions
+		want            *sonar.QualitygatesAssignOptions
 	}{
 		"BasicSelectOption": {
 			projectKey:      "my-project",
 			qualityGateName: "my-gate",
-			want: &sonar.QualitygatesSelectOptions{
+			want: &sonar.QualitygatesAssignOptions{
 				ProjectKey: "my-project",
 				GateName:   "my-gate",
 			},
@@ -667,7 +667,7 @@ func TestGenerateQualityGateSelectOptions(t *testing.T) {
 		"EmptyValues": {
 			projectKey:      "",
 			qualityGateName: "",
-			want: &sonar.QualitygatesSelectOptions{
+			want: &sonar.QualitygatesAssignOptions{
 				ProjectKey: "",
 				GateName:   "",
 			},

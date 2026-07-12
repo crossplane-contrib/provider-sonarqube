@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
@@ -28,7 +29,7 @@ import (
 type MockUsersClient struct {
 	CreateFn     func(opt *sonar.UsersCreateOptionsV2) (*sonar.UserV2, *http.Response, error)
 	DeactivateFn func(opt *sonar.UsersDeactivateOptionsV2) (*http.Response, error)
-	FetchFn      func(userID string) (*sonar.UserV2, *http.Response, error)
+	GetFn        func(userID string) (*sonar.UserV2, *http.Response, error)
 	SearchFn     func(opt *sonar.UsersSearchOptionV2) (*sonar.UsersSearchV2, *http.Response, error)
 	UpdateFn     func(userID string, opt *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error)
 }
@@ -37,7 +38,7 @@ type MockUsersClient struct {
 var _ iam.UsersClient = &MockUsersClient{}
 
 // Create implements UsersClient.Create.
-func (m *MockUsersClient) Create(opt *sonar.UsersCreateOptionsV2) (*sonar.UserV2, *http.Response, error) {
+func (m *MockUsersClient) Create(_ context.Context, opt *sonar.UsersCreateOptionsV2) (*sonar.UserV2, *http.Response, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -46,7 +47,7 @@ func (m *MockUsersClient) Create(opt *sonar.UsersCreateOptionsV2) (*sonar.UserV2
 }
 
 // Deactivate implements UsersClient.Deactivate.
-func (m *MockUsersClient) Deactivate(opt *sonar.UsersDeactivateOptionsV2) (*http.Response, error) {
+func (m *MockUsersClient) Deactivate(_ context.Context, opt *sonar.UsersDeactivateOptionsV2) (*http.Response, error) {
 	if m.DeactivateFn != nil {
 		return m.DeactivateFn(opt)
 	}
@@ -54,17 +55,17 @@ func (m *MockUsersClient) Deactivate(opt *sonar.UsersDeactivateOptionsV2) (*http
 	return nil, errNotImplemented
 }
 
-// Fetch implements UsersClient.Fetch.
-func (m *MockUsersClient) Fetch(userID string) (*sonar.UserV2, *http.Response, error) {
-	if m.FetchFn != nil {
-		return m.FetchFn(userID)
+// Get implements UsersClient.Get.
+func (m *MockUsersClient) Get(_ context.Context, userID string) (*sonar.UserV2, *http.Response, error) {
+	if m.GetFn != nil {
+		return m.GetFn(userID)
 	}
 
 	return nil, nil, errNotImplemented
 }
 
 // Search implements UsersClient.Search.
-func (m *MockUsersClient) Search(opt *sonar.UsersSearchOptionV2) (*sonar.UsersSearchV2, *http.Response, error) {
+func (m *MockUsersClient) Search(_ context.Context, opt *sonar.UsersSearchOptionV2) (*sonar.UsersSearchV2, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -73,7 +74,7 @@ func (m *MockUsersClient) Search(opt *sonar.UsersSearchOptionV2) (*sonar.UsersSe
 }
 
 // Update implements UsersClient.Update.
-func (m *MockUsersClient) Update(userID string, opt *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error) {
+func (m *MockUsersClient) Update(_ context.Context, userID string, opt *sonar.UsersUpdateOptionsV2) (*sonar.UserV2, *http.Response, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(userID, opt)
 	}

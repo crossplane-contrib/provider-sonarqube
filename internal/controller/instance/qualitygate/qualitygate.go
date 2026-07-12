@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
@@ -184,7 +184,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	}
 
 	// Retrieve the Quality Gate from SonarQube
-	observedQualityGate, resp, err := c.qualityGatesClient.Show(&sonar.QualitygatesShowOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+	observedQualityGate, resp, err := c.qualityGatesClient.Show(ctx, &sonar.QualitygatesShowOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Name: externalName,
 	})
 	defer helpers.CloseBody(resp)
@@ -231,7 +231,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 	qualityGateCreateOptions := instance.GenerateQualityGateCreateOptions(qualityGate.Spec.ForProvider)
 
-	createdQualityGate, resp, err := c.qualityGatesClient.Create(qualityGateCreateOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	createdQualityGate, resp, err := c.qualityGatesClient.Create(ctx, qualityGateCreateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -243,7 +243,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 	// Set Quality Gate as default if specified in the spec
 	if qualityGate.Spec.ForProvider.Default != nil && *qualityGate.Spec.ForProvider.Default {
-		setDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+		setDefaultResp, err := c.qualityGatesClient.SetDefault(ctx, &sonar.QualitygatesSetDefaultOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 			Name: createdQualityGate.Name,
 		})
 		defer helpers.CloseBody(setDefaultResp)
@@ -271,7 +271,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 
 	// Set Quality Gate as default if specified in the spec (idempotent)
 	if qualityGate.Spec.ForProvider.Default != nil && *qualityGate.Spec.ForProvider.Default {
-		updateSetDefaultResp, err := c.qualityGatesClient.SetAsDefault(&sonar.QualitygatesSetAsDefaultOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+		updateSetDefaultResp, err := c.qualityGatesClient.SetDefault(ctx, &sonar.QualitygatesSetDefaultOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 			Name: qualityGate.Spec.ForProvider.Name,
 		})
 		defer helpers.CloseBody(updateSetDefaultResp)
@@ -284,7 +284,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 	associations := instance.GenerateQualityGateConditionsAssociation(qualityGate.Spec.ForProvider.Conditions, qualityGate.Status.AtProvider.Conditions)
 
 	// Sync Quality Gate Conditions
-	err := c.syncQualityGateConditions(qualityGate, associations)
+	err := c.syncQualityGateConditions(ctx, qualityGate, associations)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot sync Quality Gate Conditions")
 	}
@@ -307,7 +307,7 @@ func (c *external) Delete(ctx context.Context, managedResource resource.Managed)
 		return managed.ExternalDelete{}, nil
 	}
 
-	destroyResp, err := c.qualityGatesClient.Destroy(&sonar.QualitygatesDestroyOptions{ //nolint:bodyclose // closed via helpers.CloseBody
+	destroyResp, err := c.qualityGatesClient.Delete(ctx, &sonar.QualitygatesDeleteOptions{ //nolint:bodyclose // closed via helpers.CloseBody
 		Name: externalName,
 	})
 	defer helpers.CloseBody(destroyResp)
@@ -328,7 +328,7 @@ func (c *external) Disconnect(ctx context.Context) error {
 // SonarQube
 // It deletes unwanted conditions, creates missing conditions,
 // and updates out-of-date conditions.
-func (c *external) syncQualityGateConditions(qualityGate *v1alpha1.QualityGate, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
+func (c *external) syncQualityGateConditions(ctx context.Context, qualityGate *v1alpha1.QualityGate, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	if len(qualityGateConditionAssociations) == 0 {
 		return nil
 	}
@@ -338,17 +338,17 @@ func (c *external) syncQualityGateConditions(qualityGate *v1alpha1.QualityGate, 
 		return fmt.Errorf("external name is not set for Quality Gate %s", qualityGate.Name)
 	}
 
-	err := c.deleteUnwantedQualityGateConditions(qualityGateConditionAssociations)
+	err := c.deleteUnwantedQualityGateConditions(ctx, qualityGateConditionAssociations)
 	if err != nil {
 		return err
 	}
 
-	err = c.createMissingQualityGateConditions(externalName, qualityGateConditionAssociations)
+	err = c.createMissingQualityGateConditions(ctx, externalName, qualityGateConditionAssociations)
 	if err != nil {
 		return err
 	}
 
-	err = c.updateOutdatedQualityGateConditions(qualityGateConditionAssociations)
+	err = c.updateOutdatedQualityGateConditions(ctx, qualityGateConditionAssociations)
 	if err != nil {
 		return err
 	}
@@ -358,14 +358,14 @@ func (c *external) syncQualityGateConditions(qualityGate *v1alpha1.QualityGate, 
 
 // deleteUnwantedQualityGateConditions deletes Quality Gate Conditions that
 // are no longer needed.
-func (c *external) deleteUnwantedQualityGateConditions(qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
+func (c *external) deleteUnwantedQualityGateConditions(ctx context.Context, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	missingQualityGateConditions := instance.FindMissingQualityGateConditions(qualityGateConditionAssociations)
 	for _, conditionObservation := range missingQualityGateConditions {
 		if conditionObservation == nil {
 			continue
 		}
 
-		deleteResponse, err := c.qualityGatesClient.DeleteCondition(instance.GenerateDeleteQualityGateConditionOption(conditionObservation.ID)) //nolint:bodyclose // closed via helpers.CloseBody
+		deleteResponse, err := c.qualityGatesClient.DeleteCondition(ctx, instance.GenerateDeleteQualityGateConditionOption(conditionObservation.ID)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(deleteResponse)
 
 		if err != nil {
@@ -380,7 +380,7 @@ func (c *external) deleteUnwantedQualityGateConditions(qualityGateConditionAssoc
 
 // createMissingQualityGateConditions creates Quality Gate Conditions that
 // are specified but do not exist.
-func (c *external) createMissingQualityGateConditions(externalName string, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
+func (c *external) createMissingQualityGateConditions(ctx context.Context, externalName string, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	nonExistingQualityGateConditions := instance.FindNonExistingQualityGateConditions(qualityGateConditionAssociations)
 	for _, conditionSpec := range nonExistingQualityGateConditions {
 		if conditionSpec == nil {
@@ -398,7 +398,7 @@ func (c *external) createMissingQualityGateConditions(externalName string, quali
 			}
 		}
 
-		qualityGateCondition, createResponse, err := c.qualityGatesClient.CreateCondition(instance.GenerateCreateQualityGateConditionOption(externalName, *conditionSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+		qualityGateCondition, createResponse, err := c.qualityGatesClient.CreateCondition(ctx, instance.GenerateCreateQualityGateConditionOption(externalName, *conditionSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(createResponse)
 
 		if err != nil {
@@ -426,14 +426,14 @@ func (c *external) createMissingQualityGateConditions(externalName string, quali
 
 // updateOutdatedQualityGateConditions updates Quality Gate Conditions that
 // are out of date.
-func (c *external) updateOutdatedQualityGateConditions(qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
+func (c *external) updateOutdatedQualityGateConditions(ctx context.Context, qualityGateConditionAssociations map[string]instance.QualityGateConditionAssociation) error {
 	outdatedQualityGateConditions := instance.FindNotUpToDateQualityGateConditions(qualityGateConditionAssociations)
 	for _, association := range outdatedQualityGateConditions {
 		if association.Spec == nil || association.Observation == nil {
 			continue
 		}
 
-		updateResponse, err := c.qualityGatesClient.UpdateCondition(instance.GenerateUpdateQualityGateConditionOption(association.Observation.ID, *association.Spec)) //nolint:bodyclose // closed via helpers.CloseBody
+		updateResponse, err := c.qualityGatesClient.UpdateCondition(ctx, instance.GenerateUpdateQualityGateConditionOption(association.Observation.ID, *association.Spec)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(updateResponse)
 
 		if err != nil {

@@ -19,9 +19,10 @@ limitations under the License.
 package iam
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -32,14 +33,14 @@ import (
 // It handles all the operations related to Groups in SonarQube, such as
 // creating, updating, deleting, and retrieving Groups.
 type GroupsClient interface {
-	CreateGroup(opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.Group, *http.Response, error)
-	CreateGroupMembership(opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.GroupMembership, *http.Response, error)
-	DeleteGroup(groupID string) (*http.Response, error)
-	DeleteGroupMembership(membershipID string) (*http.Response, error)
-	FetchGroup(groupID string) (*sonar.Group, *http.Response, error)
-	SearchGroupMemberships(opt *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error)
-	SearchGroups(opt *sonar.AuthorizationsSearchGroupsOptions) (*sonar.AuthorizationsGroupsSearch, *http.Response, error)
-	UpdateGroup(groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.Group, *http.Response, error)
+	CreateGroup(ctx context.Context, opt *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error)
+	CreateGroupMembership(ctx context.Context, opt *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error)
+	DeleteGroup(ctx context.Context, groupID string) (*http.Response, error)
+	DeleteGroupMembership(ctx context.Context, membershipID string) (*http.Response, error)
+	GetGroup(ctx context.Context, groupID string) (*sonar.AuthorizationsGroup, *http.Response, error)
+	SearchGroupMemberships(ctx context.Context, opt *sonar.AuthorizationsSearchGroupMembershipsOptions) (*sonar.AuthorizationsGroupMembershipsSearch, *http.Response, error)
+	SearchGroups(ctx context.Context, opt *sonar.AuthorizationsSearchGroupsOptions) (*sonar.AuthorizationsGroupsSearch, *http.Response, error)
+	UpdateGroup(ctx context.Context, groupID string, opt *sonar.AuthorizationsUpdateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error)
 }
 
 // NewGroupsClient creates a new GroupsClient with the provided SonarQube
@@ -140,7 +141,7 @@ func GenerateUpdateGroupOptions(spec *v1alpha1.GroupParameters) *sonar.Authoriza
 
 // GenerateGroupObservation generates the GroupObservation from the
 // SonarQube API response for a Group resource.
-func GenerateGroupObservation(group *sonar.Group) v1alpha1.GroupObservation {
+func GenerateGroupObservation(group *sonar.AuthorizationsGroup) v1alpha1.GroupObservation {
 	if group == nil {
 		return v1alpha1.GroupObservation{}
 	}
@@ -177,7 +178,7 @@ func GenerateGroupSearchMembershipsOptions(groupID, userID *string, pagination *
 
 // GenerateGroupMembershipObservation generates a map of group ID
 // to membership ID from the SonarQube API response for group memberships.
-func GenerateGroupMembershipObservation(memberships *[]sonar.GroupMembership) map[string]string {
+func GenerateGroupMembershipObservation(memberships *[]sonar.AuthorizationsGroupMembership) map[string]string {
 	if memberships == nil {
 		return nil
 	}

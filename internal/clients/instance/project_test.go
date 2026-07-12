@@ -19,7 +19,7 @@ package instance
 import (
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"

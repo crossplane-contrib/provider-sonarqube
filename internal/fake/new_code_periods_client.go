@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -37,7 +38,7 @@ type MockNewCodePeriodsClient struct {
 var _ instance.NewCodePeriodsClient = &MockNewCodePeriodsClient{}
 
 // List implements NewCodePeriodsClient.List.
-func (m *MockNewCodePeriodsClient) List(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error) {
+func (m *MockNewCodePeriodsClient) List(_ context.Context, opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn(opt)
 	}
@@ -46,7 +47,7 @@ func (m *MockNewCodePeriodsClient) List(opt *sonar.NewCodePeriodsListOptions) (*
 }
 
 // Set implements NewCodePeriodsClient.Set.
-func (m *MockNewCodePeriodsClient) Set(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
+func (m *MockNewCodePeriodsClient) Set(_ context.Context, opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}
@@ -55,7 +56,7 @@ func (m *MockNewCodePeriodsClient) Set(opt *sonar.NewCodePeriodsSetOptions) (*ht
 }
 
 // Show implements NewCodePeriodsClient.Show.
-func (m *MockNewCodePeriodsClient) Show(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
+func (m *MockNewCodePeriodsClient) Show(_ context.Context, opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
 	if m.ShowFn != nil {
 		return m.ShowFn(opt)
 	}
@@ -64,7 +65,7 @@ func (m *MockNewCodePeriodsClient) Show(opt *sonar.NewCodePeriodsShowOptions) (*
 }
 
 // Unset implements NewCodePeriodsClient.Unset.
-func (m *MockNewCodePeriodsClient) Unset(opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error) {
+func (m *MockNewCodePeriodsClient) Unset(_ context.Context, opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error) {
 	if m.UnsetFn != nil {
 		return m.UnsetFn(opt)
 	}

@@ -23,7 +23,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -59,7 +59,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	template, isDefault, err := c.observePermissionsTemplate(&externalName, nil)
+	template, isDefault, err := c.observePermissionsTemplate(ctx, &externalName, nil)
 	if err != nil {
 		// If the PermissionsTemplate is not found, we consider that it doesn't exist and we don't return an error. Any other error is returned.
 		if errors.Is(err, errPermissionsTemplateNotFound) {
@@ -73,7 +73,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	permissionsTemplate.SetConditions(xpv1.Available())
 
-	groupsObservations, usersObservations, err := c.observeTemplatePermissions(template.ID)
+	groupsObservations, usersObservations, err := c.observeTemplatePermissions(ctx, template.ID)
 	if err != nil {
 		return managed.ExternalObservation{}, err
 	}
@@ -95,7 +95,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 // observeTemplatePermissions collects group and user permissions
 // concurrently for a template.
-func (c *external) observeTemplatePermissions(templateID string) ([]v1alpha1.PermissionsTemplateGroupObservation, []v1alpha1.PermissionsTemplateUserObservation, error) {
+func (c *external) observeTemplatePermissions(ctx context.Context, templateID string) ([]v1alpha1.PermissionsTemplateGroupObservation, []v1alpha1.PermissionsTemplateUserObservation, error) {
 	var (
 		groupsObservations []v1alpha1.PermissionsTemplateGroupObservation
 		usersObservations  []v1alpha1.PermissionsTemplateUserObservation
@@ -119,7 +119,7 @@ func (c *external) observeTemplatePermissions(templateID string) ([]v1alpha1.Per
 	}
 
 	runTask(func() error {
-		observations, err := c.observePermissionsTemplateGroups(templateID)
+		observations, err := c.observePermissionsTemplateGroups(ctx, templateID)
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func (c *external) observeTemplatePermissions(templateID string) ([]v1alpha1.Per
 	}, "failed to observe PermissionsTemplate groups permissions")
 
 	runTask(func() error {
-		observations, err := c.observePermissionsTemplateUsers(templateID)
+		observations, err := c.observePermissionsTemplateUsers(ctx, templateID)
 		if err != nil {
 			return err
 		}
@@ -158,32 +158,32 @@ func (c *external) observeTemplatePermissions(templateID string) ([]v1alpha1.Per
 // (preferred) or by name.
 // ID lookup scans paginated templates without a query because SonarQube
 // query filtering is name-oriented.
-func (c *external) observePermissionsTemplate(templateID, templateName *string) (sonar.PermissionTemplate, bool, error) {
+func (c *external) observePermissionsTemplate(ctx context.Context, templateID, templateName *string) (sonar.PermissionTemplate, bool, error) {
 	if templateID == nil && templateName == nil {
 		return sonar.PermissionTemplate{}, false, pkgerrors.New("either id or name must be provided to search for PermissionsTemplate")
 	}
 
 	if templateID != nil {
-		return c.searchPermissionsTemplate("", func(template sonar.PermissionTemplate) bool {
+		return c.searchPermissionsTemplate(ctx, "", func(template sonar.PermissionTemplate) bool {
 			return template.ID == *templateID
 		})
 	}
 
-	return c.searchPermissionsTemplate(*templateName, func(template sonar.PermissionTemplate) bool {
+	return c.searchPermissionsTemplate(ctx, *templateName, func(template sonar.PermissionTemplate) bool {
 		return template.Name == *templateName
 	})
 }
 
 // searchPermissionsTemplate scans template pages using the provided query
 // and returns the first matching template.
-func (c *external) searchPermissionsTemplate(query string, match func(template sonar.PermissionTemplate) bool) (sonar.PermissionTemplate, bool, error) {
+func (c *external) searchPermissionsTemplate(ctx context.Context, query string, match func(template sonar.PermissionTemplate) bool) (sonar.PermissionTemplate, bool, error) {
 	const maxPageSize = int64(500)
 
 	defaultTemplatesIds := make(map[string]struct{})
 
 	for page := int64(1); ; page++ {
 		templateSearchOptions := iam.GeneratePermissionsTemplateSearchOptions(query, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
-		templates, resp, err := c.client.SearchTemplates(templateSearchOptions) //nolint:bodyclose // closed via helpers.CloseBody
+		templates, resp, err := c.client.SearchTemplates(ctx, templateSearchOptions) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {
@@ -262,14 +262,14 @@ func (c *external) observeTemplatePermissionsPage(fetchPage func(page int64) (in
 // associated with a PermissionsTemplate.
 //
 //nolint:dupl // User and group pagination handlers intentionally mirror each other with different API endpoints.
-func (c *external) observePermissionsTemplateGroups(templateID string) ([]v1alpha1.PermissionsTemplateGroupObservation, error) {
+func (c *external) observePermissionsTemplateGroups(ctx context.Context, templateID string) ([]v1alpha1.PermissionsTemplateGroupObservation, error) {
 	const maxPageSize = int64(100)
 
 	groupsObservations := []v1alpha1.PermissionsTemplateGroupObservation{}
 
 	err := c.observeTemplatePermissionsPage(func(page int64) (int, error) {
 		options := iam.GeneratePermissionsTemplateGroupsSearchOptions(templateID, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
-		groups, resp, err := c.client.TemplateGroups(options) //nolint:bodyclose // closed via helpers.CloseBody
+		groups, resp, err := c.client.TemplateGroups(ctx, options) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {
@@ -291,14 +291,14 @@ func (c *external) observePermissionsTemplateGroups(templateID string) ([]v1alph
 // associated with a PermissionsTemplate.
 //
 //nolint:dupl // This mirrors group pagination behavior with a different API endpoint and observation type.
-func (c *external) observePermissionsTemplateUsers(templateID string) ([]v1alpha1.PermissionsTemplateUserObservation, error) {
+func (c *external) observePermissionsTemplateUsers(ctx context.Context, templateID string) ([]v1alpha1.PermissionsTemplateUserObservation, error) {
 	const maxPageSize = int64(100)
 
 	usersObservations := []v1alpha1.PermissionsTemplateUserObservation{}
 
 	err := c.observeTemplatePermissionsPage(func(page int64) (int, error) {
 		options := iam.GeneratePermissionsTemplateUsersSearchOptions(templateID, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
-		users, resp, err := c.client.TemplateUsers(options) //nolint:bodyclose // closed via helpers.CloseBody
+		users, resp, err := c.client.TemplateUsers(ctx, options) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {

@@ -174,7 +174,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	creationOptions := iam.GeneratePermissionsTemplateCreationOptions(&permissionsTemplate.Spec.ForProvider)
 
-	createdTemplate, resp, err := c.client.CreateTemplate(creationOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	createdTemplate, resp, err := c.client.CreateTemplate(ctx, creationOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -204,7 +204,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	deleteOptions := iam.GeneratePermissionsTemplateDeleteOptions(externalName)
-	resp, err := c.client.DeleteTemplate(deleteOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.DeleteTemplate(ctx, deleteOptions) //nolint:bodyclose // closed via helpers.CloseBody
 
 	defer helpers.CloseBody(resp)
 

@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
@@ -46,7 +47,7 @@ type MockPermissionsTemplatesClient struct {
 var _ iam.PermissionsTemplatesClient = &MockPermissionsTemplatesClient{}
 
 // AddGroupToTemplate implements PermissionsTemplatesClient.AddGroupToTemplate.
-func (m *MockPermissionsTemplatesClient) AddGroupToTemplate(opt *sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) AddGroupToTemplate(_ context.Context, opt *sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error) {
 	if m.AddGroupFn != nil {
 		return m.AddGroupFn(opt)
 	}
@@ -56,7 +57,7 @@ func (m *MockPermissionsTemplatesClient) AddGroupToTemplate(opt *sonar.Permissio
 
 // AddProjectCreatorToTemplate implements
 // PermissionsTemplatesClient.AddProjectCreatorToTemplate.
-func (m *MockPermissionsTemplatesClient) AddProjectCreatorToTemplate(opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) AddProjectCreatorToTemplate(_ context.Context, opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error) {
 	if m.AddProjectCreatorFn != nil {
 		return m.AddProjectCreatorFn(opt)
 	}
@@ -65,7 +66,7 @@ func (m *MockPermissionsTemplatesClient) AddProjectCreatorToTemplate(opt *sonar.
 }
 
 // AddUserToTemplate implements PermissionsTemplatesClient.AddUserToTemplate.
-func (m *MockPermissionsTemplatesClient) AddUserToTemplate(opt *sonar.PermissionsAddUserToTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) AddUserToTemplate(_ context.Context, opt *sonar.PermissionsAddUserToTemplateOptions) (*http.Response, error) {
 	if m.AddUserFn != nil {
 		return m.AddUserFn(opt)
 	}
@@ -74,7 +75,7 @@ func (m *MockPermissionsTemplatesClient) AddUserToTemplate(opt *sonar.Permission
 }
 
 // CreateTemplate implements PermissionsTemplatesClient.CreateTemplate.
-func (m *MockPermissionsTemplatesClient) CreateTemplate(opt *sonar.PermissionsCreateTemplateOptions) (*sonar.PermissionsCreateTemplate, *http.Response, error) {
+func (m *MockPermissionsTemplatesClient) CreateTemplate(_ context.Context, opt *sonar.PermissionsCreateTemplateOptions) (*sonar.PermissionsCreateTemplate, *http.Response, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -83,7 +84,7 @@ func (m *MockPermissionsTemplatesClient) CreateTemplate(opt *sonar.PermissionsCr
 }
 
 // DeleteTemplate implements PermissionsTemplatesClient.DeleteTemplate.
-func (m *MockPermissionsTemplatesClient) DeleteTemplate(opt *sonar.PermissionsDeleteTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) DeleteTemplate(_ context.Context, opt *sonar.PermissionsDeleteTemplateOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -93,7 +94,7 @@ func (m *MockPermissionsTemplatesClient) DeleteTemplate(opt *sonar.PermissionsDe
 
 // RemoveGroupFromTemplate implements
 // PermissionsTemplatesClient.RemoveGroupFromTemplate.
-func (m *MockPermissionsTemplatesClient) RemoveGroupFromTemplate(opt *sonar.PermissionsRemoveGroupFromTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) RemoveGroupFromTemplate(_ context.Context, opt *sonar.PermissionsRemoveGroupFromTemplateOptions) (*http.Response, error) {
 	if m.RemoveGroupFn != nil {
 		return m.RemoveGroupFn(opt)
 	}
@@ -103,7 +104,7 @@ func (m *MockPermissionsTemplatesClient) RemoveGroupFromTemplate(opt *sonar.Perm
 
 // RemoveProjectCreatorFromTemplate implements
 // PermissionsTemplatesClient.RemoveProjectCreatorFromTemplate.
-func (m *MockPermissionsTemplatesClient) RemoveProjectCreatorFromTemplate(opt *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) RemoveProjectCreatorFromTemplate(_ context.Context, opt *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions) (*http.Response, error) {
 	if m.RemoveProjectCreatorFn != nil {
 		return m.RemoveProjectCreatorFn(opt)
 	}
@@ -113,7 +114,7 @@ func (m *MockPermissionsTemplatesClient) RemoveProjectCreatorFromTemplate(opt *s
 
 // RemoveUserFromTemplate implements
 // PermissionsTemplatesClient.RemoveUserFromTemplate.
-func (m *MockPermissionsTemplatesClient) RemoveUserFromTemplate(opt *sonar.PermissionsRemoveUserFromTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) RemoveUserFromTemplate(_ context.Context, opt *sonar.PermissionsRemoveUserFromTemplateOptions) (*http.Response, error) {
 	if m.RemoveUserFn != nil {
 		return m.RemoveUserFn(opt)
 	}
@@ -122,7 +123,7 @@ func (m *MockPermissionsTemplatesClient) RemoveUserFromTemplate(opt *sonar.Permi
 }
 
 // SearchTemplates implements PermissionsTemplatesClient.SearchTemplates.
-func (m *MockPermissionsTemplatesClient) SearchTemplates(opt *sonar.PermissionsSearchTemplatesOptions) (*sonar.PermissionsSearchTemplates, *http.Response, error) {
+func (m *MockPermissionsTemplatesClient) SearchTemplates(_ context.Context, opt *sonar.PermissionsSearchTemplatesOptions) (*sonar.PermissionsSearchTemplates, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -131,7 +132,7 @@ func (m *MockPermissionsTemplatesClient) SearchTemplates(opt *sonar.PermissionsS
 }
 
 // SetDefaultTemplate implements PermissionsTemplatesClient.SetDefaultTemplate.
-func (m *MockPermissionsTemplatesClient) SetDefaultTemplate(opt *sonar.PermissionsSetDefaultTemplateOptions) (*http.Response, error) {
+func (m *MockPermissionsTemplatesClient) SetDefaultTemplate(_ context.Context, opt *sonar.PermissionsSetDefaultTemplateOptions) (*http.Response, error) {
 	if m.SetDefaultFn != nil {
 		return m.SetDefaultFn(opt)
 	}
@@ -140,7 +141,7 @@ func (m *MockPermissionsTemplatesClient) SetDefaultTemplate(opt *sonar.Permissio
 }
 
 // TemplateGroups implements PermissionsTemplatesClient.TemplateGroups.
-func (m *MockPermissionsTemplatesClient) TemplateGroups(opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error) {
+func (m *MockPermissionsTemplatesClient) TemplateGroups(_ context.Context, opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error) {
 	if m.TemplateGroupsFn != nil {
 		return m.TemplateGroupsFn(opt)
 	}
@@ -149,7 +150,7 @@ func (m *MockPermissionsTemplatesClient) TemplateGroups(opt *sonar.PermissionsTe
 }
 
 // TemplateUsers implements PermissionsTemplatesClient.TemplateUsers.
-func (m *MockPermissionsTemplatesClient) TemplateUsers(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
+func (m *MockPermissionsTemplatesClient) TemplateUsers(_ context.Context, opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error) {
 	if m.TemplateUsersFn != nil {
 		return m.TemplateUsersFn(opt)
 	}
@@ -158,7 +159,7 @@ func (m *MockPermissionsTemplatesClient) TemplateUsers(opt *sonar.PermissionsTem
 }
 
 // UpdateTemplate implements PermissionsTemplatesClient.UpdateTemplate.
-func (m *MockPermissionsTemplatesClient) UpdateTemplate(opt *sonar.PermissionsUpdateTemplateOptions) (*sonar.PermissionsUpdateTemplate, *http.Response, error) {
+func (m *MockPermissionsTemplatesClient) UpdateTemplate(_ context.Context, opt *sonar.PermissionsUpdateTemplateOptions) (*sonar.PermissionsUpdateTemplate, *http.Response, error) {
 	if m.UpdateTemplateFn != nil {
 		return m.UpdateTemplateFn(opt)
 	}

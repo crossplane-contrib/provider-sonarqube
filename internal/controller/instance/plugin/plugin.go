@@ -20,7 +20,7 @@ package plugin
 import (
 	"context"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
@@ -170,7 +170,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	managedPlugin.Status.SetConditions(xpv1.Creating())
 
-	resp, err := c.client.Install(&sonar.PluginsInstallOptions{Key: managedPlugin.Spec.ForProvider.Key}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Install(ctx, &sonar.PluginsInstallOptions{Key: managedPlugin.Spec.ForProvider.Key}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -196,7 +196,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New("cannot update SonarQube Plugin without external name")
 	}
 
-	pendingList, pendingResp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
+	pendingList, pendingResp, err := c.client.Pending(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(pendingResp)
 
 	if err != nil {
@@ -207,7 +207,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}}, nil
 	}
 
-	resp, err := c.client.Update(&sonar.PluginsUpdateOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Update(ctx, &sonar.PluginsUpdateOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -233,7 +233,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	pendingList, pendingResp, err := c.client.Pending() //nolint:bodyclose // closed via helpers.CloseBody
+	pendingList, pendingResp, err := c.client.Pending(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(pendingResp)
 
 	if err != nil {
@@ -244,7 +244,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	resp, err := c.client.Uninstall(&sonar.PluginsUninstallOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Uninstall(ctx, &sonar.PluginsUninstallOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

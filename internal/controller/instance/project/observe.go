@@ -18,9 +18,10 @@ limitations under the License.
 package project
 
 import (
+	"context"
 	"sync"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/pkg/errors"
 
@@ -32,8 +33,8 @@ import (
 // observeProjectExistence checks if the project with the given key exists
 // in SonarQube.
 // It populates the ProjectObservation with the project details if it exists.
-func (c *external) observeProjectExistence(projectKey string, observation *v1alpha1.ProjectObservation) (bool, error) {
-	projects, resp, err := c.projectsClient.Search(instance.GenerateProjectSearchOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observeProjectExistence(ctx context.Context, projectKey string, observation *v1alpha1.ProjectObservation) (bool, error) {
+	projects, resp, err := c.projectsClient.Search(ctx, instance.GenerateProjectSearchOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil || projects == nil || len(projects.Components) == 0 {
@@ -61,7 +62,7 @@ func (c *external) observeProjectExistence(projectKey string, observation *v1alp
 
 // observeProjectDetails makes all observation API calls concurrently and
 // returns the results.
-func (c *external) observeProjectDetails(projectKey, projectId string) observeResult {
+func (c *external) observeProjectDetails(ctx context.Context, projectKey, projectId string) observeResult {
 	var (
 		result observeResult
 		mutex  sync.Mutex
@@ -71,23 +72,23 @@ func (c *external) observeProjectDetails(projectKey, projectId string) observeRe
 	result.branchNewCodePeriods = make(map[string]v1alpha1.ProjectNewCodePeriodObservation)
 
 	waitGr.Go(func() {
-		c.observeBranches(projectKey, &result, &mutex)
+		c.observeBranches(ctx, projectKey, &result, &mutex)
 	})
 
 	waitGr.Go(func() {
-		c.observeLinks(projectId, &result, &mutex)
+		c.observeLinks(ctx, projectId, &result, &mutex)
 	})
 
 	waitGr.Go(func() {
-		c.observeNewCodePeriods(projectKey, &result, &mutex)
+		c.observeNewCodePeriods(ctx, projectKey, &result, &mutex)
 	})
 
 	waitGr.Go(func() {
-		c.observeQualityGate(projectKey, &result, &mutex)
+		c.observeQualityGate(ctx, projectKey, &result, &mutex)
 	})
 
 	waitGr.Go(func() {
-		c.observeQualityProfiles(projectKey, &result, &mutex)
+		c.observeQualityProfiles(ctx, projectKey, &result, &mutex)
 	})
 
 	waitGr.Wait()
@@ -97,8 +98,8 @@ func (c *external) observeProjectDetails(projectKey, projectId string) observeRe
 
 // observeBranches retrieves the project branches from SonarQube and
 // populates the result.
-func (c *external) observeBranches(projectKey string, result *observeResult, mutex *sync.Mutex) {
-	branches, resp, branchErr := c.projectBranchesClient.List(instance.GenerateProjectBranchesListOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observeBranches(ctx context.Context, projectKey string, result *observeResult, mutex *sync.Mutex) {
+	branches, resp, branchErr := c.projectBranchesClient.List(ctx, instance.GenerateProjectBranchesListOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -123,8 +124,8 @@ func (c *external) observeBranches(projectKey string, result *observeResult, mut
 
 // observeLinks retrieves the project links from SonarQube and
 // populates the result.
-func (c *external) observeLinks(projectId string, result *observeResult, mutex *sync.Mutex) {
-	links, resp, linkErr := c.projectLinksClient.Search(instance.GenerateProjectLinksSearchOptions(projectId)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observeLinks(ctx context.Context, projectId string, result *observeResult, mutex *sync.Mutex) {
+	links, resp, linkErr := c.projectLinksClient.Search(ctx, instance.GenerateProjectLinksSearchOptions(projectId)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -141,8 +142,8 @@ func (c *external) observeLinks(projectId string, result *observeResult, mutex *
 
 // observeNewCodePeriods observes the new code periods of the project
 // and populates the result.
-func (c *external) observeNewCodePeriods(projectKey string, result *observeResult, mutex *sync.Mutex) {
-	newCodePeriod, resp, ncErr := c.projectNewCodePeriodsClient.Show(instance.GenerateNewCodePeriodsShowOptions(&projectKey, nil)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observeNewCodePeriods(ctx context.Context, projectKey string, result *observeResult, mutex *sync.Mutex) {
+	newCodePeriod, resp, ncErr := c.projectNewCodePeriodsClient.Show(ctx, instance.GenerateNewCodePeriodsShowOptions(&projectKey, nil)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -155,7 +156,7 @@ func (c *external) observeNewCodePeriods(projectKey string, result *observeResul
 
 	mutex.Unlock()
 
-	newCodePeriodsList, ncListResp, ncListErr := c.projectNewCodePeriodsClient.List(instance.GenerateProjectNewCodePeriodsListOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+	newCodePeriodsList, ncListResp, ncListErr := c.projectNewCodePeriodsClient.List(ctx, instance.GenerateProjectNewCodePeriodsListOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(ncListResp)
 
 	mutex.Lock()
@@ -174,8 +175,8 @@ func (c *external) observeNewCodePeriods(projectKey string, result *observeResul
 
 // observeQualityGate retrieves the quality gate associated with
 // the project from SonarQube.
-func (c *external) observeQualityGate(projectKey string, result *observeResult, mutex *sync.Mutex) {
-	qualityGate, resp, qgErr := c.qualityGatesClient.GetByProject(instance.GenerateQualityGateGetByProjectOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observeQualityGate(ctx context.Context, projectKey string, result *observeResult, mutex *sync.Mutex) {
+	qualityGate, resp, qgErr := c.qualityGatesClient.GetByProject(ctx, instance.GenerateQualityGateGetByProjectOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	mutex.Lock()
@@ -192,8 +193,8 @@ func (c *external) observeQualityGate(projectKey string, result *observeResult, 
 
 // observeQualityProfiles retrieves the quality profiles associated
 // with the project from SonarQube.
-func (c *external) observeQualityProfiles(projectKey string, result *observeResult, mutex *sync.Mutex) {
-	qualityProfiles, resp, qpErr := c.qualityProfilesClient.Search(instance.GenerateQualityProfilesSearchProjectOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) observeQualityProfiles(ctx context.Context, projectKey string, result *observeResult, mutex *sync.Mutex) {
+	qualityProfiles, resp, qpErr := c.qualityProfilesClient.Search(ctx, instance.GenerateQualityProfilesSearchProjectOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	mutex.Lock()

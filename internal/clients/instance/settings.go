@@ -17,10 +17,11 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"maps"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -31,9 +32,9 @@ import (
 // It handles all the operations related to Settings in SonarQube,
 // such as creating, updating, deleting, and retrieving Settings.
 type SettingsClient interface {
-	Set(opt *sonar.SettingsSetOptions) (*http.Response, error)
-	Values(opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error)
-	Reset(opt *sonar.SettingsResetOptions) (*http.Response, error)
+	Set(ctx context.Context, opt *sonar.SettingsSetOptions) (*http.Response, error)
+	Values(ctx context.Context, opt *sonar.SettingsValuesOptions) (*sonar.SettingsValues, *http.Response, error)
+	Reset(ctx context.Context, opt *sonar.SettingsResetOptions) (*http.Response, error)
 }
 
 // NewSettingsClient creates a new SettingsClient with the provided

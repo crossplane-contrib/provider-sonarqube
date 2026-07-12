@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -28,9 +29,9 @@ import (
 
 // LicensesClient handles SonarQube License API operations.
 type LicensesClient interface {
-	Get() (*sonar.LicenseGet, *http.Response, error)
-	Set(opt *sonar.LicenseSetOptions) (*http.Response, error)
-	UnsetLicense() (*http.Response, error)
+	Get(ctx context.Context) (*sonar.LicenseGet, *http.Response, error)
+	Set(ctx context.Context, opt *sonar.LicenseSetOptions) (*http.Response, error)
+	UnsetLicense(ctx context.Context) (*http.Response, error)
 }
 
 // NewLicensesClient creates a new LicensesClient from the given config.

@@ -18,9 +18,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
@@ -31,8 +32,8 @@ import (
 // such as creating, updating, deleting, and retrieving ALMAzure.
 type ALMIntegrationsAzureClient interface {
 	ALMIntegrationsClient
-	ListAzureProjects(opt *sonar.AlmIntegrationsListAzureProjectsOptions) (v *sonar.AlmIntegrationsListAzureProjects, resp *http.Response, err error)
-	SearchAzureRepos(opt *sonar.AlmIntegrationsSearchAzureReposOptions) (v *sonar.AlmIntegrationsSearchAzureRepos, resp *http.Response, err error)
+	ListAzureProjects(ctx context.Context, opt *sonar.AlmIntegrationsListAzureProjectsOptions) (v *sonar.AlmIntegrationsListAzureProjects, resp *http.Response, err error)
+	SearchAzureRepos(ctx context.Context, opt *sonar.AlmIntegrationsSearchAzureReposOptions) (v *sonar.AlmIntegrationsSearchAzureRepos, resp *http.Response, err error)
 }
 
 // ALMSettingsAzureClient is the interface for interacting with
@@ -41,8 +42,8 @@ type ALMIntegrationsAzureClient interface {
 // such as creating, updating, deleting, and retrieving them.
 type ALMSettingsAzureClient interface {
 	ALMSettingsClient
-	CreateAzure(opt *sonar.AlmSettingsCreateAzureOptions) (*http.Response, error)
-	UpdateAzure(opt *sonar.AlmSettingsUpdateAzureOptions) (*http.Response, error)
+	CreateAzure(ctx context.Context, opt *sonar.AlmSettingsCreateAzureOptions) (*http.Response, error)
+	UpdateAzure(ctx context.Context, opt *sonar.AlmSettingsUpdateAzureOptions) (*http.Response, error)
 }
 
 // NewALMIntegrationsAzureClient creates a new ALMIntegrationsAzureClient with

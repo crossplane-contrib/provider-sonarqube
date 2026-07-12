@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -150,7 +150,7 @@ func TestCreate(t *testing.T) {
 						t.Fatalf("CreateFn name = %q, want %q", opt.Name, "template-a")
 					}
 
-					return &sonar.PermissionsCreateTemplate{PermissionTemplate: sonar.PermissionTemplateBasic{ID: "template-id", Name: "template-a"}}, mockHTTPResponse(), nil
+					return &sonar.PermissionsCreateTemplate{PermissionTemplate: sonar.PermissionsTemplateBasic{ID: "template-id", Name: "template-a"}}, mockHTTPResponse(), nil
 				},
 			},
 			mg:   newPermissionsTemplate("template-a"),

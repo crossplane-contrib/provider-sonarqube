@@ -35,7 +35,7 @@ import (
 
 // Update is responsible for updating the external resource to match the
 // desired state of the managed resource.
-func (c *external) Update(_ context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
+func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
 	const updateErrorCapacity = 2
 
 	result := managed.ExternalUpdate{}
@@ -55,7 +55,7 @@ func (c *external) Update(_ context.Context, managedResource resource.Managed) (
 	errorSliceMutex := sync.Mutex{}
 
 	updateWaitGroup.Go(func() {
-		err := c.updateUserFields(userResource, externalName)
+		err := c.updateUserFields(ctx, userResource, externalName)
 		if err != nil {
 			errorSliceMutex.Lock()
 
@@ -65,7 +65,7 @@ func (c *external) Update(_ context.Context, managedResource resource.Managed) (
 	})
 
 	updateWaitGroup.Go(func() {
-		err := c.reconcileGroupMemberships(userResource, externalName)
+		err := c.reconcileGroupMemberships(ctx, userResource, externalName)
 		if err != nil {
 			errorSliceMutex.Lock()
 
@@ -80,8 +80,8 @@ func (c *external) Update(_ context.Context, managedResource resource.Managed) (
 
 // updateUserFields updates the mutable fields of the User resource.
 // It does not handle password or group membership updates.
-func (c *external) updateUserFields(userResource *v1alpha1.User, externalName string) error {
-	_, resp, err := c.usersClient.Update(externalName, iam.GenerateUpdateUserOptions(&userResource.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+func (c *external) updateUserFields(ctx context.Context, userResource *v1alpha1.User, externalName string) error {
+	_, resp, err := c.usersClient.Update(ctx, externalName, iam.GenerateUpdateUserOptions(&userResource.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -95,7 +95,7 @@ func (c *external) updateUserFields(userResource *v1alpha1.User, externalName st
 // SonarQube match the desired state specified in the User resource.
 // It calculates the necessary additions and removals of group memberships
 // and performs the required API calls to reconcile the state.
-func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, externalName string) error {
+func (c *external) reconcileGroupMemberships(ctx context.Context, userResource *v1alpha1.User, externalName string) error {
 	if userResource.Spec.ForProvider.Groups == nil {
 		return nil
 	}
@@ -112,7 +112,7 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 		go func(groupID string) {
 			defer membershipsWaitGroup.Done()
 
-			created, resp, err := c.groupsClient.CreateGroupMembership(new(iam.GenerateGroupCreateMembershipOptions(groupID, externalName))) //nolint:bodyclose // closed via helpers.CloseBody
+			created, resp, err := c.groupsClient.CreateGroupMembership(ctx, new(iam.GenerateGroupCreateMembershipOptions(groupID, externalName))) //nolint:bodyclose // closed via helpers.CloseBody
 			defer helpers.CloseBody(resp)
 
 			if err != nil {
@@ -137,7 +137,7 @@ func (c *external) reconcileGroupMemberships(userResource *v1alpha1.User, extern
 		go func(groupMembershipID string) {
 			defer membershipsWaitGroup.Done()
 
-			resp, err := c.groupsClient.DeleteGroupMembership(groupMembershipID) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.groupsClient.DeleteGroupMembership(ctx, groupMembershipID) //nolint:bodyclose // closed via helpers.CloseBody
 			defer helpers.CloseBody(resp)
 
 			if err != nil {

@@ -19,7 +19,7 @@ package iam
 import (
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
@@ -355,7 +355,7 @@ func TestGenerateGroupMembershipObservation(t *testing.T) {
 		t.Fatalf("GenerateGroupMembershipObservation(nil) = %v, want nil", got)
 	}
 
-	memberships := []sonar.GroupMembership{{GroupId: "g1", Id: "m1"}, {GroupId: "g2", Id: "m2"}}
+	memberships := []sonar.AuthorizationsGroupMembership{{GroupId: "g1", Id: "m1"}, {GroupId: "g2", Id: "m2"}}
 	if diff := cmp.Diff(map[string]string{"g1": "m1", "g2": "m2"}, GenerateGroupMembershipObservation(&memberships)); diff != "" {
 		t.Fatalf("GenerateGroupMembershipObservation() mismatch (-want +got):\n%s", diff)
 	}
@@ -549,7 +549,7 @@ func TestGenerateGroupObservation(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]struct {
-		input *sonar.Group
+		input *sonar.AuthorizationsGroup
 		want  v1alpha1.GroupObservation
 	}{
 		"NilGroup": {
@@ -557,7 +557,7 @@ func TestGenerateGroupObservation(t *testing.T) {
 			want:  v1alpha1.GroupObservation{},
 		},
 		"PopulatedGroup": {
-			input: &sonar.Group{
+			input: &sonar.AuthorizationsGroup{
 				Id:          "group-1",
 				Name:        "devs",
 				Description: "engineering",

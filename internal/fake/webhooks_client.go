@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 )
@@ -36,7 +37,7 @@ type MockWebhooksClient struct {
 var _ integration.WebhooksClient = &MockWebhooksClient{}
 
 // List implements WebhooksClient.List.
-func (m *MockWebhooksClient) List(opt *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
+func (m *MockWebhooksClient) List(_ context.Context, opt *sonar.WebhooksListOptions) (*sonar.WebhooksList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn(opt)
 	}
@@ -45,7 +46,7 @@ func (m *MockWebhooksClient) List(opt *sonar.WebhooksListOptions) (*sonar.Webhoo
 }
 
 // Create implements WebhooksClient.Create.
-func (m *MockWebhooksClient) Create(opt *sonar.WebhooksCreateOptions) (*sonar.WebhooksCreate, *http.Response, error) {
+func (m *MockWebhooksClient) Create(_ context.Context, opt *sonar.WebhooksCreateOptions) (*sonar.WebhooksCreate, *http.Response, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -54,7 +55,7 @@ func (m *MockWebhooksClient) Create(opt *sonar.WebhooksCreateOptions) (*sonar.We
 }
 
 // Update implements WebhooksClient.Update.
-func (m *MockWebhooksClient) Update(opt *sonar.WebhooksUpdateOptions) (*http.Response, error) {
+func (m *MockWebhooksClient) Update(_ context.Context, opt *sonar.WebhooksUpdateOptions) (*http.Response, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(opt)
 	}
@@ -63,7 +64,7 @@ func (m *MockWebhooksClient) Update(opt *sonar.WebhooksUpdateOptions) (*http.Res
 }
 
 // Delete implements WebhooksClient.Delete.
-func (m *MockWebhooksClient) Delete(opt *sonar.WebhooksDeleteOptions) (*http.Response, error) {
+func (m *MockWebhooksClient) Delete(_ context.Context, opt *sonar.WebhooksDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}

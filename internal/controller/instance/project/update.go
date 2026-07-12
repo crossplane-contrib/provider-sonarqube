@@ -17,6 +17,7 @@ limitations under the License.
 package project
 
 import (
+	"context"
 	"sync"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
@@ -29,38 +30,38 @@ import (
 
 // updateProjectConcurrently launches all project update operations
 // concurrently and collects errors.
-func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectKey, projectId string) []error {
+func (c *external) updateProjectConcurrently(ctx context.Context, project *v1alpha1.Project, projectKey, projectId string) []error {
 	waitGr := sync.WaitGroup{}
 	errChan := make(chan error)
 
 	waitGr.Go(func() {
-		c.updateVisibility(project, projectKey, errChan)
+		c.updateVisibility(ctx, project, projectKey, errChan)
 	})
 
 	waitGr.Go(func() {
-		c.updateTags(project, projectKey, errChan)
+		c.updateTags(ctx, project, projectKey, errChan)
 	})
 
 	waitGr.Go(func() {
-		c.updateDefaultBranch(project, projectKey, errChan)
+		c.updateDefaultBranch(ctx, project, projectKey, errChan)
 	})
 
-	c.updateBranchNewCodePeriods(project, projectKey, &waitGr, errChan)
+	c.updateBranchNewCodePeriods(ctx, project, projectKey, &waitGr, errChan)
 
 	waitGr.Go(func() {
-		c.updateProjectLinks(project, projectId, errChan)
-	})
-
-	waitGr.Go(func() {
-		c.updateProjectNewCodePeriod(project, projectKey, errChan)
+		c.updateProjectLinks(ctx, project, projectId, errChan)
 	})
 
 	waitGr.Go(func() {
-		c.updateProjectQualityGate(project, projectKey, errChan)
+		c.updateProjectNewCodePeriod(ctx, project, projectKey, errChan)
 	})
 
 	waitGr.Go(func() {
-		c.updateProjectQualityProfiles(project, projectKey, errChan)
+		c.updateProjectQualityGate(ctx, project, projectKey, errChan)
+	})
+
+	waitGr.Go(func() {
+		c.updateProjectQualityProfiles(ctx, project, projectKey, errChan)
 	})
 
 	// Drain error channel concurrently to avoid deadlock on unbuffered sends.
@@ -87,12 +88,12 @@ func (c *external) updateProjectConcurrently(project *v1alpha1.Project, projectK
 
 // updateVisibility updates the project visibility if it differs from the
 // desired state.
-func (c *external) updateVisibility(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+func (c *external) updateVisibility(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if helpers.IsComparablePtrEqualComparable(project.Spec.ForProvider.Visibility, project.Status.AtProvider.Visibility) {
 		return
 	}
 
-	resp, err := c.projectsClient.UpdateVisibility(instance.GenerateProjectUpdateVisibilityOptions(projectKey, ptr.Deref(project.Spec.ForProvider.Visibility, ""))) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.projectsClient.UpdateVisibility(ctx, instance.GenerateProjectUpdateVisibilityOptions(projectKey, ptr.Deref(project.Spec.ForProvider.Visibility, ""))) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -101,12 +102,12 @@ func (c *external) updateVisibility(project *v1alpha1.Project, projectKey string
 }
 
 // updateTags updates the project tags.
-func (c *external) updateTags(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+func (c *external) updateTags(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if project.Spec.ForProvider.Tags == nil {
 		return
 	}
 
-	resp, err := c.projectTagsClient.Set(instance.GenerateProjectTagsSetOptions(projectKey, *project.Spec.ForProvider.Tags)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.projectTagsClient.Set(ctx, instance.GenerateProjectTagsSetOptions(projectKey, *project.Spec.ForProvider.Tags)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -116,12 +117,12 @@ func (c *external) updateTags(project *v1alpha1.Project, projectKey string, errC
 
 // updateDefaultBranch updates the project default branch if it differs from
 // the desired state.
-func (c *external) updateDefaultBranch(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+func (c *external) updateDefaultBranch(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if helpers.IsComparablePtrEqualComparable(project.Spec.ForProvider.DefaultBranch, project.Status.AtProvider.DefaultBranch) {
 		return
 	}
 
-	resp, err := c.projectBranchesClient.SetMain(instance.GenerateProjectBranchesSetMainOptions(projectKey, *project.Spec.ForProvider.DefaultBranch)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.projectBranchesClient.SetMain(ctx, instance.GenerateProjectBranchesSetMainOptions(projectKey, *project.Spec.ForProvider.DefaultBranch)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -131,7 +132,7 @@ func (c *external) updateDefaultBranch(project *v1alpha1.Project, projectKey str
 
 // updateBranchNewCodePeriods updates the new code periods of branches that
 // differ from the desired state.
-func (c *external) updateBranchNewCodePeriods(project *v1alpha1.Project, projectKey string, waitGr *sync.WaitGroup, errChan chan<- error) {
+func (c *external) updateBranchNewCodePeriods(ctx context.Context, project *v1alpha1.Project, projectKey string, waitGr *sync.WaitGroup, errChan chan<- error) {
 	if instance.AreProjectBranchesUpToDate(project.Spec.ForProvider.Branches, project.Status.AtProvider.Branches) {
 		return
 	}
@@ -144,7 +145,7 @@ func (c *external) updateBranchNewCodePeriods(project *v1alpha1.Project, project
 
 			branchObservation, branchExists := project.Status.AtProvider.Branches[branchName]
 			if branchExists && !instance.IsNewCodePeriodUpToDate(newCodePeriodSpec, &branchObservation.NewCodePeriod) {
-				resp, err := c.projectNewCodePeriodsClient.Set(instance.GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName, newCodePeriodSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.projectNewCodePeriodsClient.Set(ctx, instance.GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName, newCodePeriodSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -157,14 +158,14 @@ func (c *external) updateBranchNewCodePeriods(project *v1alpha1.Project, project
 
 // updateProjectLinks updates the links of the project if they differ from the
 // desired state.
-func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId string, errChan chan<- error) {
+func (c *external) updateProjectLinks(ctx context.Context, project *v1alpha1.Project, projectId string, errChan chan<- error) {
 	if instance.AreProjectLinksUpToDate(project.Spec.ForProvider.Links, project.Status.AtProvider.Links) {
 		return
 	}
 
 	linksUpdateWaitGroup := sync.WaitGroup{}
 	linksUpdateWaitGroup.Go(func() {
-		c.deleteNonSpecLinks(project, errChan)
+		c.deleteNonSpecLinks(ctx, project, errChan)
 	})
 
 	for _, link := range project.Spec.ForProvider.Links {
@@ -177,7 +178,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 			defer linksUpdateWaitGroup.Done()
 
 			if deleteLink {
-				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.projectLinksClient.Delete(ctx, instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -186,7 +187,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 			}
 
 			if createLink {
-				_, resp, err := c.projectLinksClient.Create(instance.GenerateProjectLinksCreateOptions(projectId, linkSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+				_, resp, err := c.projectLinksClient.Create(ctx, instance.GenerateProjectLinksCreateOptions(projectId, linkSpec)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -202,7 +203,7 @@ func (c *external) updateProjectLinks(project *v1alpha1.Project, projectId strin
 // deleteNonSpecLinks deletes the project links that exist in the observed state
 // but not in the desired state, or that differ between the observed
 // and desired state.
-func (c *external) deleteNonSpecLinks(project *v1alpha1.Project, errChan chan<- error) {
+func (c *external) deleteNonSpecLinks(ctx context.Context, project *v1alpha1.Project, errChan chan<- error) {
 	deleteWaitGroup := sync.WaitGroup{}
 	// Delete links that exist in the observed state but not in the desired state, or that differ between the observed and desired state.
 	for linkName, linkObservation := range project.Status.AtProvider.Links {
@@ -212,7 +213,7 @@ func (c *external) deleteNonSpecLinks(project *v1alpha1.Project, errChan chan<- 
 			go func(linkName string, linkId string) {
 				defer deleteWaitGroup.Done()
 
-				resp, err := c.projectLinksClient.Delete(instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.projectLinksClient.Delete(ctx, instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
@@ -238,12 +239,12 @@ func (c *external) isProjectLinkInSpec(spec []v1alpha1.ProjectLinkParameters, li
 
 // updateProjectNewCodePeriod updates the project-level new code period
 // if it differs from the desired state.
-func (c *external) updateProjectNewCodePeriod(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+func (c *external) updateProjectNewCodePeriod(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if instance.IsNewCodePeriodUpToDate(project.Spec.ForProvider.NewCodePeriod, &project.Status.AtProvider.NewCodePeriod) {
 		return
 	}
 
-	resp, err := c.projectNewCodePeriodsClient.Set(instance.GenerateProjectNewCodePeriodsSetOptions(projectKey, project.Spec.ForProvider.NewCodePeriod)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.projectNewCodePeriodsClient.Set(ctx, instance.GenerateProjectNewCodePeriodsSetOptions(projectKey, project.Spec.ForProvider.NewCodePeriod)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -253,12 +254,12 @@ func (c *external) updateProjectNewCodePeriod(project *v1alpha1.Project, project
 
 // updateProjectQualityGate updates the quality gate of the project
 // if it differs from the desired state.
-func (c *external) updateProjectQualityGate(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+func (c *external) updateProjectQualityGate(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if helpers.IsComparablePtrEqualComparable(project.Spec.ForProvider.QualityGateName, project.Status.AtProvider.QualityGateName) {
 		return
 	}
 
-	resp, err := c.qualityGatesClient.Select(instance.GenerateQualityGateSelectOptions(projectKey, *project.Spec.ForProvider.QualityGateName)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.qualityGatesClient.Assign(ctx, instance.GenerateQualityGateSelectOptions(projectKey, *project.Spec.ForProvider.QualityGateName)) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -268,7 +269,7 @@ func (c *external) updateProjectQualityGate(project *v1alpha1.Project, projectKe
 
 // updateProjectQualityProfiles updates the quality profiles of the project
 // if they differ from the desired state.
-func (c *external) updateProjectQualityProfiles(project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+func (c *external) updateProjectQualityProfiles(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if instance.AreProjectQualityProfilesUpToDate(project.Spec.ForProvider.QualityProfiles, project.Status.AtProvider.QualityProfiles) {
 		return
 	}
@@ -288,7 +289,7 @@ func (c *external) updateProjectQualityProfiles(project *v1alpha1.Project, proje
 			continue
 		}
 
-		retrievedQualityProfile, resp, err := c.qualityProfilesClient.Show(instance.GenerateQualityProfileShowOptions(*qualityProfile.Id)) //nolint:bodyclose // closed via helpers.CloseBody
+		retrievedQualityProfile, resp, err := c.qualityProfilesClient.Show(ctx, instance.GenerateQualityProfileShowOptions(*qualityProfile.Id)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {
@@ -297,7 +298,7 @@ func (c *external) updateProjectQualityProfiles(project *v1alpha1.Project, proje
 			continue
 		}
 
-		resp, err = c.qualityProfilesClient.AddProject(instance.GenerateQualityProfileAddProjectOptions(projectKey, retrievedQualityProfile.Profile.Name, language)) //nolint:bodyclose // closed via helpers.CloseBody
+		resp, err = c.qualityProfilesClient.AddProject(ctx, instance.GenerateQualityProfileAddProjectOptions(projectKey, retrievedQualityProfile.Profile.Name, language)) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {

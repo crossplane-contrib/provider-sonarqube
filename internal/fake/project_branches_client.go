@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -38,7 +39,7 @@ type MockProjectBranchesClient struct {
 var _ instance.ProjectBranchesClient = &MockProjectBranchesClient{}
 
 // Delete implements ProjectBranchesClient.Delete.
-func (m *MockProjectBranchesClient) Delete(opt *sonar.ProjectBranchesDeleteOptions) (*http.Response, error) {
+func (m *MockProjectBranchesClient) Delete(_ context.Context, opt *sonar.ProjectBranchesDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -47,7 +48,7 @@ func (m *MockProjectBranchesClient) Delete(opt *sonar.ProjectBranchesDeleteOptio
 }
 
 // List implements ProjectBranchesClient.List.
-func (m *MockProjectBranchesClient) List(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
+func (m *MockProjectBranchesClient) List(_ context.Context, opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn(opt)
 	}
@@ -56,7 +57,7 @@ func (m *MockProjectBranchesClient) List(opt *sonar.ProjectBranchesListOptions) 
 }
 
 // Rename implements ProjectBranchesClient.Rename.
-func (m *MockProjectBranchesClient) Rename(opt *sonar.ProjectBranchesRenameOptions) (*http.Response, error) {
+func (m *MockProjectBranchesClient) Rename(_ context.Context, opt *sonar.ProjectBranchesRenameOptions) (*http.Response, error) {
 	if m.RenameFn != nil {
 		return m.RenameFn(opt)
 	}
@@ -66,7 +67,7 @@ func (m *MockProjectBranchesClient) Rename(opt *sonar.ProjectBranchesRenameOptio
 
 // SetAutomaticDeletionProtection implements
 // ProjectBranchesClient.SetAutomaticDeletionProtection.
-func (m *MockProjectBranchesClient) SetAutomaticDeletionProtection(opt *sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions) (*http.Response, error) {
+func (m *MockProjectBranchesClient) SetAutomaticDeletionProtection(_ context.Context, opt *sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions) (*http.Response, error) {
 	if m.SetAutomaticDeletionProtectionFn != nil {
 		return m.SetAutomaticDeletionProtectionFn(opt)
 	}
@@ -75,7 +76,7 @@ func (m *MockProjectBranchesClient) SetAutomaticDeletionProtection(opt *sonar.Pr
 }
 
 // SetMain implements ProjectBranchesClient.SetMain.
-func (m *MockProjectBranchesClient) SetMain(opt *sonar.ProjectBranchesSetMainOptions) (*http.Response, error) {
+func (m *MockProjectBranchesClient) SetMain(_ context.Context, opt *sonar.ProjectBranchesSetMainOptions) (*http.Response, error) {
 	if m.SetMainFn != nil {
 		return m.SetMainFn(opt)
 	}

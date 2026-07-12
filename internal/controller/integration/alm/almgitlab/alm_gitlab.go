@@ -209,7 +209,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, err
 	}
 
-	almDefinitions, resp, err := c.settingsClient.ListDefinitions() //nolint:bodyclose // closed via helpers.CloseBody
+	almDefinitions, resp, err := c.settingsClient.ListDefinitions(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -264,7 +264,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	createOptions := integration.GenerateALMGitLabCreateOptions(&almGitlab.Spec.ForProvider, *pat)
 
-	resp, err := c.settingsClient.CreateGitlab(createOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.settingsClient.CreateGitlab(ctx, createOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -310,7 +310,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	updateOptions := integration.GenerateALMGitLabUpdateOptions(externalName, &almGitlab.Spec.ForProvider, *pat)
 
-	resp, err := c.settingsClient.UpdateGitlab(updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.settingsClient.UpdateGitlab(ctx, updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -353,7 +353,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	deleteOptions := integration.GenerateALMDeleteOptions(externalName)
 
-	resp, err := c.settingsClient.Delete(deleteOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.settingsClient.Delete(ctx, deleteOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {

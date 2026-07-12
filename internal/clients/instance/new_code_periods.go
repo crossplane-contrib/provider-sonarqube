@@ -18,9 +18,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -30,10 +31,10 @@ import (
 // NewCodePeriodsClient is the interface for managing new code periods
 // in SonarQube projects.
 type NewCodePeriodsClient interface {
-	List(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error)
-	Set(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error)
-	Show(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error)
-	Unset(opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error)
+	List(ctx context.Context, opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error)
+	Set(ctx context.Context, opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error)
+	Show(ctx context.Context, opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error)
+	Unset(ctx context.Context, opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error)
 }
 
 // NewNewCodePeriodsClient creates a new NewCodePeriodsClient with the provided

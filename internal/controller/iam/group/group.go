@@ -23,7 +23,7 @@ import (
 
 	stderrors "errors"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
@@ -192,7 +192,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	retrievedGroup, resp, err := c.groupClient.FetchGroup(externalName) //nolint:bodyclose // closed via helpers.CloseBody
+	retrievedGroup, resp, err := c.groupClient.GetGroup(ctx, externalName) //nolint:bodyclose // closed via helpers.CloseBody
 	if err != nil {
 		if common.IsResponseNotFound(resp) {
 			return managed.ExternalObservation{
@@ -209,7 +209,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	group.Status.AtProvider = iam.GenerateGroupObservation(retrievedGroup)
 
 	// Retrieve the permissions for the group and set it in the observation
-	permissions, err := getGroupPermissions(c.permissionsClient, retrievedGroup.Name)
+	permissions, err := getGroupPermissions(ctx, c.permissionsClient, retrievedGroup.Name)
 	if err != nil {
 		return managed.ExternalObservation{ResourceExists: true}, errors.Wrapf(err, "group %s", retrievedGroup.Name)
 	}
@@ -238,7 +238,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	group.Status.SetConditions(xpv1.Creating())
 
-	createdGroup, resp, err := c.groupClient.CreateGroup(iam.GenerateCreateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	createdGroup, resp, err := c.groupClient.CreateGroup(ctx, iam.GenerateCreateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateGroup)
 	}
@@ -268,7 +268,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	// This must be done before updating permissions, because group name is required to update permissions, and the group name can be updated in the same API call as the description.
-	_, resp, err := c.groupClient.UpdateGroup(externalName, iam.GenerateUpdateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	_, resp, err := c.groupClient.UpdateGroup(ctx, externalName, iam.GenerateUpdateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateGroup)
 	}
@@ -280,8 +280,8 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	errorsChan := make(chan error, len(permissionsToAdd)+len(permissionsToRemove))
 
 	// Add and remove permissions in parallel using helper functions
-	c.addGroupPermissions(group.Spec.ForProvider.Name, permissionsToAdd, errorsChan)
-	c.removeGroupPermissions(group.Spec.ForProvider.Name, permissionsToRemove, errorsChan)
+	c.addGroupPermissions(ctx, group.Spec.ForProvider.Name, permissionsToAdd, errorsChan)
+	c.removeGroupPermissions(ctx, group.Spec.ForProvider.Name, permissionsToRemove, errorsChan)
 
 	close(errorsChan)
 
@@ -313,7 +313,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	destroyResp, err := c.groupClient.DeleteGroup(externalName) //nolint:bodyclose // closed via helpers.CloseBody
+	destroyResp, err := c.groupClient.DeleteGroup(ctx, externalName) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(destroyResp)
 
 	if err != nil {
@@ -331,7 +331,7 @@ func (c *external) Disconnect(ctx context.Context) error {
 // addGroupPermissions adds a slice of permissions to a group using parallel
 // goroutines. Each permission is added concurrently,
 // and any errors are sent to the provided error channel.
-func (c *external) addGroupPermissions(groupName string, permissions []string, errChan chan error) {
+func (c *external) addGroupPermissions(ctx context.Context, groupName string, permissions []string, errChan chan error) {
 	waitGroup := sync.WaitGroup{}
 
 	for _, permission := range permissions {
@@ -340,7 +340,7 @@ func (c *external) addGroupPermissions(groupName string, permissions []string, e
 		go func(permission string) {
 			defer waitGroup.Done()
 
-			resp, err := c.permissionsClient.AddGroup(iam.GeneratePermissionsAddGroupOptions(groupName, permission, nil)) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.permissionsClient.AddGroup(ctx, iam.GeneratePermissionsAddGroupOptions(groupName, permission, nil)) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -355,7 +355,7 @@ func (c *external) addGroupPermissions(groupName string, permissions []string, e
 // removeGroupPermissions removes a slice of permissions from a group using
 // parallel goroutines. Each permission is removed concurrently,
 // and any errors are sent to the provided error channel.
-func (c *external) removeGroupPermissions(groupName string, permissions []string, errChan chan error) {
+func (c *external) removeGroupPermissions(ctx context.Context, groupName string, permissions []string, errChan chan error) {
 	waitGroup := sync.WaitGroup{}
 
 	for _, permission := range permissions {
@@ -364,7 +364,7 @@ func (c *external) removeGroupPermissions(groupName string, permissions []string
 		go func(permission string) {
 			defer waitGroup.Done()
 
-			resp, err := c.permissionsClient.RemoveGroup(iam.GeneratePermissionsRemoveGroupOptions(groupName, permission, nil)) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.permissionsClient.RemoveGroup(ctx, iam.GeneratePermissionsRemoveGroupOptions(groupName, permission, nil)) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -411,7 +411,7 @@ func computePermissionsDelta(specPermissions *[]string, observedPermissions []st
 // it returns an empty slice and nil error.
 // If there is an error during the API call,
 // it returns an error wrapping the original error with additional context.
-func getGroupPermissions(permissionsClient iam.PermissionsClient, groupName string) ([]string, error) {
+func getGroupPermissions(ctx context.Context, permissionsClient iam.PermissionsClient, groupName string) ([]string, error) {
 	const maxPageSize = int64(100)
 
 	for page := int64(1); ; page++ {
@@ -420,7 +420,7 @@ func getGroupPermissions(permissionsClient iam.PermissionsClient, groupName stri
 			PageSize: maxPageSize,
 		}))
 
-		permissions, resp, err := permissionsClient.Groups(options) //nolint:bodyclose // closed via helpers.CloseBody
+		permissions, resp, err := permissionsClient.Groups(ctx, options) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {

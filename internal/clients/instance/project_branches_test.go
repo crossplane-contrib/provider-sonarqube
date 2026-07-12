@@ -19,7 +19,7 @@ package instance
 import (
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -104,14 +104,14 @@ func TestGenerateBranchesObservations(t *testing.T) {
 		},
 		"SingleMainBranch": {
 			branches: sonar.ProjectBranchesList{
-				Branches: []sonar.Branch{
+				Branches: []sonar.ProjectBranch{
 					{
 						Name:              "main",
 						BranchID:          "branch-id-1",
 						IsMain:            true,
 						ExcludedFromPurge: true,
 						Type:              "LONG",
-						Status:            sonar.BranchStatus{QualityGateStatus: "OK"},
+						Status:            sonar.ProjectBranchStatus{QualityGateStatus: "OK"},
 					},
 				},
 			},
@@ -128,14 +128,14 @@ func TestGenerateBranchesObservations(t *testing.T) {
 		},
 		"MultipleBranches": {
 			branches: sonar.ProjectBranchesList{
-				Branches: []sonar.Branch{
+				Branches: []sonar.ProjectBranch{
 					{
 						Name:              "main",
 						BranchID:          "id-1",
 						IsMain:            true,
 						ExcludedFromPurge: true,
 						Type:              "LONG",
-						Status:            sonar.BranchStatus{QualityGateStatus: "OK"},
+						Status:            sonar.ProjectBranchStatus{QualityGateStatus: "OK"},
 					},
 					{
 						Name:              "develop",
@@ -143,7 +143,7 @@ func TestGenerateBranchesObservations(t *testing.T) {
 						IsMain:            false,
 						ExcludedFromPurge: false,
 						Type:              "LONG",
-						Status:            sonar.BranchStatus{QualityGateStatus: "ERROR"},
+						Status:            sonar.ProjectBranchStatus{QualityGateStatus: "ERROR"},
 					},
 				},
 			},

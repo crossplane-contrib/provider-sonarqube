@@ -21,7 +21,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
@@ -175,7 +175,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Retrieve the SonarQube Rule using the external name
-	ruleShow, resp, err := c.rulesClient.Show(instance.GenerateRuleGetOptions(externalName)) //nolint:bodyclose // closed via helpers.CloseBody
+	ruleShow, resp, err := c.rulesClient.Show(ctx, instance.GenerateRuleGetOptions(externalName)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -226,7 +226,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	ruleCreateOption := instance.GenerateRuleCreateOptions(&rule.Spec.ForProvider)
 
-	createdRule, resp, err := c.rulesClient.Create(ruleCreateOption) //nolint:bodyclose // closed via helpers.CloseBody
+	createdRule, resp, err := c.rulesClient.Create(ctx, ruleCreateOption) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -256,7 +256,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	ruleUpdateOptions := instance.GenerateRuleUpdateOptions(externalName, &rule.Spec.ForProvider)
 
-	_, resp, err := c.rulesClient.Update(ruleUpdateOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	_, resp, err := c.rulesClient.Update(ctx, ruleUpdateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -283,7 +283,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	resp, err := c.rulesClient.Delete(instance.GenerateRuleDeleteOptions(externalName)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.rulesClient.Delete(ctx, instance.GenerateRuleDeleteOptions(externalName)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

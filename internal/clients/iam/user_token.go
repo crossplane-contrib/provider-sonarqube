@@ -17,10 +17,11 @@ limitations under the License.
 package iam
 
 import (
+	"context"
 	"net/http"
 	"time"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -33,11 +34,11 @@ import (
 // UserTokensClient handles SonarQube UserToken API operations.
 type UserTokensClient interface {
 	// Generate creates a new user access token.
-	Generate(opt *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error)
+	Generate(ctx context.Context, opt *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error)
 	// Revoke deletes a user access token by name.
-	Revoke(opt *sonar.UserTokensRevokeOptions) (*http.Response, error)
+	Revoke(ctx context.Context, opt *sonar.UserTokensRevokeOptions) (*http.Response, error)
 	// Search lists user access tokens.
-	Search(opt *sonar.UserTokensSearchOptions) (*sonar.UserTokensSearch, *http.Response, error)
+	Search(ctx context.Context, opt *sonar.UserTokensSearchOptions) (*sonar.UserTokensSearch, *http.Response, error)
 }
 
 // NewUserTokensClient creates a UserTokensClient from the given config.

@@ -18,9 +18,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -37,7 +38,7 @@ type MockProjectLinksClient struct {
 var _ instance.ProjectLinksClient = &MockProjectLinksClient{}
 
 // Create implements ProjectLinksClient.Create.
-func (m *MockProjectLinksClient) Create(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error) {
+func (m *MockProjectLinksClient) Create(_ context.Context, opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(opt)
 	}
@@ -46,7 +47,7 @@ func (m *MockProjectLinksClient) Create(opt *sonar.ProjectLinksCreateOptions) (*
 }
 
 // Delete implements ProjectLinksClient.Delete.
-func (m *MockProjectLinksClient) Delete(opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error) {
+func (m *MockProjectLinksClient) Delete(_ context.Context, opt *sonar.ProjectLinksDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -55,7 +56,7 @@ func (m *MockProjectLinksClient) Delete(opt *sonar.ProjectLinksDeleteOptions) (*
 }
 
 // Search implements ProjectLinksClient.Search.
-func (m *MockProjectLinksClient) Search(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
+func (m *MockProjectLinksClient) Search(_ context.Context, opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}

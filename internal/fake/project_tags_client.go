@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 )
@@ -35,7 +36,7 @@ type MockProjectTagsClient struct {
 var _ instance.ProjectTagsClient = &MockProjectTagsClient{}
 
 // Search implements ProjectTagsClient.Search.
-func (m *MockProjectTagsClient) Search(opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error) {
+func (m *MockProjectTagsClient) Search(_ context.Context, opt *sonar.ProjectTagsSearchOptions) (*sonar.ProjectTagsSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}
@@ -44,7 +45,7 @@ func (m *MockProjectTagsClient) Search(opt *sonar.ProjectTagsSearchOptions) (*so
 }
 
 // Set implements ProjectTagsClient.Set.
-func (m *MockProjectTagsClient) Set(opt *sonar.ProjectTagsSetOptions) (*http.Response, error) {
+func (m *MockProjectTagsClient) Set(_ context.Context, opt *sonar.ProjectTagsSetOptions) (*http.Response, error) {
 	if m.SetFn != nil {
 		return m.SetFn(opt)
 	}

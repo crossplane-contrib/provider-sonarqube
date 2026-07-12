@@ -174,7 +174,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	result, resp, err := c.client.Search(iam.GenerateUserTokenSearchOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	result, resp, err := c.client.Search(ctx, iam.GenerateUserTokenSearchOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -214,7 +214,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	usertoken.Status.SetConditions(xpv1.Creating())
 
-	generated, resp, err := c.client.Generate(iam.GenerateUserTokenCreateOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	generated, resp, err := c.client.Generate(ctx, iam.GenerateUserTokenCreateOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -245,14 +245,14 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New("cannot renew UserToken without external name")
 	}
 
-	revokeResp, err := c.client.Revoke(iam.GenerateUserTokenRevokeOptions(externalName, &usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	revokeResp, err := c.client.Revoke(ctx, iam.GenerateUserTokenRevokeOptions(externalName, &usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(revokeResp)
 
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errRenewToken)
 	}
 
-	generated, generateResp, err := c.client.Generate(iam.GenerateUserTokenCreateOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	generated, generateResp, err := c.client.Generate(ctx, iam.GenerateUserTokenCreateOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(generateResp)
 
 	if err != nil {
@@ -282,7 +282,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	resp, err := c.client.Revoke(iam.GenerateUserTokenRevokeOptions(externalName, &usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.Revoke(ctx, iam.GenerateUserTokenRevokeOptions(externalName, &usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

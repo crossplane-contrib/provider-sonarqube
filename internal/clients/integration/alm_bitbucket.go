@@ -17,9 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
@@ -30,9 +31,9 @@ import (
 // such as creating, updating, deleting, and retrieving ALMBitbucket.
 type ALMIntegrationsBitbucketClient interface {
 	ALMIntegrationsClient
-	ListBitbucketServerProjects(opt *sonar.AlmIntegrationsListBitbucketServerProjectsOptions) (v *sonar.AlmIntegrationsListBitbucketServerProjects, resp *http.Response, err error)
-	SearchBitbucketCloudRepos(opt *sonar.AlmIntegrationsSearchBitbucketCloudReposOptions) (v *sonar.AlmIntegrationsSearchBitbucketCloudRepos, resp *http.Response, err error)
-	SearchBitbucketServerRepos(opt *sonar.AlmIntegrationsSearchBitbucketServerReposOptions) (v *sonar.AlmIntegrationsSearchBitbucketServerRepos, resp *http.Response, err error)
+	ListBitbucketServerProjects(ctx context.Context, opt *sonar.AlmIntegrationsListBitbucketServerProjectsOptions) (v *sonar.AlmIntegrationsListBitbucketServerProjects, resp *http.Response, err error)
+	SearchBitbucketCloudRepos(ctx context.Context, opt *sonar.AlmIntegrationsSearchBitbucketCloudReposOptions) (v *sonar.AlmIntegrationsSearchBitbucketCloudRepos, resp *http.Response, err error)
+	SearchBitbucketServerRepos(ctx context.Context, opt *sonar.AlmIntegrationsSearchBitbucketServerReposOptions) (v *sonar.AlmIntegrationsSearchBitbucketServerRepos, resp *http.Response, err error)
 }
 
 // ALMSettingsBitbucketClient is the interface for interacting with SonarQube
@@ -41,8 +42,8 @@ type ALMIntegrationsBitbucketClient interface {
 // in SonarQube, such as creating, updating, deleting, and retrieving them.
 type ALMSettingsBitbucketClient interface {
 	ALMSettingsClient
-	CreateBitbucket(opt *sonar.AlmSettingsCreateBitbucketOptions) (*http.Response, error)
-	UpdateBitbucket(opt *sonar.AlmSettingsUpdateBitbucketOptions) (*http.Response, error)
+	CreateBitbucket(ctx context.Context, opt *sonar.AlmSettingsCreateBitbucketOptions) (*http.Response, error)
+	UpdateBitbucket(ctx context.Context, opt *sonar.AlmSettingsUpdateBitbucketOptions) (*http.Response, error)
 }
 
 // NewALMIntegrationsBitbucketClient creates a new

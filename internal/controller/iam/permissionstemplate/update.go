@@ -48,7 +48,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for PermissionsTemplate %s", permissionsTemplate.Name)
 	}
 
-	err := c.reconcilePermissionsTemplate(externalName, permissionsTemplate)
+	err := c.reconcilePermissionsTemplate(ctx, externalName, permissionsTemplate)
 	if err != nil {
 		return managed.ExternalUpdate{}, err
 	}
@@ -64,7 +64,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // reconcilePermissionsTemplate applies all update operations needed
 // to reach desired state.
-func (c *external) reconcilePermissionsTemplate(templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
+func (c *external) reconcilePermissionsTemplate(ctx context.Context, templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
 	var (
 		reconcileWaitGroup sync.WaitGroup
 		aggregatedErrors   []error
@@ -85,23 +85,23 @@ func (c *external) reconcilePermissionsTemplate(templateID string, permissionsTe
 	}
 
 	reconcileTask(func() error {
-		return c.updateTemplateBaseFields(templateID, permissionsTemplate)
+		return c.updateTemplateBaseFields(ctx, templateID, permissionsTemplate)
 	}, "failed to update PermissionsTemplate")
 
 	reconcileTask(func() error {
-		return c.setTemplateAsDefaultIfNeeded(templateID, permissionsTemplate)
+		return c.setTemplateAsDefaultIfNeeded(ctx, templateID, permissionsTemplate)
 	}, "failed to set PermissionsTemplate as default")
 
 	reconcileTask(func() error {
-		return c.updatePermissionsTemplateUsers(templateID, permissionsTemplate.Spec.ForProvider.UserPermissions, &permissionsTemplate.Status.AtProvider.UserPermissions)
+		return c.updatePermissionsTemplateUsers(ctx, templateID, permissionsTemplate.Spec.ForProvider.UserPermissions, &permissionsTemplate.Status.AtProvider.UserPermissions)
 	}, "failed to update PermissionsTemplate users permissions")
 
 	reconcileTask(func() error {
-		return c.updatePermissionsTemplateGroups(templateID, permissionsTemplate.Spec.ForProvider.GroupPermissions, &permissionsTemplate.Status.AtProvider.GroupPermissions)
+		return c.updatePermissionsTemplateGroups(ctx, templateID, permissionsTemplate.Spec.ForProvider.GroupPermissions, &permissionsTemplate.Status.AtProvider.GroupPermissions)
 	}, "failed to update PermissionsTemplate groups permissions")
 
 	reconcileTask(func() error {
-		return c.updatePermissionsTemplateCreator(templateID, permissionsTemplate.Spec.ForProvider.CreatorPermissions, permissionsTemplate.Status.AtProvider.CreatorPermissions)
+		return c.updatePermissionsTemplateCreator(ctx, templateID, permissionsTemplate.Spec.ForProvider.CreatorPermissions, permissionsTemplate.Status.AtProvider.CreatorPermissions)
 	}, "failed to update PermissionsTemplate creator permissions")
 
 	reconcileWaitGroup.Wait()
@@ -116,14 +116,14 @@ func (c *external) reconcilePermissionsTemplate(templateID string, permissionsTe
 
 // updateTemplateBaseFields updates mutable template metadata
 // when drift is detected.
-func (c *external) updateTemplateBaseFields(templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
+func (c *external) updateTemplateBaseFields(ctx context.Context, templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
 	// Avoid unnecessary API updates when the desired base fields already match the observed state.
 	if iam.ArePermissionsTemplateBaseFieldsUpToDate(&permissionsTemplate.Spec.ForProvider, &permissionsTemplate.Status.AtProvider) {
 		return nil
 	}
 
 	updateOptions := iam.GeneratePermissionsTemplateUpdateOptions(templateID, &permissionsTemplate.Spec.ForProvider)
-	_, resp, err := c.client.UpdateTemplate(updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	_, resp, err := c.client.UpdateTemplate(ctx, updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -135,13 +135,13 @@ func (c *external) updateTemplateBaseFields(templateID string, permissionsTempla
 
 // setTemplateAsDefaultIfNeeded marks the template as default
 // only when requested and not already default.
-func (c *external) setTemplateAsDefaultIfNeeded(templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
+func (c *external) setTemplateAsDefaultIfNeeded(ctx context.Context, templateID string, permissionsTemplate *v1alpha1.PermissionsTemplate) error {
 	if permissionsTemplate.Spec.ForProvider.Default == nil || !*permissionsTemplate.Spec.ForProvider.Default || permissionsTemplate.Status.AtProvider.Default {
 		return nil
 	}
 
 	defaultOptions := iam.GeneratePermissionsTemplateSetAsDefaultOptions(templateID)
-	resp, err := c.client.SetDefaultTemplate(defaultOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.SetDefaultTemplate(ctx, defaultOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -199,7 +199,7 @@ func (c *external) applyTemplatePermissions(addPermissions, removePermissions []
 // It returns an error if any occurred during the update.
 //
 //nolint:dupl // Group and user reconciliation intentionally share the same control flow with different API endpoints.
-func (c *external) updatePermissionsTemplateGroups(templateID string, specGroups *[]v1alpha1.PermissionsTemplateGroupParameters, observationGroups *[]v1alpha1.PermissionsTemplateGroupObservation) error {
+func (c *external) updatePermissionsTemplateGroups(ctx context.Context, templateID string, specGroups *[]v1alpha1.PermissionsTemplateGroupParameters, observationGroups *[]v1alpha1.PermissionsTemplateGroupObservation) error {
 	if specGroups == nil || observationGroups == nil {
 		return nil
 	}
@@ -224,7 +224,7 @@ func (c *external) updatePermissionsTemplateGroups(templateID string, specGroups
 		},
 		func(subjectID string, permission string) error {
 			addOptions := iam.GeneratePermissionsTemplateAddGroupPermissionOptions(templateID, subjectID, permission)
-			resp, err := c.client.AddGroupToTemplate(addOptions) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.client.AddGroupToTemplate(ctx, addOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -235,7 +235,7 @@ func (c *external) updatePermissionsTemplateGroups(templateID string, specGroups
 		},
 		func(subjectID string, permission string) error {
 			removeOptions := iam.GeneratePermissionsTemplateRemoveGroupPermissionOptions(templateID, subjectID, permission)
-			resp, err := c.client.RemoveGroupFromTemplate(removeOptions) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.client.RemoveGroupFromTemplate(ctx, removeOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -250,7 +250,7 @@ func (c *external) updatePermissionsTemplateGroups(templateID string, specGroups
 // updatePermissionsTemplateUsers updates users in a permissions template.
 //
 //nolint:dupl // Group and user reconciliation intentionally share the same control flow with different API endpoints.
-func (c *external) updatePermissionsTemplateUsers(templateID string, specUsers *[]v1alpha1.PermissionsTemplateUserParameters, observationUsers *[]v1alpha1.PermissionsTemplateUserObservation) error {
+func (c *external) updatePermissionsTemplateUsers(ctx context.Context, templateID string, specUsers *[]v1alpha1.PermissionsTemplateUserParameters, observationUsers *[]v1alpha1.PermissionsTemplateUserObservation) error {
 	if specUsers == nil || observationUsers == nil {
 		return nil
 	}
@@ -275,7 +275,7 @@ func (c *external) updatePermissionsTemplateUsers(templateID string, specUsers *
 		},
 		func(subjectID string, permission string) error {
 			addOptions := iam.GeneratePermissionsTemplateAddUserPermissionOptions(templateID, subjectID, permission)
-			resp, err := c.client.AddUserToTemplate(addOptions) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.client.AddUserToTemplate(ctx, addOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -286,7 +286,7 @@ func (c *external) updatePermissionsTemplateUsers(templateID string, specUsers *
 		},
 		func(subjectID string, permission string) error {
 			removeOptions := iam.GeneratePermissionsTemplateRemoveUserPermissionOptions(templateID, subjectID, permission)
-			resp, err := c.client.RemoveUserFromTemplate(removeOptions) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.client.RemoveUserFromTemplate(ctx, removeOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -376,7 +376,7 @@ func (c *external) computePermissionsDiff(specPermissions, obsPermissions []stri
 // the observation. It adds the permissions that are in the spec but not in the
 // observation, and removes the permissions that are in the observation but not
 // in the spec. It returns an error if any occurred during the update.
-func (c *external) updatePermissionsTemplateCreator(templateID string, spec *[]string, observation []string) error {
+func (c *external) updatePermissionsTemplateCreator(ctx context.Context, templateID string, spec *[]string, observation []string) error {
 	if spec == nil {
 		return nil
 	}
@@ -388,7 +388,7 @@ func (c *external) updatePermissionsTemplateCreator(templateID string, spec *[]s
 		permissionsToRemove,
 		func(permission string) error {
 			addOptions := iam.GeneratePermissionsTemplateAddCreatorPermissionOptions(templateID, permission)
-			resp, err := c.client.AddProjectCreatorToTemplate(addOptions) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.client.AddProjectCreatorToTemplate(ctx, addOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {
@@ -399,7 +399,7 @@ func (c *external) updatePermissionsTemplateCreator(templateID string, spec *[]s
 		},
 		func(permission string) error {
 			removeOptions := iam.GeneratePermissionsTemplateRemoveCreatorPermissionOptions(templateID, permission)
-			resp, err := c.client.RemoveProjectCreatorFromTemplate(removeOptions) //nolint:bodyclose // closed via helpers.CloseBody
+			resp, err := c.client.RemoveProjectCreatorFromTemplate(ctx, removeOptions) //nolint:bodyclose // closed via helpers.CloseBody
 			helpers.CloseBody(resp)
 
 			if err != nil {

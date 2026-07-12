@@ -20,7 +20,7 @@ package user
 import (
 	"context"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -50,7 +50,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	user, resp, err := c.usersClient.Fetch(externalName) //nolint:bodyclose // closed via helpers.CloseBody
+	user, resp, err := c.usersClient.Get(ctx, externalName) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	userResource.SetConditions(xpv1.Available())
 
-	groupMemberships, err := c.getUserGroupsObservation(externalName)
+	groupMemberships, err := c.getUserGroupsObservation(ctx, externalName)
 	if err != nil {
 		return managed.ExternalObservation{ResourceExists: true}, err
 	}
@@ -116,8 +116,8 @@ func (c *external) passwordFromSecret(ctx context.Context, userResource *v1alpha
 // getUserGroupsObservation retrieves the groups that the user belongs to from
 // the SonarQube API. It handles pagination to ensure all groups are retrieved,
 // and returns a map of group IDs to membership IDs for efficient lookup.
-func (c *external) getUserGroupsObservation(userID string) (map[string]string, error) {
-	var allGroups []sonar.GroupMembership
+func (c *external) getUserGroupsObservation(ctx context.Context, userID string) (map[string]string, error) {
+	var allGroups []sonar.AuthorizationsGroupMembership
 
 	pagination := &sonar.PaginationParamsV2{
 		PageIndex: 1,
@@ -127,7 +127,7 @@ func (c *external) getUserGroupsObservation(userID string) (map[string]string, e
 	for {
 		options := iam.GenerateGroupSearchMembershipsOptions(nil, &userID, pagination)
 
-		foundMembership, resp, err := c.groupsClient.SearchGroupMemberships(&options) //nolint:bodyclose // closed via helpers.CloseBody
+		foundMembership, resp, err := c.groupsClient.SearchGroupMemberships(ctx, &options) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
 		if err != nil {

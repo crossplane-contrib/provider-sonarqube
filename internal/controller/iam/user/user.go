@@ -34,7 +34,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -188,7 +188,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return result, err
 	}
 
-	created, resp, err := c.usersClient.Create(iam.GenerateCreateUserOptions(&userResource.Spec.ForProvider, password)) //nolint:bodyclose // closed via helpers.CloseBody
+	created, resp, err := c.usersClient.Create(ctx, iam.GenerateCreateUserOptions(&userResource.Spec.ForProvider, password)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -225,7 +225,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	resp, err := c.usersClient.Deactivate(&sonar.UsersDeactivateOptionsV2{Id: externalName, Anonymize: ptr.Deref(userResource.Spec.ForProvider.Anonymize, false)}) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.usersClient.Deactivate(ctx, &sonar.UsersDeactivateOptionsV2{Id: externalName, Anonymize: ptr.Deref(userResource.Spec.ForProvider.Anonymize, false)}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

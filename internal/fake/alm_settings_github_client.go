@@ -18,9 +18,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 )
@@ -42,7 +43,7 @@ type MockALMSettingsGitHubClient struct {
 var _ integration.ALMSettingsGitHubClient = &MockALMSettingsGitHubClient{}
 
 // CountBinding implements ALMSettingsClient.CountBinding.
-func (m *MockALMSettingsGitHubClient) CountBinding(opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error) {
+func (m *MockALMSettingsGitHubClient) CountBinding(_ context.Context, opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error) {
 	if m.CountBindingFn != nil {
 		return m.CountBindingFn(opt)
 	}
@@ -51,7 +52,7 @@ func (m *MockALMSettingsGitHubClient) CountBinding(opt *sonar.AlmSettingsCountBi
 }
 
 // Delete implements ALMSettingsClient.Delete.
-func (m *MockALMSettingsGitHubClient) Delete(opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error) {
+func (m *MockALMSettingsGitHubClient) Delete(_ context.Context, opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -60,7 +61,7 @@ func (m *MockALMSettingsGitHubClient) Delete(opt *sonar.AlmSettingsDeleteOptions
 }
 
 // GetBinding implements ALMSettingsClient.GetBinding.
-func (m *MockALMSettingsGitHubClient) GetBinding(opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
+func (m *MockALMSettingsGitHubClient) GetBinding(_ context.Context, opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
 	if m.GetBindingFn != nil {
 		return m.GetBindingFn(opt)
 	}
@@ -69,7 +70,7 @@ func (m *MockALMSettingsGitHubClient) GetBinding(opt *sonar.AlmSettingsGetBindin
 }
 
 // List implements ALMSettingsClient.List.
-func (m *MockALMSettingsGitHubClient) List(opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error) {
+func (m *MockALMSettingsGitHubClient) List(_ context.Context, opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn(opt)
 	}
@@ -78,7 +79,7 @@ func (m *MockALMSettingsGitHubClient) List(opt *sonar.AlmSettingsListOptions) (*
 }
 
 // ListDefinitions implements ALMSettingsClient.ListDefinitions.
-func (m *MockALMSettingsGitHubClient) ListDefinitions() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
+func (m *MockALMSettingsGitHubClient) ListDefinitions(_ context.Context) (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 	if m.ListDefinitionsFn != nil {
 		return m.ListDefinitionsFn()
 	}
@@ -87,7 +88,7 @@ func (m *MockALMSettingsGitHubClient) ListDefinitions() (*sonar.AlmSettingsListD
 }
 
 // Validate implements ALMSettingsClient.Validate.
-func (m *MockALMSettingsGitHubClient) Validate(opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error) {
+func (m *MockALMSettingsGitHubClient) Validate(_ context.Context, opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error) {
 	if m.ValidateFn != nil {
 		return m.ValidateFn(opt)
 	}
@@ -96,7 +97,7 @@ func (m *MockALMSettingsGitHubClient) Validate(opt *sonar.AlmSettingsValidateOpt
 }
 
 // CreateGithub implements ALMSettingsGitHubClient.CreateGithub.
-func (m *MockALMSettingsGitHubClient) CreateGithub(opt *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error) {
+func (m *MockALMSettingsGitHubClient) CreateGithub(_ context.Context, opt *sonar.AlmSettingsCreateGithubOptions) (*http.Response, error) {
 	if m.CreateGithubFn != nil {
 		return m.CreateGithubFn(opt)
 	}
@@ -105,7 +106,7 @@ func (m *MockALMSettingsGitHubClient) CreateGithub(opt *sonar.AlmSettingsCreateG
 }
 
 // UpdateGithub implements ALMSettingsGitHubClient.UpdateGithub.
-func (m *MockALMSettingsGitHubClient) UpdateGithub(opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
+func (m *MockALMSettingsGitHubClient) UpdateGithub(_ context.Context, opt *sonar.AlmSettingsUpdateGithubOptions) (*http.Response, error) {
 	if m.UpdateGithubFn != nil {
 		return m.UpdateGithubFn(opt)
 	}

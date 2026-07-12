@@ -18,9 +18,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
@@ -37,7 +38,7 @@ type MockUserTokensClient struct {
 var _ iam.UserTokensClient = &MockUserTokensClient{}
 
 // Generate implements UserTokensClient.Generate.
-func (m *MockUserTokensClient) Generate(opt *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
+func (m *MockUserTokensClient) Generate(_ context.Context, opt *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
 	if m.GenerateFn != nil {
 		return m.GenerateFn(opt)
 	}
@@ -46,7 +47,7 @@ func (m *MockUserTokensClient) Generate(opt *sonar.UserTokensGenerateOptions) (*
 }
 
 // Revoke implements UserTokensClient.Revoke.
-func (m *MockUserTokensClient) Revoke(opt *sonar.UserTokensRevokeOptions) (*http.Response, error) {
+func (m *MockUserTokensClient) Revoke(_ context.Context, opt *sonar.UserTokensRevokeOptions) (*http.Response, error) {
 	if m.RevokeFn != nil {
 		return m.RevokeFn(opt)
 	}
@@ -55,7 +56,7 @@ func (m *MockUserTokensClient) Revoke(opt *sonar.UserTokensRevokeOptions) (*http
 }
 
 // Search implements UserTokensClient.Search.
-func (m *MockUserTokensClient) Search(opt *sonar.UserTokensSearchOptions) (*sonar.UserTokensSearch, *http.Response, error) {
+func (m *MockUserTokensClient) Search(_ context.Context, opt *sonar.UserTokensSearchOptions) (*sonar.UserTokensSearch, *http.Response, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(opt)
 	}

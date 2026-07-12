@@ -19,7 +19,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
@@ -184,14 +184,14 @@ func TestIsWebhookUpToDate(t *testing.T) {
 func TestFindWebhookByKey(t *testing.T) {
 	t.Parallel()
 
-	webhooks := []sonar.Webhook{
+	webhooks := []sonar.WebhooksDefinition{
 		{Key: "abc123", Name: "hook-a"},
 		{Key: "def456", Name: "hook-b"},
 	}
 
 	cases := map[string]struct {
 		key  string
-		want *sonar.Webhook
+		want *sonar.WebhooksDefinition
 	}{
 		"Found":    {key: "abc123", want: &webhooks[0]},
 		"NotFound": {key: "missing", want: nil},
@@ -355,12 +355,12 @@ func TestGenerateWebhookObservation(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]struct {
-		sonarWebhook *sonar.Webhook
+		sonarWebhook *sonar.WebhooksDefinition
 		want         v1alpha1.WebhookObservation
 	}{
 		"Nil": {sonarWebhook: nil, want: v1alpha1.WebhookObservation{}},
 		"Full": {
-			sonarWebhook: &sonar.Webhook{Key: "k1", Name: "hook", URL: "https://example.com", HasSecret: true},
+			sonarWebhook: &sonar.WebhooksDefinition{Key: "k1", Name: "hook", URL: "https://example.com", HasSecret: true},
 			want:         v1alpha1.WebhookObservation{Key: "k1", Name: "hook", URL: "https://example.com", HasSecret: true},
 		},
 	}

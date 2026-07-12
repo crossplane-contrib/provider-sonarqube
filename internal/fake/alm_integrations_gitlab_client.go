@@ -18,9 +18,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 )
@@ -38,7 +39,7 @@ type MockALMIntegrationsGitLabClient struct {
 var _ integration.ALMIntegrationsGitLabClient = &MockALMIntegrationsGitLabClient{}
 
 // CheckPat implements ALMIntegrationsClient.CheckPat.
-func (m *MockALMIntegrationsGitLabClient) CheckPat(opt *sonar.AlmIntegrationsCheckPatOptions) (v *sonar.AlmIntegrationsCheckPat, resp *http.Response, err error) {
+func (m *MockALMIntegrationsGitLabClient) CheckPat(_ context.Context, opt *sonar.AlmIntegrationsCheckPatOptions) (v *sonar.AlmIntegrationsCheckPat, resp *http.Response, err error) {
 	if m.CheckPatFn != nil {
 		return m.CheckPatFn(opt)
 	}
@@ -47,7 +48,7 @@ func (m *MockALMIntegrationsGitLabClient) CheckPat(opt *sonar.AlmIntegrationsChe
 }
 
 // SetPat implements ALMIntegrationsClient.SetPat.
-func (m *MockALMIntegrationsGitLabClient) SetPat(opt *sonar.AlmIntegrationsSetPatOptions) (resp *http.Response, err error) {
+func (m *MockALMIntegrationsGitLabClient) SetPat(_ context.Context, opt *sonar.AlmIntegrationsSetPatOptions) (resp *http.Response, err error) {
 	if m.SetPatFn != nil {
 		return m.SetPatFn(opt)
 	}
@@ -56,7 +57,7 @@ func (m *MockALMIntegrationsGitLabClient) SetPat(opt *sonar.AlmIntegrationsSetPa
 }
 
 // SearchGitlabRepos implements ALMIntegrationsGitLabClient.SearchGitlabRepos.
-func (m *MockALMIntegrationsGitLabClient) SearchGitlabRepos(opt *sonar.AlmIntegrationsSearchGitlabReposOptions) (v *sonar.AlmIntegrationsSearchGitlabRepos, resp *http.Response, err error) {
+func (m *MockALMIntegrationsGitLabClient) SearchGitlabRepos(_ context.Context, opt *sonar.AlmIntegrationsSearchGitlabReposOptions) (v *sonar.AlmIntegrationsSearchGitlabRepos, resp *http.Response, err error) {
 	if m.SearchGitlabReposFn != nil {
 		return m.SearchGitlabReposFn(opt)
 	}

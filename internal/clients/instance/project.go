@@ -17,9 +17,10 @@ limitations under the License.
 package instance
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/utils/ptr"
@@ -33,14 +34,14 @@ import (
 // It handles all the operations related to Projects in SonarQube, such as
 // creating, updating, deleting, and retrieving Projects.
 type ProjectsClient interface {
-	BulkDelete(opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error)
-	Create(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error)
-	Delete(opt *sonar.ProjectsDeleteOptions) (*http.Response, error)
-	Search(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error)
-	SearchMyProjects(opt *sonar.ProjectsSearchMyProjectsOptions) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
-	SearchMyScannableProjects(opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
-	UpdateKey(opt *sonar.ProjectsUpdateKeyOptions) (*http.Response, error)
-	UpdateVisibility(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error)
+	BulkDelete(ctx context.Context, opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error)
+	Create(ctx context.Context, opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error)
+	Delete(ctx context.Context, opt *sonar.ProjectsDeleteOptions) (*http.Response, error)
+	Search(ctx context.Context, opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error)
+	SearchMyProjects(ctx context.Context, opt *sonar.ProjectsSearchMyProjectsOptions) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
+	SearchMyScannableProjects(ctx context.Context, opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
+	UpdateKey(ctx context.Context, opt *sonar.ProjectsUpdateKeyOptions) (*http.Response, error)
+	UpdateVisibility(ctx context.Context, opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error)
 }
 
 // NewProjectsClient creates a new ProjectsClient with the provided

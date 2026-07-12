@@ -203,7 +203,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, err
 	}
 
-	almDefinitions, resp, err := c.settingsClient.ListDefinitions() //nolint:bodyclose // closed via helpers.CloseBody
+	almDefinitions, resp, err := c.settingsClient.ListDefinitions(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -252,7 +252,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	createOptions := integration.GenerateALMGitHubCreateOptions(&almGitHub.Spec.ForProvider, clientSecret, privateKey, webhookSecret)
 
-	resp, err := c.settingsClient.CreateGithub(createOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.settingsClient.CreateGithub(ctx, createOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -295,7 +295,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	updateOptions := integration.GenerateALMGitHubUpdateOptions(externalName, &almGitHub.Spec.ForProvider, clientSecret, privateKey, webhookSecret)
 
-	resp, err := c.settingsClient.UpdateGithub(updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.settingsClient.UpdateGithub(ctx, updateOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {
@@ -337,7 +337,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	deleteOptions := integration.GenerateALMDeleteOptions(externalName)
 
-	resp, err := c.settingsClient.Delete(deleteOptions) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.settingsClient.Delete(ctx, deleteOptions) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err != nil {

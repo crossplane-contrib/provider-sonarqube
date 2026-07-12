@@ -17,9 +17,10 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
@@ -39,7 +40,7 @@ type MockPermissionsClient struct {
 }
 
 // AddGroup calls the mock AddGroupFn if set, otherwise returns an error.
-func (m *MockPermissionsClient) AddGroup(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+func (m *MockPermissionsClient) AddGroup(_ context.Context, opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
 	if m.AddGroupFn != nil {
 		return m.AddGroupFn(opt)
 	}
@@ -48,17 +49,17 @@ func (m *MockPermissionsClient) AddGroup(opt *sonar.PermissionsAddGroupOptions) 
 }
 
 // Groups calls the mock GroupsFn if set, otherwise returns an empty result.
-func (m *MockPermissionsClient) Groups(opt *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
+func (m *MockPermissionsClient) Groups(_ context.Context, opt *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
 	if m.GroupsFn != nil {
 		return m.GroupsFn(opt)
 	}
 
 	// Return empty permissions groups by default for testing convenience
-	return &sonar.PermissionsGroups{Groups: []sonar.PermissionGroup{}, Paging: sonar.PermissionsPaging{Total: 0, PageIndex: 1, PageSize: defaultPermissionsPageSize}}, &http.Response{StatusCode: http.StatusOK}, nil
+	return &sonar.PermissionsGroups{Groups: []sonar.PermissionGroup{}, Paging: sonar.Paging{Total: 0, PageIndex: 1, PageSize: defaultPermissionsPageSize}}, &http.Response{StatusCode: http.StatusOK}, nil
 }
 
 // RemoveGroup calls the mock RemoveGroupFn if set, otherwise returns an error.
-func (m *MockPermissionsClient) RemoveGroup(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+func (m *MockPermissionsClient) RemoveGroup(_ context.Context, opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
 	if m.RemoveGroupFn != nil {
 		return m.RemoveGroupFn(opt)
 	}
@@ -67,7 +68,7 @@ func (m *MockPermissionsClient) RemoveGroup(opt *sonar.PermissionsRemoveGroupOpt
 }
 
 // AddUser calls the mock AddUserFn if set, otherwise returns an error.
-func (m *MockPermissionsClient) AddUser(opt *sonar.PermissionsAddUserOptions) (*http.Response, error) {
+func (m *MockPermissionsClient) AddUser(_ context.Context, opt *sonar.PermissionsAddUserOptions) (*http.Response, error) {
 	if m.AddUserFn != nil {
 		return m.AddUserFn(opt)
 	}
@@ -76,17 +77,17 @@ func (m *MockPermissionsClient) AddUser(opt *sonar.PermissionsAddUserOptions) (*
 }
 
 // Users calls the mock UsersFn if set, otherwise returns an empty result.
-func (m *MockPermissionsClient) Users(opt *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error) {
+func (m *MockPermissionsClient) Users(_ context.Context, opt *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error) {
 	if m.UsersFn != nil {
 		return m.UsersFn(opt)
 	}
 
 	// Return empty permissions users by default for testing convenience
-	return &sonar.PermissionsUsers{Users: []sonar.PermissionUser{}, Paging: sonar.PermissionsPaging{Total: 0, PageIndex: 1, PageSize: defaultPermissionsPageSize}}, &http.Response{StatusCode: http.StatusOK}, nil
+	return &sonar.PermissionsUsers{Users: []sonar.PermissionUser{}, Paging: sonar.Paging{Total: 0, PageIndex: 1, PageSize: defaultPermissionsPageSize}}, &http.Response{StatusCode: http.StatusOK}, nil
 }
 
 // RemoveUser calls the mock RemoveUserFn if set, otherwise returns an error.
-func (m *MockPermissionsClient) RemoveUser(opt *sonar.PermissionsRemoveUserOptions) (*http.Response, error) {
+func (m *MockPermissionsClient) RemoveUser(_ context.Context, opt *sonar.PermissionsRemoveUserOptions) (*http.Response, error) {
 	if m.RemoveUserFn != nil {
 		return m.RemoveUserFn(opt)
 	}

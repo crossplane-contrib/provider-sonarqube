@@ -17,9 +17,10 @@ limitations under the License.
 package iam
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -32,19 +33,19 @@ import (
 // in SonarQube, such as creating, updating, deleting,
 // and retrieving PermissionsTemplates.
 type PermissionsTemplatesClient interface { //nolint:interfacebloat // This interface is intentionally large to cover all operations related to PermissionsTemplates in SonarQube.
-	AddGroupToTemplate(opt *sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error)
-	AddProjectCreatorToTemplate(opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error)
-	AddUserToTemplate(opt *sonar.PermissionsAddUserToTemplateOptions) (*http.Response, error)
-	CreateTemplate(opt *sonar.PermissionsCreateTemplateOptions) (*sonar.PermissionsCreateTemplate, *http.Response, error)
-	DeleteTemplate(opt *sonar.PermissionsDeleteTemplateOptions) (*http.Response, error)
-	RemoveGroupFromTemplate(opt *sonar.PermissionsRemoveGroupFromTemplateOptions) (*http.Response, error)
-	RemoveProjectCreatorFromTemplate(opt *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions) (*http.Response, error)
-	RemoveUserFromTemplate(opt *sonar.PermissionsRemoveUserFromTemplateOptions) (*http.Response, error)
-	SearchTemplates(opt *sonar.PermissionsSearchTemplatesOptions) (*sonar.PermissionsSearchTemplates, *http.Response, error)
-	SetDefaultTemplate(opt *sonar.PermissionsSetDefaultTemplateOptions) (*http.Response, error)
-	TemplateGroups(opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error)
-	TemplateUsers(opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error)
-	UpdateTemplate(opt *sonar.PermissionsUpdateTemplateOptions) (*sonar.PermissionsUpdateTemplate, *http.Response, error)
+	AddGroupToTemplate(ctx context.Context, opt *sonar.PermissionsAddGroupToTemplateOptions) (*http.Response, error)
+	AddProjectCreatorToTemplate(ctx context.Context, opt *sonar.PermissionsAddProjectCreatorToTemplateOptions) (*http.Response, error)
+	AddUserToTemplate(ctx context.Context, opt *sonar.PermissionsAddUserToTemplateOptions) (*http.Response, error)
+	CreateTemplate(ctx context.Context, opt *sonar.PermissionsCreateTemplateOptions) (*sonar.PermissionsCreateTemplate, *http.Response, error)
+	DeleteTemplate(ctx context.Context, opt *sonar.PermissionsDeleteTemplateOptions) (*http.Response, error)
+	RemoveGroupFromTemplate(ctx context.Context, opt *sonar.PermissionsRemoveGroupFromTemplateOptions) (*http.Response, error)
+	RemoveProjectCreatorFromTemplate(ctx context.Context, opt *sonar.PermissionsRemoveProjectCreatorFromTemplateOptions) (*http.Response, error)
+	RemoveUserFromTemplate(ctx context.Context, opt *sonar.PermissionsRemoveUserFromTemplateOptions) (*http.Response, error)
+	SearchTemplates(ctx context.Context, opt *sonar.PermissionsSearchTemplatesOptions) (*sonar.PermissionsSearchTemplates, *http.Response, error)
+	SetDefaultTemplate(ctx context.Context, opt *sonar.PermissionsSetDefaultTemplateOptions) (*http.Response, error)
+	TemplateGroups(ctx context.Context, opt *sonar.PermissionsTemplateGroupsOptions) (*sonar.PermissionsTemplateGroups, *http.Response, error)
+	TemplateUsers(ctx context.Context, opt *sonar.PermissionsTemplateUsersOptions) (*sonar.PermissionsTemplateUsers, *http.Response, error)
+	UpdateTemplate(ctx context.Context, opt *sonar.PermissionsUpdateTemplateOptions) (*sonar.PermissionsUpdateTemplate, *http.Response, error)
 }
 
 // NewPermissionsTemplatesClient creates a new PermissionsTemplatesClient
@@ -351,7 +352,7 @@ func UpdatePermissionsTemplateObservation(observation *v1alpha1.PermissionsTempl
 // GeneratePermissionsTemplateGroupObservations generates a list of
 // PermissionsTemplateGroupObservation based on the provided list of
 // TemplateGroup from the SonarQube API response.
-func GeneratePermissionsTemplateGroupObservations(groups *[]sonar.TemplateGroup) []v1alpha1.PermissionsTemplateGroupObservation {
+func GeneratePermissionsTemplateGroupObservations(groups *[]sonar.PermissionsTemplateGroup) []v1alpha1.PermissionsTemplateGroupObservation {
 	if groups == nil {
 		return nil
 	}
@@ -367,7 +368,7 @@ func GeneratePermissionsTemplateGroupObservations(groups *[]sonar.TemplateGroup)
 // GeneratePermissionsTemplateGroupObservation generates a
 // PermissionsTemplateGroupObservation based on the provided TemplateGroup
 // from the SonarQube API response.
-func GeneratePermissionsTemplateGroupObservation(group *sonar.TemplateGroup) *v1alpha1.PermissionsTemplateGroupObservation {
+func GeneratePermissionsTemplateGroupObservation(group *sonar.PermissionsTemplateGroup) *v1alpha1.PermissionsTemplateGroupObservation {
 	return &v1alpha1.PermissionsTemplateGroupObservation{
 		Name:        group.Name,
 		Permissions: group.Permissions,
@@ -377,7 +378,7 @@ func GeneratePermissionsTemplateGroupObservation(group *sonar.TemplateGroup) *v1
 // GeneratePermissionsTemplateUserObservations generates a list of
 // PermissionsTemplateUserObservation based on the provided list of TemplateUser
 // from the SonarQube API response.
-func GeneratePermissionsTemplateUserObservations(users *[]sonar.TemplateUser) []v1alpha1.PermissionsTemplateUserObservation {
+func GeneratePermissionsTemplateUserObservations(users *[]sonar.PermissionsTemplateUser) []v1alpha1.PermissionsTemplateUserObservation {
 	if users == nil {
 		return nil
 	}
@@ -393,7 +394,7 @@ func GeneratePermissionsTemplateUserObservations(users *[]sonar.TemplateUser) []
 // GeneratePermissionsTemplateUserObservation generates a
 // PermissionsTemplateUserObservation based on the provided TemplateUser
 // from the SonarQube API response.
-func GeneratePermissionsTemplateUserObservation(user *sonar.TemplateUser) *v1alpha1.PermissionsTemplateUserObservation {
+func GeneratePermissionsTemplateUserObservation(user *sonar.PermissionsTemplateUser) *v1alpha1.PermissionsTemplateUserObservation {
 	return &v1alpha1.PermissionsTemplateUserObservation{
 		Login:       user.Login,
 		Permissions: user.Permissions,

@@ -17,9 +17,10 @@ limitations under the License.
 package iam
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/sonar"
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -29,12 +30,12 @@ import (
 // PermissionsClient is the interface for managing resource permissions
 // in SonarQube.
 type PermissionsClient interface {
-	AddGroup(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error)
-	Groups(opt *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error)
-	RemoveGroup(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error)
-	AddUser(opt *sonar.PermissionsAddUserOptions) (*http.Response, error)
-	Users(opt *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error)
-	RemoveUser(opt *sonar.PermissionsRemoveUserOptions) (*http.Response, error)
+	AddGroup(ctx context.Context, opt *sonar.PermissionsAddGroupOptions) (*http.Response, error)
+	Groups(ctx context.Context, opt *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error)
+	RemoveGroup(ctx context.Context, opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error)
+	AddUser(ctx context.Context, opt *sonar.PermissionsAddUserOptions) (*http.Response, error)
+	Users(ctx context.Context, opt *sonar.PermissionsUsersOptions) (*sonar.PermissionsUsers, *http.Response, error)
+	RemoveUser(ctx context.Context, opt *sonar.PermissionsRemoveUserOptions) (*http.Response, error)
 }
 
 // NewPermissionsClient creates a new PermissionsClient with the provided
