@@ -34,6 +34,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualityprofile"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/rule"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/settings"
+	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almazure"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgithub"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/webhook"
@@ -57,6 +58,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 		group.SetupGated,
 		permissions.SetupGated,
 		permissionstemplate.SetupGated,
+		almazure.SetupGated,
 		almgitlab.SetupGated,
 		almgithub.SetupGated,
 		webhook.SetupGated,

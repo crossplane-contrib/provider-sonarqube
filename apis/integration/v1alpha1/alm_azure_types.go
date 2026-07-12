@@ -26,68 +26,68 @@ import (
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
-// ALMGitLabParameters are the configurable fields of a ALMGitLab.
-type ALMGitLabParameters struct {
+// ALMAzureParameters are the configurable fields of a ALMAzure.
+type ALMAzureParameters struct {
 	ALMCommonParameters `json:",inline"`
 }
 
-// ALMGitLabObservation are the observable fields of a ALMGitLab.
-type ALMGitLabObservation struct {
+// ALMAzureObservation are the observable fields of a ALMAzure.
+type ALMAzureObservation struct {
 	ALMCommonObservation `json:",inline"`
 }
 
-// A ALMGitLabSpec defines the desired state of a ALMGitLab.
+// A ALMAzureSpec defines the desired state of a ALMAzure.
 // +kubebuilder:validation:XValidation:rule="has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name) > 0",message="writeConnectionSecretToRef with a non-empty name is required"
-type ALMGitLabSpec struct {
+type ALMAzureSpec struct {
 	xpv1.ManagedResourceSpec `json:",inline"`
 
-	ForProvider ALMGitLabParameters `json:"forProvider"`
+	ForProvider ALMAzureParameters `json:"forProvider"`
 }
 
-// A ALMGitLabStatus represents the observed state of a ALMGitLab.
-type ALMGitLabStatus struct {
+// A ALMAzureStatus represents the observed state of a ALMAzure.
+type ALMAzureStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
 
-	AtProvider ALMGitLabObservation `json:"atProvider,omitempty"`
+	AtProvider ALMAzureObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// An ALMGitLab is a managed resource that represents a
-// SonarQube ALM integration for GitLab.
+// An ALMAzure is a managed resource that represents a
+// SonarQube ALM integration for Azure DevOps.
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="EXTERNAL-NAME",type="string",JSONPath=".metadata.annotations.crossplane\\.io/external-name"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,sonarqube}
-type ALMGitLab struct {
+type ALMAzure struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ALMGitLabSpec   `json:"spec"`
-	Status ALMGitLabStatus `json:"status,omitempty"`
+	Spec   ALMAzureSpec   `json:"spec"`
+	Status ALMAzureStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// ALMGitLabList contains a list of ALMGitLab.
-type ALMGitLabList struct {
+// ALMAzureList contains a list of ALMAzure.
+type ALMAzureList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 
-	Items []ALMGitLab `json:"items"`
+	Items []ALMAzure `json:"items"`
 }
 
-// ALMGitLab type metadata.
+// ALMAzure type metadata.
 var (
-	ALMGitLabKind             = reflect.TypeFor[ALMGitLab]().Name()
-	ALMGitLabGroupKind        = schema.GroupKind{Group: Group, Kind: ALMGitLabKind}.String()
-	ALMGitLabKindAPIVersion   = ALMGitLabKind + "." + SchemeGroupVersion.String()
-	ALMGitLabGroupVersionKind = SchemeGroupVersion.WithKind(ALMGitLabKind)
+	ALMAzureKind             = reflect.TypeFor[ALMAzure]().Name()
+	ALMAzureGroupKind        = schema.GroupKind{Group: Group, Kind: ALMAzureKind}.String()
+	ALMAzureKindAPIVersion   = ALMAzureKind + "." + SchemeGroupVersion.String()
+	ALMAzureGroupVersionKind = SchemeGroupVersion.WithKind(ALMAzureKind)
 )
 
-// init registers the ALMGitLab resource with the Scheme.
+// init registers the ALMAzure resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&ALMGitLab{}, &ALMGitLabList{})
+	SchemeBuilder.Register(&ALMAzure{}, &ALMAzureList{})
 }

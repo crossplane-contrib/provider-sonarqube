@@ -232,6 +232,22 @@ func (f *Framework) FindALMGitLabDefinitionByKey(ctx context.Context, key string
 	return nil, nil //nolint:nilnil // intentional: absence of definition is the natural "not yet created" sentinel
 }
 
+// FindALMAzureDefinitionByKey returns the Azure ALM setting definition
+// whose key exactly matches key, or (nil, nil) if no such definition exists.
+func (f *Framework) FindALMAzureDefinitionByKey(ctx context.Context, key string) (*sonar.AzureDefinition, error) {
+	res, resp, err := f.Sonar.AlmSettings.ListDefinitions(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.Azure {
+		if res.Azure[i].Key == key {
+			return &res.Azure[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional: absence of definition is the natural "not yet created" sentinel
+}
+
 // FindGlobalWebhookByKey returns the global SonarQube webhook whose key
 // exactly matches key, or (nil, nil) if no such webhook exists.
 func (f *Framework) FindGlobalWebhookByKey(ctx context.Context, key string) (*sonar.WebhooksDefinition, error) {
