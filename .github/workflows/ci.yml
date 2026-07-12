@@ -191,6 +191,11 @@ jobs:
       # failure. The runner is ephemeral, so leaving the cluster running
       # is harmless; the explicit teardown step below cleans it up.
       skipcleanup: "true"
+      # Optional: a real SonarQube Enterprise Edition license key. When
+      # unset, the enterprise e2e suite still runs against an unlicensed
+      # sonarqube:enterprise instance, but the License/Portfolio tests skip
+      # themselves since those features require a valid license.
+      SONARQUBE_LICENSE_KEY: ${{ secrets.SONARQUBE_ENTERPRISE_LICENSE_KEY }}
 
     steps:
       - name: Checkout
@@ -247,6 +252,7 @@ jobs:
             kubectl --context "$ctx" describe pods -A > "_output/e2e-logs/${cluster}-describe-pods.txt" 2>&1
             kubectl --context "$ctx" describe managed > "_output/e2e-logs/${cluster}-describe-managed.txt" 2>&1
             kubectl --context "$ctx" logs -n default deployment/sonarqube --tail=-1 > "_output/e2e-logs/${cluster}-sonarqube.log" 2>&1
+            kubectl --context "$ctx" logs -n default deployment/sonarqube-enterprise --tail=-1 > "_output/e2e-logs/${cluster}-sonarqube-enterprise.log" 2>&1
             kubectl --context "$ctx" logs -n crossplane-system -l pkg.crossplane.io/provider=provider-sonarqube --tail=-1 > "_output/e2e-logs/${cluster}-provider.log" 2>&1
             kubectl --context "$ctx" logs -n crossplane-system deployment/crossplane --tail=-1 > "_output/e2e-logs/${cluster}-crossplane.log" 2>&1
           done

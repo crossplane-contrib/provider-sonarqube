@@ -49,7 +49,7 @@ func TestRuleCRUD(t *testing.T) {
 	)
 
 	rule := &instancev1alpha1.Rule{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: instancev1alpha1.RuleSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

@@ -49,7 +49,7 @@ func TestALMGitLabCRUD(t *testing.T) {
 	)
 
 	patSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: f.Namespace},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: map[string]string{secretKey: "e2e-fake-gitlab-pat"},
 	}
@@ -61,7 +61,7 @@ func TestALMGitLabCRUD(t *testing.T) {
 	})
 
 	alm := &integrationv1alpha1.ALMGitLab{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: integrationv1alpha1.ALMGitLabSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				WriteConnectionSecretToReference: &xpv1.LocalSecretReference{Name: connSecretName},

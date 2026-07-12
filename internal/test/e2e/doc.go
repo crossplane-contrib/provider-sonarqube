@@ -33,4 +33,37 @@ limitations under the License.
 //
 // The companion ClusterProviderConfig used by the managed resources under
 // test is named `e2e` and is created by `cluster/local/sonarqube_setup.sh`.
+//
+// # Enterprise Edition suite
+//
+// internal/test/e2e/instance/license_test.go and portfolio_test.go carry an
+// additional `enterprise` build tag (`//go:build e2e && enterprise`), since
+// the License and Portfolio managed resources they exercise only work
+// against a licensed Enterprise (or higher) edition SonarQube instance. Run
+// them, together with the rest of the suite, against a second instance:
+//
+//	go test -tags=e2e,enterprise ./internal/test/e2e/...
+//
+// or `make e2e.test.enterprise`, pointed at the enterprise instance via the
+// same SONARQUBE_URL/SONARQUBE_TOKEN/SONARQUBE_PROVIDERCONFIG environment
+// variables (SONARQUBE_PROVIDERCONFIG defaults to `e2e-enterprise` there).
+// `cluster/local/integration_tests.sh` stands up both a community and an
+// enterprise SonarQube instance in the same kind cluster and runs both
+// suites concurrently.
+//
+// Since the enterprise suite reruns the same test files as the community
+// suite, its managed resources would collide by name if created in the same
+// namespace. SONARQUBE_E2E_NAMESPACE selects the namespace managed
+// resources are created in (default `default`); integration_tests.sh sets
+// it to `e2e-enterprise` for the enterprise run.
+//
+// The license/portfolio tests additionally require a real Enterprise
+// Edition license key in SONARQUBE_LICENSE_KEY; they call t.Skip when it is
+// unset rather than fail, since a valid license is a paid artifact not
+// every environment has.
+//
+// Conversely, internal/test/e2e/instance/plugin_test.go carries
+// `//go:build e2e && !enterprise` and is excluded from the enterprise suite:
+// SonarQube's commercial editions disable the marketplace plugin-install WS
+// entirely, so TestPluginInstall can only run against Community Edition.
 package e2e

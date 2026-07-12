@@ -33,6 +33,8 @@ import (
 // drives a Group resource through the create → ready → verify-in-SonarQube
 // → cleanup flow using only the framework's public surface.
 func TestFrameworkExample(t *testing.T) {
+	t.Parallel()
+
 	f := e2e.New(t)
 
 	const groupName = "e2e-framework-example"
@@ -40,7 +42,7 @@ func TestFrameworkExample(t *testing.T) {
 	group := &iamv1alpha1.Group{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      groupName,
-			Namespace: "default",
+			Namespace: f.Namespace,
 		},
 		Spec: iamv1alpha1.GroupSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{

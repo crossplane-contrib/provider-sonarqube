@@ -45,7 +45,7 @@ func TestSettingsGlobalScalar(t *testing.T) {
 	)
 
 	settings := &instancev1alpha1.Settings{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: instancev1alpha1.SettingsSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

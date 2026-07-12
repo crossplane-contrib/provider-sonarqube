@@ -97,6 +97,17 @@ e2e.test:
 	@go test -tags=e2e -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
 	@$(OK) e2e Go suite passed
 
+# Run the Go e2e suite against an Enterprise Edition SonarQube instance.
+# The enterprise build tag pulls in the license/portfolio tests on top of
+# the full suite already covered by e2e.test - both run against the
+# instance pointed to by SONARQUBE_URL/SONARQUBE_TOKEN/SONARQUBE_PROVIDERCONFIG.
+# SONARQUBE_LICENSE_KEY is optional: license/portfolio tests skip themselves
+# when it is unset, since a valid Enterprise license is a paid artifact.
+e2e.test.enterprise:
+	@$(INFO) running enterprise e2e Go suite with build tags e2e,enterprise
+	@go test -tags=e2e,enterprise -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
+	@$(OK) enterprise e2e Go suite passed
+
 # Update the submodules, such as the common build scripts.
 submodules:
 	@git submodule sync
@@ -140,7 +151,7 @@ dev-clean: $(KIND) $(KUBECTL)
 	@$(INFO) Deleting kind cluster
 	@$(KIND) delete cluster --name=$(PROJECT_NAME)-dev
 
-.PHONY: submodules fallthrough test-integration e2e.run e2e.test run dev dev-clean
+.PHONY: submodules fallthrough test-integration e2e.run e2e.test e2e.test.enterprise run dev dev-clean
 
 # ====================================================================================
 # Special Targets

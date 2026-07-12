@@ -25,7 +25,9 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/sonar"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/crossplane/provider-sonarqube/apis"
@@ -40,11 +42,16 @@ const (
 	EnvSonarQubeToken = "SONARQUBE_TOKEN"
 	// EnvProviderConfig is the ClusterProviderConfig name that managed resources should reference.
 	EnvProviderConfig = "SONARQUBE_PROVIDERCONFIG"
+	// EnvNamespace is the Kubernetes namespace managed resources are created in.
+	EnvNamespace = "SONARQUBE_E2E_NAMESPACE"
 )
 
 // DefaultProviderConfigName is used when EnvProviderConfig is unset; it matches
 // the ClusterProviderConfig provisioned by cluster/local/sonarqube_setup.sh.
 const DefaultProviderConfigName = "e2e"
+
+// DefaultNamespace is used when EnvNamespace is unset.
+const DefaultNamespace = "default"
 
 // Framework groups the clients every e2e test needs: a controller-runtime
 // client wired to the project's schemes, and a SonarQube SDK client
@@ -57,6 +64,8 @@ type Framework struct {
 	Sonar *sonar.Client
 	// ProviderConfigName is the ClusterProviderConfig managed resources should reference.
 	ProviderConfigName string
+	// Namespace is the Kubernetes namespace managed resources are created in.
+	Namespace string
 }
 
 // New constructs a Framework, failing the test immediately on missing config
@@ -80,7 +89,20 @@ func New(t *testing.T) *Framework {
 		t.Fatalf("registering provider schemes: %v", err)
 	}
 
-	kc, err := client.New(cfg, client.Options{Scheme: scheme})
+	// Use a dynamic RESTMapper: a static one snapshots API discovery once at
+	// construction time, so a test whose client is built before the
+	// provider's CRDs finish establishing would permanently see "no matches
+	// for kind" even after the CRD becomes available moments later.
+	httpClient, err := rest.HTTPClientFor(cfg)
+	if err != nil {
+		t.Fatalf("building http client for REST mapper: %v", err)
+	}
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg, httpClient)
+	if err != nil {
+		t.Fatalf("building dynamic REST mapper: %v", err)
+	}
+
+	kc, err := client.New(cfg, client.Options{Scheme: scheme, Mapper: mapper})
 	if err != nil {
 		t.Fatalf("building kube client: %v", err)
 	}
@@ -96,10 +118,16 @@ func New(t *testing.T) *Framework {
 		pc = DefaultProviderConfigName
 	}
 
+	ns := os.Getenv(EnvNamespace)
+	if ns == "" {
+		ns = DefaultNamespace
+	}
+
 	return &Framework{
 		Kube:               kc,
 		Sonar:              sc,
 		ProviderConfigName: pc,
+		Namespace:          ns,
 	}
 }
 

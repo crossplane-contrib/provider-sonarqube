@@ -44,7 +44,7 @@ func TestGroupCRUD(t *testing.T) {
 	wantPerms := []string{"scan", "provisioning"}
 
 	group := &iamv1alpha1.Group{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.GroupSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

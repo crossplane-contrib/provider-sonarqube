@@ -45,7 +45,7 @@ func TestWebhookGlobalCRUD(t *testing.T) {
 	)
 
 	webhook := &integrationv1alpha1.Webhook{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: framework.Namespace},
 		Spec: integrationv1alpha1.WebhookSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

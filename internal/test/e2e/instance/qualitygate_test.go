@@ -45,7 +45,7 @@ func TestQualityGateCRUD(t *testing.T) {
 	)
 
 	qg := &instancev1alpha1.QualityGate{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: instancev1alpha1.QualityGateSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -93,7 +93,7 @@ func TestQualityGateInvalidMetric(t *testing.T) {
 	)
 
 	qg := &instancev1alpha1.QualityGate{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: instancev1alpha1.QualityGateSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

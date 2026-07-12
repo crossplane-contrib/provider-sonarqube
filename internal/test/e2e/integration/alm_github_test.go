@@ -51,12 +51,12 @@ func TestALMGitHubCRUD(t *testing.T) {
 	)
 
 	clientSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: clientSecretRef, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: clientSecretRef, Namespace: f.Namespace},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: map[string]string{"clientSecret": "e2e-fake-client-secret"},
 	}
 	privateKey := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: privateKeyRef, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: privateKeyRef, Namespace: f.Namespace},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: map[string]string{"privateKey": "e2e-fake-private-key"},
 	}
@@ -72,7 +72,7 @@ func TestALMGitHubCRUD(t *testing.T) {
 	}
 
 	alm := &integrationv1alpha1.ALMGitHub{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: integrationv1alpha1.ALMGitHubSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				WriteConnectionSecretToReference: &xpv1.LocalSecretReference{Name: connSecretName},

@@ -1,4 +1,4 @@
-//go:build e2e
+//go:build e2e && !enterprise
 
 /*
 Copyright 2026 The Crossplane Authors.
@@ -31,6 +31,12 @@ import (
 
 // TestPluginInstall creates a Plugin CR, waits for Ready, and verifies
 // the plugin is installed in SonarQube. The t.Cleanup uninstalls it.
+//
+// Community Edition only: SonarQube's commercial editions (Developer,
+// Enterprise, Data Center) disable the marketplace plugin-install WS
+// entirely ("This WS is unsupported in commercial edition. Please install
+// plugin manually.") regardless of which plugin is requested, so this
+// resource cannot be exercised against the enterprise instance.
 func TestPluginInstall(t *testing.T) {
 	t.Parallel()
 
@@ -41,7 +47,7 @@ func TestPluginInstall(t *testing.T) {
 	)
 
 	plugin := &instancev1alpha1.Plugin{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: instancev1alpha1.PluginSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

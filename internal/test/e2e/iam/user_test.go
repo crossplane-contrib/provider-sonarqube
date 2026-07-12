@@ -50,7 +50,7 @@ func TestUserCRUD(t *testing.T) {
 	)
 
 	pwSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: f.Namespace},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: map[string]string{secretKey: "e2e-password-123!"},
 	}
@@ -62,7 +62,7 @@ func TestUserCRUD(t *testing.T) {
 	})
 
 	user := &iamv1alpha1.User{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.UserSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -79,7 +79,7 @@ func TestUserCRUD(t *testing.T) {
 					Key: secretKey,
 					SecretReference: xpv1.SecretReference{
 						Name:      secretName,
-						Namespace: "default",
+						Namespace: f.Namespace,
 					},
 				},
 				// Anonymise on delete so re-creating with the same login

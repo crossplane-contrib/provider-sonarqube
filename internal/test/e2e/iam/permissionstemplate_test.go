@@ -43,7 +43,7 @@ func TestPermissionsTemplateCRUD(t *testing.T) {
 	)
 
 	pt := &iamv1alpha1.PermissionsTemplate{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.PermissionsTemplateSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

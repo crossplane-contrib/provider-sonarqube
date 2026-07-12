@@ -301,3 +301,33 @@ func (f *Framework) FindALMGitHubDefinitionByKey(key string) (*sonar.GithubDefin
 	}
 	return nil, nil //nolint:nilnil // intentional
 }
+
+// FindPortfolioByKey returns the SonarQube portfolio with the given key,
+// or (nil, nil) if no such portfolio exists. Portfolios are an Enterprise
+// Edition feature; SonarQube returns 404 both when the key is unknown and
+// when the running edition/license does not support portfolios at all.
+func (f *Framework) FindPortfolioByKey(key string) (*sonar.ViewDetails, error) {
+	res, resp, err := f.Sonar.Views.Show(&sonar.ViewsShowOptions{Key: key})
+	defer helpers.CloseBody(resp)
+	if common.IsResponseNotFound(resp) {
+		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &res.Portfolio, nil
+}
+
+// FetchLicense returns the license currently applied to the SonarQube
+// instance. SonarQube always returns 200 from this endpoint - even an
+// unlicensed Enterprise/Data Center instance reports a License with empty
+// fields - so callers should inspect the returned fields rather than
+// treating an error as "no license".
+func (f *Framework) FetchLicense() (*sonar.License, error) {
+	res, resp, err := f.Sonar.Editions.Get()
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	return &res.License, nil
+}

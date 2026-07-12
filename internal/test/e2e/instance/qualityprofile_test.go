@@ -46,7 +46,7 @@ func TestQualityProfileCRUD(t *testing.T) {
 	)
 
 	qp := &instancev1alpha1.QualityProfile{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: instancev1alpha1.QualityProfileSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

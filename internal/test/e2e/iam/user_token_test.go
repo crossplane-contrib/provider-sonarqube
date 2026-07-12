@@ -50,7 +50,7 @@ func TestUserTokenCRUD(t *testing.T) {
 	)
 
 	token := &iamv1alpha1.UserToken{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.UserTokenSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -86,7 +86,7 @@ func TestUserTokenCRUD(t *testing.T) {
 	// Verify the token secret exists and contains the token value
 	secret := &corev1.Secret{}
 	if err := f.Kube.Get(context.Background(), kubeKey(&corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: f.Namespace},
 	}), secret); err != nil {
 		t.Fatalf("getting token secret: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestUserTokenExpirationDate(t *testing.T) {
 	)
 
 	token := &iamv1alpha1.UserToken{
-		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.UserTokenSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

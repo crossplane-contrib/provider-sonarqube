@@ -52,7 +52,7 @@ func TestPermissionsCRUDGroup(t *testing.T) {
 	wantPerms := []string{"scan", "provisioning"}
 
 	group := &iamv1alpha1.Group{
-		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.GroupSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -70,7 +70,7 @@ func TestPermissionsCRUDGroup(t *testing.T) {
 	e2e.AssertReady(t, group)
 
 	perms := &iamv1alpha1.Permissions{
-		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.PermissionsSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -116,7 +116,7 @@ func TestPermissionsCRUDUser(t *testing.T) {
 	wantPerms := []string{"scan"}
 
 	pwSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: f.Namespace},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: map[string]string{secretKey: "e2e-perms-pw-123!"},
 	}
@@ -128,7 +128,7 @@ func TestPermissionsCRUDUser(t *testing.T) {
 	})
 
 	user := &iamv1alpha1.User{
-		ObjectMeta: metav1.ObjectMeta{Name: userCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: userCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.UserSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -145,7 +145,7 @@ func TestPermissionsCRUDUser(t *testing.T) {
 					Key: secretKey,
 					SecretReference: xpv1.SecretReference{
 						Name:      secretName,
-						Namespace: "default",
+						Namespace: f.Namespace,
 					},
 				},
 			},
@@ -156,7 +156,7 @@ func TestPermissionsCRUDUser(t *testing.T) {
 	e2e.AssertReady(t, user)
 
 	perms := &iamv1alpha1.Permissions{
-		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.PermissionsSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -200,7 +200,7 @@ func TestPermissionsUpdateGroup(t *testing.T) {
 	updatedPerms := []string{"scan", "provisioning"}
 
 	group := &iamv1alpha1.Group{
-		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.GroupSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -218,7 +218,7 @@ func TestPermissionsUpdateGroup(t *testing.T) {
 	e2e.AssertReady(t, group)
 
 	perms := &iamv1alpha1.Permissions{
-		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.PermissionsSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -279,7 +279,7 @@ func TestPermissionsProjectScoped(t *testing.T) {
 	wantPerms := []string{"user", "codeviewer"}
 
 	project := &instancev1alpha1.Project{
-		ObjectMeta: metav1.ObjectMeta{Name: projectCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: projectCRName, Namespace: f.Namespace},
 		Spec: instancev1alpha1.ProjectSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -296,7 +296,7 @@ func TestPermissionsProjectScoped(t *testing.T) {
 	}
 
 	group := &iamv1alpha1.Group{
-		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: groupCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.GroupSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{
@@ -316,7 +316,7 @@ func TestPermissionsProjectScoped(t *testing.T) {
 	e2e.AssertReady(t, group)
 
 	perms := &iamv1alpha1.Permissions{
-		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: permsCRName, Namespace: f.Namespace},
 		Spec: iamv1alpha1.PermissionsSpec{
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{
 				ProviderConfigReference: &xpv1.ProviderConfigReference{

@@ -2,7 +2,7 @@
 # Idempotent setup for an in-cluster SonarQube instance used by e2e tests.
 #
 # Steps:
-#   1. apply Deployment + Service from sonarqube.yaml
+#   1. apply Deployment + Service from SONARQUBE_MANIFEST
 #   2. wait for the Deployment to become Available
 #   3. open a port-forward and wait for SonarQube to report status=UP
 #   4. set the admin password (tolerates already-changed state)
@@ -14,7 +14,12 @@
 # Required environment:
 #   KUBECTL (path to kubectl, falls back to "kubectl")
 #
-# Optional environment overrides have sensible defaults below.
+# Optional environment overrides have sensible defaults below. To stand up
+# a second instance (e.g. the enterprise edition) alongside the default one,
+# override at least SONARQUBE_MANIFEST, SONARQUBE_DEPLOYMENT,
+# SONARQUBE_SERVICE, SONARQUBE_LOCAL_PORT, SONARQUBE_TOKEN_NAME,
+# SONARQUBE_SECRET_NAME and SONARQUBE_PROVIDERCONFIG_NAME so the two runs
+# don't collide.
 set -euo pipefail
 
 KUBECTL="${KUBECTL:-kubectl}"
@@ -35,11 +40,12 @@ SONARQUBE_BASE_URL_IN_CLUSTER="http://${SONARQUBE_SERVICE}.${SONARQUBE_NAMESPACE
 SONARQUBE_LOCAL_URL="http://localhost:${SONARQUBE_LOCAL_PORT}"
 
 manifest_dir="$( cd "$( dirname "${BASH_SOURCE[0]}")" && pwd )"
+SONARQUBE_MANIFEST="${SONARQUBE_MANIFEST:-${manifest_dir}/sonarqube.yaml}"
 
 log() { printf '\n>>> %s\n' "$*"; }
 
-log "Applying SonarQube manifests"
-"${KUBECTL}" apply -f "${manifest_dir}/sonarqube.yaml"
+log "Applying SonarQube manifests from ${SONARQUBE_MANIFEST}"
+"${KUBECTL}" apply -f "${SONARQUBE_MANIFEST}"
 
 log "Waiting for deployment/${SONARQUBE_DEPLOYMENT} to become Available (timeout 10m)"
 "${KUBECTL}" wait --for=condition=Available \
