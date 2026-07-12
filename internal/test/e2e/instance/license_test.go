@@ -53,7 +53,7 @@ func TestLicenseCRUD(t *testing.T) {
 		t.Errorf("License AtProvider.ProductEdition is empty, want a non-empty edition name")
 	}
 
-	got, err := f.FetchLicense()
+	got, err := f.FetchLicense(context.Background())
 	if err != nil {
 		t.Fatalf("fetching license via SonarQube API: %v", err)
 	}

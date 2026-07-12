@@ -331,6 +331,8 @@ func (c *external) Disconnect(ctx context.Context) error {
 // addGroupPermissions adds a slice of permissions to a group using parallel
 // goroutines. Each permission is added concurrently,
 // and any errors are sent to the provided error channel.
+//
+//nolint:dupl // Intentional structural similarity with removeGroupPermissions; different API calls prevent abstraction.
 func (c *external) addGroupPermissions(ctx context.Context, groupName string, permissions []string, errChan chan error) {
 	waitGroup := sync.WaitGroup{}
 
@@ -355,6 +357,8 @@ func (c *external) addGroupPermissions(ctx context.Context, groupName string, pe
 // removeGroupPermissions removes a slice of permissions from a group using
 // parallel goroutines. Each permission is removed concurrently,
 // and any errors are sent to the provided error channel.
+//
+//nolint:dupl // Intentional structural similarity with addGroupPermissions; different API calls prevent abstraction.
 func (c *external) removeGroupPermissions(ctx context.Context, groupName string, permissions []string, errChan chan error) {
 	waitGroup := sync.WaitGroup{}
 

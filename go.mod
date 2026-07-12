@@ -1,6 +1,6 @@
 module github.com/crossplane/provider-sonarqube
 
-go 1.26.4
+go 1.26.5
 
 tool sigs.k8s.io/controller-tools/cmd/controller-gen
 

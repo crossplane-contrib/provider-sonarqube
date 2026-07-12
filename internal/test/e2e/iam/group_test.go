@@ -19,6 +19,7 @@ limitations under the License.
 package iam_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -70,7 +71,7 @@ func TestGroupCRUD(t *testing.T) {
 		t.Fatalf("expected external-name to be populated after Ready")
 	}
 
-	got, err := f.FetchGroup(id)
+	got, err := f.FetchGroup(context.Background(), id)
 	if err != nil {
 		t.Fatalf("fetching group: %v", err)
 	}
@@ -81,7 +82,7 @@ func TestGroupCRUD(t *testing.T) {
 		t.Errorf("group name = %q, want %q", got.Name, groupName)
 	}
 
-	gotPerms, err := f.GroupPermissions(groupName)
+	gotPerms, err := f.GroupPermissions(context.Background(), groupName)
 	if err != nil {
 		t.Fatalf("fetching group permissions: %v", err)
 	}

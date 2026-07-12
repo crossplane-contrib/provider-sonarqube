@@ -19,6 +19,7 @@ limitations under the License.
 package instance_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -69,7 +70,7 @@ func TestPortfolioCRUD(t *testing.T) {
 	e2e.AssertSynced(t, portfolio)
 	e2e.AssertExternalName(t, portfolio, pfKey)
 
-	got, err := f.FindPortfolioByKey(pfKey)
+	got, err := f.FindPortfolioByKey(context.Background(), pfKey)
 	if err != nil {
 		t.Fatalf("fetching portfolio: %v", err)
 	}

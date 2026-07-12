@@ -19,6 +19,7 @@ limitations under the License.
 package iam_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -63,7 +64,7 @@ func TestPermissionsTemplateCRUD(t *testing.T) {
 	e2e.AssertReady(t, pt)
 	e2e.AssertSynced(t, pt)
 
-	got, err := f.FindPermissionsTemplate(templateName)
+	got, err := f.FindPermissionsTemplate(context.Background(), templateName)
 	if err != nil {
 		t.Fatalf("searching permissions templates: %v", err)
 	}

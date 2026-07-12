@@ -98,7 +98,7 @@ func TestUserCRUD(t *testing.T) {
 		t.Fatalf("expected external-name to be populated after Ready")
 	}
 
-	got, err := f.FetchUser(id)
+	got, err := f.FetchUser(context.Background(), id)
 	if err != nil {
 		t.Fatalf("fetching user: %v", err)
 	}

@@ -19,6 +19,7 @@ limitations under the License.
 package instance_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -66,7 +67,7 @@ func TestPluginInstall(t *testing.T) {
 	e2e.AssertSynced(t, plugin)
 	e2e.AssertExternalName(t, plugin, pluginKey)
 
-	installed, err := f.FindInstalledPlugin(pluginKey)
+	installed, err := f.FindInstalledPlugin(context.Background(), pluginKey)
 	if err != nil {
 		t.Fatalf("searching installed plugins: %v", err)
 	}
@@ -80,7 +81,7 @@ func TestPluginInstall(t *testing.T) {
 
 	// Plugins require a SonarQube restart to move from pending to installed;
 	// accept pending-install as equivalent for e2e purposes.
-	pending, err := f.FindPendingInstallPlugin(pluginKey)
+	pending, err := f.FindPendingInstallPlugin(context.Background(), pluginKey)
 	if err != nil {
 		t.Fatalf("searching pending plugins: %v", err)
 	}

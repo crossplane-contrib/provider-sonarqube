@@ -19,6 +19,7 @@ limitations under the License.
 package instance_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -73,7 +74,7 @@ func TestProjectCRUD(t *testing.T) {
 	e2e.AssertSynced(t, project)
 	e2e.AssertExternalName(t, project, projKey)
 
-	got, err := f.FindProjectByKey(projKey)
+	got, err := f.FindProjectByKey(context.Background(), projKey)
 	if err != nil {
 		t.Fatalf("searching projects: %v", err)
 	}

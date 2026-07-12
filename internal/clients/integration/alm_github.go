@@ -30,6 +30,8 @@ import (
 // SonarQube ALMGitHub API
 // It handles all the operations related to ALMGitHub in SonarQube,
 // such as creating, updating, deleting, and retrieving ALMGitHub.
+//
+//nolint:dupl // Intentional structural similarity with ALMIntegrationsBitbucketClient; different provider-specific API methods prevent abstraction.
 type ALMIntegrationsGitHubClient interface {
 	ALMIntegrationsClient
 	GetGithubClientID(ctx context.Context, opt *sonar.AlmIntegrationsGetGithubClientIDOptions) (v *sonar.AlmIntegrationsGetGithubClientID, resp *http.Response, err error)

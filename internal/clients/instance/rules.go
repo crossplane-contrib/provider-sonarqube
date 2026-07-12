@@ -505,14 +505,14 @@ func GenerateRuleDescriptionSectionsObservation(sections *[]sonar.RulesDescripti
 
 // GenerateRuleDescriptionContextObservation generates the observation of
 // RuleDescriptionContext from the SonarQube rule Show response.
-func GenerateRuleDescriptionContextObservation(context *sonar.RulesDescriptionSectionContext) v1alpha1.RuleDescriptionContextObservation {
-	if context == nil {
+func GenerateRuleDescriptionContextObservation(descContext *sonar.RulesDescriptionSectionContext) v1alpha1.RuleDescriptionContextObservation {
+	if descContext == nil {
 		return v1alpha1.RuleDescriptionContextObservation{}
 	}
 
 	return v1alpha1.RuleDescriptionContextObservation{
-		DisplayName: context.DisplayName,
-		Key:         context.Key,
+		DisplayName: descContext.DisplayName,
+		Key:         descContext.Key,
 	}
 }
 

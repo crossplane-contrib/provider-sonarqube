@@ -89,7 +89,7 @@ func TestPermissionsCRUDGroup(t *testing.T) {
 	e2e.AssertReady(t, perms)
 	e2e.AssertSynced(t, perms)
 
-	gotPerms, err := f.GroupPermissions(groupName)
+	gotPerms, err := f.GroupPermissions(context.Background(), groupName)
 	if err != nil {
 		t.Fatalf("fetching group permissions: %v", err)
 	}
@@ -175,7 +175,7 @@ func TestPermissionsCRUDUser(t *testing.T) {
 	e2e.AssertReady(t, perms)
 	e2e.AssertSynced(t, perms)
 
-	gotPerms, err := f.UserPermissions(userLogin)
+	gotPerms, err := f.UserPermissions(context.Background(), userLogin)
 	if err != nil {
 		t.Fatalf("fetching user permissions: %v", err)
 	}
@@ -252,7 +252,7 @@ func TestPermissionsUpdateGroup(t *testing.T) {
 	defer cancel()
 	if pollErr := wait.PollUntilContextTimeout(pollCtx, 2*time.Second, 2*time.Minute, false, func(_ context.Context) (bool, error) {
 		var fetchErr error
-		gotPerms, fetchErr = f.GroupPermissions(groupName)
+		gotPerms, fetchErr = f.GroupPermissions(context.Background(), groupName)
 		if fetchErr != nil {
 			return false, fetchErr
 		}
@@ -337,7 +337,7 @@ func TestPermissionsProjectScoped(t *testing.T) {
 	e2e.AssertSynced(t, perms)
 
 	// Verify project-scoped permissions via the SonarQube API.
-	res, resp, err := f.Sonar.Permissions.Groups(&sonar.PermissionsGroupsOptions{
+	res, resp, err := f.Sonar.Permissions.Groups(context.Background(), &sonar.PermissionsGroupsOptions{
 		Query:      groupName,
 		ProjectKey: projectKey,
 	})

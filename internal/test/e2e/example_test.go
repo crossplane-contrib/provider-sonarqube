@@ -19,6 +19,7 @@ limitations under the License.
 package e2e_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -67,7 +68,7 @@ func TestFrameworkExample(t *testing.T) {
 	if id == "" {
 		t.Fatalf("expected external-name annotation to be populated after Ready")
 	}
-	got, err := f.FetchGroup(id)
+	got, err := f.FetchGroup(context.Background(), id)
 	if err != nil {
 		t.Fatalf("fetching group from SonarQube: %v", err)
 	}

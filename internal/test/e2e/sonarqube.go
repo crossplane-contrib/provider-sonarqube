@@ -19,6 +19,8 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
+
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -28,8 +30,8 @@ import (
 // FetchGroup returns the SonarQube group with the given ID, or (nil, nil)
 // if no such group exists. Use the resource's external-name annotation -
 // the provider stores the SonarQube-assigned ID there - as the lookup key.
-func (f *Framework) FetchGroup(id string) (*sonar.Group, error) {
-	g, resp, err := f.Sonar.V2.Authorizations.FetchGroup(id)
+func (f *Framework) FetchGroup(ctx context.Context, id string) (*sonar.AuthorizationsGroup, error) {
+	g, resp, err := f.Sonar.V2.Authorizations.GetGroup(ctx, id)
 	defer helpers.CloseBody(resp)
 	if common.IsResponseNotFound(resp) {
 		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
@@ -44,8 +46,8 @@ func (f *Framework) FetchGroup(id string) (*sonar.Group, error) {
 // matches name, or (nil, nil) if no such group exists. Useful when the
 // resource's external-name has not been observed yet (e.g. during creation
 // failures), since SonarQube exposes search by name but Fetch requires ID.
-func (f *Framework) FindGroupByName(name string) (*sonar.Group, error) {
-	res, resp, err := f.Sonar.V2.Authorizations.SearchGroups(&sonar.AuthorizationsSearchGroupsOptions{Query: name})
+func (f *Framework) FindGroupByName(ctx context.Context, name string) (*sonar.AuthorizationsGroup, error) {
+	res, resp, err := f.Sonar.V2.Authorizations.SearchGroups(ctx, &sonar.AuthorizationsSearchGroupsOptions{Query: name})
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -60,8 +62,8 @@ func (f *Framework) FindGroupByName(name string) (*sonar.Group, error) {
 
 // FindProjectByKey returns the SonarQube project component with the given
 // key, or (nil, nil) if no such project exists.
-func (f *Framework) FindProjectByKey(key string) (*sonar.ProjectSearchComponent, error) {
-	res, resp, err := f.Sonar.Projects.Search(&sonar.ProjectsSearchOptions{Projects: []string{key}})
+func (f *Framework) FindProjectByKey(ctx context.Context, key string) (*sonar.ProjectSearchComponent, error) {
+	res, resp, err := f.Sonar.Projects.Search(ctx, &sonar.ProjectsSearchOptions{Projects: []string{key}})
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -77,8 +79,8 @@ func (f *Framework) FindProjectByKey(key string) (*sonar.ProjectSearchComponent,
 // FindQualityGate returns the quality gate with the given name, or (nil, nil)
 // if no such gate exists. SonarQube exposes only a List endpoint, so this
 // iterates the full list - fine for the handful of gates used in e2e tests.
-func (f *Framework) FindQualityGate(name string) (*sonar.QualityGate, error) {
-	res, resp, err := f.Sonar.Qualitygates.List()
+func (f *Framework) FindQualityGate(ctx context.Context, name string) (*sonar.QualityGate, error) {
+	res, resp, err := f.Sonar.Qualitygates.List(ctx)
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -93,8 +95,8 @@ func (f *Framework) FindQualityGate(name string) (*sonar.QualityGate, error) {
 
 // FindQualityProfile returns the quality profile matching name + language,
 // or (nil, nil) if no such profile exists.
-func (f *Framework) FindQualityProfile(name, language string) (*sonar.QualityProfile, error) {
-	res, resp, err := f.Sonar.Qualityprofiles.Search(&sonar.QualityprofilesSearchOptions{Language: language})
+func (f *Framework) FindQualityProfile(ctx context.Context, name, language string) (*sonar.QualityProfile, error) {
+	res, resp, err := f.Sonar.Qualityprofiles.Search(ctx, &sonar.QualityprofilesSearchOptions{Language: language})
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -109,8 +111,8 @@ func (f *Framework) FindQualityProfile(name, language string) (*sonar.QualityPro
 
 // FetchRule returns the SonarQube rule with the given fully-qualified key
 // (e.g. "java:my-custom-rule"), or (nil, nil) if no such rule exists.
-func (f *Framework) FetchRule(key string) (*sonar.RuleDetails, error) {
-	res, resp, err := f.Sonar.Rules.Show(&sonar.RulesShowOptions{Key: key})
+func (f *Framework) FetchRule(ctx context.Context, key string) (*sonar.RulesDetails, error) {
+	res, resp, err := f.Sonar.Rules.Show(ctx, &sonar.RulesShowOptions{Key: key})
 	defer helpers.CloseBody(resp)
 	if common.IsResponseNotFound(resp) {
 		return nil, nil //nolint:nilnil // intentional
@@ -125,12 +127,12 @@ func (f *Framework) FetchRule(key string) (*sonar.RuleDetails, error) {
 // component when non-empty), or (nil, nil) if SonarQube did not return a
 // value for that key. Settings that were never set return (nil, nil) -
 // callers treat that as the natural "not yet reconciled" state.
-func (f *Framework) FetchSettingValue(component, key string) (*sonar.SettingValue, error) {
+func (f *Framework) FetchSettingValue(ctx context.Context, component, key string) (*sonar.SettingValue, error) {
 	opts := &sonar.SettingsValuesOptions{Keys: []string{key}}
 	if component != "" {
 		opts.Component = component
 	}
-	res, resp, err := f.Sonar.Settings.Values(opts)
+	res, resp, err := f.Sonar.Settings.Values(ctx, opts)
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -146,9 +148,9 @@ func (f *Framework) FetchSettingValue(component, key string) (*sonar.SettingValu
 // FetchUser returns the SonarQube user with the given ID, or (nil, nil)
 // if no such user exists. The provider stores the user ID in the
 // external-name annotation, so the typical lookup is
-// f.FetchUser(meta.GetExternalName(user)).
-func (f *Framework) FetchUser(id string) (*sonar.UserV2, error) {
-	u, resp, err := f.Sonar.V2.UsersManagement.Fetch(id)
+// f.FetchUser(ctx, meta.GetExternalName(user)).
+func (f *Framework) FetchUser(ctx context.Context, id string) (*sonar.UserV2, error) {
+	u, resp, err := f.Sonar.V2.UsersManagement.Get(ctx, id)
 	defer helpers.CloseBody(resp)
 	if common.IsResponseNotFound(resp) {
 		return nil, nil //nolint:nilnil // intentional
@@ -161,8 +163,8 @@ func (f *Framework) FetchUser(id string) (*sonar.UserV2, error) {
 
 // FindPermissionsTemplate returns the permissions template whose name
 // exactly matches name, or (nil, nil) if no such template exists.
-func (f *Framework) FindPermissionsTemplate(name string) (*sonar.PermissionTemplate, error) {
-	res, resp, err := f.Sonar.Permissions.SearchTemplates(&sonar.PermissionsSearchTemplatesOptions{Query: name})
+func (f *Framework) FindPermissionsTemplate(ctx context.Context, name string) (*sonar.PermissionTemplate, error) {
+	res, resp, err := f.Sonar.Permissions.SearchTemplates(ctx, &sonar.PermissionsSearchTemplatesOptions{Query: name})
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -179,8 +181,8 @@ func (f *Framework) FindPermissionsTemplate(name string) (*sonar.PermissionTempl
 // group. Returns an empty (non-nil) slice when SonarQube knows the group
 // but it has no global permissions, and an error when the group is unknown
 // or the API call fails.
-func (f *Framework) GroupPermissions(groupName string) ([]string, error) {
-	res, resp, err := f.Sonar.Permissions.Groups(&sonar.PermissionsGroupsOptions{Query: groupName})
+func (f *Framework) GroupPermissions(ctx context.Context, groupName string) ([]string, error) {
+	res, resp, err := f.Sonar.Permissions.Groups(ctx, &sonar.PermissionsGroupsOptions{Query: groupName})
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -198,8 +200,8 @@ func (f *Framework) GroupPermissions(groupName string) ([]string, error) {
 // UserPermissions returns the global permissions assigned to the named user.
 // Returns an empty (non-nil) slice when SonarQube knows the user but it has
 // no global permissions, and an error when the API call fails.
-func (f *Framework) UserPermissions(login string) ([]string, error) {
-	res, resp, err := f.Sonar.Permissions.Users(&sonar.PermissionsUsersOptions{Query: login})
+func (f *Framework) UserPermissions(ctx context.Context, login string) ([]string, error) {
+	res, resp, err := f.Sonar.Permissions.Users(ctx, &sonar.PermissionsUsersOptions{Query: login})
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -216,8 +218,8 @@ func (f *Framework) UserPermissions(login string) ([]string, error) {
 
 // FindALMGitLabDefinitionByKey returns the GitLab ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
-func (f *Framework) FindALMGitLabDefinitionByKey(key string) (*sonar.GitlabDefinition, error) {
-	res, resp, err := f.Sonar.AlmSettings.ListDefinitions()
+func (f *Framework) FindALMGitLabDefinitionByKey(ctx context.Context, key string) (*sonar.GitlabDefinition, error) {
+	res, resp, err := f.Sonar.AlmSettings.ListDefinitions(ctx)
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -232,8 +234,8 @@ func (f *Framework) FindALMGitLabDefinitionByKey(key string) (*sonar.GitlabDefin
 
 // FindGlobalWebhookByKey returns the global SonarQube webhook whose key
 // exactly matches key, or (nil, nil) if no such webhook exists.
-func (f *Framework) FindGlobalWebhookByKey(key string) (*sonar.Webhook, error) {
-	res, resp, err := f.Sonar.Webhooks.List(&sonar.WebhooksListOptions{})
+func (f *Framework) FindGlobalWebhookByKey(ctx context.Context, key string) (*sonar.WebhooksDefinition, error) {
+	res, resp, err := f.Sonar.Webhooks.List(ctx, &sonar.WebhooksListOptions{})
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -251,8 +253,8 @@ func (f *Framework) FindGlobalWebhookByKey(key string) (*sonar.Webhook, error) {
 
 // FindInstalledPlugin returns the installed plugin with the given key,
 // or (nil, nil) if no such plugin is installed.
-func (f *Framework) FindInstalledPlugin(key string) (*sonar.PluginInstalled, error) {
-	res, resp, err := f.Sonar.Plugins.Installed(nil)
+func (f *Framework) FindInstalledPlugin(ctx context.Context, key string) (*sonar.PluginInstalled, error) {
+	res, resp, err := f.Sonar.Plugins.Installed(ctx, nil)
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -270,8 +272,8 @@ func (f *Framework) FindInstalledPlugin(key string) (*sonar.PluginInstalled, err
 // FindPendingInstallPlugin returns the pending-install entry for the given key,
 // or (nil, nil) if no such plugin is queued. Plugins remain pending until
 // SonarQube is restarted, so this is the expected state in e2e tests.
-func (f *Framework) FindPendingInstallPlugin(key string) (*sonar.PluginPending, error) {
-	res, resp, err := f.Sonar.Plugins.Pending()
+func (f *Framework) FindPendingInstallPlugin(ctx context.Context, key string) (*sonar.PluginPending, error) {
+	res, resp, err := f.Sonar.Plugins.Pending(ctx)
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -288,8 +290,8 @@ func (f *Framework) FindPendingInstallPlugin(key string) (*sonar.PluginPending, 
 
 // FindALMGitHubDefinitionByKey returns the GitHub ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
-func (f *Framework) FindALMGitHubDefinitionByKey(key string) (*sonar.GithubDefinition, error) {
-	res, resp, err := f.Sonar.AlmSettings.ListDefinitions()
+func (f *Framework) FindALMGitHubDefinitionByKey(ctx context.Context, key string) (*sonar.GithubDefinition, error) {
+	res, resp, err := f.Sonar.AlmSettings.ListDefinitions(ctx)
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
@@ -306,8 +308,8 @@ func (f *Framework) FindALMGitHubDefinitionByKey(key string) (*sonar.GithubDefin
 // or (nil, nil) if no such portfolio exists. Portfolios are an Enterprise
 // Edition feature; SonarQube returns 404 both when the key is unknown and
 // when the running edition/license does not support portfolios at all.
-func (f *Framework) FindPortfolioByKey(key string) (*sonar.ViewDetails, error) {
-	res, resp, err := f.Sonar.Views.Show(&sonar.ViewsShowOptions{Key: key})
+func (f *Framework) FindPortfolioByKey(ctx context.Context, key string) (*sonar.ViewDetails, error) {
+	res, resp, err := f.Sonar.Views.Show(ctx, &sonar.ViewsShowOptions{Key: key})
 	defer helpers.CloseBody(resp)
 	if common.IsResponseNotFound(resp) {
 		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
@@ -323,8 +325,8 @@ func (f *Framework) FindPortfolioByKey(key string) (*sonar.ViewDetails, error) {
 // unlicensed Enterprise/Data Center instance reports a License with empty
 // fields - so callers should inspect the returned fields rather than
 // treating an error as "no license".
-func (f *Framework) FetchLicense() (*sonar.License, error) {
-	res, resp, err := f.Sonar.Editions.Get()
+func (f *Framework) FetchLicense(ctx context.Context) (*sonar.License, error) {
+	res, resp, err := f.Sonar.Editions.Get(ctx)
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err

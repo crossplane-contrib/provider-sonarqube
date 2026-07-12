@@ -19,6 +19,7 @@ limitations under the License.
 package instance_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -66,7 +67,7 @@ func TestQualityProfileCRUD(t *testing.T) {
 	e2e.AssertReady(t, qp)
 	e2e.AssertSynced(t, qp)
 
-	got, err := f.FindQualityProfile(qpName, qpLang)
+	got, err := f.FindQualityProfile(context.Background(), qpName, qpLang)
 	if err != nil {
 		t.Fatalf("searching quality profiles: %v", err)
 	}

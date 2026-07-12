@@ -19,6 +19,7 @@ limitations under the License.
 package instance_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -65,7 +66,7 @@ func TestSettingsGlobalScalar(t *testing.T) {
 	e2e.AssertReady(t, settings)
 	e2e.AssertSynced(t, settings)
 
-	got, err := f.FetchSettingValue("", settingKey)
+	got, err := f.FetchSettingValue(context.Background(), "", settingKey)
 	if err != nil {
 		t.Fatalf("fetching setting %q: %v", settingKey, err)
 	}

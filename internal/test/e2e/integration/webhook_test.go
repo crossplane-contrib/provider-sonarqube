@@ -19,6 +19,7 @@ limitations under the License.
 package integration_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -71,7 +72,7 @@ func TestWebhookGlobalCRUD(t *testing.T) {
 	}
 
 	// Verify the webhook exists in SonarQube.
-	got, err := framework.FindGlobalWebhookByKey(externalName)
+	got, err := framework.FindGlobalWebhookByKey(context.Background(), externalName)
 	if err != nil {
 		t.Fatalf("fetching webhook from SonarQube: %v", err)
 	}

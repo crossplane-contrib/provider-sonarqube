@@ -88,7 +88,7 @@ func TestALMGitLabCRUD(t *testing.T) {
 	e2e.AssertSynced(t, alm)
 	e2e.AssertExternalName(t, alm, almKey)
 
-	got, err := f.FindALMGitLabDefinitionByKey(almKey)
+	got, err := f.FindALMGitLabDefinitionByKey(context.Background(), almKey)
 	if err != nil {
 		t.Fatalf("fetching GitLab ALM definition: %v", err)
 	}

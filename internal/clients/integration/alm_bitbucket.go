@@ -29,6 +29,8 @@ import (
 // SonarQube ALMBitbucket API
 // It handles all the operations related to ALMBitbucket in SonarQube,
 // such as creating, updating, deleting, and retrieving ALMBitbucket.
+//
+//nolint:dupl // Intentional structural similarity with ALMIntegrationsGitHubClient; different provider-specific API methods prevent abstraction.
 type ALMIntegrationsBitbucketClient interface {
 	ALMIntegrationsClient
 	ListBitbucketServerProjects(ctx context.Context, opt *sonar.AlmIntegrationsListBitbucketServerProjectsOptions) (v *sonar.AlmIntegrationsListBitbucketServerProjects, resp *http.Response, err error)

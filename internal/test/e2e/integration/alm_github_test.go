@@ -103,7 +103,7 @@ func TestALMGitHubCRUD(t *testing.T) {
 	e2e.AssertSynced(t, alm)
 	e2e.AssertExternalName(t, alm, almKey)
 
-	got, err := f.FindALMGitHubDefinitionByKey(almKey)
+	got, err := f.FindALMGitHubDefinitionByKey(context.Background(), almKey)
 	if err != nil {
 		t.Fatalf("fetching GitHub ALM definition: %v", err)
 	}

@@ -19,6 +19,7 @@ limitations under the License.
 package instance_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -82,7 +83,7 @@ func TestRuleCRUD(t *testing.T) {
 		t.Errorf("external-name = %q, want it to end with :%s", externalName, ruleKey)
 	}
 
-	got, err := f.FetchRule(externalName)
+	got, err := f.FetchRule(context.Background(), externalName)
 	if err != nil {
 		t.Fatalf("fetching rule: %v", err)
 	}

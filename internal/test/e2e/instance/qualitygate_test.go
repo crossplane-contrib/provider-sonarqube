@@ -67,7 +67,7 @@ func TestQualityGateCRUD(t *testing.T) {
 	e2e.AssertSynced(t, qg)
 	e2e.AssertExternalName(t, qg, qgName)
 
-	got, err := f.FindQualityGate(qgName)
+	got, err := f.FindQualityGate(context.Background(), qgName)
 	if err != nil {
 		t.Fatalf("listing quality gates: %v", err)
 	}
