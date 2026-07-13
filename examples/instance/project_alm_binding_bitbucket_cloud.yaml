@@ -1,0 +1,26 @@
+---
+# This example binds a Project to a Bitbucket Cloud repository for Pull
+# Request decoration. It assumes an ALMBitbucketCloud resource with key
+# "bitbucket-cloud-main" already exists (see
+# examples/integration/alm_bitbucket_cloud.yaml).
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: example-project-bitbucket-cloud-binding
+  namespace: default
+spec:
+  forProvider:
+    key: example-project-bitbucket-cloud-binding-key
+    name: Example Project (Bitbucket Cloud binding)
+    visibility: public
+    almBinding:
+      bitbucketCloud:
+        # Must match the spec.forProvider.key of an existing ALMBitbucketCloud resource.
+        almSettingKey: bitbucket-cloud-main
+        # workspace/repository slug on Bitbucket Cloud.
+        repository: example-workspace/example-repo
+      monorepo: false
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

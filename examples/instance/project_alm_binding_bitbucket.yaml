@@ -1,0 +1,27 @@
+---
+# This example binds a Project to a Bitbucket Server repository for Pull
+# Request decoration. It assumes an ALMBitbucket resource with key
+# "bitbucket-main" already exists (see examples/integration/alm_bitbucket.yaml).
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: example-project-bitbucket-binding
+  namespace: default
+spec:
+  forProvider:
+    key: example-project-bitbucket-binding-key
+    name: Example Project (Bitbucket Server binding)
+    visibility: public
+    almBinding:
+      bitbucket:
+        # Must match the spec.forProvider.key of an existing ALMBitbucket resource.
+        almSettingKey: bitbucket-main
+        # Bitbucket Server project key.
+        repository: PROJ
+        # Bitbucket Server repository slug.
+        slug: example-repo
+      monorepo: false
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

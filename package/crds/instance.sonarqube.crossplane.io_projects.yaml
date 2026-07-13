@@ -59,6 +59,130 @@ spec:
               forProvider:
                 description: ProjectParameters are the configurable fields of a Project.
                 properties:
+                  almBinding:
+                    description: AlmBinding binds the project to a repository on a
+                      DevOps platform (GitHub, GitLab, Azure DevOps, Bitbucket, or
+                      Bitbucket Cloud), enabling Pull Request decoration.
+                    properties:
+                      azure:
+                        description: Azure binds the project to an Azure DevOps repository.
+                        properties:
+                          almSettingKey:
+                            description: AlmSettingKey is the key of the ALMAzure
+                              setting to bind to. Must match the spec.forProvider.key
+                              of an existing ALMAzure resource.
+                            minLength: 1
+                            type: string
+                          inlineAnnotationsEnabled:
+                            description: InlineAnnotationsEnabled enables inline annotations
+                              during Pull Request decoration.
+                            type: boolean
+                          projectName:
+                            description: ProjectName is the Azure DevOps project name.
+                            minLength: 1
+                            type: string
+                          repositoryName:
+                            description: RepositoryName is the Azure DevOps repository
+                              name.
+                            minLength: 1
+                            type: string
+                        required:
+                        - almSettingKey
+                        - projectName
+                        - repositoryName
+                        type: object
+                      bitbucket:
+                        description: Bitbucket binds the project to a Bitbucket Server
+                          repository.
+                        properties:
+                          almSettingKey:
+                            description: AlmSettingKey is the key of the ALMBitbucket
+                              setting to bind to. Must match the spec.forProvider.key
+                              of an existing ALMBitbucket resource.
+                            minLength: 1
+                            type: string
+                          repository:
+                            description: Repository is the Bitbucket Server repository
+                              key.
+                            minLength: 1
+                            type: string
+                          slug:
+                            description: Slug is the Bitbucket Server repository slug.
+                            minLength: 1
+                            type: string
+                        required:
+                        - almSettingKey
+                        - repository
+                        - slug
+                        type: object
+                      bitbucketCloud:
+                        description: BitbucketCloud binds the project to a Bitbucket
+                          Cloud repository.
+                        properties:
+                          almSettingKey:
+                            description: AlmSettingKey is the key of the ALMBitbucketCloud
+                              setting to bind to. Must match the spec.forProvider.key
+                              of an existing ALMBitbucketCloud resource.
+                            minLength: 1
+                            type: string
+                          repository:
+                            description: Repository is the Bitbucket Cloud repository
+                              key.
+                            minLength: 1
+                            type: string
+                        required:
+                        - almSettingKey
+                        - repository
+                        type: object
+                      gitHub:
+                        description: GitHub binds the project to a GitHub repository.
+                        properties:
+                          almSettingKey:
+                            description: AlmSettingKey is the key of the ALMGitHub
+                              setting to bind to. Must match the spec.forProvider.key
+                              of an existing ALMGitHub resource.
+                            minLength: 1
+                            type: string
+                          repository:
+                            description: Repository is the GitHub repository (e.g.
+                              "organization/repository").
+                            maxLength: 256
+                            minLength: 1
+                            type: string
+                          summaryCommentEnabled:
+                            description: SummaryCommentEnabled enables the analysis
+                              summary in the pull request discussion tab.
+                            type: boolean
+                        required:
+                        - almSettingKey
+                        - repository
+                        type: object
+                      gitLab:
+                        description: GitLab binds the project to a GitLab project.
+                        properties:
+                          almSettingKey:
+                            description: AlmSettingKey is the key of the ALMGitLab
+                              setting to bind to. Must match the spec.forProvider.key
+                              of an existing ALMGitLab resource.
+                            minLength: 1
+                            type: string
+                          repository:
+                            description: Repository is the GitLab project ID.
+                            minLength: 1
+                            type: string
+                        required:
+                        - almSettingKey
+                        - repository
+                        type: object
+                      monorepo:
+                        description: Monorepo indicates the bound repository is part
+                          of a monorepo.
+                        type: boolean
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of gitHub, gitLab, azure, bitbucket, bitbucketCloud
+                        must be set
+                      rule: '[has(self.gitHub),has(self.gitLab),has(self.azure),has(self.bitbucket),has(self.bitbucketCloud)].filter(x,x).size()==1'
                   branches:
                     additionalProperties:
                       description: |-
@@ -430,6 +554,40 @@ spec:
               atProvider:
                 description: ProjectObservation are the observable fields of a Project.
                 properties:
+                  almBinding:
+                    description: AlmBinding is the observed state of the project's
+                      DevOps platform binding.
+                    properties:
+                      alm:
+                        description: Alm is the type of DevOps platform (azure, bitbucket,
+                          bitbucketcloud, github, gitlab).
+                        type: string
+                      inlineAnnotationsEnabled:
+                        description: InlineAnnotationsEnabled indicates inline annotations
+                          are enabled (Azure only).
+                        type: boolean
+                      key:
+                        description: Key is the DevOps platform setting key.
+                        type: string
+                      monorepo:
+                        description: Monorepo indicates the bound repository is part
+                          of a monorepo.
+                        type: boolean
+                      repository:
+                        description: Repository is the bound repository identifier.
+                        type: string
+                      repositoryUrl:
+                        description: RepositoryURL is the URL of the bound repository.
+                        type: string
+                      slug:
+                        description: Slug is the bound repository slug (Bitbucket
+                          Server only).
+                        type: string
+                      summaryCommentEnabled:
+                        description: SummaryCommentEnabled indicates the pull request
+                          summary comment is enabled.
+                        type: boolean
+                    type: object
                   branches:
                     additionalProperties:
                       description: |-

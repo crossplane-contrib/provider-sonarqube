@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint:dupl // Provider-specific ALM mock clients intentionally share this structure.
 package fake
 
 import (
@@ -26,9 +25,9 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 )
 
-// MockALMSettingsBitbucketClient is a mock implementation of the
-// ALMSettingsBitbucketClient interface.
-type MockALMSettingsBitbucketClient struct {
+// MockALMSettingsClient is a mock implementation of the ALMSettingsClient
+// interface.
+type MockALMSettingsClient struct {
 	CountBindingFn             func(opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error)
 	DeleteFn                   func(opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error)
 	DeleteBindingFn            func(opt *sonar.AlmSettingsDeleteBindingOptions) (*http.Response, error)
@@ -41,15 +40,13 @@ type MockALMSettingsBitbucketClient struct {
 	SetGithubBindingFn         func(opt *sonar.AlmSettingsSetGithubBindingOptions) (*http.Response, error)
 	SetGitlabBindingFn         func(opt *sonar.AlmSettingsSetGitlabBindingOptions) (*http.Response, error)
 	ValidateFn                 func(opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error)
-	CreateBitbucketFn          func(opt *sonar.AlmSettingsCreateBitbucketOptions) (*http.Response, error)
-	UpdateBitbucketFn          func(opt *sonar.AlmSettingsUpdateBitbucketOptions) (*http.Response, error)
 }
 
-// Ensure MockALMSettingsBitbucketClient implements ALMSettingsBitbucketClient.
-var _ integration.ALMSettingsBitbucketClient = &MockALMSettingsBitbucketClient{}
+// Ensure MockALMSettingsClient implements ALMSettingsClient.
+var _ integration.ALMSettingsClient = &MockALMSettingsClient{}
 
 // CountBinding implements ALMSettingsClient.CountBinding.
-func (m *MockALMSettingsBitbucketClient) CountBinding(_ context.Context, opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error) {
+func (m *MockALMSettingsClient) CountBinding(_ context.Context, opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error) {
 	if m.CountBindingFn != nil {
 		return m.CountBindingFn(opt)
 	}
@@ -58,7 +55,7 @@ func (m *MockALMSettingsBitbucketClient) CountBinding(_ context.Context, opt *so
 }
 
 // Delete implements ALMSettingsClient.Delete.
-func (m *MockALMSettingsBitbucketClient) Delete(_ context.Context, opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error) {
+func (m *MockALMSettingsClient) Delete(_ context.Context, opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error) {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(opt)
 	}
@@ -67,7 +64,7 @@ func (m *MockALMSettingsBitbucketClient) Delete(_ context.Context, opt *sonar.Al
 }
 
 // DeleteBinding implements ALMSettingsClient.DeleteBinding.
-func (m *MockALMSettingsBitbucketClient) DeleteBinding(_ context.Context, opt *sonar.AlmSettingsDeleteBindingOptions) (*http.Response, error) {
+func (m *MockALMSettingsClient) DeleteBinding(_ context.Context, opt *sonar.AlmSettingsDeleteBindingOptions) (*http.Response, error) {
 	if m.DeleteBindingFn != nil {
 		return m.DeleteBindingFn(opt)
 	}
@@ -75,53 +72,8 @@ func (m *MockALMSettingsBitbucketClient) DeleteBinding(_ context.Context, opt *s
 	return nil, errNotImplemented
 }
 
-// SetAzureBinding implements ALMSettingsClient.SetAzureBinding.
-func (m *MockALMSettingsBitbucketClient) SetAzureBinding(_ context.Context, opt *sonar.AlmSettingsSetAzureBindingOptions) (*http.Response, error) {
-	if m.SetAzureBindingFn != nil {
-		return m.SetAzureBindingFn(opt)
-	}
-
-	return nil, errNotImplemented
-}
-
-// SetBitbucketBinding implements ALMSettingsClient.SetBitbucketBinding.
-func (m *MockALMSettingsBitbucketClient) SetBitbucketBinding(_ context.Context, opt *sonar.AlmSettingsSetBitbucketBindingOptions) (*http.Response, error) {
-	if m.SetBitbucketBindingFn != nil {
-		return m.SetBitbucketBindingFn(opt)
-	}
-
-	return nil, errNotImplemented
-}
-
-// SetBitbucketCloudBinding implements ALMSettingsClient.
-func (m *MockALMSettingsBitbucketClient) SetBitbucketCloudBinding(_ context.Context, opt *sonar.AlmSettingsSetBitbucketCloudBindingOptions) (*http.Response, error) {
-	if m.SetBitbucketCloudBindingFn != nil {
-		return m.SetBitbucketCloudBindingFn(opt)
-	}
-
-	return nil, errNotImplemented
-}
-
-// SetGithubBinding implements ALMSettingsClient.SetGithubBinding.
-func (m *MockALMSettingsBitbucketClient) SetGithubBinding(_ context.Context, opt *sonar.AlmSettingsSetGithubBindingOptions) (*http.Response, error) {
-	if m.SetGithubBindingFn != nil {
-		return m.SetGithubBindingFn(opt)
-	}
-
-	return nil, errNotImplemented
-}
-
-// SetGitlabBinding implements ALMSettingsClient.SetGitlabBinding.
-func (m *MockALMSettingsBitbucketClient) SetGitlabBinding(_ context.Context, opt *sonar.AlmSettingsSetGitlabBindingOptions) (*http.Response, error) {
-	if m.SetGitlabBindingFn != nil {
-		return m.SetGitlabBindingFn(opt)
-	}
-
-	return nil, errNotImplemented
-}
-
 // GetBinding implements ALMSettingsClient.GetBinding.
-func (m *MockALMSettingsBitbucketClient) GetBinding(_ context.Context, opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
+func (m *MockALMSettingsClient) GetBinding(_ context.Context, opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
 	if m.GetBindingFn != nil {
 		return m.GetBindingFn(opt)
 	}
@@ -130,7 +82,7 @@ func (m *MockALMSettingsBitbucketClient) GetBinding(_ context.Context, opt *sona
 }
 
 // List implements ALMSettingsClient.List.
-func (m *MockALMSettingsBitbucketClient) List(_ context.Context, opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error) {
+func (m *MockALMSettingsClient) List(_ context.Context, opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error) {
 	if m.ListFn != nil {
 		return m.ListFn(opt)
 	}
@@ -139,7 +91,7 @@ func (m *MockALMSettingsBitbucketClient) List(_ context.Context, opt *sonar.AlmS
 }
 
 // ListDefinitions implements ALMSettingsClient.ListDefinitions.
-func (m *MockALMSettingsBitbucketClient) ListDefinitions(_ context.Context) (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
+func (m *MockALMSettingsClient) ListDefinitions(_ context.Context) (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 	if m.ListDefinitionsFn != nil {
 		return m.ListDefinitionsFn()
 	}
@@ -147,29 +99,56 @@ func (m *MockALMSettingsBitbucketClient) ListDefinitions(_ context.Context) (*so
 	return nil, nil, errNotImplemented
 }
 
+// SetAzureBinding implements ALMSettingsClient.SetAzureBinding.
+func (m *MockALMSettingsClient) SetAzureBinding(_ context.Context, opt *sonar.AlmSettingsSetAzureBindingOptions) (*http.Response, error) {
+	if m.SetAzureBindingFn != nil {
+		return m.SetAzureBindingFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
+// SetBitbucketBinding implements ALMSettingsClient.SetBitbucketBinding.
+func (m *MockALMSettingsClient) SetBitbucketBinding(_ context.Context, opt *sonar.AlmSettingsSetBitbucketBindingOptions) (*http.Response, error) {
+	if m.SetBitbucketBindingFn != nil {
+		return m.SetBitbucketBindingFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
+// SetBitbucketCloudBinding implements ALMSettingsClient.
+func (m *MockALMSettingsClient) SetBitbucketCloudBinding(_ context.Context, opt *sonar.AlmSettingsSetBitbucketCloudBindingOptions) (*http.Response, error) {
+	if m.SetBitbucketCloudBindingFn != nil {
+		return m.SetBitbucketCloudBindingFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
+// SetGithubBinding implements ALMSettingsClient.SetGithubBinding.
+func (m *MockALMSettingsClient) SetGithubBinding(_ context.Context, opt *sonar.AlmSettingsSetGithubBindingOptions) (*http.Response, error) {
+	if m.SetGithubBindingFn != nil {
+		return m.SetGithubBindingFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
+// SetGitlabBinding implements ALMSettingsClient.SetGitlabBinding.
+func (m *MockALMSettingsClient) SetGitlabBinding(_ context.Context, opt *sonar.AlmSettingsSetGitlabBindingOptions) (*http.Response, error) {
+	if m.SetGitlabBindingFn != nil {
+		return m.SetGitlabBindingFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
 // Validate implements ALMSettingsClient.Validate.
-func (m *MockALMSettingsBitbucketClient) Validate(_ context.Context, opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error) {
+func (m *MockALMSettingsClient) Validate(_ context.Context, opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error) {
 	if m.ValidateFn != nil {
 		return m.ValidateFn(opt)
 	}
 
 	return nil, nil, errNotImplemented
-}
-
-// CreateBitbucket implements ALMSettingsBitbucketClient.CreateBitbucket.
-func (m *MockALMSettingsBitbucketClient) CreateBitbucket(_ context.Context, opt *sonar.AlmSettingsCreateBitbucketOptions) (*http.Response, error) {
-	if m.CreateBitbucketFn != nil {
-		return m.CreateBitbucketFn(opt)
-	}
-
-	return nil, errNotImplemented
-}
-
-// UpdateBitbucket implements ALMSettingsBitbucketClient.UpdateBitbucket.
-func (m *MockALMSettingsBitbucketClient) UpdateBitbucket(_ context.Context, opt *sonar.AlmSettingsUpdateBitbucketOptions) (*http.Response, error) {
-	if m.UpdateBitbucketFn != nil {
-		return m.UpdateBitbucketFn(opt)
-	}
-
-	return nil, errNotImplemented
 }

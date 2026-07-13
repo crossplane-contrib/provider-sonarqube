@@ -138,7 +138,8 @@ func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.P
 			AreProjectBranchesUpToDate(spec.Branches, observation.Branches) &&
 			IsProjectMainBranchUpToDate(observation.Branches, ptr.Deref(spec.DefaultBranch, "main")) &&
 			IsNewCodePeriodUpToDate(spec.NewCodePeriod, &observation.NewCodePeriod) &&
-			AreProjectQualityProfilesUpToDate(spec.QualityProfiles, observation.QualityProfiles)
+			AreProjectQualityProfilesUpToDate(spec.QualityProfiles, observation.QualityProfiles) &&
+			IsProjectALMBindingUpToDate(spec.AlmBinding, observation.AlmBinding)
 }
 
 // GenerateProjectUpdateVisibilityOptions generates the options for updating the

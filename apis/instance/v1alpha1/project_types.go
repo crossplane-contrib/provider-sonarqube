@@ -81,6 +81,114 @@ type ProjectParameters struct {
 	// The key of the map is the language of the quality profile to be associated with the project, and the value is the reference to the quality profile.
 	// +kubebuilder:validation:Optional
 	QualityProfiles map[string]ProjectQualityProfileReference `json:"qualityProfiles,omitempty"`
+	// AlmBinding binds the project to a repository on a DevOps platform (GitHub, GitLab, Azure DevOps, Bitbucket, or Bitbucket Cloud), enabling Pull Request decoration.
+	// +kubebuilder:validation:Optional
+	AlmBinding *ProjectALMBindingParameters `json:"almBinding,omitempty"`
+}
+
+// ProjectALMBindingParameters configure a Project's binding to a repository on
+// a DevOps platform. Exactly one of GitHub, GitLab, Azure, Bitbucket, or
+// BitbucketCloud must be set.
+// +kubebuilder:validation:XValidation:rule="[has(self.gitHub),has(self.gitLab),has(self.azure),has(self.bitbucket),has(self.bitbucketCloud)].filter(x,x).size()==1",message="exactly one of gitHub, gitLab, azure, bitbucket, bitbucketCloud must be set"
+type ProjectALMBindingParameters struct {
+	// Monorepo indicates the bound repository is part of a monorepo.
+	// +kubebuilder:validation:Optional
+	Monorepo bool `json:"monorepo,omitempty"`
+	// GitHub binds the project to a GitHub repository.
+	// +kubebuilder:validation:Optional
+	GitHub *ProjectGitHubBindingParameters `json:"gitHub,omitempty"`
+	// GitLab binds the project to a GitLab project.
+	// +kubebuilder:validation:Optional
+	GitLab *ProjectGitLabBindingParameters `json:"gitLab,omitempty"`
+	// Azure binds the project to an Azure DevOps repository.
+	// +kubebuilder:validation:Optional
+	Azure *ProjectAzureBindingParameters `json:"azure,omitempty"`
+	// Bitbucket binds the project to a Bitbucket Server repository.
+	// +kubebuilder:validation:Optional
+	Bitbucket *ProjectBitbucketBindingParameters `json:"bitbucket,omitempty"`
+	// BitbucketCloud binds the project to a Bitbucket Cloud repository.
+	// +kubebuilder:validation:Optional
+	BitbucketCloud *ProjectBitbucketCloudBindingParameters `json:"bitbucketCloud,omitempty"`
+}
+
+// ProjectGitHubBindingParameters are the configurable fields of a Project's
+// GitHub binding.
+type ProjectGitHubBindingParameters struct {
+	// AlmSettingKey is the key of the ALMGitHub setting to bind to. Must match the spec.forProvider.key of an existing ALMGitHub resource.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	AlmSettingKey string `json:"almSettingKey"`
+	// Repository is the GitHub repository (e.g. "organization/repository").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Repository string `json:"repository"`
+	// SummaryCommentEnabled enables the analysis summary in the pull request discussion tab.
+	// +kubebuilder:validation:Optional
+	SummaryCommentEnabled *bool `json:"summaryCommentEnabled,omitempty"`
+}
+
+// ProjectGitLabBindingParameters are the configurable fields of a Project's
+// GitLab binding.
+type ProjectGitLabBindingParameters struct {
+	// AlmSettingKey is the key of the ALMGitLab setting to bind to. Must match the spec.forProvider.key of an existing ALMGitLab resource.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	AlmSettingKey string `json:"almSettingKey"`
+	// Repository is the GitLab project ID.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Repository string `json:"repository"`
+}
+
+// ProjectAzureBindingParameters are the configurable fields of a Project's
+// Azure DevOps binding.
+type ProjectAzureBindingParameters struct {
+	// AlmSettingKey is the key of the ALMAzure setting to bind to. Must match the spec.forProvider.key of an existing ALMAzure resource.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	AlmSettingKey string `json:"almSettingKey"`
+	// ProjectName is the Azure DevOps project name.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	ProjectName string `json:"projectName"`
+	// RepositoryName is the Azure DevOps repository name.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	RepositoryName string `json:"repositoryName"`
+	// InlineAnnotationsEnabled enables inline annotations during Pull Request decoration.
+	// +kubebuilder:validation:Optional
+	InlineAnnotationsEnabled *bool `json:"inlineAnnotationsEnabled,omitempty"`
+}
+
+// ProjectBitbucketBindingParameters are the configurable fields of a
+// Project's Bitbucket Server binding.
+type ProjectBitbucketBindingParameters struct {
+	// AlmSettingKey is the key of the ALMBitbucket setting to bind to. Must match the spec.forProvider.key of an existing ALMBitbucket resource.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	AlmSettingKey string `json:"almSettingKey"`
+	// Repository is the Bitbucket Server repository key.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Repository string `json:"repository"`
+	// Slug is the Bitbucket Server repository slug.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Slug string `json:"slug"`
+}
+
+// ProjectBitbucketCloudBindingParameters are the configurable fields of a
+// Project's Bitbucket Cloud binding.
+type ProjectBitbucketCloudBindingParameters struct {
+	// AlmSettingKey is the key of the ALMBitbucketCloud setting to bind to. Must match the spec.forProvider.key of an existing ALMBitbucketCloud resource.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	AlmSettingKey string `json:"almSettingKey"`
+	// Repository is the Bitbucket Cloud repository key.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Repository string `json:"repository"`
 }
 
 // ProjectLinkParameters represent the parameters of a link
@@ -161,6 +269,29 @@ type ProjectObservation struct {
 	// QualityProfiles is a map of language:quality profile associated with the project.
 	// The key of the map is the language of the quality profile associated with the project, and the value is the observed state of the quality profile.
 	QualityProfiles map[string]ProjectQualityProfileObservation `json:"qualityProfiles,omitempty"`
+	// AlmBinding is the observed state of the project's DevOps platform binding.
+	AlmBinding *ProjectALMBindingObservation `json:"almBinding,omitempty"`
+}
+
+// ProjectALMBindingObservation is the observed state of a Project's DevOps
+// platform binding.
+type ProjectALMBindingObservation struct {
+	// Alm is the type of DevOps platform (azure, bitbucket, bitbucketcloud, github, gitlab).
+	Alm string `json:"alm,omitempty"`
+	// Key is the DevOps platform setting key.
+	Key string `json:"key,omitempty"`
+	// Repository is the bound repository identifier.
+	Repository string `json:"repository,omitempty"`
+	// RepositoryURL is the URL of the bound repository.
+	RepositoryURL string `json:"repositoryUrl,omitempty"`
+	// Slug is the bound repository slug (Bitbucket Server only).
+	Slug string `json:"slug,omitempty"`
+	// Monorepo indicates the bound repository is part of a monorepo.
+	Monorepo bool `json:"monorepo,omitempty"`
+	// InlineAnnotationsEnabled indicates inline annotations are enabled (Azure only).
+	InlineAnnotationsEnabled bool `json:"inlineAnnotationsEnabled,omitempty"`
+	// SummaryCommentEnabled indicates the pull request summary comment is enabled.
+	SummaryCommentEnabled bool `json:"summaryCommentEnabled,omitempty"`
 }
 
 // ProjectLinkObservation represent the observed state of a link associated with

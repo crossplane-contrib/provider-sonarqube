@@ -1,0 +1,26 @@
+---
+# This example binds a Project to an Azure DevOps repository for Pull
+# Request decoration. It assumes an ALMAzure resource with key
+# "azure-main" already exists (see examples/integration/alm_azure.yaml).
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: example-project-azure-binding
+  namespace: default
+spec:
+  forProvider:
+    key: example-project-azure-binding-key
+    name: Example Project (Azure DevOps binding)
+    visibility: public
+    almBinding:
+      azure:
+        # Must match the spec.forProvider.key of an existing ALMAzure resource.
+        almSettingKey: azure-main
+        projectName: example-azure-project
+        repositoryName: example-azure-repo
+        inlineAnnotationsEnabled: true
+      monorepo: false
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

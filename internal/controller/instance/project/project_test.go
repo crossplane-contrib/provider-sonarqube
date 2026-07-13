@@ -52,6 +52,24 @@ func mockHTTPResponse() *http.Response {
 	}
 }
 
+// mockHTTPResponseNotFound returns a mock 404 HTTP response for testing.
+func mockHTTPResponseNotFound() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusNotFound,
+		Status:     "404 Not Found",
+	}
+}
+
+// noBindingALMSettingsClient returns a MockALMSettingsClient whose GetBinding
+// reports no binding exists (404), matching a Project with no ALM binding.
+func noBindingALMSettingsClient() *fake.MockALMSettingsClient {
+	return &fake.MockALMSettingsClient{
+		GetBindingFn: func(opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
+			return nil, mockHTTPResponseNotFound(), errors.New("not found")
+		},
+	}
+}
+
 // checkError is a helper to compare errors.
 // If wantSubstr is not empty, it checks that the actual error message contains
 // wantSubstr.
@@ -106,6 +124,7 @@ func newTestExternalClient(
 	qualityGatesClient *fake.MockQualityGatesClient,
 	qualityProfilesClient *fake.MockQualityProfilesClient,
 	projectTagsClient *fake.MockProjectTagsClient,
+	almSettingsClient *fake.MockALMSettingsClient,
 ) *external {
 	return &external{
 		projectsClient:              projectsClient,
@@ -115,22 +134,24 @@ func newTestExternalClient(
 		qualityGatesClient:          qualityGatesClient,
 		qualityProfilesClient:       qualityProfilesClient,
 		projectTagsClient:           projectTagsClient,
+		almSettingsClient:           almSettingsClient,
 	}
 }
 
 // defaultMockClients returns default mock clients for testing.
-func defaultMockClients() (*fake.MockProjectsClient, *fake.MockProjectLinksClient, *fake.MockProjectBranchesClient, *fake.MockNewCodePeriodsClient, *fake.MockQualityGatesClient, *fake.MockQualityProfilesClient, *fake.MockProjectTagsClient) {
+func defaultMockClients() (*fake.MockProjectsClient, *fake.MockProjectLinksClient, *fake.MockProjectBranchesClient, *fake.MockNewCodePeriodsClient, *fake.MockQualityGatesClient, *fake.MockQualityProfilesClient, *fake.MockProjectTagsClient, *fake.MockALMSettingsClient) {
 	return &fake.MockProjectsClient{},
 		&fake.MockProjectLinksClient{},
 		&fake.MockProjectBranchesClient{},
 		&fake.MockNewCodePeriodsClient{},
 		&fake.MockQualityGatesClient{},
 		&fake.MockQualityProfilesClient{},
-		&fake.MockProjectTagsClient{}
+		&fake.MockProjectTagsClient{},
+		noBindingALMSettingsClient()
 }
 
 // successfulObserveMocks returns mock clients for successful observe tests.
-func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksClient, *fake.MockProjectBranchesClient, *fake.MockNewCodePeriodsClient, *fake.MockQualityGatesClient, *fake.MockQualityProfilesClient, *fake.MockProjectTagsClient) {
+func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksClient, *fake.MockProjectBranchesClient, *fake.MockNewCodePeriodsClient, *fake.MockQualityGatesClient, *fake.MockQualityProfilesClient, *fake.MockProjectTagsClient, *fake.MockALMSettingsClient) {
 	projectsClient := &fake.MockProjectsClient{
 		SearchFn: func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 			return &sonar.ProjectsSearch{
@@ -179,8 +200,9 @@ func successfulObserveMocks() (*fake.MockProjectsClient, *fake.MockProjectLinksC
 		},
 	}
 	tagsClient := &fake.MockProjectTagsClient{}
+	almClient := noBindingALMSettingsClient()
 
-	return projectsClient, linksClient, branchesClient, ncpClient, qgClient, qpClient, tagsClient
+	return projectsClient, linksClient, branchesClient, ncpClient, qgClient, qpClient, tagsClient, almClient
 }
 
 // TestObserve tests the Observe method.
@@ -204,9 +226,9 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 	}{
 		"NotProjectError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -219,9 +241,9 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"EmptyExternalNameReturnsNotExists": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -236,12 +258,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"SearchFailsReturnsError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.SearchFn = func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 					return nil, nil, errors.New("api error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -257,12 +279,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"SearchReturnsEmptyComponentsNoError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.SearchFn = func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 					return &sonar.ProjectsSearch{Components: []sonar.ProjectSearchComponent{}}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -277,7 +299,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"SearchReturnsWrongKeyReturnsNotExists": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.SearchFn = func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error) {
 					return &sonar.ProjectsSearch{
 						Components: []sonar.ProjectSearchComponent{
@@ -286,7 +308,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -301,9 +323,9 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"SuccessfulObserve": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -322,12 +344,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"ObserveWithBranchListError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				b.ListFn = func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 					return nil, nil, errors.New("branch error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -343,12 +365,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"ObserveWithLinksSearchError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return nil, nil, errors.New("links error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -364,12 +386,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"ObserveWithNewCodePeriodShowError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				n.ShowFn = func(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
 					return nil, nil, errors.New("ncp error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -385,12 +407,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"ObserveWithQualityGateError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				q.GetByProjectFn = func(opt *sonar.QualitygatesGetByProjectOptions) (*sonar.QualitygatesGetByProject, *http.Response, error) {
 					return nil, nil, errors.New("qg error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -406,12 +428,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"ObserveWithQualityProfileError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				qp.SearchFn = func(opt *sonar.QualityprofilesSearchOptions) (*sonar.QualityprofilesSearch, *http.Response, error) {
 					return nil, nil, errors.New("qp error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -427,12 +449,12 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		},
 		"ObserveWithNewCodePeriodsListError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				n.ListFn = func(opt *sonar.NewCodePeriodsListOptions) (*sonar.NewCodePeriodsList, *http.Response, error) {
 					return nil, nil, errors.New("ncp list error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -451,7 +473,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		// ResourceUpToDate=false (which was causing an infinite update loop).
 		"SpecWithNoQualityProfiles_SonarReturnsDefaults_IsUpToDate": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				// Override QP search to return many default profiles (like the real cluster)
 				qp.SearchFn = func(opt *sonar.QualityprofilesSearchOptions) (*sonar.QualityprofilesSearch, *http.Response, error) {
 					return &sonar.QualityprofilesSearch{
@@ -464,7 +486,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -487,7 +509,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		// so IsProjectLinkUpToDate always returned false (infinite update loop).
 		"SpecWithLinks_ObservationHasMatchingLinks_IsUpToDate": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return &sonar.ProjectLinksSearch{
 						Links: []sonar.ProjectLink{
@@ -496,7 +518,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -519,7 +541,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		// Verifies the opposite: a link URL change is detected and triggers an update.
 		"SpecWithLinks_URLChanged_IsNotUpToDate": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return &sonar.ProjectLinksSearch{
 						Links: []sonar.ProjectLink{
@@ -528,7 +550,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -553,9 +575,9 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		// must be true on the first reconcile pass.
 		"VisibilityNilInSpec_LateInitializesFromObservation": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -578,7 +600,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		// back-fill the ID, so ResourceLateInitialized must be true.
 		"LinkWithNoID_LateInitializesIDFromObservation": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return &sonar.ProjectLinksSearch{
 						Links: []sonar.ProjectLink{
@@ -587,7 +609,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -615,7 +637,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		// either a panic or a CRD validation error that triggered an infinite error loop.
 		"SpecWithNewCodePeriod_ValueNil_LateInitializesFromObservation": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				// Override NCP Show to return a non-empty Value so that back-fill is exercised.
 				n.ShowFn = func(opt *sonar.NewCodePeriodsShowOptions) (*sonar.NewCodePeriodsShow, *http.Response, error) {
 					return &sonar.NewCodePeriodsShow{
@@ -624,7 +646,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -644,6 +666,91 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 					ResourceUpToDate:        true,
 					ResourceLateInitialized: true,
 				},
+			},
+		},
+		"ObserveALMBindingUpToDate": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
+				alm.GetBindingFn = func(opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
+					return &sonar.AlmSettingsGetBinding{
+						Alm: "github", Key: "gh", Repository: "org/repo",
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: new("public"),
+					AlmBinding: &v1alpha1.ProjectALMBindingParameters{
+						GitHub: &v1alpha1.ProjectGitHubBindingParameters{
+							AlmSettingKey: "gh",
+							Repository:    "org/repo",
+						},
+					},
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:   true,
+					ResourceUpToDate: true,
+				},
+			},
+		},
+		"ObserveALMBindingNotUpToDate": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
+				alm.GetBindingFn = func(opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
+					return &sonar.AlmSettingsGetBinding{
+						Alm: "github", Key: "gh", Repository: "org/old-repo",
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: new("public"),
+					AlmBinding: &v1alpha1.ProjectALMBindingParameters{
+						GitHub: &v1alpha1.ProjectGitHubBindingParameters{
+							AlmSettingKey: "gh",
+							Repository:    "org/new-repo",
+						},
+					},
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:   true,
+					ResourceUpToDate: false,
+				},
+			},
+		},
+		"ObserveWithALMBindingError": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
+				alm.GetBindingFn = func(opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error) {
+					return nil, mockHTTPResponse(), errors.New("alm binding error")
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name: "test-project",
+					Key:  "test-key",
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{ResourceExists: true},
+				errSubstr:   "cannot observe Project ALM binding",
 			},
 		},
 	}
@@ -694,9 +801,9 @@ func TestCreate(t *testing.T) {
 	}{
 		"NotProjectError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -709,12 +816,12 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateFailsReturnsError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.CreateFn = func(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error) {
 					return nil, nil, errors.New("create error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -730,14 +837,14 @@ func TestCreate(t *testing.T) {
 		},
 		"SuccessfulCreate": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.CreateFn = func(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error) {
 					return &sonar.ProjectsCreate{
 						Project: sonar.Project{Key: "test-key"},
 					}, mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -789,9 +896,9 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 	}{
 		"NotProjectError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -804,9 +911,9 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"EmptyExternalNameReturnsError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -822,9 +929,9 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"SuccessfulUpdateNoChanges": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -844,12 +951,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateVisibilityFails": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.UpdateVisibilityFn = func(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error) {
 					return nil, errors.New("visibility error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -871,12 +978,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateTagsFails": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				tg.SetFn = func(opt *sonar.ProjectTagsSetOptions) (*http.Response, error) {
 					return nil, errors.New("tags error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -897,12 +1004,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateSuccessWithVisibilityChange": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.UpdateVisibilityFn = func(opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error) {
 					return mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -923,12 +1030,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateDefaultBranchFails": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				b.SetMainFn = func(opt *sonar.ProjectBranchesSetMainOptions) (*http.Response, error) {
 					return nil, errors.New("branch error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -950,12 +1057,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateQualityGateFails": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				q.AssignFn = func(opt *sonar.QualitygatesAssignOptions) (*http.Response, error) {
 					return nil, errors.New("qg error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -977,12 +1084,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateNewCodePeriodFails": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				n.SetFn = func(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
 					return nil, errors.New("ncp error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1010,12 +1117,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateProjectLinksFails": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				l.CreateFn = func(opt *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error) {
 					return nil, nil, errors.New("link create error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1038,12 +1145,12 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		},
 		"UpdateQualityProfileFails": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				qp.ShowFn = func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return nil, nil, errors.New("qp show error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1073,9 +1180,9 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		// error instead of crashing.
 		"UpdateQualityProfile_NilId_ReturnsErrorNotPanic": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1098,6 +1205,181 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 			want: want{
 				update:    managed.ExternalUpdate{},
 				errSubstr: "not yet resolved",
+			},
+		},
+		"UpdateALMBinding_BindNew": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
+				alm.SetGithubBindingFn = func(opt *sonar.AlmSettingsSetGithubBindingOptions) (*http.Response, error) {
+					return mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.Project {
+					return newTestProject("test-key", v1alpha1.ProjectParameters{
+						Name: "test-project",
+						Key:  "test-key",
+						AlmBinding: &v1alpha1.ProjectALMBindingParameters{
+							GitHub: &v1alpha1.ProjectGitHubBindingParameters{
+								AlmSettingKey: "gh",
+								Repository:    "org/repo",
+							},
+						},
+					})
+				}(),
+			},
+			want: want{
+				update: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}},
+			},
+		},
+		"UpdateALMBinding_Rebind": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
+				alm.SetGithubBindingFn = func(opt *sonar.AlmSettingsSetGithubBindingOptions) (*http.Response, error) {
+					return mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.Project {
+					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
+						Name: "test-project",
+						Key:  "test-key",
+						AlmBinding: &v1alpha1.ProjectALMBindingParameters{
+							GitHub: &v1alpha1.ProjectGitHubBindingParameters{
+								AlmSettingKey: "gh",
+								Repository:    "org/new-repo",
+							},
+						},
+					})
+					proj.Status.AtProvider.AlmBinding = &v1alpha1.ProjectALMBindingObservation{
+						Alm: "github", Key: "gh", Repository: "org/old-repo",
+					}
+
+					return proj
+				}(),
+			},
+			want: want{
+				update: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}},
+			},
+		},
+		"UpdateALMBinding_Unbind": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
+				alm.DeleteBindingFn = func(opt *sonar.AlmSettingsDeleteBindingOptions) (*http.Response, error) {
+					return mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.Project {
+					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
+						Name: "test-project",
+						Key:  "test-key",
+					})
+					proj.Status.AtProvider.AlmBinding = &v1alpha1.ProjectALMBindingObservation{
+						Alm: "github", Key: "gh", Repository: "org/repo",
+					}
+
+					return proj
+				}(),
+			},
+			want: want{
+				update: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}},
+			},
+		},
+		"UpdateALMBinding_NoOp": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.Project {
+					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
+						Name: "test-project",
+						Key:  "test-key",
+						AlmBinding: &v1alpha1.ProjectALMBindingParameters{
+							GitHub: &v1alpha1.ProjectGitHubBindingParameters{
+								AlmSettingKey: "gh",
+								Repository:    "org/repo",
+							},
+						},
+					})
+					proj.Status.AtProvider.AlmBinding = &v1alpha1.ProjectALMBindingObservation{
+						Alm: "github", Key: "gh", Repository: "org/repo",
+					}
+
+					return proj
+				}(),
+			},
+			want: want{
+				update: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}},
+			},
+		},
+		"UpdateALMBinding_SetBindingFails": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
+				alm.SetGithubBindingFn = func(opt *sonar.AlmSettingsSetGithubBindingOptions) (*http.Response, error) {
+					return nil, errors.New("binding error")
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.Project {
+					return newTestProject("test-key", v1alpha1.ProjectParameters{
+						Name: "test-project",
+						Key:  "test-key",
+						AlmBinding: &v1alpha1.ProjectALMBindingParameters{
+							GitHub: &v1alpha1.ProjectGitHubBindingParameters{
+								AlmSettingKey: "gh",
+								Repository:    "org/repo",
+							},
+						},
+					})
+				}(),
+			},
+			want: want{
+				update:    managed.ExternalUpdate{},
+				errSubstr: "cannot set Project ALM binding",
+			},
+		},
+		"UpdateALMBinding_DeleteBindingFails": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
+				alm.DeleteBindingFn = func(opt *sonar.AlmSettingsDeleteBindingOptions) (*http.Response, error) {
+					return nil, errors.New("delete binding error")
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.Project {
+					proj := newTestProject("test-key", v1alpha1.ProjectParameters{
+						Name: "test-project",
+						Key:  "test-key",
+					})
+					proj.Status.AtProvider.AlmBinding = &v1alpha1.ProjectALMBindingObservation{
+						Alm: "github", Key: "gh", Repository: "org/repo",
+					}
+
+					return proj
+				}(),
+			},
+			want: want{
+				update:    managed.ExternalUpdate{},
+				errSubstr: "cannot delete Project ALM binding",
 			},
 		},
 	}
@@ -1148,9 +1430,9 @@ func TestDelete(t *testing.T) {
 	}{
 		"NotProjectError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1163,9 +1445,9 @@ func TestDelete(t *testing.T) {
 		},
 		"EmptyExternalNameReturnsSuccess": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1181,12 +1463,12 @@ func TestDelete(t *testing.T) {
 		},
 		"DeleteFailsReturnsError": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.DeleteFn = func(opt *sonar.ProjectsDeleteOptions) (*http.Response, error) {
 					return nil, errors.New("delete error")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1202,12 +1484,12 @@ func TestDelete(t *testing.T) {
 		},
 		"SuccessfulDelete": {
 			ext: func() *external {
-				p, l, b, n, q, qp, tg := defaultMockClients()
+				p, l, b, n, q, qp, tg, alm := defaultMockClients()
 				p.DeleteFn = func(opt *sonar.ProjectsDeleteOptions) (*http.Response, error) {
 					return mockHTTPResponse(), nil
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			}(),
 			args: args{
 				ctx: context.Background(),
@@ -1242,8 +1524,8 @@ func TestDelete(t *testing.T) {
 func TestDisconnect(t *testing.T) {
 	t.Parallel()
 
-	p, l, b, n, q, qp, tg := defaultMockClients()
-	ext := newTestExternalClient(p, l, b, n, q, qp, tg)
+	p, l, b, n, q, qp, tg, alm := defaultMockClients()
+	ext := newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 
 	err := ext.Disconnect(context.Background())
 	if err != nil {
@@ -1325,8 +1607,8 @@ func TestApplyObserveResultNilMapInit(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			p, l, b, n, q, qp, tg := defaultMockClients()
-			ext := newTestExternalClient(p, l, b, n, q, qp, tg)
+			p, l, b, n, q, qp, tg, alm := defaultMockClients()
+			ext := newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 
 			obs := tc.startObs
 			// branchNewCodePeriods must always be initialised (mimics observeProjectDetails).
@@ -1367,29 +1649,29 @@ func TestObserveNilMapsNeverOccur(t *testing.T) {
 		"BranchAPIFailure": {
 			name: "BranchAPIFailure",
 			buildExt: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				b.ListFn = func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 					return nil, nil, errors.New("branch api down")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			},
 		},
 		"LinksAPIFailure": {
 			name: "LinksAPIFailure",
 			buildExt: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				l.SearchFn = func(opt *sonar.ProjectLinksSearchOptions) (*sonar.ProjectLinksSearch, *http.Response, error) {
 					return nil, nil, errors.New("links api down")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			},
 		},
 		"BothBranchesAndLinksAPIFailure": {
 			name: "BothBranchesAndLinksAPIFailure",
 			buildExt: func() *external {
-				p, l, b, n, q, qp, tg := successfulObserveMocks()
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
 				b.ListFn = func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
 					return nil, nil, errors.New("branch api down")
 				}
@@ -1397,7 +1679,7 @@ func TestObserveNilMapsNeverOccur(t *testing.T) {
 					return nil, nil, errors.New("links api down")
 				}
 
-				return newTestExternalClient(p, l, b, n, q, qp, tg)
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
 			},
 		},
 	}

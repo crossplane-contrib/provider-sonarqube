@@ -23,6 +23,7 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
 // ALMIntegrationsClient is the interface for interacting with
@@ -41,10 +42,24 @@ type ALMIntegrationsClient interface {
 type ALMSettingsClient interface {
 	CountBinding(ctx context.Context, opt *sonar.AlmSettingsCountBindingOptions) (*sonar.AlmSettingsCountBinding, *http.Response, error)
 	Delete(ctx context.Context, opt *sonar.AlmSettingsDeleteOptions) (*http.Response, error)
+	DeleteBinding(ctx context.Context, opt *sonar.AlmSettingsDeleteBindingOptions) (*http.Response, error)
 	GetBinding(ctx context.Context, opt *sonar.AlmSettingsGetBindingOptions) (*sonar.AlmSettingsGetBinding, *http.Response, error)
 	List(ctx context.Context, opt *sonar.AlmSettingsListOptions) (*sonar.AlmSettingsList, *http.Response, error)
 	ListDefinitions(ctx context.Context) (*sonar.AlmSettingsListDefinitions, *http.Response, error)
+	SetAzureBinding(ctx context.Context, opt *sonar.AlmSettingsSetAzureBindingOptions) (*http.Response, error)
+	SetBitbucketBinding(ctx context.Context, opt *sonar.AlmSettingsSetBitbucketBindingOptions) (*http.Response, error)
+	SetBitbucketCloudBinding(ctx context.Context, opt *sonar.AlmSettingsSetBitbucketCloudBindingOptions) (*http.Response, error)
+	SetGithubBinding(ctx context.Context, opt *sonar.AlmSettingsSetGithubBindingOptions) (*http.Response, error)
+	SetGitlabBinding(ctx context.Context, opt *sonar.AlmSettingsSetGitlabBindingOptions) (*http.Response, error)
 	Validate(ctx context.Context, opt *sonar.AlmSettingsValidateOptions) (*sonar.AlmSettingsValidation, *http.Response, error)
+}
+
+// NewALMSettingsClient creates a new ALMSettingsClient with the provided
+// SonarQube client configuration.
+func NewALMSettingsClient(clientConfig common.Config) ALMSettingsClient {
+	newClient := common.NewClient(clientConfig)
+
+	return newClient.AlmSettings
 }
 
 // IsALMUpToDate checks if the ALM spec is up to date with the

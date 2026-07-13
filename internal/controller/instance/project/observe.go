@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -89,6 +90,10 @@ func (c *external) observeProjectDetails(ctx context.Context, projectKey, projec
 
 	waitGr.Go(func() {
 		c.observeQualityProfiles(ctx, projectKey, &result, &mutex)
+	})
+
+	waitGr.Go(func() {
+		c.observeALMBinding(ctx, projectKey, &result, &mutex)
 	})
 
 	waitGr.Wait()
@@ -209,6 +214,28 @@ func (c *external) observeQualityProfiles(ctx context.Context, projectKey string
 	result.qualityProfiles = instance.GenerateQualityProfilesSearchProjectObservation(qualityProfiles)
 }
 
+// observeALMBinding retrieves the ALM binding associated with the project
+// from SonarQube, if any.
+func (c *external) observeALMBinding(ctx context.Context, projectKey string, result *observeResult, mutex *sync.Mutex) {
+	binding, resp, bindingErr := c.almSettingsClient.GetBinding(ctx, instance.GenerateProjectALMBindingGetOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
+
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if bindingErr != nil {
+		if common.IsResponseNotFound(resp) {
+			return
+		}
+
+		result.errors = append(result.errors, errors.Wrap(bindingErr, "cannot observe Project ALM binding"))
+
+		return
+	}
+
+	result.almBinding = instance.GenerateProjectALMBindingObservation(binding)
+}
+
 // applyObserveResult applies the concurrent observation results
 // to the ProjectObservation.
 func (c *external) applyObserveResult(observation *v1alpha1.ProjectObservation, result *observeResult) {
@@ -239,4 +266,6 @@ func (c *external) applyObserveResult(observation *v1alpha1.ProjectObservation, 
 	if result.qualityProfiles != nil {
 		observation.QualityProfiles = result.qualityProfiles
 	}
+
+	observation.AlmBinding = result.almBinding
 }

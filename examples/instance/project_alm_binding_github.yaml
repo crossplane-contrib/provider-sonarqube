@@ -1,0 +1,26 @@
+---
+# This example binds a Project to a GitHub repository for Pull Request
+# decoration. It assumes an ALMGitHub resource with key "github-main"
+# already exists (see examples/integration/alm_github.yaml).
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: example-project-github-binding
+  namespace: default
+spec:
+  forProvider:
+    key: example-project-github-binding-key
+    name: Example Project (GitHub binding)
+    visibility: public
+    almBinding:
+      gitHub:
+        # Must match the spec.forProvider.key of an existing ALMGitHub resource.
+        almSettingKey: github-main
+        # owner/repository on GitHub.
+        repository: crossplane-contrib/provider-sonarqube
+        summaryCommentEnabled: true
+      monorepo: false
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

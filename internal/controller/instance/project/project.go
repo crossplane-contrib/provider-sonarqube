@@ -40,6 +40,7 @@ import (
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
+	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -154,6 +155,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 		qualityGatesClient:          instance.NewQualityGatesClient(*config),
 		qualityProfilesClient:       instance.NewQualityProfilesClient(*config),
 		projectTagsClient:           instance.NewProjectTagsClient(*config),
+		almSettingsClient:           integration.NewALMSettingsClient(*config),
 	}, nil
 }
 
@@ -173,6 +175,8 @@ type external struct {
 	qualityProfilesClient instance.QualityProfilesClient
 	// projectTagsClient is used to interact with SonarQube Project Tags API
 	projectTagsClient instance.ProjectTagsClient
+	// almSettingsClient is used to interact with SonarQube ALM Settings API
+	almSettingsClient integration.ALMSettingsClient
 }
 
 // observeResult holds the results of all concurrent observation API calls.
@@ -184,6 +188,7 @@ type observeResult struct {
 	branchNewCodePeriods map[string]v1alpha1.ProjectNewCodePeriodObservation
 	qualityGateName      string
 	qualityProfiles      map[string]v1alpha1.ProjectQualityProfileObservation
+	almBinding           *v1alpha1.ProjectALMBindingObservation
 	errors               []error
 }
 

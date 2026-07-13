@@ -18,6 +18,7 @@ package project
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
@@ -62,6 +63,10 @@ func (c *external) updateProjectConcurrently(ctx context.Context, project *v1alp
 
 	waitGr.Go(func() {
 		c.updateProjectQualityProfiles(ctx, project, projectKey, errChan)
+	})
+
+	waitGr.Go(func() {
+		c.updateProjectALMBinding(ctx, project, projectKey, errChan)
 	})
 
 	// Drain error channel concurrently to avoid deadlock on unbuffered sends.
@@ -249,6 +254,55 @@ func (c *external) updateProjectNewCodePeriod(ctx context.Context, project *v1al
 
 	if err != nil {
 		errChan <- errors.Wrap(err, "cannot update Project new code period")
+	}
+}
+
+// updateProjectALMBinding updates the ALM binding of the project if it
+// differs from the desired state, deleting it if the spec no longer
+// specifies one.
+func (c *external) updateProjectALMBinding(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+	binding := project.Spec.ForProvider.AlmBinding
+	observed := project.Status.AtProvider.AlmBinding
+
+	if instance.IsProjectALMBindingUpToDate(binding, observed) {
+		return
+	}
+
+	if binding == nil {
+		resp, err := c.almSettingsClient.DeleteBinding(ctx, instance.GenerateProjectALMBindingDeleteOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+		helpers.CloseBody(resp)
+
+		if err != nil {
+			errChan <- errors.Wrap(err, "cannot delete Project ALM binding")
+		}
+
+		return
+	}
+
+	resp, err := c.setProjectALMBinding(ctx, projectKey, binding) //nolint:bodyclose // closed via helpers.CloseBody
+	helpers.CloseBody(resp)
+
+	if err != nil {
+		errChan <- errors.Wrap(err, "cannot set Project ALM binding")
+	}
+}
+
+// setProjectALMBinding dispatches to the Set*Binding call matching
+// whichever DevOps platform is populated on the binding spec.
+func (c *external) setProjectALMBinding(ctx context.Context, projectKey string, binding *v1alpha1.ProjectALMBindingParameters) (*http.Response, error) {
+	switch {
+	case binding.GitHub != nil:
+		return c.almSettingsClient.SetGithubBinding(ctx, instance.GenerateProjectGitHubBindingOptions(projectKey, binding))
+	case binding.GitLab != nil:
+		return c.almSettingsClient.SetGitlabBinding(ctx, instance.GenerateProjectGitLabBindingOptions(projectKey, binding))
+	case binding.Azure != nil:
+		return c.almSettingsClient.SetAzureBinding(ctx, instance.GenerateProjectAzureBindingOptions(projectKey, binding))
+	case binding.Bitbucket != nil:
+		return c.almSettingsClient.SetBitbucketBinding(ctx, instance.GenerateProjectBitbucketBindingOptions(projectKey, binding))
+	case binding.BitbucketCloud != nil:
+		return c.almSettingsClient.SetBitbucketCloudBinding(ctx, instance.GenerateProjectBitbucketCloudBindingOptions(projectKey, binding))
+	default:
+		return nil, errors.New("Project ALM binding does not specify a DevOps platform")
 	}
 }
 

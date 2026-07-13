@@ -1,0 +1,25 @@
+---
+# This example binds a Project to a GitLab project for Pull Request
+# decoration. It assumes an ALMGitLab resource with key "gitlab-main"
+# already exists (see examples/integration/alm_gitlab.yaml).
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: example-project-gitlab-binding
+  namespace: default
+spec:
+  forProvider:
+    key: example-project-gitlab-binding-key
+    name: Example Project (GitLab binding)
+    visibility: public
+    almBinding:
+      gitLab:
+        # Must match the spec.forProvider.key of an existing ALMGitLab resource.
+        almSettingKey: gitlab-main
+        # GitLab project ID (numeric, as a string).
+        repository: "42"
+      monorepo: false
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
