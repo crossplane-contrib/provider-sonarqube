@@ -6,244 +6,244 @@
 
 package v1alpha1
 
-import xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+import xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 // GetCondition of this ALMAzure.
-func (mg *ALMAzure) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
+func (mg *ALMAzure) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
 // GetManagementPolicies of this ALMAzure.
-func (mg *ALMAzure) GetManagementPolicies() xpv1.ManagementPolicies {
+func (mg *ALMAzure) GetManagementPolicies() xpv2.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
 }
 
 // GetProviderConfigReference of this ALMAzure.
-func (mg *ALMAzure) GetProviderConfigReference() *xpv1.ProviderConfigReference {
+func (mg *ALMAzure) GetProviderConfigReference() *xpv2.ProviderConfigReference {
 	return mg.Spec.ProviderConfigReference
 }
 
 // GetWriteConnectionSecretToReference of this ALMAzure.
-func (mg *ALMAzure) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *ALMAzure) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
 // SetConditions of this ALMAzure.
-func (mg *ALMAzure) SetConditions(c ...xpv1.Condition) {
+func (mg *ALMAzure) SetConditions(c ...xpv2.Condition) {
 	mg.Status.SetConditions(c...)
 }
 
 // SetManagementPolicies of this ALMAzure.
-func (mg *ALMAzure) SetManagementPolicies(r xpv1.ManagementPolicies) {
+func (mg *ALMAzure) SetManagementPolicies(r xpv2.ManagementPolicies) {
 	mg.Spec.ManagementPolicies = r
 }
 
 // SetProviderConfigReference of this ALMAzure.
-func (mg *ALMAzure) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
+func (mg *ALMAzure) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
 // SetWriteConnectionSecretToReference of this ALMAzure.
-func (mg *ALMAzure) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *ALMAzure) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
 // GetCondition of this ALMBitbucket.
-func (mg *ALMBitbucket) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
+func (mg *ALMBitbucket) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
 // GetManagementPolicies of this ALMBitbucket.
-func (mg *ALMBitbucket) GetManagementPolicies() xpv1.ManagementPolicies {
+func (mg *ALMBitbucket) GetManagementPolicies() xpv2.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
 }
 
 // GetProviderConfigReference of this ALMBitbucket.
-func (mg *ALMBitbucket) GetProviderConfigReference() *xpv1.ProviderConfigReference {
+func (mg *ALMBitbucket) GetProviderConfigReference() *xpv2.ProviderConfigReference {
 	return mg.Spec.ProviderConfigReference
 }
 
 // GetWriteConnectionSecretToReference of this ALMBitbucket.
-func (mg *ALMBitbucket) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *ALMBitbucket) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
 // SetConditions of this ALMBitbucket.
-func (mg *ALMBitbucket) SetConditions(c ...xpv1.Condition) {
+func (mg *ALMBitbucket) SetConditions(c ...xpv2.Condition) {
 	mg.Status.SetConditions(c...)
 }
 
 // SetManagementPolicies of this ALMBitbucket.
-func (mg *ALMBitbucket) SetManagementPolicies(r xpv1.ManagementPolicies) {
+func (mg *ALMBitbucket) SetManagementPolicies(r xpv2.ManagementPolicies) {
 	mg.Spec.ManagementPolicies = r
 }
 
 // SetProviderConfigReference of this ALMBitbucket.
-func (mg *ALMBitbucket) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
+func (mg *ALMBitbucket) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
 // SetWriteConnectionSecretToReference of this ALMBitbucket.
-func (mg *ALMBitbucket) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *ALMBitbucket) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
 // GetCondition of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
+func (mg *ALMBitbucketCloud) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
 // GetManagementPolicies of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) GetManagementPolicies() xpv1.ManagementPolicies {
+func (mg *ALMBitbucketCloud) GetManagementPolicies() xpv2.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
 }
 
 // GetProviderConfigReference of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) GetProviderConfigReference() *xpv1.ProviderConfigReference {
+func (mg *ALMBitbucketCloud) GetProviderConfigReference() *xpv2.ProviderConfigReference {
 	return mg.Spec.ProviderConfigReference
 }
 
 // GetWriteConnectionSecretToReference of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *ALMBitbucketCloud) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
 // SetConditions of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) SetConditions(c ...xpv1.Condition) {
+func (mg *ALMBitbucketCloud) SetConditions(c ...xpv2.Condition) {
 	mg.Status.SetConditions(c...)
 }
 
 // SetManagementPolicies of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) SetManagementPolicies(r xpv1.ManagementPolicies) {
+func (mg *ALMBitbucketCloud) SetManagementPolicies(r xpv2.ManagementPolicies) {
 	mg.Spec.ManagementPolicies = r
 }
 
 // SetProviderConfigReference of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
+func (mg *ALMBitbucketCloud) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
 // SetWriteConnectionSecretToReference of this ALMBitbucketCloud.
-func (mg *ALMBitbucketCloud) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *ALMBitbucketCloud) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
 // GetCondition of this ALMGitHub.
-func (mg *ALMGitHub) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
+func (mg *ALMGitHub) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
 // GetManagementPolicies of this ALMGitHub.
-func (mg *ALMGitHub) GetManagementPolicies() xpv1.ManagementPolicies {
+func (mg *ALMGitHub) GetManagementPolicies() xpv2.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
 }
 
 // GetProviderConfigReference of this ALMGitHub.
-func (mg *ALMGitHub) GetProviderConfigReference() *xpv1.ProviderConfigReference {
+func (mg *ALMGitHub) GetProviderConfigReference() *xpv2.ProviderConfigReference {
 	return mg.Spec.ProviderConfigReference
 }
 
 // GetWriteConnectionSecretToReference of this ALMGitHub.
-func (mg *ALMGitHub) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *ALMGitHub) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
 // SetConditions of this ALMGitHub.
-func (mg *ALMGitHub) SetConditions(c ...xpv1.Condition) {
+func (mg *ALMGitHub) SetConditions(c ...xpv2.Condition) {
 	mg.Status.SetConditions(c...)
 }
 
 // SetManagementPolicies of this ALMGitHub.
-func (mg *ALMGitHub) SetManagementPolicies(r xpv1.ManagementPolicies) {
+func (mg *ALMGitHub) SetManagementPolicies(r xpv2.ManagementPolicies) {
 	mg.Spec.ManagementPolicies = r
 }
 
 // SetProviderConfigReference of this ALMGitHub.
-func (mg *ALMGitHub) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
+func (mg *ALMGitHub) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
 // SetWriteConnectionSecretToReference of this ALMGitHub.
-func (mg *ALMGitHub) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *ALMGitHub) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
 // GetCondition of this ALMGitLab.
-func (mg *ALMGitLab) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
+func (mg *ALMGitLab) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
 // GetManagementPolicies of this ALMGitLab.
-func (mg *ALMGitLab) GetManagementPolicies() xpv1.ManagementPolicies {
+func (mg *ALMGitLab) GetManagementPolicies() xpv2.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
 }
 
 // GetProviderConfigReference of this ALMGitLab.
-func (mg *ALMGitLab) GetProviderConfigReference() *xpv1.ProviderConfigReference {
+func (mg *ALMGitLab) GetProviderConfigReference() *xpv2.ProviderConfigReference {
 	return mg.Spec.ProviderConfigReference
 }
 
 // GetWriteConnectionSecretToReference of this ALMGitLab.
-func (mg *ALMGitLab) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *ALMGitLab) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
 // SetConditions of this ALMGitLab.
-func (mg *ALMGitLab) SetConditions(c ...xpv1.Condition) {
+func (mg *ALMGitLab) SetConditions(c ...xpv2.Condition) {
 	mg.Status.SetConditions(c...)
 }
 
 // SetManagementPolicies of this ALMGitLab.
-func (mg *ALMGitLab) SetManagementPolicies(r xpv1.ManagementPolicies) {
+func (mg *ALMGitLab) SetManagementPolicies(r xpv2.ManagementPolicies) {
 	mg.Spec.ManagementPolicies = r
 }
 
 // SetProviderConfigReference of this ALMGitLab.
-func (mg *ALMGitLab) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
+func (mg *ALMGitLab) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
 // SetWriteConnectionSecretToReference of this ALMGitLab.
-func (mg *ALMGitLab) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *ALMGitLab) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
 // GetCondition of this Webhook.
-func (mg *Webhook) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
+func (mg *Webhook) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
 // GetManagementPolicies of this Webhook.
-func (mg *Webhook) GetManagementPolicies() xpv1.ManagementPolicies {
+func (mg *Webhook) GetManagementPolicies() xpv2.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
 }
 
 // GetProviderConfigReference of this Webhook.
-func (mg *Webhook) GetProviderConfigReference() *xpv1.ProviderConfigReference {
+func (mg *Webhook) GetProviderConfigReference() *xpv2.ProviderConfigReference {
 	return mg.Spec.ProviderConfigReference
 }
 
 // GetWriteConnectionSecretToReference of this Webhook.
-func (mg *Webhook) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *Webhook) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
 // SetConditions of this Webhook.
-func (mg *Webhook) SetConditions(c ...xpv1.Condition) {
+func (mg *Webhook) SetConditions(c ...xpv2.Condition) {
 	mg.Status.SetConditions(c...)
 }
 
 // SetManagementPolicies of this Webhook.
-func (mg *Webhook) SetManagementPolicies(r xpv1.ManagementPolicies) {
+func (mg *Webhook) SetManagementPolicies(r xpv2.ManagementPolicies) {
 	mg.Spec.ManagementPolicies = r
 }
 
 // SetProviderConfigReference of this Webhook.
-func (mg *Webhook) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
+func (mg *Webhook) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
 // SetWriteConnectionSecretToReference of this Webhook.
-func (mg *Webhook) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *Webhook) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }
