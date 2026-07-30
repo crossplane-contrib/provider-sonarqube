@@ -196,7 +196,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	defer helpers.CloseBody(resp)
 
-	portfolio.Status.AtProvider = instance.GeneratePortfolioObservation(&result.Portfolio)
+	portfolio.Status.AtProvider = instance.GeneratePortfolioObservation(result)
 	portfolio.SetConditions(xpv1.Available())
 
 	former := portfolio.Spec.ForProvider.DeepCopy()

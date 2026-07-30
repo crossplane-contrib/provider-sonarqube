@@ -53,7 +53,7 @@ type MockPortfoliosClient struct {
 	SetRegexpModeFn            func(opt *sonar.ViewsSetRegexpModeOptions) (*http.Response, error)
 	SetRemainingProjectsModeFn func(opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error)
 	SetTagsModeFn              func(opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error)
-	ShowFn                     func(opt *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error)
+	ShowFn                     func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error)
 	SubPortfoliosFn            func(opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error)
 	UpdateFn                   func(opt *sonar.ViewsUpdateOptions) (*http.Response, error)
 }
@@ -288,7 +288,7 @@ func (m *MockPortfoliosClient) SetTagsMode(_ context.Context, opt *sonar.ViewsSe
 }
 
 // Show implements PortfoliosClient.Show.
-func (m *MockPortfoliosClient) Show(_ context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error) {
+func (m *MockPortfoliosClient) Show(_ context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 	if m.ShowFn != nil {
 		return m.ShowFn(opt)
 	}

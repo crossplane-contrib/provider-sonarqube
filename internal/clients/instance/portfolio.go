@@ -62,7 +62,7 @@ type PortfoliosClient interface {
 	SetRegexpMode(ctx context.Context, opt *sonar.ViewsSetRegexpModeOptions) (*http.Response, error)
 	SetRemainingProjectsMode(ctx context.Context, opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error)
 	SetTagsMode(ctx context.Context, opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error)
-	Show(ctx context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error)
+	Show(ctx context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error)
 	SubPortfolios(ctx context.Context, opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error)
 	Update(ctx context.Context, opt *sonar.ViewsUpdateOptions) (*http.Response, error)
 }

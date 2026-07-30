@@ -387,7 +387,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ShowNotFoundReturnsNotExists": {
 			client: &fake.MockPortfoliosClient{
-				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error) {
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 					return nil, mockHTTPNotFound(), errBoom
 				},
 			},
@@ -399,7 +399,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ShowAPIError": {
 			client: &fake.MockPortfoliosClient{
-				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error) {
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 					return nil, mockHTTPOK(), errBoom
 				},
 			},
@@ -411,14 +411,12 @@ func TestObserve(t *testing.T) {
 		},
 		"ExistsAndUpToDate": {
 			client: &fake.MockPortfoliosClient{
-				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error) {
-					return &sonar.ViewsShow{
-						Portfolio: sonar.ViewDetails{
-							Key:           testPortfolioKey,
-							Name:          testPortfolioName,
-							Visibility:    "public",
-							SelectionMode: selectionModeNone,
-						},
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+					return &sonar.ViewDetails{
+						Key:           testPortfolioKey,
+						Name:          testPortfolioName,
+						Visibility:    "public",
+						SelectionMode: selectionModeNone,
 					}, mockHTTPOK(), nil
 				},
 			},
@@ -435,14 +433,12 @@ func TestObserve(t *testing.T) {
 		},
 		"ExistsAndNotUpToDate": {
 			client: &fake.MockPortfoliosClient{
-				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewsShow, *http.Response, error) {
-					return &sonar.ViewsShow{
-						Portfolio: sonar.ViewDetails{
-							Key:           testPortfolioKey,
-							Name:          "Old Name",
-							Visibility:    "public",
-							SelectionMode: selectionModeNone,
-						},
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+					return &sonar.ViewDetails{
+						Key:           testPortfolioKey,
+						Name:          "Old Name",
+						Visibility:    "public",
+						SelectionMode: selectionModeNone,
 					}, mockHTTPOK(), nil
 				},
 			},
