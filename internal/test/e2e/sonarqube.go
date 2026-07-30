@@ -367,7 +367,7 @@ func (f *Framework) FindPortfolioByKey(ctx context.Context, key string) (*sonar.
 	if err != nil {
 		return nil, err
 	}
-	return &res.Portfolio, nil
+	return res, nil
 }
 
 // FetchLicense returns the license currently applied to the SonarQube
