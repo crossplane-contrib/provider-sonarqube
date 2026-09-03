@@ -60,19 +60,9 @@ var (
 	ClusterProviderConfigGroupVersionKind = SchemeGroupVersion.WithKind(ClusterProviderConfigKind)
 )
 
-// ClusterProviderConfigUsage type metadata.
-var (
-	ClusterProviderConfigUsageKind             = reflect.TypeFor[ClusterProviderConfigUsage]().Name()
-	ClusterProviderConfigUsageGroupVersionKind = SchemeGroupVersion.WithKind(ClusterProviderConfigUsageKind)
-
-	ClusterProviderConfigUsageListKind             = reflect.TypeFor[ClusterProviderConfigUsageList]().Name()
-	ClusterProviderConfigUsageListGroupVersionKind = SchemeGroupVersion.WithKind(ClusterProviderConfigUsageListKind)
-)
-
 // init registers all provider config resources with the Scheme.
 func init() {
 	SchemeBuilder.Register(&ProviderConfig{}, &ProviderConfigList{})
 	SchemeBuilder.Register(&ProviderConfigUsage{}, &ProviderConfigUsageList{})
 	SchemeBuilder.Register(&ClusterProviderConfig{}, &ClusterProviderConfigList{})
-	SchemeBuilder.Register(&ClusterProviderConfigUsage{}, &ClusterProviderConfigUsageList{})
 }

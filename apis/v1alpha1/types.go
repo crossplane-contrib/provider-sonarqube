@@ -92,7 +92,10 @@ type ProviderConfigList struct {
 // +kubebuilder:printcolumn:name="RESOURCE-NAME",type="string",JSONPath=".resourceRef.name"
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,provider,sonarqube}
 
-// ProviderConfigUsage indicates that a resource is using a ProviderConfig.
+// ProviderConfigUsage indicates that a resource is using a ProviderConfig or a
+// ClusterProviderConfig. There is deliberately no cluster scoped usage type:
+// usages always live in the namespace of the managed resource that created
+// them, and record which kind of config they refer to.
 type ProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -133,31 +136,4 @@ type ClusterProviderConfigList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []ClusterProviderConfig `json:"items"`
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:storageversion
-// +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:printcolumn:name="CONFIG-NAME",type="string",JSONPath=".providerConfigRef.name"
-// +kubebuilder:printcolumn:name="RESOURCE-KIND",type="string",JSONPath=".resourceRef.kind"
-// +kubebuilder:printcolumn:name="RESOURCE-NAME",type="string",JSONPath=".resourceRef.name"
-// +kubebuilder:resource:scope=Cluster,categories={crossplane,provider,sonarqube}
-
-// ClusterProviderConfigUsage indicates that a resource is using a
-// ClusterProviderConfig.
-type ClusterProviderConfigUsage struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	xpv1.TypedProviderConfigUsage `json:",inline"`
-}
-
-// +kubebuilder:object:root=true
-
-// ClusterProviderConfigUsageList contains a list of ClusterProviderConfigUsage.
-type ClusterProviderConfigUsageList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-
-	Items []ClusterProviderConfigUsage `json:"items"`
 }
