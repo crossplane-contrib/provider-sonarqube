@@ -53,12 +53,17 @@ func setupNamespacedProviderConfig(mgr ctrl.Manager, opts controller.Options) er
 			UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
 		},
 		&v1alpha1.ProviderConfig{},
-		&v1alpha1.ProviderConfigUsage{},
+		v1alpha1.ProviderConfigKind,
 	)
 }
 
 // setupClusterProviderConfig initializes the cluster provider config
 // controller.
+//
+// Every managed resource in this provider is namespaced, so every usage record
+// is a namespaced ProviderConfigUsage. There is no cluster scoped usage type,
+// even for a ClusterProviderConfig: the usage lives beside the managed resource
+// that created it and records which kind of config it refers to.
 func setupClusterProviderConfig(mgr ctrl.Manager, opts controller.Options) error {
 	return setupProviderConfig(
 		mgr,
@@ -66,11 +71,11 @@ func setupClusterProviderConfig(mgr ctrl.Manager, opts controller.Options) error
 		v1alpha1.ClusterProviderConfigGroupKind,
 		resource.ProviderConfigKinds{
 			Config:    v1alpha1.ClusterProviderConfigGroupVersionKind,
-			Usage:     v1alpha1.ClusterProviderConfigUsageGroupVersionKind,
-			UsageList: v1alpha1.ClusterProviderConfigUsageListGroupVersionKind,
+			Usage:     v1alpha1.ProviderConfigUsageGroupVersionKind,
+			UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
 		},
 		&v1alpha1.ClusterProviderConfig{},
-		&v1alpha1.ClusterProviderConfigUsage{},
+		v1alpha1.ClusterProviderConfigKind,
 	)
 }
 
@@ -81,7 +86,7 @@ func setupProviderConfig(
 	groupKind string,
 	kinds resource.ProviderConfigKinds,
 	config client.Object,
-	usage client.Object,
+	configKind string,
 ) error {
 	name := providerconfig.ControllerName(groupKind)
 
@@ -93,6 +98,6 @@ func setupProviderConfig(
 		Named(name).
 		WithOptions(opts.ForControllerRuntime()).
 		For(config).
-		Watches(usage, &resource.EnqueueRequestForProviderConfig{}).
+		Watches(&v1alpha1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{Kind: configKind}).
 		Complete(ratelimiter.NewReconciler(name, reconciler, opts.GlobalRateLimiter))
 }

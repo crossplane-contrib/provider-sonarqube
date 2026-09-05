@@ -34,7 +34,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ProviderConfigUsage indicates that a resource is using a ProviderConfig.
+        description: |-
+          ProviderConfigUsage indicates that a resource is using a ProviderConfig or a
+          ClusterProviderConfig.
         properties:
           apiVersion:
             description: |-
