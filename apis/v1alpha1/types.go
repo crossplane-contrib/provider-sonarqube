@@ -93,9 +93,7 @@ type ProviderConfigList struct {
 // +kubebuilder:resource:scope=Namespaced,categories={crossplane,provider,sonarqube}
 
 // ProviderConfigUsage indicates that a resource is using a ProviderConfig or a
-// ClusterProviderConfig. There is deliberately no cluster scoped usage type:
-// usages always live in the namespace of the managed resource that created
-// them, and record which kind of config they refer to.
+// ClusterProviderConfig.
 type ProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
