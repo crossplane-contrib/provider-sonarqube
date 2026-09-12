@@ -1,0 +1,13 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: NewCodePeriod
+metadata:
+  name: example-instance-new-code-period
+  namespace: default
+spec:
+  forProvider:
+    type: NUMBER_OF_DAYS
+    value: "30"
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
