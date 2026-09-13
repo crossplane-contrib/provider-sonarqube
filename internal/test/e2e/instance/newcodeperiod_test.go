@@ -25,6 +25,7 @@ import (
 
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 
 	instancev1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -105,9 +106,25 @@ func TestNewCodePeriodUpdate(t *testing.T) {
 	if err := f.Kube.Update(context.Background(), ncp); err != nil {
 		t.Fatalf("updating %s/%s: %v", ncp.GetNamespace(), ncp.GetName(), err)
 	}
-	if err := f.WaitForReady(context.Background(), ncp, 2*time.Minute); err != nil {
-		t.Fatalf("waiting for %s/%s to be Ready: %v\n  conditions: %s",
-			ncp.GetNamespace(), ncp.GetName(), err, e2e.SummariseConditions(ncp))
+
+	// WaitForReady returns immediately when conditions are already True from
+	// the previous reconcile; poll the instance new code period directly until
+	// the controller has applied the spec change.
+	var lastValue string
+	pollCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	if pollErr := wait.PollUntilContextTimeout(pollCtx, 2*time.Second, 2*time.Minute, false, func(_ context.Context) (bool, error) {
+		period, fetchErr := f.FetchInstanceNewCodePeriod(context.Background())
+		if fetchErr != nil {
+			return false, fetchErr
+		}
+		if period == nil {
+			return false, nil
+		}
+		lastValue = period.Value
+		return period.Value == "45" && period.Type == "NUMBER_OF_DAYS", nil
+	}); pollErr != nil {
+		t.Fatalf("instance new code period value did not reach \"45\": last=%q: %v", lastValue, pollErr)
 	}
 
 	got, err := f.FetchInstanceNewCodePeriod(context.Background())
