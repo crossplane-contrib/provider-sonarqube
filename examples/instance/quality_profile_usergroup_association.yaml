@@ -1,0 +1,29 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: QualityProfileUsergroupAssociation
+metadata:
+  name: example-qualityprofile-group-association
+  namespace: default
+spec:
+  forProvider:
+    qualityProfile: example-go-profile
+    language: go
+    groupName: sonar-users
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: QualityProfileUsergroupAssociation
+metadata:
+  name: example-qualityprofile-user-association
+  namespace: default
+spec:
+  forProvider:
+    qualityProfileRef:
+      name: example-qualityprofile-go
+    language: go
+    login: BoxBoxJason
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
