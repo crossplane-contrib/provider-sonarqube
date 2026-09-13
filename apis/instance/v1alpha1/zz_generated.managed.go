@@ -248,6 +248,46 @@ func (mg *QualityGate) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretRe
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
+// GetCondition of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
+	return mg.Status.GetCondition(ct)
+}
+
+// GetManagementPolicies of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) GetManagementPolicies() xpv2.ManagementPolicies {
+	return mg.Spec.ManagementPolicies
+}
+
+// GetProviderConfigReference of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) GetProviderConfigReference() *xpv2.ProviderConfigReference {
+	return mg.Spec.ProviderConfigReference
+}
+
+// GetWriteConnectionSecretToReference of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
+	return mg.Spec.WriteConnectionSecretToReference
+}
+
+// SetConditions of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) SetConditions(c ...xpv2.Condition) {
+	mg.Status.SetConditions(c...)
+}
+
+// SetManagementPolicies of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) SetManagementPolicies(r xpv2.ManagementPolicies) {
+	mg.Spec.ManagementPolicies = r
+}
+
+// SetProviderConfigReference of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
+	mg.Spec.ProviderConfigReference = r
+}
+
+// SetWriteConnectionSecretToReference of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
+	mg.Spec.WriteConnectionSecretToReference = r
+}
+
 // GetCondition of this QualityProfile.
 func (mg *QualityProfile) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
