@@ -21,6 +21,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reference"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -72,4 +73,18 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 	}
 
 	return nil
+}
+
+// QualityProfileName extracts the display name of a referenced
+// QualityProfile. Association APIs identify a profile by display name,
+// not by the profile key stored as the external name.
+func QualityProfileName() reference.ExtractValueFn {
+	return func(mg resource.Managed) string {
+		qp, ok := mg.(*QualityProfile)
+		if !ok {
+			return ""
+		}
+
+		return qp.Spec.ForProvider.Name
+	}
 }

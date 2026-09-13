@@ -42,3 +42,30 @@ func (mg *QualityProfile) ResolveReferences(ctx context.Context, c client.Reader
 
 	return nil
 }
+
+// ResolveReferences of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) ResolveReferences(ctx context.Context, c client.Reader) error {
+	r := reference.NewAPINamespacedResolver(c, mg)
+
+	var rsp reference.NamespacedResolutionResponse
+	var err error
+
+	rsp, err = r.Resolve(ctx, reference.NamespacedResolutionRequest{
+		CurrentValue: mg.Spec.ForProvider.QualityProfile,
+		Extract:      QualityProfileName(),
+		Namespace:    mg.GetNamespace(),
+		Reference:    mg.Spec.ForProvider.QualityProfileRef,
+		Selector:     mg.Spec.ForProvider.QualityProfileSelector,
+		To: reference.To{
+			List:    &QualityProfileList{},
+			Managed: &QualityProfile{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.ForProvider.QualityProfile")
+	}
+	mg.Spec.ForProvider.QualityProfile = rsp.ResolvedValue
+	mg.Spec.ForProvider.QualityProfileRef = rsp.ResolvedReference
+
+	return nil
+}
