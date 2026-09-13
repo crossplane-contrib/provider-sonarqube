@@ -74,6 +74,8 @@ type NewCodePeriodStatus struct {
 // SonarQube instance.
 // WARNING: only one NewCodePeriod resource should target a given SonarQube
 // instance, as multiple resources would conflict with each other.
+// Deleting this resource resets the instance default, but SonarQube does not
+// confirm the reset succeeded, so deletion is best-effort.
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="EXTERNAL-NAME",type="string",JSONPath=".metadata.annotations.crossplane\\.io/external-name"

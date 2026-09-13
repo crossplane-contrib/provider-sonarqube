@@ -39,6 +39,8 @@ spec:
           SonarQube instance.
           WARNING: only one NewCodePeriod resource should target a given SonarQube
           instance, as multiple resources would conflict with each other.
+          Deleting this resource resets the instance default, but SonarQube does not
+          confirm the reset succeeded, so deletion is best-effort.
         properties:
           apiVersion:
             description: |-

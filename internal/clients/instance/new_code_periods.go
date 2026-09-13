@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -197,11 +198,7 @@ func AreInstanceNewCodePeriodsUpToDate(spec *v1alpha1.NewCodePeriodParameters, o
 		return false
 	}
 
-	if spec.Value == nil {
-		return observation.Value == ""
-	}
-
-	return *spec.Value == observation.Value
+	return ptr.Deref(spec.Value, "") == observation.Value
 }
 
 // LateInitializeInstanceNewCodePeriod fills the empty fields of the desired
