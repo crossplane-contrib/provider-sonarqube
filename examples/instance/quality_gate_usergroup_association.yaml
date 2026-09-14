@@ -1,0 +1,27 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: QualityGateUsergroupAssociation
+metadata:
+  name: example-qualitygate-group-association
+  namespace: default
+spec:
+  forProvider:
+    gateName: TestQualityGate
+    groupName: sonar-users
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: QualityGateUsergroupAssociation
+metadata:
+  name: example-qualitygate-user-association
+  namespace: default
+spec:
+  forProvider:
+    gateNameRef:
+      name: example-qualitygate
+    login: BoxBoxJason
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

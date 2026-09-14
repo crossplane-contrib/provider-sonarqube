@@ -13,6 +13,33 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// ResolveReferences of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) ResolveReferences(ctx context.Context, c client.Reader) error {
+	r := reference.NewAPINamespacedResolver(c, mg)
+
+	var rsp reference.NamespacedResolutionResponse
+	var err error
+
+	rsp, err = r.Resolve(ctx, reference.NamespacedResolutionRequest{
+		CurrentValue: mg.Spec.ForProvider.GateName,
+		Extract:      QualityGateName(),
+		Namespace:    mg.GetNamespace(),
+		Reference:    mg.Spec.ForProvider.GateNameRef,
+		Selector:     mg.Spec.ForProvider.GateNameSelector,
+		To: reference.To{
+			List:    &QualityGateList{},
+			Managed: &QualityGate{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.ForProvider.GateName")
+	}
+	mg.Spec.ForProvider.GateName = rsp.ResolvedValue
+	mg.Spec.ForProvider.GateNameRef = rsp.ResolvedReference
+
+	return nil
+}
+
 // ResolveReferences of this QualityProfile.
 func (mg *QualityProfile) ResolveReferences(ctx context.Context, c client.Reader) error {
 	r := reference.NewAPINamespacedResolver(c, mg)

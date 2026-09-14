@@ -20,7 +20,9 @@ import (
 	"context"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reference"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -72,4 +74,16 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 	}
 
 	return nil
+}
+
+// QualityGateName extracts the external name of the referenced QualityGate
+// resource. The QualityGate external name is the gate name in SonarQube.
+func QualityGateName() reference.ExtractValueFn {
+	return func(mg resource.Managed) string {
+		if _, ok := mg.(*QualityGate); !ok {
+			return ""
+		}
+
+		return meta.GetExternalName(mg)
+	}
 }
