@@ -437,3 +437,345 @@ func TestLateInitializeProjectNewCodePeriod(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateInstanceNewCodePeriodsShowOptions tests instance-wide new code
+// period show options.
+func TestGenerateInstanceNewCodePeriodsShowOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		want *sonar.NewCodePeriodsShowOptions
+	}{
+		"EmptyOptions": {
+			want: &sonar.NewCodePeriodsShowOptions{},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateInstanceNewCodePeriodsShowOptions()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateInstanceNewCodePeriodsShowOptions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestGenerateInstanceNewCodePeriodsSetOptions tests instance-wide new code
+// period set options.
+func TestGenerateInstanceNewCodePeriodsSetOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		params *v1alpha1.NewCodePeriodParameters
+		want   *sonar.NewCodePeriodsSetOptions
+	}{
+		"NilParams": {
+			params: nil,
+			want:   &sonar.NewCodePeriodsSetOptions{},
+		},
+		"WithTypeOnly": {
+			params: &v1alpha1.NewCodePeriodParameters{
+				Type: "PREVIOUS_VERSION",
+			},
+			want: &sonar.NewCodePeriodsSetOptions{
+				Type: "PREVIOUS_VERSION",
+			},
+		},
+		"WithTypeAndValue": {
+			params: &v1alpha1.NewCodePeriodParameters{
+				Type:  "NUMBER_OF_DAYS",
+				Value: new("30"),
+			},
+			want: &sonar.NewCodePeriodsSetOptions{
+				Type:  "NUMBER_OF_DAYS",
+				Value: "30",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateInstanceNewCodePeriodsSetOptions(tc.params)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateInstanceNewCodePeriodsSetOptions() mismatch (-want +got):\n%s", diff)
+			}
+
+			if got.Project != "" {
+				t.Errorf("GenerateInstanceNewCodePeriodsSetOptions() Project = %q, want empty", got.Project)
+			}
+
+			if got.Branch != "" {
+				t.Errorf("GenerateInstanceNewCodePeriodsSetOptions() Branch = %q, want empty", got.Branch)
+			}
+		})
+	}
+}
+
+// TestGenerateInstanceNewCodePeriodsUnsetOptions tests instance-wide new code
+// period unset options.
+func TestGenerateInstanceNewCodePeriodsUnsetOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		want *sonar.NewCodePeriodsUnsetOptions
+	}{
+		"EmptyOptions": {
+			want: &sonar.NewCodePeriodsUnsetOptions{},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateInstanceNewCodePeriodsUnsetOptions()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateInstanceNewCodePeriodsUnsetOptions() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestGenerateInstanceNewCodePeriodObservation tests generating instance-wide
+// new code period observations.
+func TestGenerateInstanceNewCodePeriodObservation(t *testing.T) {
+	t.Parallel()
+
+	const testUpdatedAt int64 = 1700000000000
+
+	tests := map[string]struct {
+		obs  *sonar.NewCodePeriodsShow
+		want v1alpha1.NewCodePeriodObservation
+	}{
+		"NilObservation": {
+			obs:  nil,
+			want: v1alpha1.NewCodePeriodObservation{},
+		},
+		"BasicObservation": {
+			obs: &sonar.NewCodePeriodsShow{
+				Type:      "NUMBER_OF_DAYS",
+				Value:     "30",
+				Inherited: false,
+				UpdatedAt: testUpdatedAt,
+			},
+			want: v1alpha1.NewCodePeriodObservation{
+				Type:      "NUMBER_OF_DAYS",
+				Value:     "30",
+				Inherited: false,
+				UpdatedAt: testUpdatedAt,
+			},
+		},
+		"PreviousVersionObservation": {
+			obs: &sonar.NewCodePeriodsShow{
+				Type:      "PREVIOUS_VERSION",
+				Value:     "",
+				Inherited: true,
+			},
+			want: v1alpha1.NewCodePeriodObservation{
+				Type:      "PREVIOUS_VERSION",
+				Value:     "",
+				Inherited: true,
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateInstanceNewCodePeriodObservation(tc.obs)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateInstanceNewCodePeriodObservation() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestAreInstanceNewCodePeriodsUpToDate tests checking whether the
+// instance-wide default new code period is up to date.
+func TestAreInstanceNewCodePeriodsUpToDate(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec        *v1alpha1.NewCodePeriodParameters
+		observation *v1alpha1.NewCodePeriodObservation
+		want        bool
+	}{
+		"NilSpec": {
+			spec:        nil,
+			observation: &v1alpha1.NewCodePeriodObservation{Type: "PREVIOUS_VERSION"},
+			want:        true,
+		},
+		"NilObservation": {
+			spec:        &v1alpha1.NewCodePeriodParameters{Type: "PREVIOUS_VERSION"},
+			observation: nil,
+			want:        false,
+		},
+		"BothNil": {
+			spec:        nil,
+			observation: nil,
+			want:        true,
+		},
+		"MatchingTypeNoValue": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type: "PREVIOUS_VERSION",
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type: "PREVIOUS_VERSION",
+			},
+			want: true,
+		},
+		"MatchingTypeAndValue": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type:  "NUMBER_OF_DAYS",
+				Value: new("30"),
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type:  "NUMBER_OF_DAYS",
+				Value: "30",
+			},
+			want: true,
+		},
+		"DifferentType": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type: "PREVIOUS_VERSION",
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type: "NUMBER_OF_DAYS",
+			},
+			want: false,
+		},
+		"DifferentValue": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type:  "NUMBER_OF_DAYS",
+				Value: new("30"),
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type:  "NUMBER_OF_DAYS",
+				Value: "60",
+			},
+			want: false,
+		},
+		"NilSpecValueNonEmptyObservation": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type: "NUMBER_OF_DAYS",
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type:  "NUMBER_OF_DAYS",
+				Value: "30",
+			},
+			want: false,
+		},
+		"EmptySpecValueMatchesEmptyObservation": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type:  "PREVIOUS_VERSION",
+				Value: new(""),
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type: "PREVIOUS_VERSION",
+			},
+			want: true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := AreInstanceNewCodePeriodsUpToDate(tc.spec, tc.observation)
+			if got != tc.want {
+				t.Errorf("AreInstanceNewCodePeriodsUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestLateInitializeInstanceNewCodePeriod tests late initialization of the
+// instance-wide default new code period.
+func TestLateInitializeInstanceNewCodePeriod(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec        *v1alpha1.NewCodePeriodParameters
+		observation *v1alpha1.NewCodePeriodObservation
+		want        *v1alpha1.NewCodePeriodParameters
+	}{
+		"NilSpec": {
+			spec:        nil,
+			observation: &v1alpha1.NewCodePeriodObservation{Type: "PREVIOUS_VERSION"},
+			want:        nil,
+		},
+		"NilObservation": {
+			spec:        &v1alpha1.NewCodePeriodParameters{Type: "NUMBER_OF_DAYS"},
+			observation: nil,
+			want:        &v1alpha1.NewCodePeriodParameters{Type: "NUMBER_OF_DAYS"},
+		},
+		"ValueAlreadySet": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type:  "NUMBER_OF_DAYS",
+				Value: new("30"),
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type:  "NUMBER_OF_DAYS",
+				Value: "60",
+			},
+			want: &v1alpha1.NewCodePeriodParameters{
+				Type:  "NUMBER_OF_DAYS",
+				Value: new("30"),
+			},
+		},
+		"ValueNilGetsInitialized": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type: "NUMBER_OF_DAYS",
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type:  "NUMBER_OF_DAYS",
+				Value: "45",
+			},
+			want: &v1alpha1.NewCodePeriodParameters{
+				Type:  "NUMBER_OF_DAYS",
+				Value: new("45"),
+			},
+		},
+		"EmptyTypeGetsInitialized": {
+			spec: &v1alpha1.NewCodePeriodParameters{},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type:  "PREVIOUS_VERSION",
+				Value: "",
+			},
+			want: &v1alpha1.NewCodePeriodParameters{
+				Type:  "PREVIOUS_VERSION",
+				Value: new(""),
+			},
+		},
+		"TypeAlreadySet": {
+			spec: &v1alpha1.NewCodePeriodParameters{
+				Type: "PREVIOUS_VERSION",
+			},
+			observation: &v1alpha1.NewCodePeriodObservation{
+				Type: "NUMBER_OF_DAYS",
+			},
+			want: &v1alpha1.NewCodePeriodParameters{
+				Type:  "PREVIOUS_VERSION",
+				Value: new(""),
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			LateInitializeInstanceNewCodePeriod(tc.spec, tc.observation)
+
+			if diff := cmp.Diff(tc.want, tc.spec); diff != "" {
+				t.Errorf("LateInitializeInstanceNewCodePeriod() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -137,6 +138,78 @@ func GenerateBranchNewCodePeriodObservation(obs *sonar.NewCodePeriod) v1alpha1.P
 func LateInitializeProjectNewCodePeriod(spec *v1alpha1.ProjectNewCodePeriodParameters, observation *v1alpha1.ProjectNewCodePeriodObservation) {
 	if spec == nil || observation == nil {
 		return
+	}
+
+	helpers.AssignIfNil(&spec.Value, observation.Value)
+}
+
+// GenerateInstanceNewCodePeriodsShowOptions generates the options for showing
+// the instance-wide default new code period.
+func GenerateInstanceNewCodePeriodsShowOptions() *sonar.NewCodePeriodsShowOptions {
+	return &sonar.NewCodePeriodsShowOptions{}
+}
+
+// GenerateInstanceNewCodePeriodsSetOptions generates the options for setting
+// the instance-wide default new code period. No project or branch is
+// provided, which makes SonarQube update the global level.
+func GenerateInstanceNewCodePeriodsSetOptions(params *v1alpha1.NewCodePeriodParameters) *sonar.NewCodePeriodsSetOptions {
+	opts := sonar.NewCodePeriodsSetOptions{}
+	if params != nil {
+		opts.Type = params.Type
+		helpers.AssignIfNonNil(&opts.Value, params.Value)
+	}
+
+	return &opts
+}
+
+// GenerateInstanceNewCodePeriodsUnsetOptions generates the options for
+// unsetting the instance-wide default new code period.
+func GenerateInstanceNewCodePeriodsUnsetOptions() *sonar.NewCodePeriodsUnsetOptions {
+	return &sonar.NewCodePeriodsUnsetOptions{}
+}
+
+// GenerateInstanceNewCodePeriodObservation generates the observation for the
+// instance-wide default new code period from a Show response.
+func GenerateInstanceNewCodePeriodObservation(obs *sonar.NewCodePeriodsShow) v1alpha1.NewCodePeriodObservation {
+	if obs == nil {
+		return v1alpha1.NewCodePeriodObservation{}
+	}
+
+	return v1alpha1.NewCodePeriodObservation{
+		Type:      obs.Type,
+		Value:     obs.Value,
+		Inherited: obs.Inherited,
+		UpdatedAt: obs.UpdatedAt,
+	}
+}
+
+// AreInstanceNewCodePeriodsUpToDate checks whether the observed instance-wide
+// default new code period matches the desired one.
+func AreInstanceNewCodePeriodsUpToDate(spec *v1alpha1.NewCodePeriodParameters, observation *v1alpha1.NewCodePeriodObservation) bool {
+	if spec == nil {
+		return true
+	}
+
+	if observation == nil {
+		return false
+	}
+
+	if spec.Type != observation.Type {
+		return false
+	}
+
+	return ptr.Deref(spec.Value, "") == observation.Value
+}
+
+// LateInitializeInstanceNewCodePeriod fills the empty fields of the desired
+// instance-wide default new code period with the observed ones.
+func LateInitializeInstanceNewCodePeriod(spec *v1alpha1.NewCodePeriodParameters, observation *v1alpha1.NewCodePeriodObservation) {
+	if spec == nil || observation == nil {
+		return
+	}
+
+	if spec.Type == "" {
+		spec.Type = observation.Type
 	}
 
 	helpers.AssignIfNil(&spec.Value, observation.Value)

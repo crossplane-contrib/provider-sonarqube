@@ -383,3 +383,14 @@ func (f *Framework) FetchLicense(ctx context.Context) (*sonar.License, error) {
 	}
 	return &res.License, nil
 }
+
+// FetchInstanceNewCodePeriod returns the instance-wide default new code period
+// as reported by SonarQube.
+func (f *Framework) FetchInstanceNewCodePeriod(ctx context.Context) (*sonar.NewCodePeriodsShow, error) {
+	res, resp, err := f.Sonar.NewCodePeriods.Show(ctx, &sonar.NewCodePeriodsShowOptions{})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
