@@ -1,6 +1,6 @@
 module github.com/crossplane/provider-sonarqube
 
-go 1.26.5
+go 1.26.7
 
 tool sigs.k8s.io/controller-tools/cmd/controller-gen
 
@@ -8,7 +8,7 @@ tool github.com/crossplane/crossplane-tools/cmd/angryjet
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/boxboxjason/sonarqube-client-go/v2 v2.2.1
+	github.com/boxboxjason/sonarqube-client-go/v2 v2.3.0
 	github.com/crossplane/crossplane-runtime/v2 v2.4.0
 	github.com/crossplane/crossplane/apis/v2 v2.4.0
 	github.com/google/go-cmp v0.7.0

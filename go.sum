@@ -16,6 +16,8 @@ github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/boxboxjason/sonarqube-client-go/v2 v2.2.1 h1:Pnu1i6SX0am4Fu48H1XSqH7bqM0x9GfGDXAQ4mZjQQc=
 github.com/boxboxjason/sonarqube-client-go/v2 v2.2.1/go.mod h1:BQ7HFOk0Ys5+2pH79/Ps9XsqC3Yz7YG4ow1BmHpgcSk=
+github.com/boxboxjason/sonarqube-client-go/v2 v2.3.0 h1:e1tRi+5OoFestOtAGlByYbKPFHSGPE2EoSAPreExSb4=
+github.com/boxboxjason/sonarqube-client-go/v2 v2.3.0/go.mod h1:z7Y/bffBsZeFTkqSUrUoUiapfQc1AoSYarYoNx81hH8=
 github.com/cenkalti/backoff/v5 v5.0.3 h1:ZN+IMa753KfX5hd8vVaMixjnqRZ3y8CuJKRKj1xcsSM=
 github.com/cenkalti/backoff/v5 v5.0.3/go.mod h1:rkhZdG3JZukswDf7f0cwqPNk4K0sa+F97BxZthm/crw=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
