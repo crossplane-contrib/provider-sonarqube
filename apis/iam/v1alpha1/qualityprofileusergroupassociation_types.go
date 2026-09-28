@@ -27,8 +27,11 @@ import (
 
 // QualityProfileUsergroupAssociationParameters are the configurable fields
 // of a QualityProfileUsergroupAssociation resource.
-// Exactly one of GroupName or Login must be set.
-// +kubebuilder:validation:XValidation:rule="(has(self.groupName) || has(self.login)) && !(has(self.groupName) && has(self.login))",message="exactly one of groupName or login must be set"
+// QualityProfile must be set, directly or through a reference or selector.
+// Exactly one of GroupName or Login must be set, directly or through a
+// reference or selector.
+// +kubebuilder:validation:XValidation:rule="has(self.qualityProfile) || has(self.qualityProfileRef) || has(self.qualityProfileSelector)",message="one of qualityProfile, qualityProfileRef or qualityProfileSelector must be set"
+// +kubebuilder:validation:XValidation:rule="(has(self.groupName) || has(self.groupNameRef) || has(self.groupNameSelector)) != (has(self.login) || has(self.loginRef) || has(self.loginSelector))",message="exactly one of groupName (or groupNameRef/groupNameSelector) or login (or loginRef/loginSelector) must be set"
 type QualityProfileUsergroupAssociationParameters struct {
 	// QualityProfile is the display name of the Quality Profile the group
 	// or user is associated with.
@@ -36,10 +39,10 @@ type QualityProfileUsergroupAssociationParameters struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="QualityProfile is immutable."
 	// +kubebuilder:validation:MaxLength=100
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.QualityProfile
 	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.QualityProfileName()
-	QualityProfile string `json:"qualityProfile"`
+	QualityProfile string `json:"qualityProfile,omitempty"`
 
 	// QualityProfileRef references a QualityProfile resource to populate
 	// QualityProfile.
@@ -60,21 +63,35 @@ type QualityProfileUsergroupAssociationParameters struct {
 
 	// GroupName is the name of the group granted edit rights on the Quality
 	// Profile. Mutually exclusive with login. Immutable once set.
-	// Principal names are referenced directly: this resource lives in the
-	// instance API group, and instance types cannot import the iam types
-	// without creating a cycle in the generated reference resolvers.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="GroupName is immutable."
+	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.Group
+	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.GroupName()
 	GroupName *string `json:"groupName,omitempty"`
+
+	// GroupNameRef references a Group resource to populate GroupName.
+	// +kubebuilder:validation:Optional
+	GroupNameRef *xpv1.NamespacedReference `json:"groupNameRef,omitempty"`
+
+	// GroupNameSelector selects a Group resource to populate GroupName.
+	// +kubebuilder:validation:Optional
+	GroupNameSelector *xpv1.NamespacedSelector `json:"groupNameSelector,omitempty"`
 
 	// Login is the login of the user granted edit rights on the Quality
 	// Profile. Mutually exclusive with groupName. Immutable once set.
-	// Principal names are referenced directly: this resource lives in the
-	// instance API group, and instance types cannot import the iam types
-	// without creating a cycle in the generated reference resolvers.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Login is immutable."
+	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.User
+	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.UserLogin()
 	Login *string `json:"login,omitempty"`
+
+	// LoginRef references a User resource to populate Login.
+	// +kubebuilder:validation:Optional
+	LoginRef *xpv1.NamespacedReference `json:"loginRef,omitempty"`
+
+	// LoginSelector selects a User resource to populate Login.
+	// +kubebuilder:validation:Optional
+	LoginSelector *xpv1.NamespacedSelector `json:"loginSelector,omitempty"`
 }
 
 // QualityProfileUsergroupAssociationObservation are the observable fields
@@ -144,7 +161,7 @@ type QualityProfileUsergroupAssociationList struct {
 // QualityProfileUsergroupAssociation type metadata.
 var (
 	QualityProfileUsergroupAssociationKind             = reflect.TypeFor[QualityProfileUsergroupAssociation]().Name()
-	QualityProfileUsergroupAssociationGroupKind        = schema.GroupKind{Group: Group, Kind: QualityProfileUsergroupAssociationKind}.String()
+	QualityProfileUsergroupAssociationGroupKind        = schema.GroupKind{Group: APIGroup, Kind: QualityProfileUsergroupAssociationKind}.String()
 	QualityProfileUsergroupAssociationKindAPIVersion   = QualityProfileUsergroupAssociationKind + "." + SchemeGroupVersion.String()
 	QualityProfileUsergroupAssociationGroupVersionKind = SchemeGroupVersion.WithKind(QualityProfileUsergroupAssociationKind)
 )

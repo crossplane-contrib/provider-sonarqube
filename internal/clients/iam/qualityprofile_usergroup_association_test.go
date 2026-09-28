@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package instance
+package iam
 
 import (
 	"testing"
@@ -22,7 +22,8 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
 // TestNewQualityProfileUsergroupAssociationClient tests creating an
@@ -30,7 +31,11 @@ import (
 func TestNewQualityProfileUsergroupAssociationClient(t *testing.T) {
 	t.Parallel()
 
-	client := NewQualityProfileUsergroupAssociationClient(newTestConfig())
+	client := NewQualityProfileUsergroupAssociationClient(common.Config{
+		AuthType: common.PersonalAccessToken,
+		Token:    "token",
+		BaseURL:  "http://localhost:9000",
+	})
 	if client == nil {
 		t.Error("NewQualityProfileUsergroupAssociationClient() returned nil")
 	}
@@ -182,40 +187,59 @@ func TestParseQualityProfileUsergroupAssociationExternalNameFailures(t *testing.
 	}
 }
 
-// TestGenerateQualityProfileUsergroupAssociationObservation tests
-// observation generation from spec parameters.
-func TestGenerateQualityProfileUsergroupAssociationObservation(t *testing.T) {
+// TestGenerateQualityProfileGroupAssociationObservation tests observation
+// generation from a SonarQube Quality Profile group search entry.
+func TestGenerateQualityProfileGroupAssociationObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		params *v1alpha1.QualityProfileUsergroupAssociationParameters
-		want   v1alpha1.QualityProfileUsergroupAssociationObservation
+		group *sonar.QualityprofilesProfileGroup
+		want  v1alpha1.QualityProfileUsergroupAssociationObservation
 	}{
-		"NilParams": {
-			params: nil,
-			want:   v1alpha1.QualityProfileUsergroupAssociationObservation{},
+		"NilGroup": {
+			group: nil,
+			want:  v1alpha1.QualityProfileUsergroupAssociationObservation{},
 		},
-		"GroupPrincipal": {
-			params: &v1alpha1.QualityProfileUsergroupAssociationParameters{
-				QualityProfile: "Sonar way",
-				Language:       "go",
-				GroupName:      new("sonar-users"),
-			},
+		"Group": {
+			group: &sonar.QualityprofilesProfileGroup{Name: "sonar-users", Description: "Users", Selected: true},
 			want: v1alpha1.QualityProfileUsergroupAssociationObservation{
 				QualityProfile: "Sonar way",
-				Language:       "go",
+				Language:       "java",
 				GroupName:      "sonar-users",
 			},
 		},
-		"UserPrincipal": {
-			params: &v1alpha1.QualityProfileUsergroupAssociationParameters{
-				QualityProfile: "MyProfile",
-				Language:       "java",
-				Login:          new("alice"),
-			},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityProfileGroupAssociationObservation("java", "Sonar way", tc.group)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityProfileGroupAssociationObservation() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestGenerateQualityProfileUserAssociationObservation tests observation
+// generation from a SonarQube Quality Profile user search entry.
+func TestGenerateQualityProfileUserAssociationObservation(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		user *sonar.QualityprofilesProfileUser
+		want v1alpha1.QualityProfileUsergroupAssociationObservation
+	}{
+		"NilUser": {
+			user: nil,
+			want: v1alpha1.QualityProfileUsergroupAssociationObservation{},
+		},
+		"User": {
+			user: &sonar.QualityprofilesProfileUser{Login: "alice", Name: "Alice", Selected: true},
 			want: v1alpha1.QualityProfileUsergroupAssociationObservation{
 				QualityProfile: "MyProfile",
-				Language:       "java",
+				Language:       "py",
 				Login:          "alice",
 			},
 		},
@@ -225,9 +249,9 @@ func TestGenerateQualityProfileUsergroupAssociationObservation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateQualityProfileUsergroupAssociationObservation(tc.params)
+			got := GenerateQualityProfileUserAssociationObservation("py", "MyProfile", tc.user)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateQualityProfileUsergroupAssociationObservation() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateQualityProfileUserAssociationObservation() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -339,6 +363,7 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityProfileAddGroupOptions("go", "MyProfile", "devs")
+
 		want := &sonar.QualityprofilesAddGroupOptions{
 			Group:          "devs",
 			Language:       "go",
@@ -353,6 +378,7 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityProfileAddUserOptions("go", "MyProfile", "alice")
+
 		want := &sonar.QualityprofilesAddUserOptions{
 			Language:       "go",
 			Login:          "alice",
@@ -367,6 +393,7 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityProfileRemoveGroupOptions("go", "MyProfile", "devs")
+
 		want := &sonar.QualityprofilesRemoveGroupOptions{
 			Group:          "devs",
 			Language:       "go",
@@ -381,6 +408,7 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityProfileRemoveUserOptions("go", "MyProfile", "alice")
+
 		want := &sonar.QualityprofilesRemoveUserOptions{
 			Language:       "go",
 			Login:          "alice",
@@ -395,11 +423,12 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityProfileSearchGroupsOptions("go", "MyProfile", "devs", nil)
+
 		want := &sonar.QualityprofilesSearchGroupsOptions{
 			Language:       "go",
 			QualityProfile: "MyProfile",
 			Query:          "devs",
-			Selected:       "all",
+			Selected:       sonar.SelectionFilterAll,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityProfileSearchGroupsOptions() mismatch (-want +got):\n%s", diff)
@@ -410,12 +439,13 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityProfileSearchGroupsOptions("go", "MyProfile", "devs", &sonar.PaginationArgs{Page: 2, PageSize: 100})
+
 		want := &sonar.QualityprofilesSearchGroupsOptions{
 			PaginationArgs: sonar.PaginationArgs{Page: 2, PageSize: 100},
 			Language:       "go",
 			QualityProfile: "MyProfile",
 			Query:          "devs",
-			Selected:       "all",
+			Selected:       sonar.SelectionFilterAll,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityProfileSearchGroupsOptions() mismatch (-want +got):\n%s", diff)
@@ -426,12 +456,13 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityProfileSearchUsersOptions("go", "MyProfile", "alice", &sonar.PaginationArgs{Page: 2, PageSize: 100})
+
 		want := &sonar.QualityprofilesSearchUsersOptions{
 			PaginationArgs: sonar.PaginationArgs{Page: 2, PageSize: 100},
 			Language:       "go",
 			QualityProfile: "MyProfile",
 			Query:          "alice",
-			Selected:       "all",
+			Selected:       sonar.SelectionFilterAll,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityProfileSearchUsersOptions() mismatch (-want +got):\n%s", diff)

@@ -14,40 +14,42 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package instance
+package iam
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-const (
-	// SubjectTypeGroup identifies a group principal in an association
-	// external name.
-	SubjectTypeGroup = "group"
-	// SubjectTypeUser identifies a user principal in an association
-	// external name.
-	SubjectTypeUser = "user"
+// qualityProfileAssociationNameParts is the number of colon-separated parts
+// in a valid association external name of the form
+// <type>:<subject>:<language>:<qualityProfile>.
+const qualityProfileAssociationNameParts = 4
 
-	// selectedFilterAll requests both selected and deselected search
-	// results from SonarQube.
-	selectedFilterAll = "all"
-
-	// qualityProfileAssociationNameParts is the number of
-	// colon-separated parts in a valid association external name of the
-	// form <type>:<subject>:<language>:<qualityProfile>.
-	qualityProfileAssociationNameParts = 4
-)
+// QualityProfileUsergroupAssociationClient is the interface for managing
+// the groups and users allowed to edit a Quality Profile in SonarQube.
+type QualityProfileUsergroupAssociationClient interface {
+	AddGroup(ctx context.Context, opt *sonar.QualityprofilesAddGroupOptions) (*http.Response, error)
+	AddUser(ctx context.Context, opt *sonar.QualityprofilesAddUserOptions) (*http.Response, error)
+	RemoveGroup(ctx context.Context, opt *sonar.QualityprofilesRemoveGroupOptions) (*http.Response, error)
+	RemoveUser(ctx context.Context, opt *sonar.QualityprofilesRemoveUserOptions) (*http.Response, error)
+	SearchGroups(ctx context.Context, opt *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error)
+	SearchUsers(ctx context.Context, opt *sonar.QualityprofilesSearchUsersOptions) (*sonar.QualityprofilesSearchUsers, *http.Response, error)
+}
 
 // NewQualityProfileUsergroupAssociationClient creates a
-// QualityprofilesService used to manage Quality Profile group and user
-// associations.
-func NewQualityProfileUsergroupAssociationClient(clientConfig common.Config) *sonar.QualityprofilesService {
+// QualityProfileUsergroupAssociationClient with the provided SonarQube
+// client configuration.
+func NewQualityProfileUsergroupAssociationClient(clientConfig common.Config) QualityProfileUsergroupAssociationClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.Qualityprofiles
@@ -99,61 +101,65 @@ func GenerateQualityProfileRemoveUserOptions(language, qualityProfile, login str
 
 // GenerateQualityProfileSearchGroupsOptions generates options for
 // searching groups associated with a Quality Profile identified by
-// language and qualityProfile. Selected is set to "all" so both selected
-// and deselected entries are returned.
+// language and qualityProfile. Both selected and deselected entries are
+// returned.
 func GenerateQualityProfileSearchGroupsOptions(language, qualityProfile, query string, pagination *sonar.PaginationArgs) *sonar.QualityprofilesSearchGroupsOptions {
 	opts := &sonar.QualityprofilesSearchGroupsOptions{
 		Language:       language,
 		QualityProfile: qualityProfile,
 		Query:          query,
-		Selected:       selectedFilterAll,
+		Selected:       sonar.SelectionFilterAll,
 	}
-	if pagination != nil {
-		opts.PaginationArgs = *pagination
-	}
+
+	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)
 
 	return opts
 }
 
 // GenerateQualityProfileSearchUsersOptions generates options for searching
 // users associated with a Quality Profile identified by language and
-// qualityProfile. Selected is set to "all" so both selected and
-// deselected entries are returned.
+// qualityProfile. Both selected and deselected entries are returned.
 func GenerateQualityProfileSearchUsersOptions(language, qualityProfile, query string, pagination *sonar.PaginationArgs) *sonar.QualityprofilesSearchUsersOptions {
 	opts := &sonar.QualityprofilesSearchUsersOptions{
 		Language:       language,
 		QualityProfile: qualityProfile,
 		Query:          query,
-		Selected:       selectedFilterAll,
+		Selected:       sonar.SelectionFilterAll,
 	}
-	if pagination != nil {
-		opts.PaginationArgs = *pagination
-	}
+
+	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)
 
 	return opts
 }
 
-// GenerateQualityProfileUsergroupAssociationObservation copies the
-// quality profile, language, and the set principal (group name or login)
-// from spec into observation.
-func GenerateQualityProfileUsergroupAssociationObservation(params *v1alpha1.QualityProfileUsergroupAssociationParameters) v1alpha1.QualityProfileUsergroupAssociationObservation {
-	if params == nil {
+// GenerateQualityProfileGroupAssociationObservation generates an
+// observation from the group returned by the SonarQube Quality Profile
+// groups search.
+func GenerateQualityProfileGroupAssociationObservation(language, qualityProfile string, group *sonar.QualityprofilesProfileGroup) v1alpha1.QualityProfileUsergroupAssociationObservation {
+	if group == nil {
 		return v1alpha1.QualityProfileUsergroupAssociationObservation{}
 	}
 
-	observation := v1alpha1.QualityProfileUsergroupAssociationObservation{
-		QualityProfile: params.QualityProfile,
-		Language:       params.Language,
+	return v1alpha1.QualityProfileUsergroupAssociationObservation{
+		QualityProfile: qualityProfile,
+		Language:       language,
+		GroupName:      group.Name,
 	}
-	if params.GroupName != nil {
-		observation.GroupName = *params.GroupName
+}
+
+// GenerateQualityProfileUserAssociationObservation generates an
+// observation from the user returned by the SonarQube Quality Profile
+// users search.
+func GenerateQualityProfileUserAssociationObservation(language, qualityProfile string, user *sonar.QualityprofilesProfileUser) v1alpha1.QualityProfileUsergroupAssociationObservation {
+	if user == nil {
+		return v1alpha1.QualityProfileUsergroupAssociationObservation{}
 	}
 
-	if params.Login != nil {
-		observation.Login = *params.Login
+	return v1alpha1.QualityProfileUsergroupAssociationObservation{
+		QualityProfile: qualityProfile,
+		Language:       language,
+		Login:          user.Login,
 	}
-
-	return observation
 }
 
 // IsQualityProfileUsergroupAssociationUpToDate reports whether the
@@ -164,29 +170,11 @@ func IsQualityProfileUsergroupAssociationUpToDate(spec *v1alpha1.QualityProfileU
 		return true
 	}
 
-	if observation == nil {
-		return false
-	}
-
-	if spec.QualityProfile != observation.QualityProfile {
-		return false
-	}
-
-	if spec.Language != observation.Language {
-		return false
-	}
-
-	return derefString(spec.GroupName) == observation.GroupName &&
-		derefString(spec.Login) == observation.Login
-}
-
-// derefString returns the pointed-to string, or "" when ptr is nil.
-func derefString(ptr *string) string {
-	if ptr == nil {
-		return ""
-	}
-
-	return *ptr
+	return observation != nil &&
+		spec.QualityProfile == observation.QualityProfile &&
+		spec.Language == observation.Language &&
+		helpers.IsComparablePtrEqualComparable(spec.GroupName, observation.GroupName) &&
+		helpers.IsComparablePtrEqualComparable(spec.Login, observation.Login)
 }
 
 // ParseQualityProfileUsergroupAssociationExternalName decodes an external
@@ -216,11 +204,11 @@ func BuildQualityProfileUsergroupAssociationExternalName(params *v1alpha1.Qualit
 		return ""
 	}
 
-	if params.GroupName != nil && *params.GroupName != "" {
+	if ptr.Deref(params.GroupName, "") != "" {
 		return fmt.Sprintf("%s:%s:%s:%s", SubjectTypeGroup, *params.GroupName, params.Language, params.QualityProfile)
 	}
 
-	if params.Login != nil && *params.Login != "" {
+	if ptr.Deref(params.Login, "") != "" {
 		return fmt.Sprintf("%s:%s:%s:%s", SubjectTypeUser, *params.Login, params.Language, params.QualityProfile)
 	}
 

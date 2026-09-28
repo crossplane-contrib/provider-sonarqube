@@ -20,7 +20,6 @@ package qualityprofileusergroupassociation
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
@@ -28,6 +27,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/pkg/errors"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,10 +38,10 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 
-	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
-	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
+	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -61,6 +61,9 @@ const (
 	// errCreateQualityProfileUsergroupAssociation indicates association
 	// creation failed.
 	errCreateQualityProfileUsergroupAssociation = "cannot create QualityProfileUsergroupAssociation"
+	// errUpdateQualityProfileUsergroupAssociation indicates association
+	// update failed.
+	errUpdateQualityProfileUsergroupAssociation = "cannot update QualityProfileUsergroupAssociation"
 	// errDeleteQualityProfileUsergroupAssociation indicates association
 	// deletion failed.
 	errDeleteQualityProfileUsergroupAssociation = "cannot delete QualityProfileUsergroupAssociation"
@@ -69,17 +72,6 @@ const (
 	// up associated groups or users.
 	maxPageSize = int64(100)
 )
-
-// qualityProfilesAssociationClient is the subset of the Quality Profiles
-// API used by this controller.
-type qualityProfilesAssociationClient interface {
-	AddGroup(ctx context.Context, opt *sonar.QualityprofilesAddGroupOptions) (*http.Response, error)
-	AddUser(ctx context.Context, opt *sonar.QualityprofilesAddUserOptions) (*http.Response, error)
-	RemoveGroup(ctx context.Context, opt *sonar.QualityprofilesRemoveGroupOptions) (*http.Response, error)
-	RemoveUser(ctx context.Context, opt *sonar.QualityprofilesRemoveUserOptions) (*http.Response, error)
-	SearchGroups(ctx context.Context, opt *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error)
-	SearchUsers(ctx context.Context, opt *sonar.QualityprofilesSearchUsersOptions) (*sonar.QualityprofilesSearchUsers, *http.Response, error)
-}
 
 // SetupGated adds a controller that reconciles
 // QualityProfileUsergroupAssociation managed resources with safe-start
@@ -104,7 +96,7 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: instance.NewQualityProfileUsergroupAssociationClient,
+			newServiceFn: iam.NewQualityProfileUsergroupAssociationClient,
 		}),
 		managed.WithLogger(opts.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(opts.PollInterval),
@@ -149,7 +141,7 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 type connector struct {
 	kube         client.Client
 	usage        *resource.ProviderConfigUsageTracker
-	newServiceFn func(config common.Config) *sonar.QualityprofilesService
+	newServiceFn func(config common.Config) iam.QualityProfileUsergroupAssociationClient
 }
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
@@ -186,7 +178,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 type external struct {
 	// client is used to interact with the SonarQube Quality Profiles
 	// API.
-	client qualityProfilesAssociationClient
+	client iam.QualityProfileUsergroupAssociationClient
 }
 
 // Observe checks whether the external association exists and is up to
@@ -206,12 +198,12 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// error for invalid format or unknown type. Crossplane defaults
 	// the external name to metadata.name before Create runs, so an
 	// unparseable name means the resource does not exist yet.
-	subjectType, subject, language, qualityProfile, err := instance.ParseQualityProfileUsergroupAssociationExternalName(externalName)
+	subjectType, subject, language, qualityProfile, err := iam.ParseQualityProfileUsergroupAssociationExternalName(externalName)
 	if err != nil || subjectType == "" {
-		return managed.ExternalObservation{ResourceExists: false}, nil
+		return managed.ExternalObservation{ResourceExists: false}, nil //nolint:nilerr // An unparseable external name means the association was not created yet.
 	}
 
-	found, err := c.associationSelected(ctx, subjectType, subject, language, qualityProfile)
+	observation, found, err := c.observeAssociation(ctx, subjectType, subject, language, qualityProfile)
 	if err != nil {
 		return managed.ExternalObservation{}, errors.Wrap(err, errObserveQualityProfileUsergroupAssociation)
 	}
@@ -220,12 +212,12 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	association.Status.AtProvider = instance.GenerateQualityProfileUsergroupAssociationObservation(&association.Spec.ForProvider)
+	association.Status.AtProvider = observation
 	association.SetConditions(xpv1.Available())
 
 	return managed.ExternalObservation{
 		ResourceExists:   true,
-		ResourceUpToDate: instance.IsQualityProfileUsergroupAssociationUpToDate(&association.Spec.ForProvider, &association.Status.AtProvider),
+		ResourceUpToDate: iam.IsQualityProfileUsergroupAssociationUpToDate(&association.Spec.ForProvider, &association.Status.AtProvider),
 	}, nil
 }
 
@@ -240,20 +232,32 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	association.SetConditions(xpv1.Creating())
 
 	spec := association.Spec.ForProvider
+
 	err := c.addAssociation(ctx, spec)
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateQualityProfileUsergroupAssociation)
 	}
 
-	meta.SetExternalName(association, instance.BuildQualityProfileUsergroupAssociationExternalName(&spec))
+	meta.SetExternalName(association, iam.BuildQualityProfileUsergroupAssociationExternalName(&spec))
 
 	return managed.ExternalCreation{}, nil
 }
 
-// Update is a no-op because every field of
-// QualityProfileUsergroupAssociation is immutable, so there is nothing
-// to converge.
-func (c *external) Update(_ context.Context, _ resource.Managed) (managed.ExternalUpdate, error) {
+// Update grants the group or user edit rights on the Quality Profile.
+// Every field of QualityProfileUsergroupAssociation is immutable, so this
+// only triggers if the observed association drifts from the spec; granting
+// the association again converges it.
+func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
+	association, ok := mg.(*v1alpha1.QualityProfileUsergroupAssociation)
+	if !ok {
+		return managed.ExternalUpdate{}, errors.New(errNotQualityProfileUsergroupAssociation)
+	}
+
+	err := c.addAssociation(ctx, association.Spec.ForProvider)
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateQualityProfileUsergroupAssociation)
+	}
+
 	return managed.ExternalUpdate{}, nil
 }
 
@@ -271,7 +275,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	subjectType, subject, language, qualityProfile, err := instance.ParseQualityProfileUsergroupAssociationExternalName(externalName)
+	subjectType, subject, language, qualityProfile, err := iam.ParseQualityProfileUsergroupAssociationExternalName(externalName)
 	if err != nil {
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityProfileUsergroupAssociation)
 	}
@@ -289,10 +293,11 @@ func (c *external) Disconnect(_ context.Context) error {
 	return nil
 }
 
-// associationSelected reports whether the named group or user is selected
-// on the Quality Profile.
-func (c *external) associationSelected(ctx context.Context, subjectType, subject, language, qualityProfile string) (bool, error) {
-	if subjectType == instance.SubjectTypeGroup {
+// observeAssociation looks up the group or user on the Quality Profile and
+// returns the observation built from the SonarQube response. found is
+// false when the principal is not selected on the Quality Profile.
+func (c *external) observeAssociation(ctx context.Context, subjectType, subject, language, qualityProfile string) (v1alpha1.QualityProfileUsergroupAssociationObservation, bool, error) {
+	if subjectType == iam.SubjectTypeGroup {
 		return c.searchSelectedGroup(ctx, subject, language, qualityProfile)
 	}
 
@@ -300,12 +305,12 @@ func (c *external) associationSelected(ctx context.Context, subjectType, subject
 }
 
 // searchSelectedGroup paginates SearchGroups looking for a selected group
-// whose name matches groupName.
+// whose name matches groupName, and returns the observation built from it.
 //
 //nolint:dupl // Intentional structural similarity with searchSelectedUser; different API types prevent abstraction.
-func (c *external) searchSelectedGroup(ctx context.Context, groupName, language, qualityProfile string) (bool, error) {
+func (c *external) searchSelectedGroup(ctx context.Context, groupName, language, qualityProfile string) (v1alpha1.QualityProfileUsergroupAssociationObservation, bool, error) {
 	for page := int64(1); ; page++ {
-		opts := instance.GenerateQualityProfileSearchGroupsOptions(language, qualityProfile, groupName, &sonar.PaginationArgs{
+		opts := iam.GenerateQualityProfileSearchGroupsOptions(language, qualityProfile, groupName, &sonar.PaginationArgs{
 			Page:     page,
 			PageSize: maxPageSize,
 		})
@@ -314,28 +319,32 @@ func (c *external) searchSelectedGroup(ctx context.Context, groupName, language,
 		helpers.CloseBody(resp)
 
 		if err != nil {
-			return false, errors.Wrap(err, "cannot search quality profile groups")
+			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality profile groups")
 		}
 
-		for i := range result.Groups {
-			if result.Groups[i].Name == groupName {
-				return result.Groups[i].Selected, nil
+		for idx := range result.Groups {
+			if result.Groups[idx].Name == groupName {
+				if !result.Groups[idx].Selected {
+					return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
+				}
+
+				return iam.GenerateQualityProfileGroupAssociationObservation(language, qualityProfile, &result.Groups[idx]), true, nil
 			}
 		}
 
 		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return false, nil
+			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
 		}
 	}
 }
 
 // searchSelectedUser paginates SearchUsers looking for a selected user
-// whose login matches login.
+// whose login matches login, and returns the observation built from it.
 //
 //nolint:dupl // Intentional structural similarity with searchSelectedGroup; different API types prevent abstraction.
-func (c *external) searchSelectedUser(ctx context.Context, login, language, qualityProfile string) (bool, error) {
+func (c *external) searchSelectedUser(ctx context.Context, login, language, qualityProfile string) (v1alpha1.QualityProfileUsergroupAssociationObservation, bool, error) {
 	for page := int64(1); ; page++ {
-		opts := instance.GenerateQualityProfileSearchUsersOptions(language, qualityProfile, login, &sonar.PaginationArgs{
+		opts := iam.GenerateQualityProfileSearchUsersOptions(language, qualityProfile, login, &sonar.PaginationArgs{
 			Page:     page,
 			PageSize: maxPageSize,
 		})
@@ -344,17 +353,21 @@ func (c *external) searchSelectedUser(ctx context.Context, login, language, qual
 		helpers.CloseBody(resp)
 
 		if err != nil {
-			return false, errors.Wrap(err, "cannot search quality profile users")
+			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality profile users")
 		}
 
-		for i := range result.Users {
-			if result.Users[i].Login == login {
-				return result.Users[i].Selected, nil
+		for idx := range result.Users {
+			if result.Users[idx].Login == login {
+				if !result.Users[idx].Selected {
+					return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
+				}
+
+				return iam.GenerateQualityProfileUserAssociationObservation(language, qualityProfile, &result.Users[idx]), true, nil
 			}
 		}
 
 		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return false, nil
+			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
 		}
 	}
 }
@@ -362,15 +375,15 @@ func (c *external) searchSelectedUser(ctx context.Context, login, language, qual
 // addAssociation calls AddGroup or AddUser based on the configured
 // principal.
 func (c *external) addAssociation(ctx context.Context, spec v1alpha1.QualityProfileUsergroupAssociationParameters) error {
-	if spec.GroupName != nil && *spec.GroupName != "" {
-		resp, err := c.client.AddGroup(ctx, instance.GenerateQualityProfileAddGroupOptions(spec.Language, spec.QualityProfile, *spec.GroupName)) //nolint:bodyclose // closed via helpers.CloseBody
+	if ptr.Deref(spec.GroupName, "") != "" {
+		resp, err := c.client.AddGroup(ctx, iam.GenerateQualityProfileAddGroupOptions(spec.Language, spec.QualityProfile, *spec.GroupName)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return err
 	}
 
-	if spec.Login != nil && *spec.Login != "" {
-		resp, err := c.client.AddUser(ctx, instance.GenerateQualityProfileAddUserOptions(spec.Language, spec.QualityProfile, *spec.Login)) //nolint:bodyclose // closed via helpers.CloseBody
+	if ptr.Deref(spec.Login, "") != "" {
+		resp, err := c.client.AddUser(ctx, iam.GenerateQualityProfileAddUserOptions(spec.Language, spec.QualityProfile, *spec.Login)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return err
@@ -382,14 +395,14 @@ func (c *external) addAssociation(ctx context.Context, spec v1alpha1.QualityProf
 // removeAssociation calls RemoveGroup or RemoveUser based on the subject
 // type encoded in the external name.
 func (c *external) removeAssociation(ctx context.Context, subjectType, subject, language, qualityProfile string) error {
-	if subjectType == instance.SubjectTypeGroup {
-		resp, err := c.client.RemoveGroup(ctx, instance.GenerateQualityProfileRemoveGroupOptions(language, qualityProfile, subject)) //nolint:bodyclose // closed via helpers.CloseBody
+	if subjectType == iam.SubjectTypeGroup {
+		resp, err := c.client.RemoveGroup(ctx, iam.GenerateQualityProfileRemoveGroupOptions(language, qualityProfile, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return err
 	}
 
-	resp, err := c.client.RemoveUser(ctx, instance.GenerateQualityProfileRemoveUserOptions(language, qualityProfile, subject)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.RemoveUser(ctx, iam.GenerateQualityProfileRemoveUserOptions(language, qualityProfile, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	return err

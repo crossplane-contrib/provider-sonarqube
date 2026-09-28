@@ -394,3 +394,45 @@ func (f *Framework) FetchInstanceNewCodePeriod(ctx context.Context) (*sonar.NewC
 	}
 	return res, nil
 }
+
+// QualityProfileGroupSelected reports whether the named group is allowed to
+// edit the Quality Profile identified by name and language.
+func (f *Framework) QualityProfileGroupSelected(ctx context.Context, language, qualityProfile, groupName string) (bool, error) {
+	res, resp, err := f.Sonar.Qualityprofiles.SearchGroups(ctx, &sonar.QualityprofilesSearchGroupsOptions{
+		Language:       language,
+		QualityProfile: qualityProfile,
+		Query:          groupName,
+		Selected:       sonar.SelectionFilterAll,
+	})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return false, err
+	}
+	for i := range res.Groups {
+		if res.Groups[i].Name == groupName {
+			return res.Groups[i].Selected, nil
+		}
+	}
+	return false, nil
+}
+
+// QualityProfileUserSelected reports whether the user with the given login
+// is allowed to edit the Quality Profile identified by name and language.
+func (f *Framework) QualityProfileUserSelected(ctx context.Context, language, qualityProfile, login string) (bool, error) {
+	res, resp, err := f.Sonar.Qualityprofiles.SearchUsers(ctx, &sonar.QualityprofilesSearchUsersOptions{
+		Language:       language,
+		QualityProfile: qualityProfile,
+		Query:          login,
+		Selected:       sonar.SelectionFilterAll,
+	})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return false, err
+	}
+	for i := range res.Users {
+		if res.Users[i].Login == login {
+			return res.Users[i].Selected, nil
+		}
+	}
+	return false, nil
+}

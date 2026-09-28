@@ -128,6 +128,46 @@ func (mg *PermissionsTemplate) SetWriteConnectionSecretToReference(r *xpv2.Local
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
+// GetCondition of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
+	return mg.Status.GetCondition(ct)
+}
+
+// GetManagementPolicies of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) GetManagementPolicies() xpv2.ManagementPolicies {
+	return mg.Spec.ManagementPolicies
+}
+
+// GetProviderConfigReference of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) GetProviderConfigReference() *xpv2.ProviderConfigReference {
+	return mg.Spec.ProviderConfigReference
+}
+
+// GetWriteConnectionSecretToReference of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
+	return mg.Spec.WriteConnectionSecretToReference
+}
+
+// SetConditions of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) SetConditions(c ...xpv2.Condition) {
+	mg.Status.SetConditions(c...)
+}
+
+// SetManagementPolicies of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) SetManagementPolicies(r xpv2.ManagementPolicies) {
+	mg.Spec.ManagementPolicies = r
+}
+
+// SetProviderConfigReference of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
+	mg.Spec.ProviderConfigReference = r
+}
+
+// SetWriteConnectionSecretToReference of this QualityProfileUsergroupAssociation.
+func (mg *QualityProfileUsergroupAssociation) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
+	mg.Spec.WriteConnectionSecretToReference = r
+}
+
 // GetCondition of this User.
 func (mg *User) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)

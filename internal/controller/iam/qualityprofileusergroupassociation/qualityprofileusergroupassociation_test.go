@@ -30,8 +30,8 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
-	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
+	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 )
 
 // Unlike many Kubernetes projects Crossplane does not use third party testing
@@ -204,136 +204,30 @@ func newTestUserAssociation(externalName, language, qualityProfile, login string
 	return cr
 }
 
-// TestObserve tests observing a QualityProfileUsergroupAssociation.
-func TestObserve(t *testing.T) {
-	t.Parallel()
+// observeArgs are the arguments passed to Observe in table tests.
+type observeArgs struct {
+	ctx context.Context
+	mg  resource.Managed
+}
 
-	type args struct {
-		ctx context.Context
-		mg  resource.Managed
-	}
+// observeWant is the expected result of Observe in table tests.
+type observeWant struct {
+	observation managed.ExternalObservation
+	atProvider  v1alpha1.QualityProfileUsergroupAssociationObservation
+	errSubstr   string
+}
 
-	type want struct {
-		observation managed.ExternalObservation
-		errSubstr   string
-	}
+// observeCase is a single Observe table test case.
+type observeCase struct {
+	client *fakeQualityProfilesClient
+	args   observeArgs
+	want   observeWant
+}
 
-	groupExternalName := instance.BuildQualityProfileUsergroupAssociationExternalName(&v1alpha1.QualityProfileUsergroupAssociationParameters{
-		QualityProfile: testQualityProfile,
-		Language:       testLanguage,
-		GroupName:      new(testGroupName),
-	})
-	userExternalName := instance.BuildQualityProfileUsergroupAssociationExternalName(&v1alpha1.QualityProfileUsergroupAssociationParameters{
-		QualityProfile: testQualityProfile,
-		Language:       testLanguage,
-		Login:          new(testLogin),
-	})
-
-	cases := map[string]struct {
-		client *fakeQualityProfilesClient
-		args   args
-		want   want
-	}{
-		"NotAssociationType": {
-			client: &fakeQualityProfilesClient{},
-			args:   args{ctx: context.Background(), mg: &notQualityProfileUsergroupAssociation{}},
-			want:   want{errSubstr: errNotQualityProfileUsergroupAssociation},
-		},
-		"EmptyExternalNameReturnsNotExists": {
-			client: &fakeQualityProfilesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  newTestGroupAssociation("", testLanguage, testQualityProfile, testGroupName),
-			},
-			want: want{observation: managed.ExternalObservation{ResourceExists: false}},
-		},
-		"UnparseableExternalNameReturnsNotExists": {
-			client: &fakeQualityProfilesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  newTestGroupAssociation("test-association", testLanguage, testQualityProfile, testGroupName),
-			},
-			want: want{observation: managed.ExternalObservation{ResourceExists: false}},
-		},
-		"GroupSelectedExistsUpToDate": {
-			client: &fakeQualityProfilesClient{
-				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
-					return &sonar.QualityprofilesSearchGroups{
-						Groups: []sonar.QualityprofilesProfileGroup{{Name: testGroupName, Selected: true}},
-						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
-					}, mockHTTPResponse(), nil
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
-			},
-			want: want{observation: managed.ExternalObservation{
-				ResourceExists:   true,
-				ResourceUpToDate: true,
-			}},
-		},
-		"GroupDeselectedReturnsNotExists": {
-			client: &fakeQualityProfilesClient{
-				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
-					return &sonar.QualityprofilesSearchGroups{
-						Groups: []sonar.QualityprofilesProfileGroup{{Name: testGroupName, Selected: false}},
-						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
-					}, mockHTTPResponse(), nil
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
-			},
-			want: want{observation: managed.ExternalObservation{ResourceExists: false}},
-		},
-		"UserSelectedExistsUpToDate": {
-			client: &fakeQualityProfilesClient{
-				searchUsersFn: func(_ *sonar.QualityprofilesSearchUsersOptions) (*sonar.QualityprofilesSearchUsers, *http.Response, error) {
-					return &sonar.QualityprofilesSearchUsers{
-						Users:  []sonar.QualityprofilesProfileUser{{Login: testLogin, Selected: true}},
-						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
-					}, mockHTTPResponse(), nil
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				mg:  newTestUserAssociation(userExternalName, testLanguage, testQualityProfile, testLogin),
-			},
-			want: want{observation: managed.ExternalObservation{
-				ResourceExists:   true,
-				ResourceUpToDate: true,
-			}},
-		},
-		"UserDeselectedReturnsNotExists": {
-			client: &fakeQualityProfilesClient{
-				searchUsersFn: func(_ *sonar.QualityprofilesSearchUsersOptions) (*sonar.QualityprofilesSearchUsers, *http.Response, error) {
-					return &sonar.QualityprofilesSearchUsers{
-						Users:  []sonar.QualityprofilesProfileUser{{Login: testLogin, Selected: false}},
-						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
-					}, mockHTTPResponse(), nil
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				mg:  newTestUserAssociation(userExternalName, testLanguage, testQualityProfile, testLogin),
-			},
-			want: want{observation: managed.ExternalObservation{ResourceExists: false}},
-		},
-		"SearchErrorWrapped": {
-			client: &fakeQualityProfilesClient{
-				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
-					return nil, mockHTTPResponse(), errors.New("api error")
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
-			},
-			want: want{errSubstr: errObserveQualityProfileUsergroupAssociation},
-		},
-	}
+// runObserveCases runs Observe table test cases, checking both the
+// returned observation and the status observation.
+func runObserveCases(t *testing.T, cases map[string]observeCase) {
+	t.Helper()
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -351,8 +245,233 @@ func TestObserve(t *testing.T) {
 			if diff := cmp.Diff(tc.want.observation, got); diff != "" {
 				t.Errorf("Observe() mismatch (-want +got):\n%s", diff)
 			}
+
+			association, ok := tc.args.mg.(*v1alpha1.QualityProfileUsergroupAssociation)
+			if !ok {
+				return
+			}
+
+			if diff := cmp.Diff(tc.want.atProvider, association.Status.AtProvider); diff != "" {
+				t.Errorf("Observe() AtProvider mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
+}
+
+// TestObserve tests observing a QualityProfileUsergroupAssociation for a
+// group principal, and the checks common to both principals.
+func TestObserve(t *testing.T) {
+	t.Parallel()
+
+	groupExternalName := iam.BuildQualityProfileUsergroupAssociationExternalName(&v1alpha1.QualityProfileUsergroupAssociationParameters{
+		QualityProfile: testQualityProfile,
+		Language:       testLanguage,
+		GroupName:      new(testGroupName),
+	})
+
+	runObserveCases(t, map[string]observeCase{
+		"NotAssociationType": {
+			client: &fakeQualityProfilesClient{},
+			args:   observeArgs{ctx: context.Background(), mg: &notQualityProfileUsergroupAssociation{}},
+			want:   observeWant{errSubstr: errNotQualityProfileUsergroupAssociation},
+		},
+		"EmptyExternalNameReturnsNotExists": {
+			client: &fakeQualityProfilesClient{},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation("", testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
+		"UnparseableExternalNameReturnsNotExists": {
+			client: &fakeQualityProfilesClient{},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation("test-association", testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
+		"GroupSelectedExistsUpToDate": {
+			client: &fakeQualityProfilesClient{
+				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
+					return &sonar.QualityprofilesSearchGroups{
+						Groups: []sonar.QualityprofilesProfileGroup{{Name: testGroupName, Selected: true}},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
+					}, mockHTTPResponse(), nil
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{
+				observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true},
+				atProvider: v1alpha1.QualityProfileUsergroupAssociationObservation{
+					QualityProfile: testQualityProfile,
+					Language:       testLanguage,
+					GroupName:      testGroupName,
+				},
+			},
+		},
+		"GroupObservedFromAPINotUpToDateWithSpec": {
+			client: &fakeQualityProfilesClient{
+				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
+					return &sonar.QualityprofilesSearchGroups{
+						Groups: []sonar.QualityprofilesProfileGroup{{Name: testGroupName, Selected: true}},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
+					}, mockHTTPResponse(), nil
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, "other-group"),
+			},
+			want: observeWant{
+				observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: false},
+				atProvider: v1alpha1.QualityProfileUsergroupAssociationObservation{
+					QualityProfile: testQualityProfile,
+					Language:       testLanguage,
+					GroupName:      testGroupName,
+				},
+			},
+		},
+		"GroupPaginatesUntilFound": {
+			client: &fakeQualityProfilesClient{
+				searchGroupsFn: func(opt *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
+					if opt.Page == 1 {
+						return &sonar.QualityprofilesSearchGroups{
+							Groups: []sonar.QualityprofilesProfileGroup{{Name: testGroupName + "-other", Selected: true}},
+							Paging: sonar.Paging{Total: 101, PageIndex: 1, PageSize: 100},
+						}, mockHTTPResponse(), nil
+					}
+
+					return &sonar.QualityprofilesSearchGroups{
+						Groups: []sonar.QualityprofilesProfileGroup{{Name: testGroupName, Selected: true}},
+						Paging: sonar.Paging{Total: 101, PageIndex: 2, PageSize: 100},
+					}, mockHTTPResponse(), nil
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{
+				observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true},
+				atProvider: v1alpha1.QualityProfileUsergroupAssociationObservation{
+					QualityProfile: testQualityProfile,
+					Language:       testLanguage,
+					GroupName:      testGroupName,
+				},
+			},
+		},
+		"GroupDeselectedReturnsNotExists": {
+			client: &fakeQualityProfilesClient{
+				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
+					return &sonar.QualityprofilesSearchGroups{
+						Groups: []sonar.QualityprofilesProfileGroup{{Name: testGroupName, Selected: false}},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
+					}, mockHTTPResponse(), nil
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
+		"GroupNotFoundReturnsNotExists": {
+			client: &fakeQualityProfilesClient{},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
+		"GroupSearchErrorWrapped": {
+			client: &fakeQualityProfilesClient{
+				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
+					return nil, mockHTTPResponse(), errors.New("api error")
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{errSubstr: errObserveQualityProfileUsergroupAssociation},
+		},
+	})
+}
+
+// TestObserveUser tests observing a QualityProfileUsergroupAssociation for
+// a user principal.
+func TestObserveUser(t *testing.T) {
+	t.Parallel()
+
+	userExternalName := iam.BuildQualityProfileUsergroupAssociationExternalName(&v1alpha1.QualityProfileUsergroupAssociationParameters{
+		QualityProfile: testQualityProfile,
+		Language:       testLanguage,
+		Login:          new(testLogin),
+	})
+
+	runObserveCases(t, map[string]observeCase{
+		"UserSelectedExistsUpToDate": {
+			client: &fakeQualityProfilesClient{
+				searchUsersFn: func(_ *sonar.QualityprofilesSearchUsersOptions) (*sonar.QualityprofilesSearchUsers, *http.Response, error) {
+					return &sonar.QualityprofilesSearchUsers{
+						Users:  []sonar.QualityprofilesProfileUser{{Login: testLogin, Selected: true}},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
+					}, mockHTTPResponse(), nil
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestUserAssociation(userExternalName, testLanguage, testQualityProfile, testLogin),
+			},
+			want: observeWant{
+				observation: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true},
+				atProvider: v1alpha1.QualityProfileUsergroupAssociationObservation{
+					QualityProfile: testQualityProfile,
+					Language:       testLanguage,
+					Login:          testLogin,
+				},
+			},
+		},
+		"UserDeselectedReturnsNotExists": {
+			client: &fakeQualityProfilesClient{
+				searchUsersFn: func(_ *sonar.QualityprofilesSearchUsersOptions) (*sonar.QualityprofilesSearchUsers, *http.Response, error) {
+					return &sonar.QualityprofilesSearchUsers{
+						Users:  []sonar.QualityprofilesProfileUser{{Login: testLogin, Selected: false}},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
+					}, mockHTTPResponse(), nil
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestUserAssociation(userExternalName, testLanguage, testQualityProfile, testLogin),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
+		"UserNotFoundReturnsNotExists": {
+			client: &fakeQualityProfilesClient{},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestUserAssociation(userExternalName, testLanguage, testQualityProfile, testLogin),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
+		"UserSearchErrorWrapped": {
+			client: &fakeQualityProfilesClient{
+				searchUsersFn: func(_ *sonar.QualityprofilesSearchUsersOptions) (*sonar.QualityprofilesSearchUsers, *http.Response, error) {
+					return nil, mockHTTPResponse(), errors.New("api error")
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestUserAssociation(userExternalName, testLanguage, testQualityProfile, testLogin),
+			},
+			want: observeWant{errSubstr: errObserveQualityProfileUsergroupAssociation},
+		},
+	})
 }
 
 // TestCreate tests creating a QualityProfileUsergroupAssociation.
@@ -371,6 +490,7 @@ func TestCreate(t *testing.T) {
 		t.Parallel()
 
 		var gotOpts *sonar.QualityprofilesAddGroupOptions
+
 		cr := newTestGroupAssociation("", testLanguage, testQualityProfile, testGroupName)
 		e := &external{client: &fakeQualityProfilesClient{
 			addGroupFn: func(opt *sonar.QualityprofilesAddGroupOptions) (*http.Response, error) {
@@ -385,7 +505,7 @@ func TestCreate(t *testing.T) {
 			t.Fatalf("Create() unexpected error: %v", err)
 		}
 
-		wantOpts := instance.GenerateQualityProfileAddGroupOptions(testLanguage, testQualityProfile, testGroupName)
+		wantOpts := iam.GenerateQualityProfileAddGroupOptions(testLanguage, testQualityProfile, testGroupName)
 		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
 			t.Errorf("Create() AddGroup options mismatch (-want +got):\n%s", diff)
 		}
@@ -400,6 +520,7 @@ func TestCreate(t *testing.T) {
 		t.Parallel()
 
 		var gotOpts *sonar.QualityprofilesAddUserOptions
+
 		cr := newTestUserAssociation("", testLanguage, testQualityProfile, testLogin)
 		e := &external{client: &fakeQualityProfilesClient{
 			addUserFn: func(opt *sonar.QualityprofilesAddUserOptions) (*http.Response, error) {
@@ -414,7 +535,7 @@ func TestCreate(t *testing.T) {
 			t.Fatalf("Create() unexpected error: %v", err)
 		}
 
-		wantOpts := instance.GenerateQualityProfileAddUserOptions(testLanguage, testQualityProfile, testLogin)
+		wantOpts := iam.GenerateQualityProfileAddUserOptions(testLanguage, testQualityProfile, testLogin)
 		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
 			t.Errorf("Create() AddUser options mismatch (-want +got):\n%s", diff)
 		}
@@ -442,6 +563,7 @@ func TestDelete(t *testing.T) {
 		t.Parallel()
 
 		e := &external{client: &fakeQualityProfilesClient{}}
+
 		_, err := e.Delete(context.Background(), newTestGroupAssociation("", testLanguage, testQualityProfile, testGroupName))
 		if err != nil {
 			t.Fatalf("Delete() unexpected error: %v", err)
@@ -452,6 +574,7 @@ func TestDelete(t *testing.T) {
 		t.Parallel()
 
 		var gotOpts *sonar.QualityprofilesRemoveGroupOptions
+
 		cr := newTestGroupAssociation("group:"+testGroupName+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testGroupName)
 		e := &external{client: &fakeQualityProfilesClient{
 			removeGroupFn: func(opt *sonar.QualityprofilesRemoveGroupOptions) (*http.Response, error) {
@@ -466,7 +589,7 @@ func TestDelete(t *testing.T) {
 			t.Fatalf("Delete() unexpected error: %v", err)
 		}
 
-		wantOpts := instance.GenerateQualityProfileRemoveGroupOptions(testLanguage, testQualityProfile, testGroupName)
+		wantOpts := iam.GenerateQualityProfileRemoveGroupOptions(testLanguage, testQualityProfile, testGroupName)
 		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
 			t.Errorf("Delete() RemoveGroup options mismatch (-want +got):\n%s", diff)
 		}
@@ -476,6 +599,7 @@ func TestDelete(t *testing.T) {
 		t.Parallel()
 
 		var gotOpts *sonar.QualityprofilesRemoveUserOptions
+
 		cr := newTestUserAssociation("user:"+testLogin+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testLogin)
 		e := &external{client: &fakeQualityProfilesClient{
 			removeUserFn: func(opt *sonar.QualityprofilesRemoveUserOptions) (*http.Response, error) {
@@ -490,24 +614,87 @@ func TestDelete(t *testing.T) {
 			t.Fatalf("Delete() unexpected error: %v", err)
 		}
 
-		wantOpts := instance.GenerateQualityProfileRemoveUserOptions(testLanguage, testQualityProfile, testLogin)
+		wantOpts := iam.GenerateQualityProfileRemoveUserOptions(testLanguage, testQualityProfile, testLogin)
 		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
 			t.Errorf("Delete() RemoveUser options mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
 
-// TestUpdate tests that Update is a no-op.
+// TestUpdate tests updating a QualityProfileUsergroupAssociation.
 func TestUpdate(t *testing.T) {
 	t.Parallel()
 
-	e := &external{client: &fakeQualityProfilesClient{}}
-	got, err := e.Update(context.Background(), newTestGroupAssociation("group:"+testGroupName+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testGroupName))
-	if err != nil {
-		t.Fatalf("Update() unexpected error: %v", err)
-	}
+	t.Run("NotAssociationType", func(t *testing.T) {
+		t.Parallel()
 
-	if diff := cmp.Diff(managed.ExternalUpdate{}, got); diff != "" {
-		t.Errorf("Update() mismatch (-want +got):\n%s", diff)
-	}
+		e := &external{client: &fakeQualityProfilesClient{}}
+		_, err := e.Update(context.Background(), &notQualityProfileUsergroupAssociation{})
+		checkError(t, "Update", errNotQualityProfileUsergroupAssociation, err)
+	})
+
+	t.Run("GroupCallsAddGroup", func(t *testing.T) {
+		t.Parallel()
+
+		var gotOpts *sonar.QualityprofilesAddGroupOptions
+
+		e := &external{client: &fakeQualityProfilesClient{
+			addGroupFn: func(opt *sonar.QualityprofilesAddGroupOptions) (*http.Response, error) {
+				gotOpts = opt
+
+				return mockHTTPResponse(), nil
+			},
+		}}
+
+		got, err := e.Update(context.Background(), newTestGroupAssociation("group:"+testGroupName+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testGroupName))
+		if err != nil {
+			t.Fatalf("Update() unexpected error: %v", err)
+		}
+
+		if diff := cmp.Diff(managed.ExternalUpdate{}, got); diff != "" {
+			t.Errorf("Update() mismatch (-want +got):\n%s", diff)
+		}
+
+		wantOpts := iam.GenerateQualityProfileAddGroupOptions(testLanguage, testQualityProfile, testGroupName)
+		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
+			t.Errorf("Update() AddGroup options mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("UserCallsAddUser", func(t *testing.T) {
+		t.Parallel()
+
+		var gotOpts *sonar.QualityprofilesAddUserOptions
+
+		e := &external{client: &fakeQualityProfilesClient{
+			addUserFn: func(opt *sonar.QualityprofilesAddUserOptions) (*http.Response, error) {
+				gotOpts = opt
+
+				return mockHTTPResponse(), nil
+			},
+		}}
+
+		_, err := e.Update(context.Background(), newTestUserAssociation("user:"+testLogin+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testLogin))
+		if err != nil {
+			t.Fatalf("Update() unexpected error: %v", err)
+		}
+
+		wantOpts := iam.GenerateQualityProfileAddUserOptions(testLanguage, testQualityProfile, testLogin)
+		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
+			t.Errorf("Update() AddUser options mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("AddErrorWrapped", func(t *testing.T) {
+		t.Parallel()
+
+		e := &external{client: &fakeQualityProfilesClient{
+			addGroupFn: func(_ *sonar.QualityprofilesAddGroupOptions) (*http.Response, error) {
+				return nil, errors.New("api error")
+			},
+		}}
+
+		_, err := e.Update(context.Background(), newTestGroupAssociation("group:"+testGroupName+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testGroupName))
+		checkError(t, "Update", errUpdateQualityProfileUsergroupAssociation, err)
+	})
 }

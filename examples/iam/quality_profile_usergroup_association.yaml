@@ -1,0 +1,37 @@
+---
+# Example 1: Grant a group edit rights on a Quality Profile, by direct names.
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: QualityProfileUsergroupAssociation
+metadata:
+  name: example-qualityprofile-group-association
+  namespace: default
+spec:
+  forProvider:
+    # Display name of the Quality Profile.
+    qualityProfile: example-go-profile
+    language: go
+    # Mutually exclusive with login / loginRef / loginSelector.
+    groupName: sonar-users
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+---
+# Example 2: Grant a user edit rights on a Quality Profile, using references
+# to the QualityProfile and User managed resources.
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: QualityProfileUsergroupAssociation
+metadata:
+  name: example-qualityprofile-user-association
+  namespace: default
+spec:
+  forProvider:
+    qualityProfileRef:
+      name: example-qualityprofile-go
+    # Must match the language of the referenced Quality Profile.
+    language: go
+    # Mutually exclusive with groupName / groupNameRef / groupNameSelector.
+    loginRef:
+      name: example-user
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
