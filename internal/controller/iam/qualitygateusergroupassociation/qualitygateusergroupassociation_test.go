@@ -131,6 +131,15 @@ func mockHTTPResponse() *http.Response {
 	}
 }
 
+// mockHTTPResponseNotFound creates a mock HTTP 404 response for testing.
+func mockHTTPResponseNotFound() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusNotFound,
+		Status:     "404 Not Found",
+		Body:       http.NoBody,
+	}
+}
+
 // checkError asserts the error matches the expected substring.
 func checkError(t *testing.T, method, wantErrSubstr string, gotErr error) {
 	t.Helper()
@@ -382,7 +391,7 @@ func TestObserve(t *testing.T) {
 		"GateNotFoundReturnsNotExists": {
 			client: &fakeQualityGatesClient{
 				searchGroupsFn: func(_ *sonar.QualitygatesSearchGroupsOptions) (*sonar.QualitygatesSearchGroups, *http.Response, error) {
-					return nil, &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, errors.New("not found")
+					return nil, mockHTTPResponseNotFound(), errors.New("not found")
 				},
 			},
 			args: observeArgs{
@@ -637,7 +646,8 @@ func TestDelete(t *testing.T) {
 		cr := newTestGroupAssociation("group:"+testGroupName+":"+testGateName, testGateName, testGroupName)
 		e := &external{client: &fakeQualityGatesClient{
 			removeGroupFn: func(_ *sonar.QualitygatesRemoveGroupOptions) (*http.Response, error) {
-				return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, errors.New("not found")
+				//nolint:nilnil // Intentional: simulating partial HTTP failure.
+				return mockHTTPResponseNotFound(), errors.New("not found")
 			},
 		}}
 
