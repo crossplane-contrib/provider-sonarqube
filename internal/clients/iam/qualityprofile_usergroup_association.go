@@ -43,7 +43,7 @@ var subjectEscaper = strings.NewReplacer("%", "%25", ":", "%3A")
 
 // QualityProfileUsergroupAssociationClient is the interface for managing
 // the groups and users allowed to edit a Quality Profile in SonarQube.
-type QualityProfileUsergroupAssociationClient interface {
+type QualityProfileUsergroupAssociationClient interface { //nolint:dupl // Same shape as the Quality Gate client, but bound to distinct SonarQube API types.
 	AddGroup(ctx context.Context, opt *sonar.QualityprofilesAddGroupOptions) (*http.Response, error)
 	AddUser(ctx context.Context, opt *sonar.QualityprofilesAddUserOptions) (*http.Response, error)
 	RemoveGroup(ctx context.Context, opt *sonar.QualityprofilesRemoveGroupOptions) (*http.Response, error)

@@ -38,7 +38,7 @@ const (
 
 // QualityGateUsergroupAssociationClient is the interface for managing the
 // groups and users allowed to edit a Quality Gate in SonarQube.
-type QualityGateUsergroupAssociationClient interface {
+type QualityGateUsergroupAssociationClient interface { //nolint:dupl // Same shape as the Quality Profile client, but bound to distinct SonarQube API types.
 	AddGroup(ctx context.Context, opt *sonar.QualitygatesAddGroupOptions) (*http.Response, error)
 	AddUser(ctx context.Context, opt *sonar.QualitygatesAddUserOptions) (*http.Response, error)
 	RemoveGroup(ctx context.Context, opt *sonar.QualitygatesRemoveGroupOptions) (*http.Response, error)
