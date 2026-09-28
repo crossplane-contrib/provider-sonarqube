@@ -14,38 +14,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package instance
+package iam
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 const (
-	// SubjectTypeGroup identifies a group principal in an association
-	// external name.
-	SubjectTypeGroup = "group"
-	// SubjectTypeUser identifies a user principal in an association
-	// external name.
-	SubjectTypeUser = "user"
-
-	// selectedFilterAll requests both selected and deselected search
-	// results from SonarQube.
-	selectedFilterAll = "all"
-
 	// externalNameParts is the number of colon-separated parts in a valid
 	// association external name of the form <type>:<subject>:<gateName>.
 	externalNameParts = 3
 )
 
-// NewQualityGateUsergroupAssociationClient creates a QualityGatesClient
-// used to manage Quality Gate group and user associations.
-func NewQualityGateUsergroupAssociationClient(clientConfig common.Config) QualityGatesClient {
+// QualityGateUsergroupAssociationClient is the interface for managing the
+// groups and users allowed to edit a Quality Gate in SonarQube.
+type QualityGateUsergroupAssociationClient interface {
+	AddGroup(ctx context.Context, opt *sonar.QualitygatesAddGroupOptions) (*http.Response, error)
+	AddUser(ctx context.Context, opt *sonar.QualitygatesAddUserOptions) (*http.Response, error)
+	RemoveGroup(ctx context.Context, opt *sonar.QualitygatesRemoveGroupOptions) (*http.Response, error)
+	RemoveUser(ctx context.Context, opt *sonar.QualitygatesRemoveUserOptions) (*http.Response, error)
+	SearchGroups(ctx context.Context, opt *sonar.QualitygatesSearchGroupsOptions) (*sonar.QualitygatesSearchGroups, *http.Response, error)
+	SearchUsers(ctx context.Context, opt *sonar.QualitygatesSearchUsersOptions) (*sonar.QualitygatesSearchUsers, *http.Response, error)
+}
+
+// NewQualityGateUsergroupAssociationClient creates a
+// QualityGateUsergroupAssociationClient with the provided SonarQube client
+// configuration.
+func NewQualityGateUsergroupAssociationClient(clientConfig common.Config) QualityGateUsergroupAssociationClient {
 	newClient := common.NewClient(clientConfig)
 
 	return newClient.Qualitygates
@@ -88,56 +93,59 @@ func GenerateQualityGateRemoveUserOptions(gateName, login string) *sonar.Quality
 }
 
 // GenerateQualityGateSearchGroupsOptions generates options for searching
-// groups associated with a Quality Gate. Selected is set to "all" so both
-// selected and deselected entries are returned.
+// groups associated with a Quality Gate. Both selected and deselected
+// entries are returned.
 func GenerateQualityGateSearchGroupsOptions(gateName, query string, pagination *sonar.PaginationArgs) *sonar.QualitygatesSearchGroupsOptions {
 	opts := &sonar.QualitygatesSearchGroupsOptions{
 		GateName: gateName,
 		Query:    query,
-		Selected: selectedFilterAll,
+		Selected: sonar.SelectionFilterAll,
 	}
-	if pagination != nil {
-		opts.PaginationArgs = *pagination
-	}
+
+	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)
 
 	return opts
 }
 
 // GenerateQualityGateSearchUsersOptions generates options for searching
-// users associated with a Quality Gate. Selected is set to "all" so both
-// selected and deselected entries are returned.
+// users associated with a Quality Gate. Both selected and deselected
+// entries are returned.
 func GenerateQualityGateSearchUsersOptions(gateName, query string, pagination *sonar.PaginationArgs) *sonar.QualitygatesSearchUsersOptions {
 	opts := &sonar.QualitygatesSearchUsersOptions{
 		GateName: gateName,
 		Query:    query,
-		Selected: selectedFilterAll,
+		Selected: sonar.SelectionFilterAll,
 	}
-	if pagination != nil {
-		opts.PaginationArgs = *pagination
-	}
+
+	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)
 
 	return opts
 }
 
-// GenerateQualityGateUsergroupAssociationObservation copies the gate name
-// and the set principal (group name or login) from spec into observation.
-func GenerateQualityGateUsergroupAssociationObservation(params *v1alpha1.QualityGateUsergroupAssociationParameters) v1alpha1.QualityGateUsergroupAssociationObservation {
-	if params == nil {
+// GenerateQualityGateGroupAssociationObservation generates an observation
+// from the group returned by the SonarQube Quality Gate groups search.
+func GenerateQualityGateGroupAssociationObservation(gateName string, group *sonar.QualityGateGroup) v1alpha1.QualityGateUsergroupAssociationObservation {
+	if group == nil {
 		return v1alpha1.QualityGateUsergroupAssociationObservation{}
 	}
 
-	observation := v1alpha1.QualityGateUsergroupAssociationObservation{
-		GateName: params.GateName,
+	return v1alpha1.QualityGateUsergroupAssociationObservation{
+		GateName:  gateName,
+		GroupName: group.Name,
 	}
-	if params.GroupName != nil {
-		observation.GroupName = *params.GroupName
+}
+
+// GenerateQualityGateUserAssociationObservation generates an observation
+// from the user returned by the SonarQube Quality Gate users search.
+func GenerateQualityGateUserAssociationObservation(gateName string, user *sonar.QualityGateUser) v1alpha1.QualityGateUsergroupAssociationObservation {
+	if user == nil {
+		return v1alpha1.QualityGateUsergroupAssociationObservation{}
 	}
 
-	if params.Login != nil {
-		observation.Login = *params.Login
+	return v1alpha1.QualityGateUsergroupAssociationObservation{
+		GateName: gateName,
+		Login:    user.Login,
 	}
-
-	return observation
 }
 
 // IsQualityGateUsergroupAssociationUpToDate reports whether the observed
@@ -148,25 +156,10 @@ func IsQualityGateUsergroupAssociationUpToDate(spec *v1alpha1.QualityGateUsergro
 		return true
 	}
 
-	if observation == nil {
-		return false
-	}
-
-	if spec.GateName != observation.GateName {
-		return false
-	}
-
-	return derefString(spec.GroupName) == observation.GroupName &&
-		derefString(spec.Login) == observation.Login
-}
-
-// derefString returns the pointed-to string, or "" when ptr is nil.
-func derefString(ptr *string) string {
-	if ptr == nil {
-		return ""
-	}
-
-	return *ptr
+	return observation != nil &&
+		spec.GateName == observation.GateName &&
+		helpers.IsComparablePtrEqualComparable(spec.GroupName, observation.GroupName) &&
+		helpers.IsComparablePtrEqualComparable(spec.Login, observation.Login)
 }
 
 // ParseQualityGateUsergroupAssociationExternalName decodes an external name
@@ -194,11 +187,11 @@ func BuildQualityGateUsergroupAssociationExternalName(params *v1alpha1.QualityGa
 		return ""
 	}
 
-	if params.GroupName != nil && *params.GroupName != "" {
+	if ptr.Deref(params.GroupName, "") != "" {
 		return fmt.Sprintf("%s:%s:%s", SubjectTypeGroup, *params.GroupName, params.GateName)
 	}
 
-	if params.Login != nil && *params.Login != "" {
+	if ptr.Deref(params.Login, "") != "" {
 		return fmt.Sprintf("%s:%s:%s", SubjectTypeUser, *params.Login, params.GateName)
 	}
 

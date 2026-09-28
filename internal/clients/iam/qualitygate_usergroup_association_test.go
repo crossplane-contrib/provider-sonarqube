@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package instance
+package iam
 
 import (
 	"testing"
@@ -22,7 +22,8 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 )
 
 // TestNewQualityGateUsergroupAssociationClient tests creating an
@@ -30,7 +31,11 @@ import (
 func TestNewQualityGateUsergroupAssociationClient(t *testing.T) {
 	t.Parallel()
 
-	client := NewQualityGateUsergroupAssociationClient(newTestConfig())
+	client := NewQualityGateUsergroupAssociationClient(common.Config{
+		AuthType: common.PersonalAccessToken,
+		Token:    "token",
+		BaseURL:  "http://localhost:9000",
+	})
 	if client == nil {
 		t.Error("NewQualityGateUsergroupAssociationClient() returned nil")
 	}
@@ -169,34 +174,55 @@ func TestParseQualityGateUsergroupAssociationExternalNameFailures(t *testing.T) 
 	}
 }
 
-// TestGenerateQualityGateUsergroupAssociationObservation tests observation
-// generation from spec parameters.
-func TestGenerateQualityGateUsergroupAssociationObservation(t *testing.T) {
+// TestGenerateQualityGateGroupAssociationObservation tests observation
+// generation from a SonarQube Quality Gate group search entry.
+func TestGenerateQualityGateGroupAssociationObservation(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		params *v1alpha1.QualityGateUsergroupAssociationParameters
-		want   v1alpha1.QualityGateUsergroupAssociationObservation
+		group *sonar.QualityGateGroup
+		want  v1alpha1.QualityGateUsergroupAssociationObservation
 	}{
-		"NilParams": {
-			params: nil,
-			want:   v1alpha1.QualityGateUsergroupAssociationObservation{},
+		"NilGroup": {
+			group: nil,
+			want:  v1alpha1.QualityGateUsergroupAssociationObservation{},
 		},
-		"GroupPrincipal": {
-			params: &v1alpha1.QualityGateUsergroupAssociationParameters{
-				GateName:  "Sonar way",
-				GroupName: new("sonar-users"),
-			},
+		"Group": {
+			group: &sonar.QualityGateGroup{Name: "sonar-users", Description: "Users", Selected: true},
 			want: v1alpha1.QualityGateUsergroupAssociationObservation{
 				GateName:  "Sonar way",
 				GroupName: "sonar-users",
 			},
 		},
-		"UserPrincipal": {
-			params: &v1alpha1.QualityGateUsergroupAssociationParameters{
-				GateName: "MyGate",
-				Login:    new("alice"),
-			},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateQualityGateGroupAssociationObservation("Sonar way", tc.group)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateQualityGateGroupAssociationObservation() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestGenerateQualityGateUserAssociationObservation tests observation
+// generation from a SonarQube Quality Gate user search entry.
+func TestGenerateQualityGateUserAssociationObservation(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		user *sonar.QualityGateUser
+		want v1alpha1.QualityGateUsergroupAssociationObservation
+	}{
+		"NilUser": {
+			user: nil,
+			want: v1alpha1.QualityGateUsergroupAssociationObservation{},
+		},
+		"User": {
+			user: &sonar.QualityGateUser{Login: "alice", Name: "Alice", Selected: true},
 			want: v1alpha1.QualityGateUsergroupAssociationObservation{
 				GateName: "MyGate",
 				Login:    "alice",
@@ -208,9 +234,9 @@ func TestGenerateQualityGateUsergroupAssociationObservation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := GenerateQualityGateUsergroupAssociationObservation(tc.params)
+			got := GenerateQualityGateUserAssociationObservation("MyGate", tc.user)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("GenerateQualityGateUsergroupAssociationObservation() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GenerateQualityGateUserAssociationObservation() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -307,6 +333,7 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityGateAddGroupOptions("MyGate", "devs")
+
 		want := &sonar.QualitygatesAddGroupOptions{GateName: "MyGate", GroupName: "devs"}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityGateAddGroupOptions() mismatch (-want +got):\n%s", diff)
@@ -317,6 +344,7 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityGateAddUserOptions("MyGate", "alice")
+
 		want := &sonar.QualitygatesAddUserOptions{GateName: "MyGate", Login: "alice"}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityGateAddUserOptions() mismatch (-want +got):\n%s", diff)
@@ -327,6 +355,7 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityGateRemoveGroupOptions("MyGate", "devs")
+
 		want := &sonar.QualitygatesRemoveGroupOptions{GateName: "MyGate", GroupName: "devs"}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityGateRemoveGroupOptions() mismatch (-want +got):\n%s", diff)
@@ -337,6 +366,7 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityGateRemoveUserOptions("MyGate", "alice")
+
 		want := &sonar.QualitygatesRemoveUserOptions{GateName: "MyGate", Login: "alice"}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityGateRemoveUserOptions() mismatch (-want +got):\n%s", diff)
@@ -347,10 +377,11 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityGateSearchGroupsOptions("MyGate", "devs", nil)
+
 		want := &sonar.QualitygatesSearchGroupsOptions{
 			GateName: "MyGate",
 			Query:    "devs",
-			Selected: "all",
+			Selected: sonar.SelectionFilterAll,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityGateSearchGroupsOptions() mismatch (-want +got):\n%s", diff)
@@ -361,6 +392,7 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 		t.Parallel()
 
 		got := GenerateQualityGateSearchUsersOptions("MyGate", "alice", &sonar.PaginationArgs{Page: 2, PageSize: 100})
+
 		want := &sonar.QualitygatesSearchUsersOptions{
 			PaginationArgs: sonar.PaginationArgs{Page: 2, PageSize: 100},
 			GateName:       "MyGate",

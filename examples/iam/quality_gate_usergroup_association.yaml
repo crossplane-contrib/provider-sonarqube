@@ -1,5 +1,6 @@
 ---
-apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+# Example 1: Grant a group edit rights on a Quality Gate, by direct names.
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
 kind: QualityGateUsergroupAssociation
 metadata:
   name: example-qualitygate-group-association
@@ -7,12 +8,15 @@ metadata:
 spec:
   forProvider:
     gateName: TestQualityGate
+    # Mutually exclusive with login / loginRef / loginSelector.
     groupName: sonar-users
   providerConfigRef:
     name: example
     kind: ProviderConfig
 ---
-apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+# Example 2: Grant a user edit rights on a Quality Gate, using references
+# to the QualityGate and User managed resources.
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
 kind: QualityGateUsergroupAssociation
 metadata:
   name: example-qualitygate-user-association
@@ -21,7 +25,9 @@ spec:
   forProvider:
     gateNameRef:
       name: example-qualitygate
-    login: BoxBoxJason
+    # Mutually exclusive with groupName / groupNameRef / groupNameSelector.
+    loginRef:
+      name: example-user
   providerConfigRef:
     name: example
     kind: ProviderConfig

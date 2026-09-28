@@ -20,7 +20,6 @@ package qualitygateusergroupassociation
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
@@ -28,6 +27,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/pkg/errors"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,10 +38,10 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 
-	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
-	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
+	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -60,6 +60,9 @@ const (
 	// errCreateQualityGateUsergroupAssociation indicates association
 	// creation failed.
 	errCreateQualityGateUsergroupAssociation = "cannot create QualityGateUsergroupAssociation"
+	// errUpdateQualityGateUsergroupAssociation indicates association
+	// update failed.
+	errUpdateQualityGateUsergroupAssociation = "cannot update QualityGateUsergroupAssociation"
 	// errDeleteQualityGateUsergroupAssociation indicates association
 	// deletion failed.
 	errDeleteQualityGateUsergroupAssociation = "cannot delete QualityGateUsergroupAssociation"
@@ -68,17 +71,6 @@ const (
 	// associated groups or users.
 	maxPageSize = int64(100)
 )
-
-// qualityGatesAssociationClient is the subset of QualityGatesClient used
-// by this controller.
-type qualityGatesAssociationClient interface {
-	AddGroup(ctx context.Context, opt *sonar.QualitygatesAddGroupOptions) (*http.Response, error)
-	AddUser(ctx context.Context, opt *sonar.QualitygatesAddUserOptions) (*http.Response, error)
-	RemoveGroup(ctx context.Context, opt *sonar.QualitygatesRemoveGroupOptions) (*http.Response, error)
-	RemoveUser(ctx context.Context, opt *sonar.QualitygatesRemoveUserOptions) (*http.Response, error)
-	SearchGroups(ctx context.Context, opt *sonar.QualitygatesSearchGroupsOptions) (*sonar.QualitygatesSearchGroups, *http.Response, error)
-	SearchUsers(ctx context.Context, opt *sonar.QualitygatesSearchUsersOptions) (*sonar.QualitygatesSearchUsers, *http.Response, error)
-}
 
 // SetupGated adds a controller that reconciles
 // QualityGateUsergroupAssociation managed resources with safe-start
@@ -103,7 +95,7 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: instance.NewQualityGateUsergroupAssociationClient,
+			newServiceFn: iam.NewQualityGateUsergroupAssociationClient,
 		}),
 		managed.WithLogger(opts.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(opts.PollInterval),
@@ -148,7 +140,7 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 type connector struct {
 	kube         client.Client
 	usage        *resource.ProviderConfigUsageTracker
-	newServiceFn func(config common.Config) instance.QualityGatesClient
+	newServiceFn func(config common.Config) iam.QualityGateUsergroupAssociationClient
 }
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
@@ -184,7 +176,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 // QualityGateUsergroupAssociation resources.
 type external struct {
 	// client is used to interact with the SonarQube Quality Gates API.
-	client qualityGatesAssociationClient
+	client iam.QualityGateUsergroupAssociationClient
 }
 
 // Observe checks whether the external association exists and is up to
@@ -204,12 +196,12 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// for invalid format or unknown type. Crossplane defaults the
 	// external name to metadata.name before Create runs, so an
 	// unparseable name means the resource does not exist yet.
-	subjectType, subject, gateName, err := instance.ParseQualityGateUsergroupAssociationExternalName(externalName)
+	subjectType, subject, gateName, err := iam.ParseQualityGateUsergroupAssociationExternalName(externalName)
 	if err != nil || subjectType == "" {
-		return managed.ExternalObservation{ResourceExists: false}, nil
+		return managed.ExternalObservation{ResourceExists: false}, nil //nolint:nilerr // An unparseable external name means the association was not created yet.
 	}
 
-	found, err := c.associationSelected(ctx, subjectType, subject, gateName)
+	observation, found, err := c.observeAssociation(ctx, subjectType, subject, gateName)
 	if err != nil {
 		return managed.ExternalObservation{}, errors.Wrap(err, errObserveQualityGateUsergroupAssociation)
 	}
@@ -218,12 +210,12 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	association.Status.AtProvider = instance.GenerateQualityGateUsergroupAssociationObservation(&association.Spec.ForProvider)
+	association.Status.AtProvider = observation
 	association.SetConditions(xpv1.Available())
 
 	return managed.ExternalObservation{
 		ResourceExists:   true,
-		ResourceUpToDate: instance.IsQualityGateUsergroupAssociationUpToDate(&association.Spec.ForProvider, &association.Status.AtProvider),
+		ResourceUpToDate: iam.IsQualityGateUsergroupAssociationUpToDate(&association.Spec.ForProvider, &association.Status.AtProvider),
 	}, nil
 }
 
@@ -238,20 +230,32 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	association.SetConditions(xpv1.Creating())
 
 	spec := association.Spec.ForProvider
+
 	err := c.addAssociation(ctx, spec)
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateQualityGateUsergroupAssociation)
 	}
 
-	meta.SetExternalName(association, instance.BuildQualityGateUsergroupAssociationExternalName(&spec))
+	meta.SetExternalName(association, iam.BuildQualityGateUsergroupAssociationExternalName(&spec))
 
 	return managed.ExternalCreation{}, nil
 }
 
-// Update is a no-op because every field of
-// QualityGateUsergroupAssociation is immutable, so there is nothing to
-// converge.
-func (c *external) Update(_ context.Context, _ resource.Managed) (managed.ExternalUpdate, error) {
+// Update grants the group or user edit rights on the Quality Gate.
+// Every field of QualityGateUsergroupAssociation is immutable, so this only
+// triggers if the observed association drifts from the spec; granting the
+// association again converges it.
+func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
+	association, ok := mg.(*v1alpha1.QualityGateUsergroupAssociation)
+	if !ok {
+		return managed.ExternalUpdate{}, errors.New(errNotQualityGateUsergroupAssociation)
+	}
+
+	err := c.addAssociation(ctx, association.Spec.ForProvider)
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateQualityGateUsergroupAssociation)
+	}
+
 	return managed.ExternalUpdate{}, nil
 }
 
@@ -269,7 +273,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	subjectType, subject, gateName, err := instance.ParseQualityGateUsergroupAssociationExternalName(externalName)
+	subjectType, subject, gateName, err := iam.ParseQualityGateUsergroupAssociationExternalName(externalName)
 	if err != nil {
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityGateUsergroupAssociation)
 	}
@@ -287,10 +291,11 @@ func (c *external) Disconnect(_ context.Context) error {
 	return nil
 }
 
-// associationSelected reports whether the named group or user is selected
-// on the Quality Gate.
-func (c *external) associationSelected(ctx context.Context, subjectType, subject, gateName string) (bool, error) {
-	if subjectType == instance.SubjectTypeGroup {
+// observeAssociation looks up the group or user on the Quality Gate and
+// returns the observation built from the SonarQube response. found is
+// false when the principal is not selected on the Quality Gate.
+func (c *external) observeAssociation(ctx context.Context, subjectType, subject, gateName string) (v1alpha1.QualityGateUsergroupAssociationObservation, bool, error) {
+	if subjectType == iam.SubjectTypeGroup {
 		return c.searchSelectedGroup(ctx, subject, gateName)
 	}
 
@@ -298,12 +303,12 @@ func (c *external) associationSelected(ctx context.Context, subjectType, subject
 }
 
 // searchSelectedGroup paginates SearchGroups looking for a selected group
-// whose name matches groupName.
+// whose name matches groupName, and returns the observation built from it.
 //
 //nolint:dupl // Intentional structural similarity with searchSelectedUser; different API types prevent abstraction.
-func (c *external) searchSelectedGroup(ctx context.Context, groupName, gateName string) (bool, error) {
+func (c *external) searchSelectedGroup(ctx context.Context, groupName, gateName string) (v1alpha1.QualityGateUsergroupAssociationObservation, bool, error) {
 	for page := int64(1); ; page++ {
-		opts := instance.GenerateQualityGateSearchGroupsOptions(gateName, groupName, &sonar.PaginationArgs{
+		opts := iam.GenerateQualityGateSearchGroupsOptions(gateName, groupName, &sonar.PaginationArgs{
 			Page:     page,
 			PageSize: maxPageSize,
 		})
@@ -312,28 +317,32 @@ func (c *external) searchSelectedGroup(ctx context.Context, groupName, gateName 
 		helpers.CloseBody(resp)
 
 		if err != nil {
-			return false, errors.Wrap(err, "cannot search quality gate groups")
+			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality gate groups")
 		}
 
-		for i := range result.Groups {
-			if result.Groups[i].Name == groupName {
-				return result.Groups[i].Selected, nil
+		for idx := range result.Groups {
+			if result.Groups[idx].Name == groupName {
+				if !result.Groups[idx].Selected {
+					return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
+				}
+
+				return iam.GenerateQualityGateGroupAssociationObservation(gateName, &result.Groups[idx]), true, nil
 			}
 		}
 
 		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return false, nil
+			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
 		}
 	}
 }
 
 // searchSelectedUser paginates SearchUsers looking for a selected user
-// whose login matches login.
+// whose login matches login, and returns the observation built from it.
 //
 //nolint:dupl // Intentional structural similarity with searchSelectedGroup; different API types prevent abstraction.
-func (c *external) searchSelectedUser(ctx context.Context, login, gateName string) (bool, error) {
+func (c *external) searchSelectedUser(ctx context.Context, login, gateName string) (v1alpha1.QualityGateUsergroupAssociationObservation, bool, error) {
 	for page := int64(1); ; page++ {
-		opts := instance.GenerateQualityGateSearchUsersOptions(gateName, login, &sonar.PaginationArgs{
+		opts := iam.GenerateQualityGateSearchUsersOptions(gateName, login, &sonar.PaginationArgs{
 			Page:     page,
 			PageSize: maxPageSize,
 		})
@@ -342,17 +351,21 @@ func (c *external) searchSelectedUser(ctx context.Context, login, gateName strin
 		helpers.CloseBody(resp)
 
 		if err != nil {
-			return false, errors.Wrap(err, "cannot search quality gate users")
+			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality gate users")
 		}
 
-		for i := range result.Users {
-			if result.Users[i].Login == login {
-				return result.Users[i].Selected, nil
+		for idx := range result.Users {
+			if result.Users[idx].Login == login {
+				if !result.Users[idx].Selected {
+					return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
+				}
+
+				return iam.GenerateQualityGateUserAssociationObservation(gateName, &result.Users[idx]), true, nil
 			}
 		}
 
 		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return false, nil
+			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
 		}
 	}
 }
@@ -360,15 +373,15 @@ func (c *external) searchSelectedUser(ctx context.Context, login, gateName strin
 // addAssociation calls AddGroup or AddUser based on the configured
 // principal.
 func (c *external) addAssociation(ctx context.Context, spec v1alpha1.QualityGateUsergroupAssociationParameters) error {
-	if spec.GroupName != nil && *spec.GroupName != "" {
-		resp, err := c.client.AddGroup(ctx, instance.GenerateQualityGateAddGroupOptions(spec.GateName, *spec.GroupName)) //nolint:bodyclose // closed via helpers.CloseBody
+	if ptr.Deref(spec.GroupName, "") != "" {
+		resp, err := c.client.AddGroup(ctx, iam.GenerateQualityGateAddGroupOptions(spec.GateName, *spec.GroupName)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return err
 	}
 
-	if spec.Login != nil && *spec.Login != "" {
-		resp, err := c.client.AddUser(ctx, instance.GenerateQualityGateAddUserOptions(spec.GateName, *spec.Login)) //nolint:bodyclose // closed via helpers.CloseBody
+	if ptr.Deref(spec.Login, "") != "" {
+		resp, err := c.client.AddUser(ctx, iam.GenerateQualityGateAddUserOptions(spec.GateName, *spec.Login)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return err
@@ -380,14 +393,14 @@ func (c *external) addAssociation(ctx context.Context, spec v1alpha1.QualityGate
 // removeAssociation calls RemoveGroup or RemoveUser based on the subject
 // type encoded in the external name.
 func (c *external) removeAssociation(ctx context.Context, subjectType, subject, gateName string) error {
-	if subjectType == instance.SubjectTypeGroup {
-		resp, err := c.client.RemoveGroup(ctx, instance.GenerateQualityGateRemoveGroupOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
+	if subjectType == iam.SubjectTypeGroup {
+		resp, err := c.client.RemoveGroup(ctx, iam.GenerateQualityGateRemoveGroupOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
 
 		return err
 	}
 
-	resp, err := c.client.RemoveUser(ctx, instance.GenerateQualityGateRemoveUserOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
+	resp, err := c.client.RemoveUser(ctx, iam.GenerateQualityGateRemoveUserOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	return err

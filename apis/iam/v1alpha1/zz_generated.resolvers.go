@@ -75,6 +75,67 @@ func (mg *Permissions) ResolveReferences(ctx context.Context, c client.Reader) e
 	return nil
 }
 
+// ResolveReferences of this QualityGateUsergroupAssociation.
+func (mg *QualityGateUsergroupAssociation) ResolveReferences(ctx context.Context, c client.Reader) error {
+	r := reference.NewAPINamespacedResolver(c, mg)
+
+	var rsp reference.NamespacedResolutionResponse
+	var err error
+
+	rsp, err = r.Resolve(ctx, reference.NamespacedResolutionRequest{
+		CurrentValue: mg.Spec.ForProvider.GateName,
+		Extract:      reference.ExternalName(),
+		Namespace:    mg.GetNamespace(),
+		Reference:    mg.Spec.ForProvider.GateNameRef,
+		Selector:     mg.Spec.ForProvider.GateNameSelector,
+		To: reference.To{
+			List:    &v1alpha1.QualityGateList{},
+			Managed: &v1alpha1.QualityGate{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.ForProvider.GateName")
+	}
+	mg.Spec.ForProvider.GateName = rsp.ResolvedValue
+	mg.Spec.ForProvider.GateNameRef = rsp.ResolvedReference
+
+	rsp, err = r.Resolve(ctx, reference.NamespacedResolutionRequest{
+		CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.GroupName),
+		Extract:      GroupName(),
+		Namespace:    mg.GetNamespace(),
+		Reference:    mg.Spec.ForProvider.GroupNameRef,
+		Selector:     mg.Spec.ForProvider.GroupNameSelector,
+		To: reference.To{
+			List:    &GroupList{},
+			Managed: &Group{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.ForProvider.GroupName")
+	}
+	mg.Spec.ForProvider.GroupName = reference.ToPtrValue(rsp.ResolvedValue)
+	mg.Spec.ForProvider.GroupNameRef = rsp.ResolvedReference
+
+	rsp, err = r.Resolve(ctx, reference.NamespacedResolutionRequest{
+		CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.Login),
+		Extract:      UserLogin(),
+		Namespace:    mg.GetNamespace(),
+		Reference:    mg.Spec.ForProvider.LoginRef,
+		Selector:     mg.Spec.ForProvider.LoginSelector,
+		To: reference.To{
+			List:    &UserList{},
+			Managed: &User{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.ForProvider.Login")
+	}
+	mg.Spec.ForProvider.Login = reference.ToPtrValue(rsp.ResolvedValue)
+	mg.Spec.ForProvider.LoginRef = rsp.ResolvedReference
+
+	return nil
+}
+
 // ResolveReferences of this QualityProfileUsergroupAssociation.
 func (mg *QualityProfileUsergroupAssociation) ResolveReferences(ctx context.Context, c client.Reader) error {
 	r := reference.NewAPINamespacedResolver(c, mg)

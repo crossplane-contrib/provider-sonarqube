@@ -216,6 +216,46 @@ func (f *Framework) UserPermissions(ctx context.Context, login string) ([]string
 	return []string{}, nil
 }
 
+// QualityGateGroupSelected reports whether the named group is allowed to
+// edit the named Quality Gate.
+func (f *Framework) QualityGateGroupSelected(ctx context.Context, gateName, groupName string) (bool, error) {
+	res, resp, err := f.Sonar.Qualitygates.SearchGroups(ctx, &sonar.QualitygatesSearchGroupsOptions{
+		GateName: gateName,
+		Query:    groupName,
+		Selected: sonar.SelectionFilterAll,
+	})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return false, err
+	}
+	for i := range res.Groups {
+		if res.Groups[i].Name == groupName {
+			return res.Groups[i].Selected, nil
+		}
+	}
+	return false, nil
+}
+
+// QualityGateUserSelected reports whether the user with the given login is
+// allowed to edit the named Quality Gate.
+func (f *Framework) QualityGateUserSelected(ctx context.Context, gateName, login string) (bool, error) {
+	res, resp, err := f.Sonar.Qualitygates.SearchUsers(ctx, &sonar.QualitygatesSearchUsersOptions{
+		GateName: gateName,
+		Query:    login,
+		Selected: sonar.SelectionFilterAll,
+	})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return false, err
+	}
+	for i := range res.Users {
+		if res.Users[i].Login == login {
+			return res.Users[i].Selected, nil
+		}
+	}
+	return false, nil
+}
+
 // FindALMGitLabDefinitionByKey returns the GitLab ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
 func (f *Framework) FindALMGitLabDefinitionByKey(ctx context.Context, key string) (*sonar.GitlabDefinition, error) {
