@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
@@ -34,6 +35,11 @@ import (
 // in a valid association external name of the form
 // <type>:<subject>:<language>:<qualityProfile>.
 const qualityProfileAssociationNameParts = 4
+
+// subjectEscaper escapes the characters that would make the subject segment
+// of an association external name ambiguous. SonarQube group names may
+// contain ":", which is also the external name separator.
+var subjectEscaper = strings.NewReplacer("%", "%25", ":", "%3A")
 
 // QualityProfileUsergroupAssociationClient is the interface for managing
 // the groups and users allowed to edit a Quality Profile in SonarQube.
@@ -180,7 +186,9 @@ func IsQualityProfileUsergroupAssociationUpToDate(spec *v1alpha1.QualityProfileU
 // ParseQualityProfileUsergroupAssociationExternalName decodes an external
 // name of the form "<type>:<subject>:<language>:<qualityProfile>" where
 // type is group or user. Quality profile names may contain ":" because
-// the name is split with SplitN of 4.
+// the name is split with SplitN of 4. The subject has "%" and ":" percent
+// encoded (see BuildQualityProfileUsergroupAssociationExternalName) and is
+// returned decoded.
 func ParseQualityProfileUsergroupAssociationExternalName(externalName string) (subjectType, subject, language, qualityProfile string, err error) {
 	parts := strings.SplitN(externalName, ":", qualityProfileAssociationNameParts)
 	if len(parts) != qualityProfileAssociationNameParts {
@@ -192,24 +200,30 @@ func ParseQualityProfileUsergroupAssociationExternalName(externalName string) (s
 		return "", "", "", "", fmt.Errorf("unknown subject type %q in external name %q", subjectType, externalName)
 	}
 
-	return subjectType, parts[1], parts[2], parts[3], nil
+	subject, err = url.PathUnescape(parts[1])
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("invalid subject encoding in external name %q: %w", externalName, err)
+	}
+
+	return subjectType, subject, parts[2], parts[3], nil
 }
 
 // BuildQualityProfileUsergroupAssociationExternalName constructs an
 // external name of the form "group:<groupName>:<language>:<qualityProfile>"
-// or "user:<login>:<language>:<qualityProfile>". It returns "" when no
-// principal is set.
+// or "user:<login>:<language>:<qualityProfile>". "%" and ":" in the
+// subject are percent encoded so that group names containing ":" round-trip.
+// It returns "" when no principal is set.
 func BuildQualityProfileUsergroupAssociationExternalName(params *v1alpha1.QualityProfileUsergroupAssociationParameters) string {
 	if params == nil {
 		return ""
 	}
 
 	if ptr.Deref(params.GroupName, "") != "" {
-		return fmt.Sprintf("%s:%s:%s:%s", SubjectTypeGroup, *params.GroupName, params.Language, params.QualityProfile)
+		return fmt.Sprintf("%s:%s:%s:%s", SubjectTypeGroup, subjectEscaper.Replace(*params.GroupName), params.Language, params.QualityProfile)
 	}
 
 	if ptr.Deref(params.Login, "") != "" {
-		return fmt.Sprintf("%s:%s:%s:%s", SubjectTypeUser, *params.Login, params.Language, params.QualityProfile)
+		return fmt.Sprintf("%s:%s:%s:%s", SubjectTypeUser, subjectEscaper.Replace(*params.Login), params.Language, params.QualityProfile)
 	}
 
 	return ""

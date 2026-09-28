@@ -91,6 +91,18 @@ func TestBuildAndParseQualityProfileUsergroupAssociationExternalName(t *testing.
 			wantLanguage:       "go",
 			wantQualityProfile: "org:team:profile",
 		},
+		"GroupNameContainingColonAndPercent": {
+			params: &v1alpha1.QualityProfileUsergroupAssociationParameters{
+				QualityProfile: "team:profile",
+				Language:       "go",
+				GroupName:      new("org:devs%1"),
+			},
+			wantBuilt:          "group:org%3Adevs%251:go:team:profile",
+			wantType:           SubjectTypeGroup,
+			wantSubject:        "org:devs%1",
+			wantLanguage:       "go",
+			wantQualityProfile: "team:profile",
+		},
 		"UserQualityProfileContainingColon": {
 			params: &v1alpha1.QualityProfileUsergroupAssociationParameters{
 				QualityProfile: "a:b",

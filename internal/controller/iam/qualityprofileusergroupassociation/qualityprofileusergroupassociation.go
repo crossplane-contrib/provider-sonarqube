@@ -318,6 +318,12 @@ func (c *external) searchSelectedGroup(ctx context.Context, groupName, language,
 		result, resp, err := c.client.SearchGroups(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
 
+		// The Quality Profile no longer exists, so neither does the
+		// association.
+		if common.IsResponseNotFound(resp) {
+			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
+		}
+
 		if err != nil {
 			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality profile groups")
 		}
@@ -351,6 +357,12 @@ func (c *external) searchSelectedUser(ctx context.Context, login, language, qual
 
 		result, resp, err := c.client.SearchUsers(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
 		helpers.CloseBody(resp)
+
+		// The Quality Profile no longer exists, so neither does the
+		// association.
+		if common.IsResponseNotFound(resp) {
+			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
+		}
 
 		if err != nil {
 			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality profile users")
@@ -393,17 +405,26 @@ func (c *external) addAssociation(ctx context.Context, spec v1alpha1.QualityProf
 }
 
 // removeAssociation calls RemoveGroup or RemoveUser based on the subject
-// type encoded in the external name.
+// type encoded in the external name. A 404 (profile or principal already
+// gone) is treated as success.
 func (c *external) removeAssociation(ctx context.Context, subjectType, subject, language, qualityProfile string) error {
 	if subjectType == iam.SubjectTypeGroup {
 		resp, err := c.client.RemoveGroup(ctx, iam.GenerateQualityProfileRemoveGroupOptions(language, qualityProfile, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 		defer helpers.CloseBody(resp)
+
+		if common.IsResponseNotFound(resp) {
+			return nil
+		}
 
 		return err
 	}
 
 	resp, err := c.client.RemoveUser(ctx, iam.GenerateQualityProfileRemoveUserOptions(language, qualityProfile, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
+
+	if common.IsResponseNotFound(resp) {
+		return nil
+	}
 
 	return err
 }

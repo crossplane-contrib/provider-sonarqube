@@ -387,6 +387,18 @@ func TestObserve(t *testing.T) {
 			},
 			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
 		},
+		"GroupProfileNotFoundReturnsNotExists": {
+			client: &fakeQualityProfilesClient{
+				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
+					return nil, &http.Response{StatusCode: http.StatusNotFound}, errors.New("not found")
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testLanguage, testQualityProfile, testGroupName),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
 		"GroupSearchErrorWrapped": {
 			client: &fakeQualityProfilesClient{
 				searchGroupsFn: func(_ *sonar.QualityprofilesSearchGroupsOptions) (*sonar.QualityprofilesSearchGroups, *http.Response, error) {
@@ -592,6 +604,22 @@ func TestDelete(t *testing.T) {
 		wantOpts := iam.GenerateQualityProfileRemoveGroupOptions(testLanguage, testQualityProfile, testGroupName)
 		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
 			t.Errorf("Delete() RemoveGroup options mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("GroupNotFoundIsSuccess", func(t *testing.T) {
+		t.Parallel()
+
+		cr := newTestGroupAssociation("group:"+testGroupName+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testGroupName)
+		e := &external{client: &fakeQualityProfilesClient{
+			removeGroupFn: func(_ *sonar.QualityprofilesRemoveGroupOptions) (*http.Response, error) {
+				return &http.Response{StatusCode: http.StatusNotFound}, errors.New("not found")
+			},
+		}}
+
+		_, err := e.Delete(context.Background(), cr)
+		if err != nil {
+			t.Fatalf("Delete() unexpected error: %v", err)
 		}
 	})
 
