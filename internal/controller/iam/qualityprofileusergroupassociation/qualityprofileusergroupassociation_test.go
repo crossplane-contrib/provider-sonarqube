@@ -613,6 +613,7 @@ func TestDelete(t *testing.T) {
 		cr := newTestGroupAssociation("group:"+testGroupName+":"+testLanguage+":"+testQualityProfile, testLanguage, testQualityProfile, testGroupName)
 		e := &external{client: &fakeQualityProfilesClient{
 			removeGroupFn: func(_ *sonar.QualityprofilesRemoveGroupOptions) (*http.Response, error) {
+				//nolint:nilnil // Intentional: simulating a 404 from SonarQube.
 				return &http.Response{StatusCode: http.StatusNotFound}, errors.New("not found")
 			},
 		}}
