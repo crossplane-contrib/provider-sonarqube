@@ -344,6 +344,12 @@ spec:
                     or login (or loginRef/loginSelector) must be set
                   rule: (has(self.groupName) || has(self.groupNameRef) || has(self.groupNameSelector))
                     != (has(self.login) || has(self.loginRef) || has(self.loginSelector))
+                - message: gateName cannot be unset once set
+                  rule: '!has(oldSelf.gateName) || has(self.gateName)'
+                - message: groupName cannot be unset once set
+                  rule: '!has(oldSelf.groupName) || has(self.groupName)'
+                - message: login cannot be unset once set
+                  rule: '!has(oldSelf.login) || has(self.login)'
               managementPolicies:
                 default:
                 - '*'

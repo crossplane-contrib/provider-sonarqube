@@ -379,6 +379,49 @@ func TestObserve(t *testing.T) {
 			},
 			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
 		},
+		"GateNotFoundReturnsNotExists": {
+			client: &fakeQualityGatesClient{
+				searchGroupsFn: func(_ *sonar.QualitygatesSearchGroupsOptions) (*sonar.QualitygatesSearchGroups, *http.Response, error) {
+					return nil, &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, errors.New("not found")
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg:  newTestGroupAssociation(groupExternalName, testGateName, testGroupName),
+			},
+			want: observeWant{observation: managed.ExternalObservation{ResourceExists: false}},
+		},
+		"GroupNameWithColonUsesSpec": {
+			client: &fakeQualityGatesClient{
+				searchGroupsFn: func(opt *sonar.QualitygatesSearchGroupsOptions) (*sonar.QualitygatesSearchGroups, *http.Response, error) {
+					if opt.GateName != testGateName || opt.Query != "team:dev" {
+						return nil, mockHTTPResponse(), errors.New("unexpected search options")
+					}
+
+					return &sonar.QualitygatesSearchGroups{
+						Groups: []sonar.QualityGateGroup{{Name: "team:dev", Selected: true}},
+						Paging: sonar.Paging{Total: 1, PageIndex: 1, PageSize: 100},
+					}, mockHTTPResponse(), nil
+				},
+			},
+			args: observeArgs{
+				ctx: context.Background(),
+				mg: newTestGroupAssociation(iam.BuildQualityGateUsergroupAssociationExternalName(&v1alpha1.QualityGateUsergroupAssociationParameters{
+					GateName:  testGateName,
+					GroupName: new("team:dev"),
+				}), testGateName, "team:dev"),
+			},
+			want: observeWant{
+				observation: managed.ExternalObservation{
+					ResourceExists:   true,
+					ResourceUpToDate: true,
+				},
+				atProvider: v1alpha1.QualityGateUsergroupAssociationObservation{
+					GateName:  testGateName,
+					GroupName: "team:dev",
+				},
+			},
+		},
 		"SearchErrorWrapped": {
 			client: &fakeQualityGatesClient{
 				searchGroupsFn: func(_ *sonar.QualitygatesSearchGroupsOptions) (*sonar.QualitygatesSearchGroups, *http.Response, error) {
@@ -585,6 +628,22 @@ func TestDelete(t *testing.T) {
 		wantOpts := iam.GenerateQualityGateRemoveGroupOptions(testGateName, testGroupName)
 		if diff := cmp.Diff(wantOpts, gotOpts); diff != "" {
 			t.Errorf("Delete() RemoveGroup options mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("NotFoundTreatedAsDeleted", func(t *testing.T) {
+		t.Parallel()
+
+		cr := newTestGroupAssociation("group:"+testGroupName+":"+testGateName, testGateName, testGroupName)
+		e := &external{client: &fakeQualityGatesClient{
+			removeGroupFn: func(_ *sonar.QualitygatesRemoveGroupOptions) (*http.Response, error) {
+				return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, errors.New("not found")
+			},
+		}}
+
+		_, err := e.Delete(context.Background(), cr)
+		if err != nil {
+			t.Fatalf("Delete() unexpected error: %v", err)
 		}
 	})
 

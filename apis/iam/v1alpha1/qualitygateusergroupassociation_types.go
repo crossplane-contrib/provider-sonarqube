@@ -32,6 +32,9 @@ import (
 // reference or selector.
 // +kubebuilder:validation:XValidation:rule="has(self.gateName) || has(self.gateNameRef) || has(self.gateNameSelector)",message="one of gateName, gateNameRef or gateNameSelector must be set"
 // +kubebuilder:validation:XValidation:rule="(has(self.groupName) || has(self.groupNameRef) || has(self.groupNameSelector)) != (has(self.login) || has(self.loginRef) || has(self.loginSelector))",message="exactly one of groupName (or groupNameRef/groupNameSelector) or login (or loginRef/loginSelector) must be set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.gateName) || has(self.gateName)",message="gateName cannot be unset once set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.groupName) || has(self.groupName)",message="groupName cannot be unset once set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.login) || has(self.login)",message="login cannot be unset once set"
 type QualityGateUsergroupAssociationParameters struct {
 	// GateName is the name of the Quality Gate the group or user is associated
 	// with.

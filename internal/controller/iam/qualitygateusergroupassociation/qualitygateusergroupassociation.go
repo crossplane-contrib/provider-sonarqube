@@ -20,6 +20,7 @@ package qualitygateusergroupassociation
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
@@ -192,11 +193,10 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	// ParseQualityGateUsergroupAssociationExternalName returns an error
-	// for invalid format or unknown type. Crossplane defaults the
-	// external name to metadata.name before Create runs, so an
-	// unparseable name means the resource does not exist yet.
-	subjectType, subject, gateName, err := iam.ParseQualityGateUsergroupAssociationExternalName(externalName)
+	// resolveTarget returns an error for invalid format or unknown type.
+	// Crossplane defaults the external name to metadata.name before Create
+	// runs, so an unparseable name means the resource does not exist yet.
+	subjectType, subject, gateName, err := resolveTarget(association, externalName)
 	if err != nil || subjectType == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil //nolint:nilerr // An unparseable external name means the association was not created yet.
 	}
@@ -273,7 +273,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, nil
 	}
 
-	subjectType, subject, gateName, err := iam.ParseQualityGateUsergroupAssociationExternalName(externalName)
+	subjectType, subject, gateName, err := resolveTarget(association, externalName)
 	if err != nil {
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteQualityGateUsergroupAssociation)
 	}
@@ -284,6 +284,24 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	return managed.ExternalDelete{}, nil
+}
+
+// resolveTarget returns the subject type, subject and gate name identified
+// by the external name. When the external name matches the one built from
+// the spec, the spec values are used directly so that group or gate names
+// containing ":" are not split ambiguously; otherwise the external name is
+// parsed (e.g. for imported resources).
+func resolveTarget(association *v1alpha1.QualityGateUsergroupAssociation, externalName string) (subjectType, subject, gateName string, err error) {
+	spec := association.Spec.ForProvider
+	if externalName == iam.BuildQualityGateUsergroupAssociationExternalName(&spec) {
+		if ptr.Deref(spec.GroupName, "") != "" {
+			return iam.SubjectTypeGroup, *spec.GroupName, spec.GateName, nil
+		}
+
+		return iam.SubjectTypeUser, *spec.Login, spec.GateName, nil
+	}
+
+	return iam.ParseQualityGateUsergroupAssociationExternalName(externalName)
 }
 
 // Disconnect is a no-op for stateless clients.
@@ -317,6 +335,12 @@ func (c *external) searchSelectedGroup(ctx context.Context, groupName, gateName 
 		helpers.CloseBody(resp)
 
 		if err != nil {
+			// The Quality Gate no longer exists, so neither does the
+			// association.
+			if common.IsResponseNotFound(resp) {
+				return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
+			}
+
 			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality gate groups")
 		}
 
@@ -351,6 +375,12 @@ func (c *external) searchSelectedUser(ctx context.Context, login, gateName strin
 		helpers.CloseBody(resp)
 
 		if err != nil {
+			// The Quality Gate no longer exists, so neither does the
+			// association.
+			if common.IsResponseNotFound(resp) {
+				return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
+			}
+
 			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality gate users")
 		}
 
@@ -391,17 +421,25 @@ func (c *external) addAssociation(ctx context.Context, spec v1alpha1.QualityGate
 }
 
 // removeAssociation calls RemoveGroup or RemoveUser based on the subject
-// type encoded in the external name.
+// type encoded in the external name. A not-found response means the Quality
+// Gate, group or user is already gone, so the association no longer exists.
 func (c *external) removeAssociation(ctx context.Context, subjectType, subject, gateName string) error {
-	if subjectType == iam.SubjectTypeGroup {
-		resp, err := c.client.RemoveGroup(ctx, iam.GenerateQualityGateRemoveGroupOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(resp)
+	var (
+		resp *http.Response
+		err  error
+	)
 
-		return err
+	if subjectType == iam.SubjectTypeGroup {
+		resp, err = c.client.RemoveGroup(ctx, iam.GenerateQualityGateRemoveGroupOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
+	} else {
+		resp, err = c.client.RemoveUser(ctx, iam.GenerateQualityGateRemoveUserOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 	}
 
-	resp, err := c.client.RemoveUser(ctx, iam.GenerateQualityGateRemoveUserOptions(gateName, subject)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
+
+	if err != nil && common.IsResponseNotFound(resp) {
+		return nil
+	}
 
 	return err
 }
