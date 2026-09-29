@@ -58,7 +58,8 @@ func TestOptionsValidate(t *testing.T) {
 //nolint:paralleltest // mutates package-level state
 func TestConfigure(t *testing.T) {
 	t.Cleanup(func() {
-		if err := Configure(Options{}); err != nil {
+		err := Configure(Options{})
+		if err != nil {
 			t.Errorf("resetting Configure() error = %v", err)
 		}
 	})
