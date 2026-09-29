@@ -24,6 +24,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 )
 
 // WebhooksClient is the interface for interacting with
@@ -36,9 +37,10 @@ type WebhooksClient interface {
 }
 
 // NewWebhooksClient creates a new WebhooksClient using the provided
-// SonarQube client configuration.
+// SonarQube client configuration. When the observe cache is enabled, the
+// client caches its List responses in cache.Default().
 func NewWebhooksClient(clientConfig common.Config) WebhooksClient {
-	return common.NewClient(clientConfig).Webhooks
+	return NewCachedWebhooksClient(common.NewClient(clientConfig).Webhooks, cache.ForConfig(clientConfig))
 }
 
 // LateInitializeWebhook is a no-op: all Webhook fields are either

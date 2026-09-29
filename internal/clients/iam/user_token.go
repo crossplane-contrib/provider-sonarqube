@@ -28,6 +28,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -42,10 +43,12 @@ type UserTokensClient interface {
 }
 
 // NewUserTokensClient creates a UserTokensClient from the given config.
+// When the observe cache is enabled, the client caches its Search
+// responses in cache.Default().
 func NewUserTokensClient(clientConfig common.Config) UserTokensClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.UserTokens
+	return NewCachedUserTokensClient(newClient.UserTokens, cache.ForConfig(clientConfig))
 }
 
 // GenerateUserTokenCreateOptions converts a UserTokenParameters to

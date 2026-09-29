@@ -122,7 +122,7 @@ Supported resources:
 | `Permissions`, `Group` | `permissions/groups` (unfiltered per project, by name for global permissions), `permissions/users` (by login) | Supported |
 | `PermissionsTemplate` | `permissions/search_templates` (indexed once per instance), `permissions/template_groups`, `permissions/template_users` (per template) | Supported |
 | `QualityGateUsergroupAssociation`, `QualityProfileUsergroupAssociation` | `qualitygates/search_groups`, `qualitygates/search_users`, `qualityprofiles/search_groups`, `qualityprofiles/search_users` (selected principals, per gate or profile) | Supported |
-| `Webhook`, `UserToken` | scoped list endpoints | Planned ([#127](https://github.com/crossplane-contrib/provider-sonarqube/issues/127)) |
+| `Webhook`, `UserToken` | `webhooks/list` (per project), `user_tokens/search` (per login) | Supported |
 
 When the cache is enabled, the provider exposes the following metrics:
 
