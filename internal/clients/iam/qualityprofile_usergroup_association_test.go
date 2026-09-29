@@ -434,13 +434,12 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 	t.Run("SearchGroupsNilPagination", func(t *testing.T) {
 		t.Parallel()
 
-		got := GenerateQualityProfileSearchGroupsOptions("go", "MyProfile", "devs", nil)
+		got := GenerateQualityProfileSearchGroupsOptions("go", "MyProfile", nil)
 
 		want := &sonar.QualityprofilesSearchGroupsOptions{
 			Language:       "go",
 			QualityProfile: "MyProfile",
-			Query:          "devs",
-			Selected:       sonar.SelectionFilterAll,
+			Selected:       sonar.SelectionFilterSelected,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityProfileSearchGroupsOptions() mismatch (-want +got):\n%s", diff)
@@ -450,14 +449,13 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 	t.Run("SearchGroupsWithPagination", func(t *testing.T) {
 		t.Parallel()
 
-		got := GenerateQualityProfileSearchGroupsOptions("go", "MyProfile", "devs", &sonar.PaginationArgs{Page: 2, PageSize: 100})
+		got := GenerateQualityProfileSearchGroupsOptions("go", "MyProfile", &sonar.PaginationArgs{Page: 2, PageSize: 100})
 
 		want := &sonar.QualityprofilesSearchGroupsOptions{
 			PaginationArgs: sonar.PaginationArgs{Page: 2, PageSize: 100},
 			Language:       "go",
 			QualityProfile: "MyProfile",
-			Query:          "devs",
-			Selected:       sonar.SelectionFilterAll,
+			Selected:       sonar.SelectionFilterSelected,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityProfileSearchGroupsOptions() mismatch (-want +got):\n%s", diff)
@@ -467,14 +465,13 @@ func TestGenerateQualityProfileAssociationOptions(t *testing.T) {
 	t.Run("SearchUsersWithPagination", func(t *testing.T) {
 		t.Parallel()
 
-		got := GenerateQualityProfileSearchUsersOptions("go", "MyProfile", "alice", &sonar.PaginationArgs{Page: 2, PageSize: 100})
+		got := GenerateQualityProfileSearchUsersOptions("go", "MyProfile", &sonar.PaginationArgs{Page: 2, PageSize: 100})
 
 		want := &sonar.QualityprofilesSearchUsersOptions{
 			PaginationArgs: sonar.PaginationArgs{Page: 2, PageSize: 100},
 			Language:       "go",
 			QualityProfile: "MyProfile",
-			Query:          "alice",
-			Selected:       sonar.SelectionFilterAll,
+			Selected:       sonar.SelectionFilterSelected,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityProfileSearchUsersOptions() mismatch (-want +got):\n%s", diff)

@@ -25,6 +25,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -62,11 +63,13 @@ type QualityProfilesClient interface {
 }
 
 // NewQualityProfilesClient creates a new QualityProfilesClient with the
-// provided SonarQube client configuration.
+// provided SonarQube client configuration. When the observe cache is
+// enabled, its writes invalidate the cached datasets depending on
+// Quality Profiles.
 func NewQualityProfilesClient(clientConfig common.Config) QualityProfilesClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Qualityprofiles
+	return NewCachedQualityProfilesClient(newClient.Qualityprofiles, cache.ForConfig(clientConfig))
 }
 
 // GenerateCreateQualityProfileOption generates SonarQube

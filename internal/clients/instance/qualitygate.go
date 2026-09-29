@@ -24,6 +24,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -61,11 +62,13 @@ type QualityGatesClient interface {
 }
 
 // NewQualityGatesClient creates a new QualityGatesClient with the
-// provided SonarQube client configuration.
+// provided SonarQube client configuration. When the observe cache is
+// enabled, its writes invalidate the cached datasets depending on
+// Quality Gates.
 func NewQualityGatesClient(clientConfig common.Config) QualityGatesClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Qualitygates
+	return NewCachedQualityGatesClient(newClient.Qualitygates, cache.ForConfig(clientConfig))
 }
 
 // GenerateQualityGateCreateOptions generates SonarQube QualitygatesCreateOption

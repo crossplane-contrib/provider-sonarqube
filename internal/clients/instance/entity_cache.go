@@ -88,3 +88,153 @@ func (c *cachedProjectsClient) UpdateVisibility(ctx context.Context, opt *sonar.
 
 	return c.ProjectsClient.UpdateVisibility(ctx, opt)
 }
+
+// NewCachedQualityGatesClient decorates client with scoped, so that deleting
+// or
+// renaming a Quality Gate, or changing who may edit it, invalidates the
+// datasets
+// cached in scoped that depend on Quality Gates (see
+// cache.EntityQualityGate), or returns
+// client as-is when scoped does not cache.
+func NewCachedQualityGatesClient(client QualityGatesClient, scoped cache.Scoped) QualityGatesClient {
+	if !scoped.Enabled() {
+		return client
+	}
+
+	return &cachedQualityGatesClient{QualityGatesClient: client, cache: scoped}
+}
+
+// cachedQualityGatesClient is a QualityGatesClient that invalidates the
+// cached datasets
+// depending on Quality Gates whenever a Quality Gate is deleted or renamed,
+// or its
+// editors change.
+type cachedQualityGatesClient struct {
+	QualityGatesClient
+
+	// cache holds the datasets of the embedded client's connection.
+	cache cache.Scoped
+}
+
+// Delete deletes a Quality Gate, then invalidates the datasets depending on
+// Quality Gates.
+func (c *cachedQualityGatesClient) Delete(ctx context.Context, opt *sonar.QualitygatesDeleteOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityGate)
+
+	return c.QualityGatesClient.Delete(ctx, opt)
+}
+
+// Rename renames a Quality Gate, then invalidates the datasets depending on
+// Quality Gates.
+func (c *cachedQualityGatesClient) Rename(ctx context.Context, opt *sonar.QualitygatesRenameOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityGate)
+
+	return c.QualityGatesClient.Rename(ctx, opt)
+}
+
+// AddGroup grants a group edit rights on a Quality Gate, then invalidates
+// the datasets depending on Quality Gates.
+func (c *cachedQualityGatesClient) AddGroup(ctx context.Context, opt *sonar.QualitygatesAddGroupOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityGate)
+
+	return c.QualityGatesClient.AddGroup(ctx, opt)
+}
+
+// RemoveGroup revokes a group's edit rights on a Quality Gate, then
+// invalidates the datasets depending on Quality Gates.
+func (c *cachedQualityGatesClient) RemoveGroup(ctx context.Context, opt *sonar.QualitygatesRemoveGroupOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityGate)
+
+	return c.QualityGatesClient.RemoveGroup(ctx, opt)
+}
+
+// AddUser grants a user edit rights on a Quality Gate, then invalidates the
+// datasets depending on Quality Gates.
+func (c *cachedQualityGatesClient) AddUser(ctx context.Context, opt *sonar.QualitygatesAddUserOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityGate)
+
+	return c.QualityGatesClient.AddUser(ctx, opt)
+}
+
+// RemoveUser revokes a user's edit rights on a Quality Gate, then
+// invalidates the datasets depending on Quality Gates.
+func (c *cachedQualityGatesClient) RemoveUser(ctx context.Context, opt *sonar.QualitygatesRemoveUserOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityGate)
+
+	return c.QualityGatesClient.RemoveUser(ctx, opt)
+}
+
+// NewCachedQualityProfilesClient decorates client with scoped, so that
+// deleting or
+// renaming a Quality Profile, or changing who may edit it, invalidates the
+// datasets
+// cached in scoped that depend on Quality Profiles (see
+// cache.EntityQualityProfile), or returns
+// client as-is when scoped does not cache.
+func NewCachedQualityProfilesClient(client QualityProfilesClient, scoped cache.Scoped) QualityProfilesClient {
+	if !scoped.Enabled() {
+		return client
+	}
+
+	return &cachedQualityProfilesClient{QualityProfilesClient: client, cache: scoped}
+}
+
+// cachedQualityProfilesClient is a QualityProfilesClient that invalidates
+// the cached datasets
+// depending on Quality Profiles whenever a Quality Profile is deleted or
+// renamed, or its
+// editors change.
+type cachedQualityProfilesClient struct {
+	QualityProfilesClient
+
+	// cache holds the datasets of the embedded client's connection.
+	cache cache.Scoped
+}
+
+// Delete deletes a Quality Profile, then invalidates the datasets depending
+// on Quality Profiles.
+func (c *cachedQualityProfilesClient) Delete(ctx context.Context, opt *sonar.QualityprofilesDeleteOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityProfile)
+
+	return c.QualityProfilesClient.Delete(ctx, opt)
+}
+
+// Rename renames a Quality Profile, then invalidates the datasets depending
+// on Quality Profiles.
+func (c *cachedQualityProfilesClient) Rename(ctx context.Context, opt *sonar.QualityprofilesRenameOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityProfile)
+
+	return c.QualityProfilesClient.Rename(ctx, opt)
+}
+
+// AddGroup grants a group edit rights on a Quality Profile, then invalidates
+// the datasets depending on Quality Profiles.
+func (c *cachedQualityProfilesClient) AddGroup(ctx context.Context, opt *sonar.QualityprofilesAddGroupOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityProfile)
+
+	return c.QualityProfilesClient.AddGroup(ctx, opt)
+}
+
+// RemoveGroup revokes a group's edit rights on a Quality Profile, then
+// invalidates the datasets depending on Quality Profiles.
+func (c *cachedQualityProfilesClient) RemoveGroup(ctx context.Context, opt *sonar.QualityprofilesRemoveGroupOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityProfile)
+
+	return c.QualityProfilesClient.RemoveGroup(ctx, opt)
+}
+
+// AddUser grants a user edit rights on a Quality Profile, then invalidates
+// the datasets depending on Quality Profiles.
+func (c *cachedQualityProfilesClient) AddUser(ctx context.Context, opt *sonar.QualityprofilesAddUserOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityProfile)
+
+	return c.QualityProfilesClient.AddUser(ctx, opt)
+}
+
+// RemoveUser revokes a user's edit rights on a Quality Profile, then
+// invalidates the datasets depending on Quality Profiles.
+func (c *cachedQualityProfilesClient) RemoveUser(ctx context.Context, opt *sonar.QualityprofilesRemoveUserOptions) (*http.Response, error) {
+	defer c.cache.InvalidateEntities(cache.EntityQualityProfile)
+
+	return c.QualityProfilesClient.RemoveUser(ctx, opt)
+}

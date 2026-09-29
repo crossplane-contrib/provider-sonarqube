@@ -27,6 +27,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -49,11 +50,13 @@ type QualityGateUsergroupAssociationClient interface { //nolint:dupl // Same sha
 
 // NewQualityGateUsergroupAssociationClient creates a
 // QualityGateUsergroupAssociationClient with the provided SonarQube client
-// configuration.
+// configuration. When the observe cache is enabled, its writes invalidate
+// the selections cached in cache.Default() by QualityGateSelectedGroups
+// and QualityGateSelectedUsers.
 func NewQualityGateUsergroupAssociationClient(clientConfig common.Config) QualityGateUsergroupAssociationClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Qualitygates
+	return NewCachedQualityGateUsergroupAssociationClient(newClient.Qualitygates, cache.ForConfig(clientConfig))
 }
 
 // GenerateQualityGateAddGroupOptions generates options for granting a group
@@ -93,13 +96,12 @@ func GenerateQualityGateRemoveUserOptions(gateName, login string) *sonar.Quality
 }
 
 // GenerateQualityGateSearchGroupsOptions generates options for searching
-// groups associated with a Quality Gate. Both selected and deselected
-// entries are returned.
-func GenerateQualityGateSearchGroupsOptions(gateName, query string, pagination *sonar.PaginationArgs) *sonar.QualitygatesSearchGroupsOptions {
+// groups associated with a Quality Gate. Only the selected entries are
+// returned, without name filter.
+func GenerateQualityGateSearchGroupsOptions(gateName string, pagination *sonar.PaginationArgs) *sonar.QualitygatesSearchGroupsOptions {
 	opts := &sonar.QualitygatesSearchGroupsOptions{
 		GateName: gateName,
-		Query:    query,
-		Selected: sonar.SelectionFilterAll,
+		Selected: sonar.SelectionFilterSelected,
 	}
 
 	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)
@@ -108,13 +110,12 @@ func GenerateQualityGateSearchGroupsOptions(gateName, query string, pagination *
 }
 
 // GenerateQualityGateSearchUsersOptions generates options for searching
-// users associated with a Quality Gate. Both selected and deselected
-// entries are returned.
-func GenerateQualityGateSearchUsersOptions(gateName, query string, pagination *sonar.PaginationArgs) *sonar.QualitygatesSearchUsersOptions {
+// users associated with a Quality Gate. Only the selected entries are
+// returned, without name filter.
+func GenerateQualityGateSearchUsersOptions(gateName string, pagination *sonar.PaginationArgs) *sonar.QualitygatesSearchUsersOptions {
 	opts := &sonar.QualitygatesSearchUsersOptions{
 		GateName: gateName,
-		Query:    query,
-		Selected: sonar.SelectionFilterAll,
+		Selected: sonar.SelectionFilterSelected,
 	}
 
 	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)

@@ -28,6 +28,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -54,11 +55,13 @@ type QualityProfileUsergroupAssociationClient interface { //nolint:dupl // Same 
 
 // NewQualityProfileUsergroupAssociationClient creates a
 // QualityProfileUsergroupAssociationClient with the provided SonarQube
-// client configuration.
+// client configuration. When the observe cache is enabled, its writes
+// invalidate the selections cached in cache.Default() by
+// QualityProfileSelectedGroups and QualityProfileSelectedUsers.
 func NewQualityProfileUsergroupAssociationClient(clientConfig common.Config) QualityProfileUsergroupAssociationClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Qualityprofiles
+	return NewCachedQualityProfileUsergroupAssociationClient(newClient.Qualityprofiles, cache.ForConfig(clientConfig))
 }
 
 // GenerateQualityProfileAddGroupOptions generates options for granting a
@@ -107,14 +110,13 @@ func GenerateQualityProfileRemoveUserOptions(language, qualityProfile, login str
 
 // GenerateQualityProfileSearchGroupsOptions generates options for
 // searching groups associated with a Quality Profile identified by
-// language and qualityProfile. Both selected and deselected entries are
-// returned.
-func GenerateQualityProfileSearchGroupsOptions(language, qualityProfile, query string, pagination *sonar.PaginationArgs) *sonar.QualityprofilesSearchGroupsOptions {
+// language and qualityProfile. Only the selected entries are returned,
+// without name filter.
+func GenerateQualityProfileSearchGroupsOptions(language, qualityProfile string, pagination *sonar.PaginationArgs) *sonar.QualityprofilesSearchGroupsOptions {
 	opts := &sonar.QualityprofilesSearchGroupsOptions{
 		Language:       language,
 		QualityProfile: qualityProfile,
-		Query:          query,
-		Selected:       sonar.SelectionFilterAll,
+		Selected:       sonar.SelectionFilterSelected,
 	}
 
 	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)
@@ -124,13 +126,13 @@ func GenerateQualityProfileSearchGroupsOptions(language, qualityProfile, query s
 
 // GenerateQualityProfileSearchUsersOptions generates options for searching
 // users associated with a Quality Profile identified by language and
-// qualityProfile. Both selected and deselected entries are returned.
-func GenerateQualityProfileSearchUsersOptions(language, qualityProfile, query string, pagination *sonar.PaginationArgs) *sonar.QualityprofilesSearchUsersOptions {
+// qualityProfile. Only the selected entries are returned, without name
+// filter.
+func GenerateQualityProfileSearchUsersOptions(language, qualityProfile string, pagination *sonar.PaginationArgs) *sonar.QualityprofilesSearchUsersOptions {
 	opts := &sonar.QualityprofilesSearchUsersOptions{
 		Language:       language,
 		QualityProfile: qualityProfile,
-		Query:          query,
-		Selected:       sonar.SelectionFilterAll,
+		Selected:       sonar.SelectionFilterSelected,
 	}
 
 	helpers.AssignIfNonNil(&opts.PaginationArgs, pagination)

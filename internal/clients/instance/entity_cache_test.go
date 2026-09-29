@@ -86,3 +86,30 @@ func TestNewCachedProjectsClient(t *testing.T) {
 		t.Error("Delete() kept an entry depending on projects")
 	}
 }
+
+// TestNewCachedQualityClientsDisabled tests that the raw Quality Gate and
+// Quality Profile clients are used when the cache is disabled.
+func TestNewCachedQualityClientsDisabled(t *testing.T) {
+	t.Parallel()
+
+	var (
+		gates    QualityGatesClient    = &cachedQualityGatesClient{}
+		profiles QualityProfilesClient = &cachedQualityProfilesClient{}
+	)
+
+	if got := NewCachedQualityGatesClient(gates, cachetest.Disabled()); got != gates {
+		t.Errorf("NewCachedQualityGatesClient() with a noop store = %T, want the raw client", got)
+	}
+
+	if got := NewCachedQualityProfilesClient(profiles, cachetest.Disabled()); got != profiles {
+		t.Errorf("NewCachedQualityProfilesClient() with a noop store = %T, want the raw client", got)
+	}
+
+	if _, cached := NewQualityGatesClient(newTestConfig()).(*cachedQualityGatesClient); cached {
+		t.Error("NewQualityGatesClient() returned a cached client while the cache is disabled")
+	}
+
+	if _, cached := NewQualityProfilesClient(newTestConfig()).(*cachedQualityProfilesClient); cached {
+		t.Error("NewQualityProfilesClient() returned a cached client while the cache is disabled")
+	}
+}

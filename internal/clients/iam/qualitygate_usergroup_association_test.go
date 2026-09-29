@@ -376,12 +376,11 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 	t.Run("SearchGroupsNilPagination", func(t *testing.T) {
 		t.Parallel()
 
-		got := GenerateQualityGateSearchGroupsOptions("MyGate", "devs", nil)
+		got := GenerateQualityGateSearchGroupsOptions("MyGate", nil)
 
 		want := &sonar.QualitygatesSearchGroupsOptions{
 			GateName: "MyGate",
-			Query:    "devs",
-			Selected: sonar.SelectionFilterAll,
+			Selected: sonar.SelectionFilterSelected,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityGateSearchGroupsOptions() mismatch (-want +got):\n%s", diff)
@@ -391,13 +390,12 @@ func TestGenerateQualityGateAssociationOptions(t *testing.T) {
 	t.Run("SearchUsersWithPagination", func(t *testing.T) {
 		t.Parallel()
 
-		got := GenerateQualityGateSearchUsersOptions("MyGate", "alice", &sonar.PaginationArgs{Page: 2, PageSize: 100})
+		got := GenerateQualityGateSearchUsersOptions("MyGate", &sonar.PaginationArgs{Page: 2, PageSize: 100})
 
 		want := &sonar.QualitygatesSearchUsersOptions{
 			PaginationArgs: sonar.PaginationArgs{Page: 2, PageSize: 100},
 			GateName:       "MyGate",
-			Query:          "alice",
-			Selected:       "all",
+			Selected:       sonar.SelectionFilterSelected,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("GenerateQualityGateSearchUsersOptions() mismatch (-want +got):\n%s", diff)

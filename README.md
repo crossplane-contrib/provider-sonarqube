@@ -121,7 +121,7 @@ Supported resources:
 | `ALMAzure`, `ALMBitbucket`, `ALMBitbucketCloud`, `ALMGitHub`, `ALMGitLab` | `alm_settings/list_definitions`, shared by every ALM kind | Supported |
 | `Permissions`, `Group` | `permissions/groups` (unfiltered per project, by name for global permissions), `permissions/users` (by login) | Supported |
 | `PermissionsTemplate` | `permissions/search_templates` (indexed once per instance), `permissions/template_groups`, `permissions/template_users` (per template) | Supported |
-| Quality Gate & Quality Profile usergroup associations | `search_groups`, `search_users` | Planned ([#126](https://github.com/crossplane-contrib/provider-sonarqube/issues/126)) |
+| `QualityGateUsergroupAssociation`, `QualityProfileUsergroupAssociation` | `qualitygates/search_groups`, `qualitygates/search_users`, `qualityprofiles/search_groups`, `qualityprofiles/search_users` (selected principals, per gate or profile) | Supported |
 | `Webhook`, `UserToken` | scoped list endpoints | Planned ([#127](https://github.com/crossplane-contrib/provider-sonarqube/issues/127)) |
 
 When the cache is enabled, the provider exposes the following metrics:

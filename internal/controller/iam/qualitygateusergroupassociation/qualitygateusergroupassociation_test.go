@@ -403,7 +403,7 @@ func TestObserve(t *testing.T) {
 		"GroupNameWithColonUsesSpec": {
 			client: &fakeQualityGatesClient{
 				searchGroupsFn: func(opt *sonar.QualitygatesSearchGroupsOptions) (*sonar.QualitygatesSearchGroups, *http.Response, error) {
-					if opt.GateName != testGateName || opt.Query != "team:dev" {
+					if opt.GateName != testGateName || opt.Query != "" || opt.Selected != sonar.SelectionFilterSelected {
 						return nil, mockHTTPResponse(), errors.New("unexpected search options")
 					}
 

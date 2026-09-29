@@ -21,7 +21,6 @@ package qualityprofileusergroupassociation
 import (
 	"context"
 
-	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
@@ -40,6 +39,7 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -66,10 +66,6 @@ const (
 	// errDeleteQualityProfileUsergroupAssociation indicates association
 	// deletion failed.
 	errDeleteQualityProfileUsergroupAssociation = "cannot delete QualityProfileUsergroupAssociation"
-
-	// maxPageSize is the SonarQube search page size used while looking
-	// up associated groups or users.
-	maxPageSize = int64(100)
 )
 
 // SetupGated adds a controller that reconciles
@@ -169,7 +165,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 
 	svc := c.newServiceFn(*config)
 
-	return &external{client: svc}, nil
+	return &external{client: svc, cache: cache.ForConfig(*config)}, nil
 }
 
 // external implements the ExternalClient interface for
@@ -178,6 +174,9 @@ type external struct {
 	// client is used to interact with the SonarQube Quality Profiles
 	// API.
 	client iam.QualityProfileUsergroupAssociationClient
+	// cache holds the selections shared between reconciles. The zero
+	// value does not cache.
+	cache cache.Scoped
 }
 
 // Observe checks whether the external association exists and is up to
@@ -292,95 +291,36 @@ func (c *external) Disconnect(_ context.Context) error {
 	return nil
 }
 
-// observeAssociation looks up the group or user on the Quality Profile and
-// returns the observation built from the SonarQube response. found is
-// false when the principal is not selected on the Quality Profile.
+// observeAssociation looks up the group or user among the principals
+// selected on the Quality Profile, and returns the observation built from
+// the SonarQube response. found is false when the principal is not selected
+// on the Quality Profile, or when the Quality Profile no longer exists.
 func (c *external) observeAssociation(ctx context.Context, subjectType, subject, language, qualityProfile string) (v1alpha1.QualityProfileUsergroupAssociationObservation, bool, error) {
 	if subjectType == iam.SubjectTypeGroup {
-		return c.searchSelectedGroup(ctx, subject, language, qualityProfile)
-	}
-
-	return c.searchSelectedUser(ctx, subject, language, qualityProfile)
-}
-
-// searchSelectedGroup paginates SearchGroups looking for a selected group
-// whose name matches groupName, and returns the observation built from it.
-//
-//nolint:dupl // Intentional structural similarity with searchSelectedUser; different API types prevent abstraction.
-func (c *external) searchSelectedGroup(ctx context.Context, groupName, language, qualityProfile string) (v1alpha1.QualityProfileUsergroupAssociationObservation, bool, error) {
-	for page := int64(1); ; page++ {
-		opts := iam.GenerateQualityProfileSearchGroupsOptions(language, qualityProfile, groupName, &sonar.PaginationArgs{
-			Page:     page,
-			PageSize: maxPageSize,
-		})
-
-		result, resp, err := c.client.SearchGroups(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
-
-		// The Quality Profile no longer exists, so neither does the
-		// association.
-		if common.IsResponseNotFound(resp) {
-			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
-		}
-
+		groups, profileFound, err := iam.QualityProfileSelectedGroups(ctx, c.client, c.cache, language, qualityProfile)
 		if err != nil {
 			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality profile groups")
 		}
 
-		for idx := range result.Groups {
-			if result.Groups[idx].Name == groupName {
-				if !result.Groups[idx].Selected {
-					return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
-				}
-
-				return iam.GenerateQualityProfileGroupAssociationObservation(language, qualityProfile, &result.Groups[idx]), true, nil
-			}
-		}
-
-		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
+		group, selected := groups[subject]
+		if !profileFound || !selected || !group.Selected {
 			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
 		}
+
+		return iam.GenerateQualityProfileGroupAssociationObservation(language, qualityProfile, &group), true, nil
 	}
-}
 
-// searchSelectedUser paginates SearchUsers looking for a selected user
-// whose login matches login, and returns the observation built from it.
-//
-//nolint:dupl // Intentional structural similarity with searchSelectedGroup; different API types prevent abstraction.
-func (c *external) searchSelectedUser(ctx context.Context, login, language, qualityProfile string) (v1alpha1.QualityProfileUsergroupAssociationObservation, bool, error) {
-	for page := int64(1); ; page++ {
-		opts := iam.GenerateQualityProfileSearchUsersOptions(language, qualityProfile, login, &sonar.PaginationArgs{
-			Page:     page,
-			PageSize: maxPageSize,
-		})
-
-		result, resp, err := c.client.SearchUsers(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
-
-		// The Quality Profile no longer exists, so neither does the
-		// association.
-		if common.IsResponseNotFound(resp) {
-			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
-		}
-
-		if err != nil {
-			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality profile users")
-		}
-
-		for idx := range result.Users {
-			if result.Users[idx].Login == login {
-				if !result.Users[idx].Selected {
-					return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
-				}
-
-				return iam.GenerateQualityProfileUserAssociationObservation(language, qualityProfile, &result.Users[idx]), true, nil
-			}
-		}
-
-		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
-		}
+	users, profileFound, err := iam.QualityProfileSelectedUsers(ctx, c.client, c.cache, language, qualityProfile)
+	if err != nil {
+		return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality profile users")
 	}
+
+	user, selected := users[subject]
+	if !profileFound || !selected || !user.Selected {
+		return v1alpha1.QualityProfileUsergroupAssociationObservation{}, false, nil
+	}
+
+	return iam.GenerateQualityProfileUserAssociationObservation(language, qualityProfile, &user), true, nil
 }
 
 // addAssociation calls AddGroup or AddUser based on the configured

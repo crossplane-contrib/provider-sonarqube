@@ -22,7 +22,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
@@ -41,6 +40,7 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -66,10 +66,6 @@ const (
 	// errDeleteQualityGateUsergroupAssociation indicates association
 	// deletion failed.
 	errDeleteQualityGateUsergroupAssociation = "cannot delete QualityGateUsergroupAssociation"
-
-	// maxPageSize is the SonarQube search page size used while looking up
-	// associated groups or users.
-	maxPageSize = int64(100)
 )
 
 // SetupGated adds a controller that reconciles
@@ -169,7 +165,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 
 	svc := c.newServiceFn(*config)
 
-	return &external{client: svc}, nil
+	return &external{client: svc, cache: cache.ForConfig(*config)}, nil
 }
 
 // external implements the ExternalClient interface for
@@ -177,6 +173,9 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 type external struct {
 	// client is used to interact with the SonarQube Quality Gates API.
 	client iam.QualityGateUsergroupAssociationClient
+	// cache holds the selections shared between reconciles. The zero
+	// value does not cache.
+	cache cache.Scoped
 }
 
 // Observe checks whether the external association exists and is up to
@@ -308,95 +307,36 @@ func (c *external) Disconnect(_ context.Context) error {
 	return nil
 }
 
-// observeAssociation looks up the group or user on the Quality Gate and
-// returns the observation built from the SonarQube response. found is
-// false when the principal is not selected on the Quality Gate.
+// observeAssociation looks up the group or user among the principals
+// selected on the Quality Gate, and returns the observation built from the
+// SonarQube response. found is false when the principal is not selected on
+// the Quality Gate, or when the Quality Gate no longer exists.
 func (c *external) observeAssociation(ctx context.Context, subjectType, subject, gateName string) (v1alpha1.QualityGateUsergroupAssociationObservation, bool, error) {
 	if subjectType == iam.SubjectTypeGroup {
-		return c.searchSelectedGroup(ctx, subject, gateName)
-	}
-
-	return c.searchSelectedUser(ctx, subject, gateName)
-}
-
-// searchSelectedGroup paginates SearchGroups looking for a selected group
-// whose name matches groupName, and returns the observation built from it.
-//
-//nolint:dupl // Intentional structural similarity with searchSelectedUser; different API types prevent abstraction.
-func (c *external) searchSelectedGroup(ctx context.Context, groupName, gateName string) (v1alpha1.QualityGateUsergroupAssociationObservation, bool, error) {
-	for page := int64(1); ; page++ {
-		opts := iam.GenerateQualityGateSearchGroupsOptions(gateName, groupName, &sonar.PaginationArgs{
-			Page:     page,
-			PageSize: maxPageSize,
-		})
-
-		result, resp, err := c.client.SearchGroups(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
-
+		groups, gateFound, err := iam.QualityGateSelectedGroups(ctx, c.client, c.cache, gateName)
 		if err != nil {
-			// The Quality Gate no longer exists, so neither does the
-			// association.
-			if common.IsResponseNotFound(resp) {
-				return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
-			}
-
 			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality gate groups")
 		}
 
-		for idx := range result.Groups {
-			if result.Groups[idx].Name == groupName {
-				if !result.Groups[idx].Selected {
-					return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
-				}
-
-				return iam.GenerateQualityGateGroupAssociationObservation(gateName, &result.Groups[idx]), true, nil
-			}
-		}
-
-		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
+		group, selected := groups[subject]
+		if !gateFound || !selected || !group.Selected {
 			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
 		}
+
+		return iam.GenerateQualityGateGroupAssociationObservation(gateName, &group), true, nil
 	}
-}
 
-// searchSelectedUser paginates SearchUsers looking for a selected user
-// whose login matches login, and returns the observation built from it.
-//
-//nolint:dupl // Intentional structural similarity with searchSelectedGroup; different API types prevent abstraction.
-func (c *external) searchSelectedUser(ctx context.Context, login, gateName string) (v1alpha1.QualityGateUsergroupAssociationObservation, bool, error) {
-	for page := int64(1); ; page++ {
-		opts := iam.GenerateQualityGateSearchUsersOptions(gateName, login, &sonar.PaginationArgs{
-			Page:     page,
-			PageSize: maxPageSize,
-		})
-
-		result, resp, err := c.client.SearchUsers(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
-
-		if err != nil {
-			// The Quality Gate no longer exists, so neither does the
-			// association.
-			if common.IsResponseNotFound(resp) {
-				return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
-			}
-
-			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality gate users")
-		}
-
-		for idx := range result.Users {
-			if result.Users[idx].Login == login {
-				if !result.Users[idx].Selected {
-					return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
-				}
-
-				return iam.GenerateQualityGateUserAssociationObservation(gateName, &result.Users[idx]), true, nil
-			}
-		}
-
-		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
-		}
+	users, gateFound, err := iam.QualityGateSelectedUsers(ctx, c.client, c.cache, gateName)
+	if err != nil {
+		return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, errors.Wrap(err, "cannot search quality gate users")
 	}
+
+	user, selected := users[subject]
+	if !gateFound || !selected || !user.Selected {
+		return v1alpha1.QualityGateUsergroupAssociationObservation{}, false, nil
+	}
+
+	return iam.GenerateQualityGateUserAssociationObservation(gateName, &user), true, nil
 }
 
 // addAssociation calls AddGroup or AddUser based on the configured
