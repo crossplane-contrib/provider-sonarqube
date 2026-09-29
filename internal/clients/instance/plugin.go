@@ -74,17 +74,17 @@ var pluginsCacheNamespaces = []string{
 func NewPluginsClient(clientConfig common.Config) PluginsClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newCachedPluginsClient(newClient.Plugins, cache.Default(), cache.ScopeFromConfig(clientConfig))
+	return newCachedPluginsClient(newClient.Plugins, cache.ForConfig(clientConfig))
 }
 
-// newCachedPluginsClient decorates client with store, or returns client
-// as-is when store does not cache.
-func newCachedPluginsClient(client PluginsClient, store cache.Store, scope string) PluginsClient {
-	if !cache.IsEnabled(store) {
+// newCachedPluginsClient decorates client with scoped, or returns client
+// as-is when scoped does not cache.
+func newCachedPluginsClient(client PluginsClient, scoped cache.Scoped) PluginsClient {
+	if !scoped.Enabled() {
 		return client
 	}
 
-	return &cachedPluginsClient{PluginsClient: client, store: store, scope: scope}
+	return &cachedPluginsClient{PluginsClient: client, cache: scoped}
 }
 
 // cachedPluginsClient is a PluginsClient that caches the Installed, Pending
@@ -93,10 +93,8 @@ func newCachedPluginsClient(client PluginsClient, store cache.Store, scope strin
 type cachedPluginsClient struct {
 	PluginsClient
 
-	// store holds the cached lists.
-	store cache.Store
-	// scope identifies the SonarQube connection of the embedded client.
-	scope string
+	// cache holds the cached lists of the embedded client's connection.
+	cache cache.Scoped
 }
 
 // Installed returns the cached list of installed plugins. Only calls without
@@ -106,7 +104,7 @@ func (c *cachedPluginsClient) Installed(ctx context.Context, opt *sonar.PluginsI
 		return c.PluginsClient.Installed(ctx, opt)
 	}
 
-	return cache.FetchWithResponse(ctx, c.store, c.key(pluginsInstalledCacheNamespace),
+	return cache.FetchWithResponse(ctx, c.cache.Store, c.cache.Key(pluginsInstalledCacheNamespace, ""),
 		func(ctx context.Context) (*sonar.PluginsInstalled, *http.Response, error) {
 			return c.PluginsClient.Installed(ctx, nil)
 		})
@@ -114,12 +112,12 @@ func (c *cachedPluginsClient) Installed(ctx context.Context, opt *sonar.PluginsI
 
 // Pending returns the cached list of pending plugins.
 func (c *cachedPluginsClient) Pending(ctx context.Context) (*sonar.PluginsPending, *http.Response, error) {
-	return cache.FetchWithResponse(ctx, c.store, c.key(pluginsPendingCacheNamespace), c.PluginsClient.Pending)
+	return cache.FetchWithResponse(ctx, c.cache.Store, c.cache.Key(pluginsPendingCacheNamespace, ""), c.PluginsClient.Pending)
 }
 
 // Updates returns the cached list of plugin updates.
 func (c *cachedPluginsClient) Updates(ctx context.Context) (*sonar.PluginsUpdates, *http.Response, error) {
-	return cache.FetchWithResponse(ctx, c.store, c.key(pluginsUpdatesCacheNamespace), c.PluginsClient.Updates)
+	return cache.FetchWithResponse(ctx, c.cache.Store, c.cache.Key(pluginsUpdatesCacheNamespace, ""), c.PluginsClient.Updates)
 }
 
 // Install installs a plugin, then invalidates the cached lists.
@@ -143,16 +141,11 @@ func (c *cachedPluginsClient) Update(ctx context.Context, opt *sonar.PluginsUpda
 	return c.PluginsClient.Update(ctx, opt)
 }
 
-// key returns the cache key of the given instance-wide plugin list.
-func (c *cachedPluginsClient) key(namespace string) cache.Key {
-	return cache.Key{Scope: c.scope, Namespace: namespace}
-}
-
 // invalidate drops every cached plugin list. Any write can move a plugin
 // between the installed, pending and updatable lists, so all of them are
 // dropped, whether the write succeeded or not.
 func (c *cachedPluginsClient) invalidate() {
-	c.store.Invalidate(c.scope, pluginsCacheNamespaces...)
+	c.cache.Invalidate(pluginsCacheNamespaces...)
 }
 
 // GeneratePluginObservation converts a sonar.PluginInstalled to an

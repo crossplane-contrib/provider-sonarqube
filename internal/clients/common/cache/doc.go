@@ -31,6 +31,13 @@ limitations under the License.
 // by a number of entries (Options.MaxEntries) and evicting the least
 // recently used entries first.
 //
+// Consumers hold a Scoped, which binds a Store to one connection (see
+// ForConfig). Read paths either decorate an SDK client (the decorator
+// caches a list method transparently), or, when a whole dataset is better
+// fetched once and indexed (for example every group permission of a
+// project), expose a dataset accessor taking the Scoped explicitly. In both
+// cases, the write paths are decorated to invalidate what they affect.
+//
 // Entries are addressed by a Key made of:
 //   - Scope: the identity of the SonarQube connection (see ScopeFromConfig),
 //     so that two credentials never share cached data.

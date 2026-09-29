@@ -21,11 +21,11 @@ import (
 	"errors"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache/cachetest"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -147,7 +147,7 @@ func TestNewCachedPluginsClientDisabled(t *testing.T) {
 
 	inner := newCountingPluginsClient()
 
-	if got := newCachedPluginsClient(inner, cache.NewNoopStore(), "scope"); got != inner {
+	if got := newCachedPluginsClient(inner, cachetest.Disabled()); got != inner {
 		t.Errorf("newCachedPluginsClient() with a noop store = %T, want the raw client", got)
 	}
 
@@ -164,7 +164,7 @@ func TestCachedPluginsClientCachesReads(t *testing.T) {
 	t.Parallel()
 
 	inner := newCountingPluginsClient()
-	client := newCachedPluginsClient(inner, newTestStore(t), t.Name())
+	client := newCachedPluginsClient(inner, cachetest.NewScoped(t))
 
 	readAll(t, client)
 	readAll(t, client)
@@ -210,7 +210,7 @@ func TestCachedPluginsClientWritesInvalidate(t *testing.T) {
 
 				inner := newCountingPluginsClient()
 				inner.writeErr = writeErr
-				client := newCachedPluginsClient(inner, newTestStore(t), t.Name())
+				client := newCachedPluginsClient(inner, cachetest.NewScoped(t))
 
 				readAll(t, client)
 
@@ -237,10 +237,10 @@ func TestCachedPluginsClientWritesInvalidate(t *testing.T) {
 func TestCachedPluginsClientScopesAreIsolated(t *testing.T) {
 	t.Parallel()
 
-	store := newTestStore(t)
+	store := cachetest.NewStore(t)
 	inner := newCountingPluginsClient()
-	first := newCachedPluginsClient(inner, store, t.Name()+"/first")
-	second := newCachedPluginsClient(inner, store, t.Name()+"/second")
+	first := newCachedPluginsClient(inner, cache.NewScoped(store, t.Name()+"/first"))
+	second := newCachedPluginsClient(inner, cache.NewScoped(store, t.Name()+"/second"))
 
 	readAll(t, first)
 	readAll(t, second)
@@ -256,17 +256,4 @@ func TestCachedPluginsClientScopesAreIsolated(t *testing.T) {
 
 	readAll(t, second)
 	assertReads(t, inner, 2)
-}
-
-// newTestStore returns an enabled store that is not the process-wide
-// default one.
-func newTestStore(t *testing.T) cache.Store {
-	t.Helper()
-
-	store, err := cache.NewStore(cache.Options{Enabled: true, TTL: 10 * time.Second, MaxEntries: 100})
-	if err != nil {
-		t.Fatalf("NewStore() error = %v", err)
-	}
-
-	return store
 }
