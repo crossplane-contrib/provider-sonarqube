@@ -151,12 +151,10 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 		return nil, errors.Wrap(err, errGetPC)
 	}
 
-	newClient := common.NewClient(*config)
-
 	return &external{
 		kube:         c.kube,
-		usersClient:  newClient.V2.UsersManagement,
-		groupsClient: newClient.V2.Authorizations,
+		usersClient:  iam.NewUsersClient(*config),
+		groupsClient: iam.NewGroupsClient(*config),
 	}, nil
 }
 

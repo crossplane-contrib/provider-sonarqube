@@ -18,14 +18,43 @@ package common
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/pkg/errors"
+
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 // PageFetcher fetches one page of a paginated SonarQube endpoint and returns
 // its items along with the paging information of the response.
 type PageFetcher[T any] func(ctx context.Context, page sonar.PaginationArgs) (items []T, paging sonar.Paging, err error)
+
+// PageSearch fetches one page of a paginated SonarQube search, as the SDK
+// search methods do.
+type PageSearch[R any] func(ctx context.Context, page sonar.PaginationArgs) (result *R, resp *http.Response, err error)
+
+// SearchPages adapts a paginated SonarQube search into a PageFetcher: items
+// extracts the entries and the paging of one response. The response body
+// is always closed, and a nil result is reported as an error.
+func SearchPages[R, T any](search PageSearch[R], items func(result *R) ([]T, sonar.Paging)) PageFetcher[T] {
+	return func(ctx context.Context, page sonar.PaginationArgs) ([]T, sonar.Paging, error) {
+		result, resp, err := search(ctx, page) //nolint:bodyclose // closed via helpers.CloseBody
+		helpers.CloseBody(resp)
+
+		if err != nil {
+			return nil, sonar.Paging{}, err
+		}
+
+		if result == nil {
+			return nil, sonar.Paging{}, errors.New("received a nil search result from SonarQube")
+		}
+
+		entries, paging := items(result)
+
+		return entries, paging, nil
+	}
+}
 
 // FetchAllPages calls fetch for pages 1..N, until the paging of the
 // responses says the dataset is exhausted, and concatenates their items.

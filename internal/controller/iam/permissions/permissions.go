@@ -39,6 +39,7 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -168,7 +169,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 
 	svc := c.newServiceFn(*config)
 
-	return &external{client: svc}, nil
+	return &external{client: svc, cache: cache.ForConfig(*config)}, nil
 }
 
 // An external observes, then creates, updates, or deletes external
@@ -176,6 +177,9 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 type external struct {
 	// client is used to interact with SonarQube Permissions API.
 	client iam.PermissionsClient
+	// cache holds the permission searches shared between reconciles. The
+	// zero value does not cache.
+	cache cache.Scoped
 }
 
 // Create adds all desired permissions to the group or user, then sets the

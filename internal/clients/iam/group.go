@@ -26,6 +26,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -44,11 +45,13 @@ type GroupsClient interface {
 }
 
 // NewGroupsClient creates a new GroupsClient with the provided SonarQube
-// client configuration.
+// client configuration. When the observe cache is enabled, creating,
+// updating or deleting a group invalidates the cached datasets depending
+// on groups.
 func NewGroupsClient(clientConfig common.Config) GroupsClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.V2.Authorizations
+	return NewCachedGroupsClient(newClient.V2.Authorizations, cache.ForConfig(clientConfig))
 }
 
 // LateInitializeGroup fills the empty fields in the Group spec with

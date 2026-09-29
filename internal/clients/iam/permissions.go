@@ -24,6 +24,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -39,11 +40,13 @@ type PermissionsClient interface {
 }
 
 // NewPermissionsClient creates a new PermissionsClient with the provided
-// SonarQube client configuration.
+// SonarQube client configuration. When the observe cache is enabled, its
+// writes invalidate the permission searches cached in cache.Default() by
+// GroupPermissions and UserPermissions.
 func NewPermissionsClient(clientConfig common.Config) PermissionsClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Permissions
+	return NewCachedPermissionsClient(newClient.Permissions, cache.ForConfig(clientConfig))
 }
 
 // GeneratePermissionsAddGroupOptions generates the options for adding

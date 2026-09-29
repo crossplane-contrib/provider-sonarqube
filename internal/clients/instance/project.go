@@ -27,6 +27,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -45,11 +46,12 @@ type ProjectsClient interface {
 }
 
 // NewProjectsClient creates a new ProjectsClient with the provided
-// SonarQube client configuration.
+// SonarQube client configuration. When the observe cache is enabled, its
+// writes invalidate the cached datasets depending on projects.
 func NewProjectsClient(clientConfig common.Config) ProjectsClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Projects
+	return NewCachedProjectsClient(newClient.Projects, cache.ForConfig(clientConfig))
 }
 
 // GenerateProjectsCreateOptions generates the options for creating a

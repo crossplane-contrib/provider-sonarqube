@@ -19,7 +19,6 @@ package permissions
 import (
 	"context"
 
-	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -60,9 +59,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	)
 
 	if subjectType == subjectTypeGroup {
-		observedPermissions, found, err = getObservedGroupPermissions(ctx, c.client, subject, projectKey)
+		observedPermissions, found, err = iam.GroupPermissions(ctx, c.client, c.cache, subject, projectKey)
 	} else {
-		observedPermissions, found, err = getObservedUserPermissions(ctx, c.client, subject, projectKey)
+		observedPermissions, found, err = iam.UserPermissions(ctx, c.client, c.cache, subject, projectKey)
 	}
 
 	if err != nil {
@@ -93,88 +92,6 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		ResourceLateInitialized: iam.IsPermissionsLateInitialized(former, &permissions.Spec.ForProvider),
 		ConnectionDetails:       managed.ConnectionDetails{},
 	}, nil
-}
-
-// getObservedGroupPermissions retrieves the currently assigned permissions
-// for a group, paginating through results until the group is found or
-// exhausted.
-// Returns (permissions, true, nil) when found, (nil, false, nil) when not
-// found.
-//
-//nolint:dupl // Intentional structural similarity with getObservedUserPermissions; different API types prevent abstraction.
-func getObservedGroupPermissions(ctx context.Context, permClient iam.PermissionsClient, groupName, projectKey string) ([]string, bool, error) { //nolint:gocritic // named results not helpful for pagination loops
-	const maxPageSize = int64(100)
-
-	var projectKeyPtr *string
-	if projectKey != "" {
-		projectKeyPtr = &projectKey
-	}
-
-	// SonarQube returns empty project-scoped permissions when the name query
-	// (q) is combined with projectKey. Omit the name filter in that case and
-	// find the group by iterating the full result set.
-	queryName := groupName
-	if projectKey != "" {
-		queryName = ""
-	}
-
-	for page := int64(1); ; page++ {
-		opts := iam.GeneratePermissionsGroupsOptions(queryName, projectKeyPtr, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
-
-		result, resp, err := permClient.Groups(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
-
-		if err != nil {
-			return nil, false, errors.Wrap(err, "cannot list group permissions")
-		}
-
-		for _, g := range result.Groups {
-			if g.Name == groupName {
-				return g.Permissions, true, nil
-			}
-		}
-
-		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return nil, false, nil
-		}
-	}
-}
-
-// getObservedUserPermissions retrieves the currently assigned permissions
-// for a user, paginating through results until the user is found or
-// exhausted.
-// Returns (permissions, true, nil) when found, (nil, false, nil) when not
-// found.
-//
-//nolint:dupl // Intentional structural similarity with getObservedGroupPermissions; different API types prevent abstraction.
-func getObservedUserPermissions(ctx context.Context, permClient iam.PermissionsClient, login, projectKey string) ([]string, bool, error) { //nolint:gocritic // named results not helpful for pagination loops
-	const maxPageSize = int64(100)
-
-	var projectKeyPtr *string
-	if projectKey != "" {
-		projectKeyPtr = &projectKey
-	}
-
-	for page := int64(1); ; page++ {
-		opts := iam.GeneratePermissionsUsersOptions(login, projectKeyPtr, &sonar.PaginationArgs{Page: page, PageSize: maxPageSize})
-
-		result, resp, err := permClient.Users(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
-
-		if err != nil {
-			return nil, false, errors.Wrap(err, "cannot list user permissions")
-		}
-
-		for _, u := range result.Users {
-			if u.Login == login {
-				return u.Permissions, true, nil
-			}
-		}
-
-		if result.Paging.Total <= result.Paging.PageIndex*result.Paging.PageSize {
-			return nil, false, nil
-		}
-	}
 }
 
 // computePermissionsDiff returns (toAdd, toRemove) to converge from

@@ -27,6 +27,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -52,11 +53,13 @@ type ApplicationsClient interface {
 }
 
 // NewApplicationsClient creates a new ApplicationsClient using the
-// provided SonarQube client configuration.
+// provided SonarQube client configuration. When the observe cache is
+// enabled, creating or deleting applications invalidates the cached datasets
+// depending on projects.
 func NewApplicationsClient(clientConfig common.Config) ApplicationsClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Applications
+	return NewCachedApplicationsClient(newClient.Applications, cache.ForConfig(clientConfig))
 }
 
 // GenerateApplicationCreateOptions generates the options for creating a

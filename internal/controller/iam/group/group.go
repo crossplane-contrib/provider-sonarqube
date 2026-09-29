@@ -23,7 +23,6 @@ import (
 
 	stderrors "errors"
 
-	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
@@ -41,6 +40,7 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -165,6 +165,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	return &external{
 		groupClient:       iam.NewGroupsClient(*config),
 		permissionsClient: iam.NewPermissionsClient(*config),
+		cache:             cache.ForConfig(*config),
 	}, nil
 }
 
@@ -174,6 +175,9 @@ type external struct {
 	groupClient iam.GroupsClient
 	// permissionsClient is used to interact with SonarQube Permissions API for managing group permissions
 	permissionsClient iam.PermissionsClient
+	// cache holds the permission searches shared between reconciles. The
+	// zero value does not cache.
+	cache cache.Scoped
 }
 
 // Observe observes the external Group resource.
@@ -208,9 +212,13 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	group.Status.AtProvider = iam.GenerateGroupObservation(retrievedGroup)
 
 	// Retrieve the permissions for the group and set it in the observation
-	permissions, err := getGroupPermissions(ctx, c.permissionsClient, retrievedGroup.Name)
+	permissions, found, err := iam.GroupPermissions(ctx, c.permissionsClient, c.cache, retrievedGroup.Name, "")
 	if err != nil {
 		return managed.ExternalObservation{ResourceExists: true}, errors.Wrapf(err, "group %s", retrievedGroup.Name)
+	}
+
+	if !found {
+		permissions = []string{}
 	}
 
 	group.Status.AtProvider.Permissions = permissions
@@ -388,48 +396,4 @@ func computePermissionsDelta(specPermissions *[]string, observedPermissions []st
 
 	return helpers.StringSetDifference(*specPermissions, observedPermissions),
 		helpers.StringSetDifference(observedPermissions, *specPermissions)
-}
-
-// getGroupPermissions retrieves the permissions associated with a group
-// from SonarQube.
-// It returns a slice of permission keys and any error encountered during
-// the API call.
-// If the group is not found after paging through results,
-// it returns an empty slice and nil error.
-// If there is an error during the API call,
-// it returns an error wrapping the original error with additional context.
-func getGroupPermissions(ctx context.Context, permissionsClient iam.PermissionsClient, groupName string) ([]string, error) {
-	const maxPageSize = int64(100)
-
-	for page := int64(1); ; page++ {
-		options := iam.GeneratePermissionsGroupsOptions(groupName, nil, new(sonar.PaginationArgs{
-			Page:     page,
-			PageSize: maxPageSize,
-		}))
-
-		permissions, resp, err := permissionsClient.Groups(ctx, options) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "cannot get group permissions")
-		}
-
-		if permissions == nil {
-			return nil, errors.New("received nil permissions response from SonarQube")
-		}
-
-		if permissions.Paging.PageSize == 0 {
-			return nil, errors.New("received zero PageSize in permissions response from SonarQube")
-		}
-
-		for _, group := range permissions.Groups {
-			if group.Name == groupName {
-				return group.Permissions, nil
-			}
-		}
-
-		if permissions.Paging.Total <= permissions.Paging.PageIndex*permissions.Paging.PageSize {
-			return []string{}, nil
-		}
-	}
 }

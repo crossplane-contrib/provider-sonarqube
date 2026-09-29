@@ -56,7 +56,12 @@ limitations under the License.
 //     namespaces it can affect (Store.Invalidate), after the write returns,
 //     including when the write returns an error (the write may have
 //     partially succeeded).
-//  3. The TTL must stay below crossplane-runtime's creation grace period
+//  3. Datasets mentioning other objects (projects, users, groups, Quality
+//     Gates, Quality Profiles) declare it with DependOn, and every write
+//     creating, renaming or deleting such an object invalidates its kind
+//     with Scoped.InvalidateEntities: deleting a project must drop its
+//     cached permissions, whichever controller deleted it.
+//  4. The TTL must stay below crossplane-runtime's creation grace period
 //     (30s, see MaxTTL), so that a resource created by this provider is
 //     always observed from fresh data once the grace period is over.
 package cache

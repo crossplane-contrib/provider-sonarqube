@@ -25,6 +25,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 )
 
 const (
@@ -68,11 +69,13 @@ type PortfoliosClient interface {
 }
 
 // NewPortfoliosClient creates a new PortfoliosClient using the
-// provided SonarQube client configuration.
+// provided SonarQube client configuration. When the observe cache is
+// enabled, creating or deleting portfolios invalidates the cached datasets
+// depending on projects.
 func NewPortfoliosClient(clientConfig common.Config) PortfoliosClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Views
+	return NewCachedPortfoliosClient(newClient.Views, cache.ForConfig(clientConfig))
 }
 
 // GeneratePortfolioObservation converts a sonar.ViewDetails to a

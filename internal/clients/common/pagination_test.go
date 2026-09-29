@@ -19,6 +19,9 @@ package common
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
@@ -207,6 +210,82 @@ func TestFindInPages(t *testing.T) {
 
 			if len(pages.requested) != tc.wantPages {
 				t.Errorf("FindInPages() requested %d pages, want %d", len(pages.requested), tc.wantPages)
+			}
+		})
+	}
+}
+
+// searchResult is a search response of the SearchPages tests.
+type searchResult struct {
+	items  []int
+	paging sonar.Paging
+}
+
+// trackedBody is a response body recording whether it was closed.
+type trackedBody struct {
+	io.Reader
+
+	closed bool
+}
+
+// Close records the call.
+func (b *trackedBody) Close() error {
+	b.closed = true
+
+	return nil
+}
+
+// TestSearchPages tests adapting a SonarQube search into a PageFetcher.
+func TestSearchPages(t *testing.T) {
+	t.Parallel()
+
+	errSearch := errors.New("search failed")
+	cases := map[string]struct {
+		result    *searchResult
+		err       error
+		wantItems []int
+		wantErr   bool
+	}{
+		"Items":     {result: &searchResult{items: []int{1, 2}, paging: sonar.Paging{PageIndex: 1, PageSize: 2, Total: 2}}, wantItems: []int{1, 2}},
+		"Error":     {err: errSearch, wantErr: true},
+		"NilResult": {wantErr: true},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			body := &trackedBody{Reader: strings.NewReader("{}")}
+			fetch := SearchPages(
+				func(_ context.Context, page sonar.PaginationArgs) (*searchResult, *http.Response, error) {
+					if page.Page != 3 || page.PageSize != 50 {
+						t.Errorf("search page = %+v, want page 3 of 50", page)
+					}
+
+					return tc.result, &http.Response{StatusCode: http.StatusOK, Body: body}, tc.err
+				},
+				func(result *searchResult) ([]int, sonar.Paging) { return result.items, result.paging })
+
+			items, paging, err := fetch(context.Background(), sonar.PaginationArgs{Page: 3, PageSize: 50})
+
+			if !body.closed {
+				t.Error("SearchPages() did not close the response body")
+			}
+
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("SearchPages() error = %v, want error %v", err, tc.wantErr)
+			}
+
+			if tc.err != nil && !errors.Is(err, tc.err) {
+				t.Errorf("SearchPages() error = %v, want %v", err, tc.err)
+			}
+
+			if diff := cmp.Diff(tc.wantItems, items); diff != "" {
+				t.Errorf("SearchPages() items mismatch (-want +got):\n%s", diff)
+			}
+
+			if tc.result != nil && paging != tc.result.paging {
+				t.Errorf("SearchPages() paging = %+v, want %+v", paging, tc.result.paging)
 			}
 		})
 	}

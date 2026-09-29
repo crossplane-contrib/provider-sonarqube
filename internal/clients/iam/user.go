@@ -24,6 +24,7 @@ import (
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -37,11 +38,12 @@ type UsersClient interface {
 }
 
 // NewUsersClient creates a new UsersClient with the provided SonarQube
-// client configuration.
+// client configuration. When the observe cache is enabled, its writes
+// invalidate the cached datasets depending on users.
 func NewUsersClient(clientConfig common.Config) UsersClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.V2.UsersManagement
+	return NewCachedUsersClient(newClient.V2.UsersManagement, cache.ForConfig(clientConfig))
 }
 
 // LateInitializeUser fills the empty fields in the User spec with the
