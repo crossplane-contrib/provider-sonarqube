@@ -169,5 +169,5 @@ var (
 // init registers the QualityProfileUsergroupAssociation resource with the
 // Scheme.
 func init() {
-	SchemeBuilder.Register(&QualityProfileUsergroupAssociation{}, &QualityProfileUsergroupAssociationList{})
+	register(&QualityProfileUsergroupAssociation{}, &QualityProfileUsergroupAssociationList{})
 }

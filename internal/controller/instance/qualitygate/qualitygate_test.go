@@ -335,7 +335,6 @@ func TestCreate(t *testing.T) {
 			client: &fake.MockQualityGatesClient{
 				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
-						ID:   "gate-123",
 						Name: opt.Name,
 					}, nil, nil
 				},
@@ -360,7 +359,6 @@ func TestCreate(t *testing.T) {
 			client: &fake.MockQualityGatesClient{
 				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
-						ID:   "some-generated-id",
 						Name: "MySonarQubeGateName",
 					}, nil, nil
 				},
@@ -385,7 +383,6 @@ func TestCreate(t *testing.T) {
 			client: &fake.MockQualityGatesClient{
 				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
-						ID:   "gate-123",
 						Name: myQualityGateName, // different from k8s resource name to test the fix
 					}, nil, nil
 				},
@@ -419,7 +416,6 @@ func TestCreate(t *testing.T) {
 			client: &fake.MockQualityGatesClient{
 				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 					return &sonar.QualitygatesCreate{
-						ID:   "gate-123",
 						Name: opt.Name,
 					}, nil, nil
 				},
@@ -733,7 +729,6 @@ func TestCreateSetsExternalNameToSonarQubeName(t *testing.T) {
 	client := &fake.MockQualityGatesClient{
 		CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
 			return &sonar.QualitygatesCreate{
-				ID:   "generated-id-12345",
 				Name: "ActualSonarQubeName",
 			}, nil, nil
 		},

@@ -89,5 +89,5 @@ var (
 
 // init registers the ALMAzure resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&ALMAzure{}, &ALMAzureList{})
+	register(&ALMAzure{}, &ALMAzureList{})
 }

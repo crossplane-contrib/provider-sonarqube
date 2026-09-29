@@ -22,7 +22,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
@@ -98,7 +97,7 @@ func Setup(mgr ctrl.Manager, options controller.Options) error {
 		}),
 		managed.WithLogger(options.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(options.PollInterval),
-		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name) /*nolint:staticcheck // GetEventRecorderFor is marked as deprecated but is not yet replaced with an alternative in controller-runtime, and the APIRecorder is still required for recording events.*/)),
+		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
 	}
 
 	if options.Features.Enabled(feature.EnableBetaManagementPolicies) {

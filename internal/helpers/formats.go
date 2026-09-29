@@ -20,6 +20,7 @@ package helpers
 import (
 	"io"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -244,4 +245,30 @@ func NewStringSetFromSlice(slice []string) map[string]struct{} {
 	}
 
 	return set
+}
+
+// StringSetDifference returns the sorted, de-duplicated elements of from
+// that are not in exclude.
+func StringSetDifference(from, exclude []string) []string {
+	excluded := NewStringSetFromSlice(exclude)
+	seen := make(map[string]struct{}, len(from))
+
+	var difference []string
+
+	for _, value := range from {
+		if _, found := excluded[value]; found {
+			continue
+		}
+
+		if _, found := seen[value]; found {
+			continue
+		}
+
+		seen[value] = struct{}{}
+		difference = append(difference, value)
+	}
+
+	slices.Sort(difference)
+
+	return difference
 }

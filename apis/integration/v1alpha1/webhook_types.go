@@ -127,5 +127,5 @@ var (
 
 // init registers the Webhook resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Webhook{}, &WebhookList{})
+	register(&Webhook{}, &WebhookList{})
 }

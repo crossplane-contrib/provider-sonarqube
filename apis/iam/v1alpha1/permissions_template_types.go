@@ -181,5 +181,5 @@ var (
 
 // init registers the PermissionsTemplate resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&PermissionsTemplate{}, &PermissionsTemplateList{})
+	register(&PermissionsTemplate{}, &PermissionsTemplateList{})
 }

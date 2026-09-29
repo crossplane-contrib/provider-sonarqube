@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -73,7 +72,7 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 		}),
 		managed.WithLogger(opts.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(opts.PollInterval),
-		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
+		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
 	}
 
 	if opts.Features.Enabled(feature.EnableBetaManagementPolicies) {

@@ -180,20 +180,5 @@ func getObservedUserPermissions(ctx context.Context, permClient iam.PermissionsC
 // computePermissionsDiff returns (toAdd, toRemove) to converge from
 // observed to desired.
 func computePermissionsDiff(desired, observed []string) (toAdd, toRemove []string) {
-	desiredSet := helpers.NewStringSetFromSlice(desired)
-	observedSet := helpers.NewStringSetFromSlice(observed)
-
-	for _, p := range desired {
-		if _, ok := observedSet[p]; !ok {
-			toAdd = append(toAdd, p)
-		}
-	}
-
-	for _, p := range observed {
-		if _, ok := desiredSet[p]; !ok {
-			toRemove = append(toRemove, p)
-		}
-	}
-
-	return toAdd, toRemove
+	return helpers.StringSetDifference(desired, observed), helpers.StringSetDifference(observed, desired)
 }

@@ -120,5 +120,5 @@ var (
 
 // init registers the ALMGitHub resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&ALMGitHub{}, &ALMGitHubList{})
+	register(&ALMGitHub{}, &ALMGitHubList{})
 }

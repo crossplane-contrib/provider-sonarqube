@@ -89,5 +89,5 @@ var (
 
 // init registers the ALMBitbucket resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&ALMBitbucket{}, &ALMBitbucketList{})
+	register(&ALMBitbucket{}, &ALMBitbucketList{})
 }

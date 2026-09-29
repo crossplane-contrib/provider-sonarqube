@@ -353,22 +353,8 @@ func (c *external) updatePermissionsTemplateSubject(
 // It returns two slices,
 // one with the permissions to add and one with the permissions to remove.
 func (c *external) computePermissionsDiff(specPermissions, obsPermissions []string) (permissionsToAdd, permissionsToRemove []string) {
-	specPerms := helpers.NewStringSetFromSlice(specPermissions)
-	obsPerms := helpers.NewStringSetFromSlice(obsPermissions)
-
-	for _, perm := range specPermissions {
-		if _, exists := obsPerms[perm]; !exists {
-			permissionsToAdd = append(permissionsToAdd, perm)
-		}
-	}
-
-	for _, perm := range obsPermissions {
-		if _, exists := specPerms[perm]; !exists {
-			permissionsToRemove = append(permissionsToRemove, perm)
-		}
-	}
-
-	return permissionsToAdd, permissionsToRemove
+	return helpers.StringSetDifference(specPermissions, obsPermissions),
+		helpers.StringSetDifference(obsPermissions, specPermissions)
 }
 
 // updatePermissionsTemplateCreator updates the creator permissions of a

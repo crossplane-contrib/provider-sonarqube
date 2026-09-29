@@ -110,5 +110,5 @@ var (
 
 // init registers the NewCodePeriod resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&NewCodePeriod{}, &NewCodePeriodList{})
+	register(&NewCodePeriod{}, &NewCodePeriodList{})
 }

@@ -112,5 +112,5 @@ var (
 
 // init registers the Group resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Group{}, &GroupList{})
+	register(&Group{}, &GroupList{})
 }

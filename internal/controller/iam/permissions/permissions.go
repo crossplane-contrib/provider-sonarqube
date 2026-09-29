@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -41,6 +40,7 @@ import (
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 const (
@@ -99,7 +99,7 @@ func Setup(mgr ctrl.Manager, options controller.Options) error {
 		}),
 		managed.WithLogger(options.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(options.PollInterval),
-		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name) /*nolint:staticcheck // GetEventRecorderFor is marked as deprecated but is not yet replaced with an alternative in controller-runtime, and the APIRecorder is still required for recording events.*/)),
+		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
 	}
 
 	if options.Features.Enabled(feature.EnableBetaManagementPolicies) {

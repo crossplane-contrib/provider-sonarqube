@@ -169,5 +169,5 @@ var (
 
 // init registers the License and LicenseList types with the SchemeBuilder.
 func init() {
-	SchemeBuilder.Register(&License{}, &LicenseList{})
+	register(&License{}, &LicenseList{})
 }

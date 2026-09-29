@@ -202,5 +202,5 @@ var (
 
 // init registers the Application resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Application{}, &ApplicationList{})
+	register(&Application{}, &ApplicationList{})
 }

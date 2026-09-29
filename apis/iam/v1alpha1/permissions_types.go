@@ -143,5 +143,5 @@ var (
 
 // init registers the Permissions resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Permissions{}, &PermissionsList{})
+	register(&Permissions{}, &PermissionsList{})
 }

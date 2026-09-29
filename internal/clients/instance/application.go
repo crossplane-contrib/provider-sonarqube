@@ -305,37 +305,11 @@ func ApplicationBranchesToDelete(spec []v1alpha1.ApplicationBranchParameters, ob
 // ApplicationProjectsToAdd returns the sorted keys of the desired projects
 // that are not yet members of the application.
 func ApplicationProjectsToAdd(spec, observation []string) []string {
-	return stringSetDifference(spec, observation)
+	return helpers.StringSetDifference(spec, observation)
 }
 
 // ApplicationProjectsToRemove returns the sorted keys of the member projects
 // that are not in the desired state.
 func ApplicationProjectsToRemove(spec, observation []string) []string {
-	return stringSetDifference(observation, spec)
-}
-
-// stringSetDifference returns the sorted, de-duplicated elements of from
-// that are not in exclude.
-func stringSetDifference(from, exclude []string) []string {
-	excluded := helpers.NewStringSetFromSlice(exclude)
-	seen := make(map[string]struct{}, len(from))
-
-	var difference []string
-
-	for _, value := range from {
-		if _, found := excluded[value]; found {
-			continue
-		}
-
-		if _, found := seen[value]; found {
-			continue
-		}
-
-		seen[value] = struct{}{}
-		difference = append(difference, value)
-	}
-
-	slices.Sort(difference)
-
-	return difference
+	return helpers.StringSetDifference(observation, spec)
 }

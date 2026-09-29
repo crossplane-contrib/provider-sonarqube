@@ -137,5 +137,5 @@ var (
 
 // init registers the Plugin resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Plugin{}, &PluginList{})
+	register(&Plugin{}, &PluginList{})
 }

@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 const (
@@ -855,6 +857,54 @@ func TestNewStringSetFromSlice(t *testing.T) {
 				if _, ok := got[k]; !ok {
 					t.Fatalf("NewStringSetFromSlice() missing key %q", k)
 				}
+			}
+		})
+	}
+}
+
+// TestStringSetDifference tests computing the sorted, de-duplicated
+// difference of two string slices.
+func TestStringSetDifference(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		from    []string
+		exclude []string
+		want    []string
+	}{
+		"BothNil": {
+			from:    nil,
+			exclude: nil,
+			want:    nil,
+		},
+		"NilExclude": {
+			from:    []string{"b", "a"},
+			exclude: nil,
+			want:    []string{"a", "b"},
+		},
+		"AllExcluded": {
+			from:    []string{"a", "b"},
+			exclude: []string{"b", "a", "c"},
+			want:    nil,
+		},
+		"PartialOverlap": {
+			from:    []string{"c", "a", "b"},
+			exclude: []string{"b"},
+			want:    []string{"a", "c"},
+		},
+		"DuplicatesInFrom": {
+			from:    []string{"b", "a", "b", "a"},
+			exclude: []string{},
+			want:    []string{"a", "b"},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if diff := cmp.Diff(tc.want, StringSetDifference(tc.from, tc.exclude)); diff != "" {
+				t.Errorf("StringSetDifference() -want +got:\n%s", diff)
 			}
 		})
 	}

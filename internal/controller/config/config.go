@@ -19,7 +19,6 @@ package config
 
 import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/providerconfig"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -27,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane/provider-sonarqube/apis/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 // Setup adds a controller that reconciles ProviderConfigs by accounting for
@@ -92,7 +92,7 @@ func setupProviderConfig(
 
 	reconciler := providerconfig.NewReconciler(mgr, kinds,
 		providerconfig.WithLogger(opts.Logger.WithValues("controller", name)),
-		providerconfig.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
+		providerconfig.WithRecorder(helpers.NewEventRecorder(mgr, name)))
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).

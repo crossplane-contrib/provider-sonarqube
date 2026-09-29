@@ -89,5 +89,5 @@ var (
 
 // init registers the ALMGitLab resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&ALMGitLab{}, &ALMGitLabList{})
+	register(&ALMGitLab{}, &ALMGitLabList{})
 }

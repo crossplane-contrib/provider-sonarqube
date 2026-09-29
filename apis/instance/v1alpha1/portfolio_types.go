@@ -135,5 +135,5 @@ var (
 
 // init registers the Portfolio resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Portfolio{}, &PortfolioList{})
+	register(&Portfolio{}, &PortfolioList{})
 }

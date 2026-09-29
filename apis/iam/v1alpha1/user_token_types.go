@@ -168,5 +168,5 @@ var (
 
 // init registers UserToken types with the SchemeBuilder.
 func init() {
-	SchemeBuilder.Register(&UserToken{}, &UserTokenList{})
+	register(&UserToken{}, &UserTokenList{})
 }

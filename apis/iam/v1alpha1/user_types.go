@@ -166,5 +166,5 @@ var (
 
 // init registers the User resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&User{}, &UserList{})
+	register(&User{}, &UserList{})
 }

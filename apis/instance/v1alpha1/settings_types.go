@@ -128,5 +128,5 @@ var (
 
 // init registers the Settings resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Settings{}, &SettingsList{})
+	register(&Settings{}, &SettingsList{})
 }

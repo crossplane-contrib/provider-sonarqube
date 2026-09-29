@@ -176,5 +176,5 @@ var (
 
 // init registers the QualityProfile resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&QualityProfile{}, &QualityProfileList{})
+	register(&QualityProfile{}, &QualityProfileList{})
 }

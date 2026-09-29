@@ -281,5 +281,5 @@ var (
 
 // init registers the Rule resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&Rule{}, &RuleList{})
+	register(&Rule{}, &RuleList{})
 }

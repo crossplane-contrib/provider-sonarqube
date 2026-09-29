@@ -178,5 +178,5 @@ var (
 
 // init registers the QualityGate resource with the Scheme.
 func init() {
-	SchemeBuilder.Register(&QualityGate{}, &QualityGateList{})
+	register(&QualityGate{}, &QualityGateList{})
 }
