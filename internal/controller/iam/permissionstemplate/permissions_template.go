@@ -37,6 +37,7 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -149,7 +150,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 
 	svc := c.newServiceFn(*config)
 
-	return &external{client: svc}, nil
+	return &external{client: svc, cache: cache.ForConfig(*config)}, nil
 }
 
 // external implements the ExternalClient interface for
@@ -157,6 +158,9 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 type external struct {
 	// client is used to interact with SonarQube PermissionsTemplate API
 	client iam.PermissionsTemplatesClient
+	// cache holds the template data shared between reconciles. The zero
+	// value does not cache.
+	cache cache.Scoped
 }
 
 // Create creates the PermissionsTemplate external resource using the

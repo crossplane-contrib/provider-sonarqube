@@ -19,11 +19,13 @@ package iam
 import (
 	"context"
 	"net/http"
+	"slices"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -49,11 +51,14 @@ type PermissionsTemplatesClient interface { //nolint:interfacebloat // This inte
 }
 
 // NewPermissionsTemplatesClient creates a new PermissionsTemplatesClient
-// with the provided SonarQube client configuration.
+// with the provided SonarQube client configuration. When the observe cache
+// is enabled, its writes invalidate the template data cached in
+// cache.Default() by PermissionTemplatesIndex, PermissionTemplateGroups and
+// PermissionTemplateUsers.
 func NewPermissionsTemplatesClient(clientConfig common.Config) PermissionsTemplatesClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Permissions
+	return NewCachedPermissionsTemplatesClient(newClient.Permissions, cache.ForConfig(clientConfig))
 }
 
 // LateInitializePermissionsTemplate fills the empty fields in the
@@ -370,8 +375,10 @@ func GeneratePermissionsTemplateGroupObservations(groups *[]sonar.PermissionsTem
 // from the SonarQube API response.
 func GeneratePermissionsTemplateGroupObservation(group *sonar.PermissionsTemplateGroup) *v1alpha1.PermissionsTemplateGroupObservation {
 	return &v1alpha1.PermissionsTemplateGroupObservation{
-		Name:        group.Name,
-		Permissions: group.Permissions,
+		Name: group.Name,
+		// group may be shared with the observe cache: copy the slice so
+		// that decoding into the managed resource never writes into it.
+		Permissions: slices.Clone(group.Permissions),
 	}
 }
 
@@ -396,8 +403,10 @@ func GeneratePermissionsTemplateUserObservations(users *[]sonar.PermissionsTempl
 // from the SonarQube API response.
 func GeneratePermissionsTemplateUserObservation(user *sonar.PermissionsTemplateUser) *v1alpha1.PermissionsTemplateUserObservation {
 	return &v1alpha1.PermissionsTemplateUserObservation{
-		Login:       user.Login,
-		Permissions: user.Permissions,
+		Login: user.Login,
+		// user may be shared with the observe cache, see
+		// GeneratePermissionsTemplateGroupObservation.
+		Permissions: slices.Clone(user.Permissions),
 	}
 }
 

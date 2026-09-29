@@ -120,7 +120,7 @@ Supported resources:
 | `Plugin` | `plugins/installed`, `plugins/pending`, `plugins/updates` | Supported |
 | `ALMAzure`, `ALMBitbucket`, `ALMBitbucketCloud`, `ALMGitHub`, `ALMGitLab` | `alm_settings/list_definitions`, shared by every ALM kind | Supported |
 | `Permissions`, `Group` | `permissions/groups` (unfiltered per project, by name for global permissions), `permissions/users` (by login) | Supported |
-| `PermissionsTemplate` | permission template search | Planned ([#125](https://github.com/crossplane-contrib/provider-sonarqube/issues/125)) |
+| `PermissionsTemplate` | `permissions/search_templates` (indexed once per instance), `permissions/template_groups`, `permissions/template_users` (per template) | Supported |
 | Quality Gate & Quality Profile usergroup associations | `search_groups`, `search_users` | Planned ([#126](https://github.com/crossplane-contrib/provider-sonarqube/issues/126)) |
 | `Webhook`, `UserToken` | scoped list endpoints | Planned ([#127](https://github.com/crossplane-contrib/provider-sonarqube/issues/127)) |
 
