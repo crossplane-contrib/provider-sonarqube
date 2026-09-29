@@ -33,6 +33,7 @@ if [ "${skipcleanup}" != "true" ]; then
   cleanup() {
     echo_step "cleaning up controlplane"
     "${KIND}" delete cluster --name="${KIND_CLUSTER_NAME}" || true
+    rm -f "${DRC_FILE:-}"
   }
   trap cleanup EXIT
 fi
@@ -66,7 +67,37 @@ docker pull docker.io/library/sonarqube:enterprise
 kind_load_image docker.io/library/sonarqube:community
 kind_load_image docker.io/library/sonarqube:enterprise
 
-echo_step "deploying ${PACKAGE_NAME} provider package"
+# The e2e suite runs the provider with the alpha observe cache enabled by
+# default, so that cached decorators (e.g. Plugin) are exercised against a
+# real SonarQube. Set ENABLE_OBSERVE_CACHE=false to run without it.
+ENABLE_OBSERVE_CACHE="${ENABLE_OBSERVE_CACHE:-true}"
+export ENABLE_OBSERVE_CACHE
+
+# local.xpkg.deploy.provider.<name> uses DRC_FILE as the provider's
+# DeploymentRuntimeConfig when it exists; it overrides the name and image.
+DRC_FILE="$(mktemp)"
+export DRC_FILE
+cat > "${DRC_FILE}" <<EOF
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: runtimeconfig-${PACKAGE_NAME}
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      strategy: {}
+      template:
+        spec:
+          containers:
+            - name: package-runtime
+              args: ["--debug"]
+              env:
+                - name: ENABLE_OBSERVE_CACHE
+                  value: "${ENABLE_OBSERVE_CACHE}"
+EOF
+
+echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${ENABLE_OBSERVE_CACHE})"
 # local.xpkg.deploy.provider.<name> patches Crossplane with a dev sidecar,
 # extracts each xpkg into the cache under the cache key Crossplane >=2.2
 # expects (xpkg.crossplane.internal/dev/<name>@<digest>), kubectl-cps the

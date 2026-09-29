@@ -31,6 +31,11 @@ limitations under the License.
 //	SONARQUBE_URL    - base URL of the SonarQube API (e.g. http://localhost:9000/api)
 //	SONARQUBE_TOKEN  - admin-scoped SonarQube token used to verify state
 //
+// ENABLE_OBSERVE_CACHE is optional and mirrors the provider's
+// --enable-observe-cache flag: integration_tests.sh deploys the provider
+// with that value (true by default) and exports it to the suite, which
+// exposes it as Framework.ObserveCacheEnabled.
+//
 // The companion ClusterProviderConfig used by the managed resources under
 // test is named `e2e` and is created by `cluster/local/sonarqube_setup.sh`.
 //

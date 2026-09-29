@@ -57,6 +57,73 @@ your platform:
 Available examples live under `examples/` and are a practical starting point for
 understanding the resource shapes supported by the provider.
 
+## Observe cache (alpha)
+
+Many managed resources of the same kind usually read the same SonarQube list
+endpoint during `Observe` (for example, every `Plugin` reads the list of
+installed plugins). The observe cache shares those responses between
+reconciles for a short time, which cuts the number of API calls sent to
+SonarQube when many resources are managed.
+
+The cache is **disabled by default**. Enable it with the following flags, for
+example through a `DeploymentRuntimeConfig`:
+
+| Flag | Environment variable | Default | Description |
+| --- | --- | --- | --- |
+| `--enable-observe-cache` | `ENABLE_OBSERVE_CACHE` | `false` | Enables the cache. |
+| `--observe-cache-ttl` | `OBSERVE_CACHE_TTL` | `20s` | Lifetime of a cached response. Must be greater than `0` and lower than `30s` (Crossplane's creation grace period). |
+| `--observe-cache-max-entries` | `OBSERVE_CACHE_MAX_ENTRIES` | `1000` | Maximum number of cached responses. The oldest are evicted first. Must be greater than `0`. |
+
+```yaml
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: provider-sonarqube
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      template:
+        spec:
+          containers:
+            - name: package-runtime
+              env:
+                - name: ENABLE_OBSERVE_CACHE
+                  value: "true"
+```
+
+Things to know before enabling it:
+
+* **Staleness:** changes made by the provider itself invalidate the affected
+  cached responses immediately. Drift introduced outside of Crossplane (in the
+  SonarQube UI, by another tool, ...) can however be detected up to one TTL
+  later than without the cache.
+* **Scope:** cached responses are scoped per SonarQube connection, identified by
+  a hash of the base URL, authentication type and credentials of the
+  `ProviderConfig`. Resources using different credentials never share cached
+  data, even against the same instance. Raw credentials are never kept in the
+  cache.
+* **Errors are never cached.**
+
+Supported resources:
+
+| Resource | Cached endpoints | Status |
+| --- | --- | --- |
+| `Plugin` | `plugins/installed`, `plugins/pending`, `plugins/updates` | Supported |
+| `ALMAzure`, `ALMBitbucket`, `ALMBitbucketCloud`, `ALMGitHub`, `ALMGitLab` | `alm_settings/list_definitions` | Planned ([#123](https://github.com/crossplane-contrib/provider-sonarqube/issues/123)) |
+| `Permissions`, `Group` | permissions search | Planned ([#124](https://github.com/crossplane-contrib/provider-sonarqube/issues/124)) |
+| `PermissionsTemplate` | permission template search | Planned ([#125](https://github.com/crossplane-contrib/provider-sonarqube/issues/125)) |
+| Quality Gate & Quality Profile usergroup associations | `search_groups`, `search_users` | Planned ([#126](https://github.com/crossplane-contrib/provider-sonarqube/issues/126)) |
+| `Webhook`, `UserToken` | scoped list endpoints | Planned ([#127](https://github.com/crossplane-contrib/provider-sonarqube/issues/127)) |
+
+When the cache is enabled, the provider exposes the following metrics:
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `provider_sonarqube_observe_cache_requests_total` | Counter | `namespace`, `result` (`hit`, `miss`, `coalesced`) | Cached reads. `coalesced` reads shared an in-flight request made by a concurrent reconcile. |
+| `provider_sonarqube_observe_cache_invalidations_total` | Counter | `namespace` | Invalidations triggered by writes. |
+| `provider_sonarqube_observe_cache_entries` | Gauge | | Number of cached responses. |
+
 ## Documentation
 
 * [CRD documentation](https://marketplace.upbound.io/providers/crossplane-contrib/provider-sonarqube/latest/crds)

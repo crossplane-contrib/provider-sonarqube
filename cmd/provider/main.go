@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -45,6 +46,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/crossplane/provider-sonarqube/apis"
+	observecache "github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	sonarqube "github.com/crossplane/provider-sonarqube/internal/controller"
 	"github.com/crossplane/provider-sonarqube/internal/version"
 )
@@ -67,8 +69,23 @@ func main() {
 		enableManagementPolicies = app.Flag("enable-management-policies", "Enable support for Management Policies.").Default("true").Envar("ENABLE_MANAGEMENT_POLICIES").Bool()
 		enableChangeLogs         = app.Flag("enable-changelogs", "Enable support for capturing change logs during reconciliation.").Default("false").Envar("ENABLE_CHANGE_LOGS").Bool()
 		changelogsSocketPath     = app.Flag("changelogs-socket-path", "Path for changelogs socket (if enabled)").Default("/var/run/changelogs/changelogs.sock").Envar("CHANGELOGS_SOCKET_PATH").String()
+
+		enableObserveCache     = app.Flag("enable-observe-cache", "Enable the alpha cache of SonarQube list responses read during Observe.").Default("false").Envar("ENABLE_OBSERVE_CACHE").Bool()
+		observeCacheTTL        = app.Flag("observe-cache-ttl", "Lifetime of an observe cache entry. Must be greater than 0 and lower than 30s.").Default(observecache.DefaultTTL.String()).Envar("OBSERVE_CACHE_TTL").Duration()
+		observeCacheMaxEntries = app.Flag("observe-cache-max-entries", "Maximum number of observe cache entries. Must be greater than 0.").Default(strconv.Itoa(observecache.DefaultMaxEntries)).Envar("OBSERVE_CACHE_MAX_ENTRIES").Int()
 	)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	observeCacheOptions := observecache.Options{
+		Enabled:    *enableObserveCache,
+		TTL:        *observeCacheTTL,
+		MaxEntries: *observeCacheMaxEntries,
+	}
+
+	observeCacheErr := observeCacheOptions.Validate()
+	if observeCacheErr != nil {
+		kingpin.Fatalf("Invalid observe cache configuration: %v", observeCacheErr)
+	}
 
 	zl := zap.New(zap.UseDevMode(*debug))
 
@@ -156,6 +173,11 @@ func main() {
 				managed.WithProviderVersion("provider-sonarqube:"+version.Version)),
 		}
 		o.ChangeLogOptions = &clo
+	}
+
+	if *enableObserveCache {
+		kingpin.FatalIfError(observecache.Configure(observeCacheOptions), "Cannot configure observe cache")
+		log.Info("Alpha feature enabled", "flag", "observe-cache", "ttl", *observeCacheTTL)
 	}
 
 	kingpin.FatalIfError(customresourcesgate.Setup(mgr, o), "Cannot setup CRD gate controller")

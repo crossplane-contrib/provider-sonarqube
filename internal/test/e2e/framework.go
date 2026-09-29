@@ -20,6 +20,7 @@ package e2e
 
 import (
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
@@ -44,6 +45,9 @@ const (
 	EnvProviderConfig = "SONARQUBE_PROVIDERCONFIG"
 	// EnvNamespace is the Kubernetes namespace managed resources are created in.
 	EnvNamespace = "SONARQUBE_E2E_NAMESPACE"
+	// EnvObserveCache mirrors the provider's ENABLE_OBSERVE_CACHE setting, so
+	// tests know whether the provider under test runs with the observe cache.
+	EnvObserveCache = "ENABLE_OBSERVE_CACHE"
 )
 
 // DefaultProviderConfigName is used when EnvProviderConfig is unset; it matches
@@ -66,6 +70,9 @@ type Framework struct {
 	ProviderConfigName string
 	// Namespace is the Kubernetes namespace managed resources are created in.
 	Namespace string
+	// ObserveCacheEnabled reports whether the provider under test runs with
+	// the alpha observe cache (see EnvObserveCache).
+	ObserveCacheEnabled bool
 }
 
 // New constructs a Framework, failing the test immediately on missing config
@@ -124,11 +131,29 @@ func New(t *testing.T) *Framework {
 	}
 
 	return &Framework{
-		Kube:               kc,
-		Sonar:              sc,
-		ProviderConfigName: pc,
-		Namespace:          ns,
+		Kube:                kc,
+		Sonar:               sc,
+		ProviderConfigName:  pc,
+		Namespace:           ns,
+		ObserveCacheEnabled: observeCacheFromEnv(t),
 	}
+}
+
+// observeCacheFromEnv parses EnvObserveCache, which defaults to false.
+func observeCacheFromEnv(t *testing.T) bool {
+	t.Helper()
+
+	v := os.Getenv(EnvObserveCache)
+	if v == "" {
+		return false
+	}
+
+	enabled, err := strconv.ParseBool(v)
+	if err != nil {
+		t.Fatalf("parsing %s: %v", EnvObserveCache, err)
+	}
+
+	return enabled
 }
 
 func mustEnv(t *testing.T, key string) string {

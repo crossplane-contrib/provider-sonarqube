@@ -19,6 +19,7 @@ package instance
 import (
 	"context"
 	"net/http"
+	"slices"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/google/go-cmp/cmp"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -46,11 +48,111 @@ type PluginsClient interface {
 	Updates(ctx context.Context) (*sonar.PluginsUpdates, *http.Response, error)
 }
 
-// NewPluginsClient creates a PluginsClient from the given config.
+const (
+	// pluginsInstalledCacheNamespace is the cache namespace of the list of
+	// installed plugins.
+	pluginsInstalledCacheNamespace = "plugins/installed"
+	// pluginsPendingCacheNamespace is the cache namespace of the list of
+	// pending plugins.
+	pluginsPendingCacheNamespace = "plugins/pending"
+	// pluginsUpdatesCacheNamespace is the cache namespace of the list of
+	// plugin updates.
+	pluginsUpdatesCacheNamespace = "plugins/updates"
+)
+
+// pluginsCacheNamespaces lists every cache namespace a plugin write can
+// affect.
+var pluginsCacheNamespaces = []string{
+	pluginsInstalledCacheNamespace,
+	pluginsPendingCacheNamespace,
+	pluginsUpdatesCacheNamespace,
+}
+
+// NewPluginsClient creates a PluginsClient from the given config. When the
+// observe cache is enabled, the client caches its list endpoints in
+// cache.Default().
 func NewPluginsClient(clientConfig common.Config) PluginsClient {
 	newClient := common.NewClient(clientConfig)
 
-	return newClient.Plugins
+	return newCachedPluginsClient(newClient.Plugins, cache.Default(), cache.ScopeFromConfig(clientConfig))
+}
+
+// newCachedPluginsClient decorates client with store, or returns client
+// as-is when store does not cache.
+func newCachedPluginsClient(client PluginsClient, store cache.Store, scope string) PluginsClient {
+	if !cache.IsEnabled(store) {
+		return client
+	}
+
+	return &cachedPluginsClient{PluginsClient: client, store: store, scope: scope}
+}
+
+// cachedPluginsClient is a PluginsClient that caches the Installed, Pending
+// and Updates lists, and invalidates them on every write. Methods not
+// overridden pass through to the embedded client.
+type cachedPluginsClient struct {
+	PluginsClient
+
+	// store holds the cached lists.
+	store cache.Store
+	// scope identifies the SonarQube connection of the embedded client.
+	scope string
+}
+
+// Installed returns the cached list of installed plugins. Only calls without
+// options are cached; other calls pass through.
+func (c *cachedPluginsClient) Installed(ctx context.Context, opt *sonar.PluginsInstalledOptions) (*sonar.PluginsInstalled, *http.Response, error) {
+	if opt != nil {
+		return c.PluginsClient.Installed(ctx, opt)
+	}
+
+	return cache.FetchWithResponse(ctx, c.store, c.key(pluginsInstalledCacheNamespace),
+		func(ctx context.Context) (*sonar.PluginsInstalled, *http.Response, error) {
+			return c.PluginsClient.Installed(ctx, nil)
+		})
+}
+
+// Pending returns the cached list of pending plugins.
+func (c *cachedPluginsClient) Pending(ctx context.Context) (*sonar.PluginsPending, *http.Response, error) {
+	return cache.FetchWithResponse(ctx, c.store, c.key(pluginsPendingCacheNamespace), c.PluginsClient.Pending)
+}
+
+// Updates returns the cached list of plugin updates.
+func (c *cachedPluginsClient) Updates(ctx context.Context) (*sonar.PluginsUpdates, *http.Response, error) {
+	return cache.FetchWithResponse(ctx, c.store, c.key(pluginsUpdatesCacheNamespace), c.PluginsClient.Updates)
+}
+
+// Install installs a plugin, then invalidates the cached lists.
+func (c *cachedPluginsClient) Install(ctx context.Context, opt *sonar.PluginsInstallOptions) (*http.Response, error) {
+	defer c.invalidate()
+
+	return c.PluginsClient.Install(ctx, opt)
+}
+
+// Uninstall uninstalls a plugin, then invalidates the cached lists.
+func (c *cachedPluginsClient) Uninstall(ctx context.Context, opt *sonar.PluginsUninstallOptions) (*http.Response, error) {
+	defer c.invalidate()
+
+	return c.PluginsClient.Uninstall(ctx, opt)
+}
+
+// Update updates a plugin, then invalidates the cached lists.
+func (c *cachedPluginsClient) Update(ctx context.Context, opt *sonar.PluginsUpdateOptions) (*http.Response, error) {
+	defer c.invalidate()
+
+	return c.PluginsClient.Update(ctx, opt)
+}
+
+// key returns the cache key of the given instance-wide plugin list.
+func (c *cachedPluginsClient) key(namespace string) cache.Key {
+	return cache.Key{Scope: c.scope, Namespace: namespace}
+}
+
+// invalidate drops every cached plugin list. Any write can move a plugin
+// between the installed, pending and updatable lists, so all of them are
+// dropped, whether the write succeeded or not.
+func (c *cachedPluginsClient) invalidate() {
+	c.store.Invalidate(c.scope, pluginsCacheNamespaces...)
 }
 
 // GeneratePluginObservation converts a sonar.PluginInstalled to an
@@ -67,19 +169,21 @@ func GeneratePluginObservation(installed *sonar.PluginInstalled) v1alpha1.Plugin
 	}
 
 	return v1alpha1.PluginObservation{
-		Description:          installed.Description,
-		EditionBundled:       installed.EditionBundled,
-		Filename:             installed.Filename,
-		Hash:                 installed.Hash,
-		HomepageURL:          installed.HomepageURL,
-		ImplementationBuild:  installed.ImplementationBuild,
-		IssueTrackerURL:      installed.IssueTrackerURL,
-		Key:                  installed.Key,
-		License:              installed.License,
-		Name:                 installed.Name,
-		OrganizationName:     installed.OrganizationName,
-		OrganizationURL:      installed.OrganizationURL,
-		RequiredForLanguages: installed.RequiredForLanguages,
+		Description:         installed.Description,
+		EditionBundled:      installed.EditionBundled,
+		Filename:            installed.Filename,
+		Hash:                installed.Hash,
+		HomepageURL:         installed.HomepageURL,
+		ImplementationBuild: installed.ImplementationBuild,
+		IssueTrackerURL:     installed.IssueTrackerURL,
+		Key:                 installed.Key,
+		License:             installed.License,
+		Name:                installed.Name,
+		OrganizationName:    installed.OrganizationName,
+		OrganizationURL:     installed.OrganizationURL,
+		// installed may be shared with the observe cache: copy the slice so
+		// that decoding into the managed resource never writes into it.
+		RequiredForLanguages: slices.Clone(installed.RequiredForLanguages),
 		SonarLintSupported:   installed.SonarLintSupported,
 		UpdatedAt:            updatedAt,
 		Version:              installed.Version,

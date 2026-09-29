@@ -42,6 +42,7 @@ func TestPluginInstall(t *testing.T) {
 	t.Parallel()
 
 	f := e2e.New(t)
+	t.Logf("provider observe cache enabled: %v", f.ObserveCacheEnabled)
 	const (
 		crName    = "e2e-plugin-findbugs"
 		pluginKey = "findbugs"
