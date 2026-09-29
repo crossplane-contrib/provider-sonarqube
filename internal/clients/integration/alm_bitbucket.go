@@ -61,9 +61,7 @@ func NewALMIntegrationsBitbucketClient(clientConfig common.Config) ALMIntegratio
 // NewALMSettingsBitbucketClient creates a new ALMSettingsBitbucketClient
 // with the provided SonarQube client configuration.
 func NewALMSettingsBitbucketClient(clientConfig common.Config) ALMSettingsBitbucketClient {
-	newClient := common.NewClient(clientConfig)
-
-	return newClient.AlmSettings
+	return newALMSettingsAPI(clientConfig)
 }
 
 // LateInitializeALMBitbucket fills the empty fields in the ALMBitbucket

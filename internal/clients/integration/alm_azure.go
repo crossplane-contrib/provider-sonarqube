@@ -59,9 +59,7 @@ func NewALMIntegrationsAzureClient(clientConfig common.Config) ALMIntegrationsAz
 // NewALMSettingsAzureClient creates a new ALMSettingsAzureClient with the
 // provided SonarQube client configuration.
 func NewALMSettingsAzureClient(clientConfig common.Config) ALMSettingsAzureClient {
-	newClient := common.NewClient(clientConfig)
-
-	return newClient.AlmSettings
+	return newALMSettingsAPI(clientConfig)
 }
 
 // LateInitializeALMAzure fills the empty fields in the ALMAzure spec with

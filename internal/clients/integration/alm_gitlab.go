@@ -56,9 +56,7 @@ func NewALMIntegrationsGitLabClient(clientConfig common.Config) ALMIntegrationsG
 // NewALMSettingsGitLabClient creates a new ALMSettingsGitLabClient with the
 // provided SonarQube client configuration.
 func NewALMSettingsGitLabClient(clientConfig common.Config) ALMSettingsGitLabClient {
-	newClient := common.NewClient(clientConfig)
-
-	return newClient.AlmSettings
+	return newALMSettingsAPI(clientConfig)
 }
 
 // LateInitializeALMGitLab fills the empty fields in the ALMGitLab spec with

@@ -57,9 +57,7 @@ type ALMSettingsClient interface {
 // NewALMSettingsClient creates a new ALMSettingsClient with the provided
 // SonarQube client configuration.
 func NewALMSettingsClient(clientConfig common.Config) ALMSettingsClient {
-	newClient := common.NewClient(clientConfig)
-
-	return newClient.AlmSettings
+	return newALMSettingsAPI(clientConfig)
 }
 
 // IsALMUpToDate checks if the ALM spec is up to date with the
