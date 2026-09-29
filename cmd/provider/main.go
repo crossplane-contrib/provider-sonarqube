@@ -43,6 +43,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/crossplane/provider-sonarqube/apis"
@@ -73,19 +74,10 @@ func main() {
 		enableObserveCache     = app.Flag("enable-observe-cache", "Enable the alpha cache of SonarQube list responses read during Observe.").Default("false").Envar("ENABLE_OBSERVE_CACHE").Bool()
 		observeCacheTTL        = app.Flag("observe-cache-ttl", "Lifetime of an observe cache entry. Must be greater than 0 and lower than 30s.").Default(observecache.DefaultTTL.String()).Envar("OBSERVE_CACHE_TTL").Duration()
 		observeCacheMaxEntries = app.Flag("observe-cache-max-entries", "Maximum number of observe cache entries. Must be greater than 0.").Default(strconv.Itoa(observecache.DefaultMaxEntries)).Envar("OBSERVE_CACHE_MAX_ENTRIES").Int()
+		observeCacheMaxBytes   = app.Flag("observe-cache-max-bytes", "Maximum estimated memory footprint of the observe cache, as a Kubernetes quantity (e.g. 64Mi). Must be lower than the container memory limit. Defaults to --observe-cache-memory-fraction of the container memory limit, or 64Mi without a limit.").Envar("OBSERVE_CACHE_MAX_BYTES").String()
+		observeCacheMemFrac    = app.Flag("observe-cache-memory-fraction", "Share of the container memory limit given to the observe cache when --observe-cache-max-bytes is unset. Must be greater than 0 and at most 1.").Default(strconv.FormatFloat(observecache.DefaultMemoryFraction, 'g', -1, 64)).Envar("OBSERVE_CACHE_MEMORY_FRACTION").Float64()
 	)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
-
-	observeCacheOptions := observecache.Options{
-		Enabled:    *enableObserveCache,
-		TTL:        *observeCacheTTL,
-		MaxEntries: *observeCacheMaxEntries,
-	}
-
-	observeCacheErr := observeCacheOptions.Validate()
-	if observeCacheErr != nil {
-		kingpin.Fatalf("Invalid observe cache configuration: %v", observeCacheErr)
-	}
 
 	zl := zap.New(zap.UseDevMode(*debug))
 
@@ -99,6 +91,18 @@ func main() {
 		// is not really needed, but otherwise we get a warning from the
 		// controller-runtime.
 		ctrl.SetLogger(zap.New(zap.WriteTo(io.Discard)))
+	}
+
+	if *enableObserveCache {
+		maxBytes := resolveObserveCacheMaxBytes(log, *observeCacheMaxBytes, *observeCacheMemFrac)
+
+		kingpin.FatalIfError(observecache.Configure(observecache.Options{
+			Enabled:    true,
+			TTL:        *observeCacheTTL,
+			MaxEntries: *observeCacheMaxEntries,
+			MaxBytes:   maxBytes,
+		}), "Invalid observe cache configuration")
+		log.Info("Alpha feature enabled", "flag", "observe-cache", "ttl", *observeCacheTTL, "maxEntries", *observeCacheMaxEntries, "maxBytes", maxBytes)
 	}
 
 	cfg, err := ctrl.GetConfig()
@@ -175,12 +179,32 @@ func main() {
 		o.ChangeLogOptions = &clo
 	}
 
-	if *enableObserveCache {
-		kingpin.FatalIfError(observecache.Configure(observeCacheOptions), "Cannot configure observe cache")
-		log.Info("Alpha feature enabled", "flag", "observe-cache", "ttl", *observeCacheTTL)
-	}
-
 	kingpin.FatalIfError(customresourcesgate.Setup(mgr, o), "Cannot setup CRD gate controller")
 	kingpin.FatalIfError(sonarqube.SetupGated(mgr, o), "Cannot setup SonarQube controllers")
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
+}
+
+// resolveObserveCacheMaxBytes returns the size budget of the observe cache
+// from the --observe-cache-max-bytes quantity, the memory fraction and the
+// container memory limit. It exits on an invalid configuration.
+func resolveObserveCacheMaxBytes(log logging.Logger, maxBytesFlag string, memoryFraction float64) int64 {
+	var explicit int64
+
+	if maxBytesFlag != "" {
+		quantity, err := resource.ParseQuantity(maxBytesFlag)
+		kingpin.FatalIfError(err, "Invalid observe cache max bytes %q", maxBytesFlag)
+
+		explicit = quantity.Value()
+	}
+
+	limit, limited, err := observecache.ContainerMemoryLimit()
+	if err != nil {
+		// Not fatal: the cache still has a bounded default budget.
+		log.Info("Cannot read the container memory limit, sizing the observe cache without it", "error", err)
+	}
+
+	maxBytes, err := observecache.ResolveMaxBytes(explicit, memoryFraction, limit, limited)
+	kingpin.FatalIfError(err, "Invalid observe cache configuration")
+
+	return maxBytes
 }

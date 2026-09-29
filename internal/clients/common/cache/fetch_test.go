@@ -53,7 +53,7 @@ func uniqueKey(t *testing.T) Key {
 func TestFetchHitMiss(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := uniqueKey(t)
 	fetch, calls := countingFetch("value", nil)
 
@@ -88,7 +88,7 @@ func TestFetchHitMiss(t *testing.T) {
 func TestFetchDoesNotCacheErrors(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := uniqueKey(t)
 	wantErr := errors.New("boom")
 	fetch, calls := countingFetch("partial", wantErr)
@@ -114,7 +114,7 @@ func TestFetchDoesNotCacheErrors(t *testing.T) {
 func TestFetchDoesNotCacheUnderCancelledContext(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := uniqueKey(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -146,7 +146,7 @@ func TestFetchDoesNotCacheUnderCancelledContext(t *testing.T) {
 func TestFetchDoesNotStoreAcrossInvalidate(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := uniqueKey(t)
 
 	// The fetch races with a write: the write invalidates while the fetch
@@ -172,7 +172,7 @@ func TestFetchCoalescesConcurrentMisses(t *testing.T) {
 
 	const goroutines = 50
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := uniqueKey(t)
 	release := make(chan struct{})
 	calls := &atomic.Int64{}
@@ -247,7 +247,7 @@ func TestFetchNoopStore(t *testing.T) {
 func TestFetchWithResponse(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := uniqueKey(t)
 	realResp := &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}
 	calls := 0
@@ -289,7 +289,7 @@ func TestFetchWithResponse(t *testing.T) {
 func TestFetchWithResponseError(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	notFound := &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}
 	wantErr := errors.New("not found")
 

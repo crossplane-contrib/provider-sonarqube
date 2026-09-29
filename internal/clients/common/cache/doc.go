@@ -27,6 +27,11 @@ limitations under the License.
 // Options.Enabled set, Default returns a no-op Store that always misses and
 // never stores, so call sites never need "if enabled" branches.
 //
+// The enabled Store is bounded by a number of entries and by a memory
+// budget (Options.MaxBytes), which ResolveMaxBytes derives from the
+// container memory limit (ContainerMemoryLimit) unless set explicitly. The
+// size of an entry is estimated from its JSON encoding when it is stored.
+//
 // Entries are addressed by a Key made of:
 //   - Scope: the identity of the SonarQube connection (see ScopeFromConfig),
 //     so that two credentials never share cached data.

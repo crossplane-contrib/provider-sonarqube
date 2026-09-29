@@ -33,6 +33,14 @@ const (
 
 	// DefaultMaxEntries is the default maximum number of cached entries.
 	DefaultMaxEntries = 1000
+
+	// DefaultMaxBytes is the size budget used when neither an explicit
+	// budget nor a container memory limit is available: 64MiB.
+	DefaultMaxBytes int64 = 64 << 20
+
+	// DefaultMemoryFraction is the default share of the container memory
+	// limit given to the cache when no explicit budget is set.
+	DefaultMemoryFraction = 0.1
 )
 
 // Options configures the process-wide default Store.
@@ -44,6 +52,9 @@ type Options struct {
 	// MaxEntries is the maximum number of cached entries. It must be
 	// strictly positive.
 	MaxEntries int
+	// MaxBytes is the maximum estimated memory footprint of the cached
+	// entries, in bytes. It must be strictly positive. See ResolveMaxBytes.
+	MaxBytes int64
 }
 
 // Validate checks that the options are usable. Disabled options are always
@@ -59,6 +70,10 @@ func (o Options) Validate() error {
 
 	if o.MaxEntries <= 0 {
 		return errors.Errorf("observe cache max entries must be greater than 0, got %d", o.MaxEntries)
+	}
+
+	if o.MaxBytes <= 0 {
+		return errors.Errorf("observe cache max bytes must be greater than 0, got %d", o.MaxBytes)
 	}
 
 	return nil
@@ -87,7 +102,7 @@ func NewStore(opts Options) (Store, error) {
 		return NewNoopStore(), nil
 	}
 
-	return newTTLStore(opts.TTL, opts.MaxEntries, time.Now), nil
+	return newTTLStore(opts.TTL, opts.MaxEntries, opts.MaxBytes, time.Now), nil
 }
 
 // Configure sets up the process-wide default Store returned by Default. It

@@ -17,10 +17,15 @@ limitations under the License.
 package cache
 
 import (
+	"encoding/json"
 	"sync"
 	"testing"
 	"time"
 )
+
+// testMaxBytes is a size budget large enough for the tests not exercising
+// size-based eviction.
+const testMaxBytes int64 = 1 << 20
 
 // fakeClock is a manually advanced clock for ttlStore tests.
 type fakeClock struct {
@@ -80,7 +85,7 @@ func assertValue(t *testing.T, s Store, key Key, want any) {
 func TestTTLStoreHitMiss(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := Key{Scope: "scope", Namespace: "ns", Params: "a=1"}
 
 	assertValue(t, s, key, nil)
@@ -102,7 +107,7 @@ func TestTTLStoreExpiry(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock()
-	s := newTTLStore(10*time.Second, 10, clock.Now)
+	s := newTTLStore(10*time.Second, 10, testMaxBytes, clock.Now)
 	key := Key{Scope: "scope", Namespace: "ns"}
 
 	set(t, s, key, "value")
@@ -123,7 +128,7 @@ func TestTTLStoreSweep(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock()
-	s := newTTLStore(10*time.Second, 10, clock.Now)
+	s := newTTLStore(10*time.Second, 10, testMaxBytes, clock.Now)
 	old := Key{Scope: "scope", Namespace: "ns", Params: "old"}
 	recent := Key{Scope: "scope", Namespace: "ns", Params: "recent"}
 
@@ -148,7 +153,7 @@ func TestTTLStoreRunSweeper(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock()
-	s := newTTLStore(time.Second, 10, clock.Now)
+	s := newTTLStore(time.Second, 10, testMaxBytes, clock.Now)
 	set(t, s, Key{Scope: "scope", Namespace: "ns"}, "value")
 	clock.Advance(time.Second)
 
@@ -178,7 +183,7 @@ func TestTTLStoreRunSweeper(t *testing.T) {
 func TestTTLStoreMaxEntries(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 2, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 2, testMaxBytes, newFakeClock().Now)
 	first := Key{Scope: "scope", Namespace: "ns", Params: "1"}
 	second := Key{Scope: "scope", Namespace: "ns", Params: "2"}
 	third := Key{Scope: "scope", Namespace: "other", Params: "3"}
@@ -203,7 +208,7 @@ func TestTTLStoreMaxEntries(t *testing.T) {
 func TestTTLStoreInvalidate(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	keys := map[string]Key{
 		"a/ns1/p1": {Scope: "a", Namespace: "ns1", Params: "p1"},
 		"a/ns1/p2": {Scope: "a", Namespace: "ns1", Params: "p2"},
@@ -234,7 +239,7 @@ func TestTTLStoreInvalidate(t *testing.T) {
 func TestTTLStoreSetAfterInvalidateIsRejected(t *testing.T) {
 	t.Parallel()
 
-	s := newTTLStore(time.Minute, 10, newFakeClock().Now)
+	s := newTTLStore(time.Minute, 10, testMaxBytes, newFakeClock().Now)
 	key := Key{Scope: "scope", Namespace: "ns"}
 
 	_, generation, _ := s.Get(key)
@@ -281,7 +286,143 @@ func TestNoopStore(t *testing.T) {
 		t.Error("IsEnabled(nil) = true, want false")
 	}
 
-	if !IsEnabled(newTTLStore(time.Minute, 1, time.Now)) {
+	if !IsEnabled(newTTLStore(time.Minute, 1, testMaxBytes, time.Now)) {
 		t.Error("IsEnabled(ttlStore) = false, want true")
+	}
+}
+
+// newSizedTTLStore returns a ttlStore whose int64 values weigh their own
+// value in bytes, and whose other values cannot be sized.
+func newSizedTTLStore(maxEntries int, maxBytes int64, now func() time.Time) *ttlStore {
+	s := newTTLStore(time.Minute, maxEntries, maxBytes, now)
+	s.sizeOf = func(value any) (int64, bool) {
+		size, ok := value.(int64)
+
+		return size, ok
+	}
+
+	return s
+}
+
+// assertBytes checks the estimated size held by s.
+func assertBytes(t *testing.T, s *ttlStore, want int64) {
+	t.Helper()
+
+	if got := s.Bytes(); got != want {
+		t.Errorf("Bytes() = %d, want %d", got, want)
+	}
+}
+
+// TestTTLStoreMaxBytes tests that the oldest entries are evicted to stay
+// within maxBytes.
+func TestTTLStoreMaxBytes(t *testing.T) {
+	t.Parallel()
+
+	s := newSizedTTLStore(10, 100, newFakeClock().Now)
+	first := Key{Scope: "scope", Namespace: "ns", Params: "1"}
+	second := Key{Scope: "scope", Namespace: "ns", Params: "2"}
+	third := Key{Scope: "scope", Namespace: "ns", Params: "3"}
+
+	set(t, s, first, int64(40))
+	set(t, s, second, int64(40))
+	assertBytes(t, s, 80)
+
+	set(t, s, third, int64(30))
+	assertBytes(t, s, 70)
+	assertValue(t, s, first, nil)
+	assertValue(t, s, second, int64(40))
+	assertValue(t, s, third, int64(30))
+
+	// A value filling the whole budget evicts everything else.
+	set(t, s, first, int64(100))
+	assertBytes(t, s, 100)
+
+	if got := s.Len(); got != 1 {
+		t.Errorf("Len() = %d, want 1", got)
+	}
+}
+
+// TestTTLStoreRejectsOversizedValues tests that a value larger than the
+// whole budget, or whose size cannot be estimated, is not stored and drops
+// the previous value of its key.
+func TestTTLStoreRejectsOversizedValues(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]any{
+		"LargerThanBudget": int64(101),
+		"Unsizable":        "not an int64",
+	}
+
+	for name, value := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			s := newSizedTTLStore(10, 100, newFakeClock().Now)
+			key := Key{Scope: "scope", Namespace: "ns"}
+			other := Key{Scope: "scope", Namespace: "other"}
+
+			set(t, s, key, int64(10))
+			set(t, s, other, int64(20))
+
+			_, generation, _ := s.Get(key)
+			if s.Set(key, value, generation) {
+				t.Fatal("Set() stored a value it cannot fit")
+			}
+
+			assertValue(t, s, key, nil)
+			assertValue(t, s, other, int64(20))
+			assertBytes(t, s, 20)
+		})
+	}
+}
+
+// TestTTLStoreBytesAccounting tests that every removal path releases the
+// size of the removed entries.
+func TestTTLStoreBytesAccounting(t *testing.T) {
+	t.Parallel()
+
+	clock := newFakeClock()
+	s := newSizedTTLStore(10, 1000, clock.Now)
+	replaced := Key{Scope: "scope", Namespace: "replaced"}
+	invalidated := Key{Scope: "scope", Namespace: "invalidated"}
+	expired := Key{Scope: "scope", Namespace: "expired"}
+	swept := Key{Scope: "scope", Namespace: "swept"}
+
+	set(t, s, replaced, int64(10))
+	set(t, s, replaced, int64(15))
+	set(t, s, invalidated, int64(20))
+	set(t, s, expired, int64(30))
+	set(t, s, swept, int64(40))
+	assertBytes(t, s, 105)
+
+	s.Invalidate("scope", "invalidated")
+	assertBytes(t, s, 85)
+
+	clock.Advance(time.Minute)
+	assertValue(t, s, expired, nil)
+	assertBytes(t, s, 55)
+
+	s.Sweep()
+	assertBytes(t, s, 0)
+}
+
+// TestEstimateSize tests the size estimate of cached values.
+func TestEstimateSize(t *testing.T) {
+	t.Parallel()
+
+	value := map[string][]string{"plugins": {"findbugs", "java"}}
+
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+
+	size, ok := estimateSize(value)
+	if !ok || size != int64(len(encoded))*sizeOverheadFactor {
+		t.Errorf("estimateSize() = %d, %v, want %d, true", size, ok, int64(len(encoded))*sizeOverheadFactor)
+	}
+
+	if _, ok := estimateSize(make(chan int)); ok {
+		t.Error("estimateSize() of a channel reported a size")
 	}
 }

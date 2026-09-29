@@ -73,6 +73,8 @@ example through a `DeploymentRuntimeConfig`:
 | `--enable-observe-cache` | `ENABLE_OBSERVE_CACHE` | `false` | Enables the cache. |
 | `--observe-cache-ttl` | `OBSERVE_CACHE_TTL` | `20s` | Lifetime of a cached response. Must be greater than `0` and lower than `30s` (Crossplane's creation grace period). |
 | `--observe-cache-max-entries` | `OBSERVE_CACHE_MAX_ENTRIES` | `1000` | Maximum number of cached responses. The oldest are evicted first. Must be greater than `0`. |
+| `--observe-cache-max-bytes` | `OBSERVE_CACHE_MAX_BYTES` | unset | Memory budget of the cache, as a Kubernetes quantity (e.g. `64Mi`). The oldest responses are evicted first to stay within it. Must be lower than the container memory limit. When unset, it is derived from the container memory limit (see below). |
+| `--observe-cache-memory-fraction` | `OBSERVE_CACHE_MEMORY_FRACTION` | `0.1` | Share of the container memory limit used as the memory budget when `--observe-cache-max-bytes` is unset. Must be greater than `0` and at most `1`. |
 
 ```yaml
 apiVersion: pkg.crossplane.io/v1beta1
@@ -104,6 +106,16 @@ Things to know before enabling it:
   data, even against the same instance. Raw credentials are never kept in the
   cache.
 * **Errors are never cached.**
+* **Memory:** the cache is bounded both by entry count and by a memory budget.
+  Without `--observe-cache-max-bytes`, the budget is
+  `--observe-cache-memory-fraction` (10% by default) of the container memory
+  limit, read from the pod's cgroup (v2 or v1). Without a memory limit, the
+  budget is `64Mi`. An explicit budget equal to or above the memory limit is
+  rejected at startup. The size of a response is estimated from its JSON
+  encoding (times 2 to account for Go's in-memory overhead), so the budget is
+  approximate. A response larger than the whole budget is simply not cached.
+  The budget bounds what the cache retains, not the provider's total memory
+  usage: set the pod memory limit with the provider's own needs in mind.
 
 Supported resources:
 
@@ -123,6 +135,7 @@ When the cache is enabled, the provider exposes the following metrics:
 | `provider_sonarqube_observe_cache_requests_total` | Counter | `namespace`, `result` (`hit`, `miss`, `coalesced`) | Cached reads. `coalesced` reads shared an in-flight request made by a concurrent reconcile. |
 | `provider_sonarqube_observe_cache_invalidations_total` | Counter | `namespace` | Invalidations triggered by writes. |
 | `provider_sonarqube_observe_cache_entries` | Gauge | | Number of cached responses. |
+| `provider_sonarqube_observe_cache_bytes` | Gauge | | Estimated memory footprint of the cached responses, in bytes. |
 
 ## Documentation
 

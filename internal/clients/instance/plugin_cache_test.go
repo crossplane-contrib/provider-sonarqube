@@ -263,7 +263,7 @@ func TestCachedPluginsClientScopesAreIsolated(t *testing.T) {
 func newTestStore(t *testing.T) cache.Store {
 	t.Helper()
 
-	store, err := cache.NewStore(cache.Options{Enabled: true, TTL: 10 * time.Second, MaxEntries: 100})
+	store, err := cache.NewStore(cache.Options{Enabled: true, TTL: 10 * time.Second, MaxEntries: 100, MaxBytes: cache.DefaultMaxBytes})
 	if err != nil {
 		t.Fatalf("NewStore() error = %v", err)
 	}

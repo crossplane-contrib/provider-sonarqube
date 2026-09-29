@@ -18,9 +18,15 @@ package cache
 
 import (
 	"container/list"
+	"encoding/json"
 	"sync"
 	"time"
 )
+
+// sizeOverheadFactor converts the JSON-encoded size of a value into an
+// estimate of the memory it takes once decoded: Go strings, slices, maps and
+// struct padding carry headers the JSON encoding does not.
+const sizeOverheadFactor = 2
 
 // Store holds cached values. Implementations are safe for concurrent use.
 //
@@ -88,12 +94,14 @@ type entry struct {
 	value any
 	// expiresAt is the time after which the entry must not be served.
 	expiresAt time.Time
+	// size is the estimated memory footprint of value, in bytes.
+	size int64
 }
 
-// ttlStore is an in-memory Store with a per-entry time to live and a bound
-// on the number of entries. Expired entries are evicted lazily on read and
-// periodically by Sweep. When the bound is reached, the oldest entries are
-// evicted first.
+// ttlStore is an in-memory Store with a per-entry time to live, a bound on
+// the number of entries and a bound on their estimated total size. Expired
+// entries are evicted lazily on read and periodically by Sweep. When a bound
+// is reached, the oldest entries are evicted first.
 type ttlStore struct {
 	// mu guards every field below.
 	mu sync.RWMutex
@@ -101,6 +109,13 @@ type ttlStore struct {
 	ttl time.Duration
 	// maxEntries is the maximum number of entries held.
 	maxEntries int
+	// maxBytes is the maximum estimated size of the entries held.
+	maxBytes int64
+	// bytes is the estimated size of the entries held.
+	bytes int64
+	// sizeOf estimates the memory footprint of a value, or reports that it
+	// cannot; injectable for tests.
+	sizeOf func(value any) (size int64, ok bool)
 	// now returns the current time; injectable for tests.
 	now func() time.Time
 	// buckets indexes entries by (Scope, Namespace), then by Params.
@@ -115,10 +130,12 @@ type ttlStore struct {
 }
 
 // newTTLStore returns an empty ttlStore.
-func newTTLStore(ttl time.Duration, maxEntries int, now func() time.Time) *ttlStore {
+func newTTLStore(ttl time.Duration, maxEntries int, maxBytes int64, now func() time.Time) *ttlStore {
 	return &ttlStore{
 		ttl:         ttl,
 		maxEntries:  maxEntries,
+		maxBytes:    maxBytes,
+		sizeOf:      estimateSize,
 		now:         now,
 		buckets:     make(map[bucketKey]map[string]*list.Element),
 		order:       list.New(),
@@ -164,9 +181,13 @@ func (s *ttlStore) Get(key Key) (value any, generation uint64, found bool) {
 
 // Set stores value under key unless its bucket was invalidated since
 // generation was observed, evicting the oldest entries to stay within
-// maxEntries.
+// maxEntries and maxBytes. A value whose size cannot be estimated, or that
+// is larger than maxBytes on its own, is not stored.
 func (s *ttlStore) Set(key Key, value any, generation uint64) bool {
 	bucket := bucketKey{scope: key.Scope, namespace: key.Namespace}
+
+	// Estimate outside the lock: it encodes the whole value.
+	size, sizeOK := s.sizeOf(value)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -175,11 +196,17 @@ func (s *ttlStore) Set(key Key, value any, generation uint64) bool {
 		return false
 	}
 
+	// The previous value is older than the one being stored: drop it even
+	// when the new one cannot be stored.
 	if existing, ok := s.buckets[bucket][key.Params]; ok {
 		s.removeLocked(existing)
 	}
 
-	for s.order.Len() >= s.maxEntries {
+	if !sizeOK || size > s.maxBytes {
+		return false
+	}
+
+	for s.order.Len() >= s.maxEntries || s.bytes+size > s.maxBytes {
 		oldest := s.order.Front()
 		if oldest == nil {
 			break
@@ -198,8 +225,10 @@ func (s *ttlStore) Set(key Key, value any, generation uint64) bool {
 		key:       key,
 		value:     value,
 		expiresAt: s.now().Add(s.ttl),
+		size:      size,
 	})
-	entriesGauge.Set(float64(s.order.Len()))
+	s.bytes += size
+	s.updateGaugesLocked()
 
 	return true
 }
@@ -232,6 +261,14 @@ func (s *ttlStore) Len() int {
 	defer s.mu.RUnlock()
 
 	return s.order.Len()
+}
+
+// Bytes returns the estimated size of the entries currently held.
+func (s *ttlStore) Bytes() int64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.bytes
 }
 
 // Sweep evicts every expired entry.
@@ -283,5 +320,24 @@ func (s *ttlStore) removeLocked(element *list.Element) {
 		delete(s.buckets, bucket)
 	}
 
+	s.bytes -= cached.size
+	s.updateGaugesLocked()
+}
+
+// updateGaugesLocked publishes the size of the store. s.mu must be held.
+func (s *ttlStore) updateGaugesLocked() {
 	entriesGauge.Set(float64(s.order.Len()))
+	bytesGauge.Set(float64(s.bytes))
+}
+
+// estimateSize estimates the memory footprint of value from the length of
+// its JSON encoding. Values returned by the SonarQube SDK are decoded from
+// JSON, so they always encode; ok is false for any value that does not.
+func estimateSize(value any) (size int64, ok bool) {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return 0, false
+	}
+
+	return int64(len(encoded)) * sizeOverheadFactor, true
 }

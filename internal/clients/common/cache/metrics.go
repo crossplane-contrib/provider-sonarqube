@@ -68,6 +68,14 @@ var (
 		Help:      "Number of entries currently held by the observe cache.",
 	})
 
+	// bytesGauge reports the estimated size of the entries held.
+	bytesGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: metricsNamespace,
+		Subsystem: metricsSubsystem,
+		Name:      "bytes",
+		Help:      "Estimated memory footprint, in bytes, of the entries currently held by the observe cache.",
+	})
+
 	// registerMetricsOnce ensures the metrics are registered at most once.
 	registerMetricsOnce sync.Once
 )
@@ -77,6 +85,6 @@ var (
 // enabled, so a disabled cache exposes no metric.
 func registerMetrics() {
 	registerMetricsOnce.Do(func() {
-		metrics.Registry.MustRegister(requestsTotal, invalidationsTotal, entriesGauge)
+		metrics.Registry.MustRegister(requestsTotal, invalidationsTotal, entriesGauge, bytesGauge)
 	})
 }
