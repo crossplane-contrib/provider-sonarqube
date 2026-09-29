@@ -53,13 +53,28 @@ log "Waiting for deployment/${SONARQUBE_DEPLOYMENT} to become Available (timeout
     --namespace="${SONARQUBE_NAMESPACE}" \
     --timeout=10m
 
+# start_port_forward (re)starts the port-forward in the background.
+start_port_forward() {
+    "${KUBECTL}" port-forward "service/${SONARQUBE_SERVICE}" \
+        "${SONARQUBE_LOCAL_PORT}:9000" \
+        --namespace="${SONARQUBE_NAMESPACE}" \
+        >/dev/null 2>&1 &
+    port_forward_pid=$!
+}
+
+# ensure_port_forward restarts the port-forward if it exited: SonarQube
+# stops itself (and its container restarts) when its embedded
+# Elasticsearch fails to boot, which drops the port-forward.
+ensure_port_forward() {
+    if ! kill -0 "${port_forward_pid}" 2>/dev/null; then
+        log "port-forward exited (SonarQube restarted?), re-establishing it"
+        start_port_forward
+    fi
+}
+
 log "Establishing port-forward localhost:${SONARQUBE_LOCAL_PORT} -> ${SONARQUBE_SERVICE}:9000"
-"${KUBECTL}" port-forward "service/${SONARQUBE_SERVICE}" \
-    "${SONARQUBE_LOCAL_PORT}:9000" \
-    --namespace="${SONARQUBE_NAMESPACE}" \
-    >/dev/null 2>&1 &
-port_forward_pid=$!
-trap 'kill ${port_forward_pid} 2>/dev/null || true' EXIT
+start_port_forward
+trap 'kill "${port_forward_pid}" 2>/dev/null || true' EXIT
 
 # Give the port-forward a moment to bind.
 for _ in $(seq 1 30); do
@@ -74,6 +89,7 @@ ready=false
 for attempt in $(seq 1 "${SONARQUBE_READY_ATTEMPTS}"); do
     deadline=$((SECONDS + SONARQUBE_READY_TIMEOUT_SECS))
     while [ "${SECONDS}" -lt "${deadline}" ]; do
+        ensure_port_forward
         status_body="$(curl -sf "${SONARQUBE_LOCAL_URL}/api/system/status" 2>/dev/null || true)"
         if echo "${status_body}" | grep -q '"status":"UP"'; then
             ready=true
