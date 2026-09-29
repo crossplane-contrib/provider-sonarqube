@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
@@ -1289,13 +1290,14 @@ func TestRemoveGroupPermissions(t *testing.T) { //nolint:gocognit,wsl // Table-d
 		"MultiplePermissions": {
 			permissions: []string{"provisioning", "admin", "scan"},
 			clientFn: func() iam.PermissionsClient {
-				callCount := 0
+				// RemoveGroup is called concurrently, one goroutine per
+				// permission.
+				var callCount atomic.Int32
 
 				return &fake.MockPermissionsClient{
 					RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
-						callCount++
-						if callCount > 3 {
-							t.Fatalf("RemoveGroup() called too many times: %d", callCount)
+						if count := callCount.Add(1); count > 3 {
+							t.Errorf("RemoveGroup() called too many times: %d", count)
 						}
 
 						return mockHTTPResponse(http.StatusOK), nil

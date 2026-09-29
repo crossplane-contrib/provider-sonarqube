@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
@@ -321,10 +322,16 @@ func TestCreate(t *testing.T) {
 	t.Run("MultiplePermissionsAllAdded", func(t *testing.T) {
 		t.Parallel()
 
+		// The permissions are added concurrently.
+		var mu sync.Mutex
+
 		added := make([]string, 0)
 		p := newTestGroupPermissions("", "devs", []string{"scan", "admin", "provisioning"})
 		e := &external{client: &fake.MockPermissionsClient{
 			AddGroupFn: func(opt *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
+				mu.Lock()
+				defer mu.Unlock()
+
 				added = append(added, opt.Permission)
 
 				return mockHTTPResponse(http.StatusOK), nil
@@ -436,12 +443,18 @@ func TestDelete(t *testing.T) {
 	t.Run("GroupDeleteRemovesAllObservedPermissions", func(t *testing.T) {
 		t.Parallel()
 
+		// The permissions are removed concurrently.
+		var mu sync.Mutex
+
 		removed := make([]string, 0)
 		p := newTestGroupPermissions("group:devs", "devs", []string{"scan"})
 		p.Status.AtProvider.Permissions = []string{"scan", "admin", "provisioning"}
 
 		e := &external{client: &fake.MockPermissionsClient{
 			RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+				mu.Lock()
+				defer mu.Unlock()
+
 				removed = append(removed, opt.Permission)
 
 				return mockHTTPResponse(http.StatusOK), nil
@@ -461,12 +474,18 @@ func TestDelete(t *testing.T) {
 	t.Run("UserDeleteRemovesAllObservedPermissions", func(t *testing.T) {
 		t.Parallel()
 
+		// The permissions are removed concurrently.
+		var mu sync.Mutex
+
 		removed := make([]string, 0)
 		p := newTestUserPermissions("user:alice", "alice", []string{"scan"})
 		p.Status.AtProvider.Permissions = []string{"scan", "admin"}
 
 		e := &external{client: &fake.MockPermissionsClient{
 			RemoveUserFn: func(opt *sonar.PermissionsRemoveUserOptions) (*http.Response, error) {
+				mu.Lock()
+				defer mu.Unlock()
+
 				removed = append(removed, opt.Permission)
 
 				return mockHTTPResponse(http.StatusOK), nil
