@@ -71,11 +71,7 @@ func Fetch[T any](ctx context.Context, store Store, key Key, fetch func(context.
 		return value, nil
 	})
 
-	// The shared fetch ran with the leader's context: when it failed because
-	// that context ended while this caller's context is still live, the
-	// error is not ours to report, so fetch on our own behalf.
-	if !leader && err != nil && ctx.Err() == nil &&
-		(errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
+	if !leader && failedOnLeaderContext(ctx, err) {
 		requestsTotal.WithLabelValues(key.Namespace, resultMiss).Inc()
 
 		return fetch(ctx)
@@ -91,6 +87,18 @@ func Fetch[T any](ctx context.Context, store Store, key Key, fetch func(context.
 	value, _ := shared.(T)
 
 	return value, err
+}
+
+// failedOnLeaderContext reports whether err, returned by a shared fetch that
+// ran with the leader's context, comes from that context ending while ctx is
+// still live. Such an error is not the caller's to report, so it should fetch
+// on its own behalf.
+func failedOnLeaderContext(ctx context.Context, err error) bool {
+	if err == nil || ctx.Err() != nil {
+		return false
+	}
+
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
 // FetchWithResponse is Fetch for SDK methods that also return an

@@ -381,7 +381,8 @@ func TestFetchCoalescedRetriesOnLeaderCancellation(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	cancelLeader()
 
-	if leaderErr := <-leaderDone; !errors.Is(leaderErr, context.Canceled) {
+	leaderErr := <-leaderDone
+	if !errors.Is(leaderErr, context.Canceled) {
 		t.Fatalf("leader: want context.Canceled, got %v", leaderErr)
 	}
 
