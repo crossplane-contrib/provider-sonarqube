@@ -18,6 +18,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -69,6 +70,16 @@ func Fetch[T any](ctx context.Context, store Store, key Key, fetch func(context.
 
 		return value, nil
 	})
+
+	// The shared fetch ran with the leader's context: when it failed because
+	// that context ended while this caller's context is still live, the
+	// error is not ours to report, so fetch on our own behalf.
+	if !leader && err != nil && ctx.Err() == nil &&
+		(errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
+		requestsTotal.WithLabelValues(key.Namespace, resultMiss).Inc()
+
+		return fetch(ctx)
+	}
 
 	result := resultCoalesced
 	if leader {

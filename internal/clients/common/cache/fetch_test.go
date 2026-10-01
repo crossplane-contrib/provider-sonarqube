@@ -335,3 +335,59 @@ func TestHitResponse(t *testing.T) {
 		t.Error("HitResponse() returned a shared response")
 	}
 }
+
+// TestFetchCoalescedRetriesOnLeaderCancellation checks that a coalesced
+// caller whose own context is live does not inherit the cancellation error
+// of the leader's context.
+func TestFetchCoalescedRetriesOnLeaderCancellation(t *testing.T) {
+	t.Parallel()
+
+	s := newTestStore(time.Minute, 10, newFakeClock())
+	key := uniqueKey(t)
+
+	leaderCtx, cancelLeader := context.WithCancel(context.Background())
+	started := make(chan struct{})
+
+	leaderDone := make(chan error, 1)
+
+	go func() {
+		_, err := Fetch(leaderCtx, s, key, func(ctx context.Context) (int, error) {
+			close(started)
+			<-ctx.Done()
+
+			return 0, ctx.Err()
+		})
+		leaderDone <- err
+	}()
+
+	<-started
+
+	followerDone := make(chan struct{})
+
+	var (
+		value int
+		err   error
+	)
+
+	go func() {
+		defer close(followerDone)
+
+		value, err = Fetch(context.Background(), s, key, func(context.Context) (int, error) {
+			return 42, nil
+		})
+	}()
+
+	// Give the follower time to join the in-flight call before cancelling.
+	time.Sleep(50 * time.Millisecond)
+	cancelLeader()
+
+	if leaderErr := <-leaderDone; !errors.Is(leaderErr, context.Canceled) {
+		t.Fatalf("leader: want context.Canceled, got %v", leaderErr)
+	}
+
+	<-followerDone
+
+	if err != nil || value != 42 {
+		t.Fatalf("follower: want (42, nil), got (%d, %v)", value, err)
+	}
+}
