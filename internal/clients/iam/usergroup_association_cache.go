@@ -157,8 +157,8 @@ func NewCachedQualityGateUsergroupAssociationClient(client QualityGateUsergroupA
 // and QualityGateSelectedUsers, so SearchGroups and SearchUsers pass
 // through.
 //
-// Renaming or deleting a Quality Gate (from the QualityGate controller)
-// only makes the entry of its old name unreachable until it expires.
+// Renaming or deleting a Quality Gate through the QualityGate controller
+// invalidates these selections too (see cache.EntityQualityGate).
 type cachedQualityGateUsergroupAssociationClient struct {
 	QualityGateUsergroupAssociationClient
 

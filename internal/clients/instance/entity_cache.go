@@ -90,12 +90,10 @@ func (c *cachedProjectsClient) UpdateVisibility(ctx context.Context, opt *sonar.
 }
 
 // NewCachedQualityGatesClient decorates client with scoped, so that deleting
-// or
-// renaming a Quality Gate, or changing who may edit it, invalidates the
-// datasets
-// cached in scoped that depend on Quality Gates (see
-// cache.EntityQualityGate), or returns
-// client as-is when scoped does not cache.
+// or renaming a Quality Gate, or changing who may edit it, invalidates the
+// datasets cached in scoped that depend on Quality Gates (see
+// cache.EntityQualityGate), or returns client as-is when scoped does not
+// cache.
 func NewCachedQualityGatesClient(client QualityGatesClient, scoped cache.Scoped) QualityGatesClient {
 	if !scoped.Enabled() {
 		return client
@@ -105,10 +103,8 @@ func NewCachedQualityGatesClient(client QualityGatesClient, scoped cache.Scoped)
 }
 
 // cachedQualityGatesClient is a QualityGatesClient that invalidates the
-// cached datasets
-// depending on Quality Gates whenever a Quality Gate is deleted or renamed,
-// or its
-// editors change.
+// cached datasets depending on Quality Gates whenever a Quality Gate is
+// deleted or renamed, or its editors change.
 type cachedQualityGatesClient struct {
 	QualityGatesClient
 
@@ -165,12 +161,10 @@ func (c *cachedQualityGatesClient) RemoveUser(ctx context.Context, opt *sonar.Qu
 }
 
 // NewCachedQualityProfilesClient decorates client with scoped, so that
-// deleting or
-// renaming a Quality Profile, or changing who may edit it, invalidates the
-// datasets
-// cached in scoped that depend on Quality Profiles (see
-// cache.EntityQualityProfile), or returns
-// client as-is when scoped does not cache.
+// deleting or renaming a Quality Profile, or changing who may edit it,
+// invalidates the datasets cached in scoped that depend on Quality Profiles
+// (see cache.EntityQualityProfile), or returns client as-is when scoped
+// does not cache.
 func NewCachedQualityProfilesClient(client QualityProfilesClient, scoped cache.Scoped) QualityProfilesClient {
 	if !scoped.Enabled() {
 		return client
@@ -180,10 +174,8 @@ func NewCachedQualityProfilesClient(client QualityProfilesClient, scoped cache.S
 }
 
 // cachedQualityProfilesClient is a QualityProfilesClient that invalidates
-// the cached datasets
-// depending on Quality Profiles whenever a Quality Profile is deleted or
-// renamed, or its
-// editors change.
+// the cached datasets depending on Quality Profiles whenever a Quality
+// Profile is deleted or renamed, or its editors change.
 type cachedQualityProfilesClient struct {
 	QualityProfilesClient
 
