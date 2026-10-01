@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	k8scache "k8s.io/apimachinery/pkg/util/cache"
 )
 
 const (
@@ -33,14 +34,6 @@ const (
 
 	// DefaultMaxEntries is the default maximum number of cached entries.
 	DefaultMaxEntries = 1000
-
-	// DefaultMaxBytes is the size budget used when neither an explicit
-	// budget nor a container memory limit is available: 64MiB.
-	DefaultMaxBytes int64 = 64 << 20
-
-	// DefaultMemoryFraction is the default share of the container memory
-	// limit given to the cache when no explicit budget is set.
-	DefaultMemoryFraction = 0.1
 )
 
 // Options configures the process-wide default Store.
@@ -52,9 +45,6 @@ type Options struct {
 	// MaxEntries is the maximum number of cached entries. It must be
 	// strictly positive.
 	MaxEntries int
-	// MaxBytes is the maximum estimated memory footprint of the cached
-	// entries, in bytes. It must be strictly positive. See ResolveMaxBytes.
-	MaxBytes int64
 }
 
 // Validate checks that the options are usable. Disabled options are always
@@ -72,26 +62,18 @@ func (o Options) Validate() error {
 		return errors.Errorf("observe cache max entries must be greater than 0, got %d", o.MaxEntries)
 	}
 
-	if o.MaxBytes <= 0 {
-		return errors.Errorf("observe cache max bytes must be greater than 0, got %d", o.MaxBytes)
-	}
-
 	return nil
 }
 
 var (
-	// defaultMu guards defaultStore and stopSweeper.
+	// defaultMu guards defaultStore.
 	defaultMu sync.RWMutex
 	// defaultStore is the Store returned by Default.
 	defaultStore = NewNoopStore()
-	// stopSweeper stops the sweeper of the current default Store, if any.
-	stopSweeper func()
 )
 
 // NewStore returns a Store configured by opts: a no-op Store when the cache
-// is disabled, an in-memory TTL Store otherwise. Expired entries of the
-// returned Store are only evicted lazily; the default Store set up by
-// Configure additionally sweeps them periodically.
+// is disabled, an in-memory TTL Store otherwise.
 func NewStore(opts Options) (Store, error) {
 	err := opts.Validate()
 	if err != nil {
@@ -102,7 +84,7 @@ func NewStore(opts Options) (Store, error) {
 		return NewNoopStore(), nil
 	}
 
-	return newTTLStore(opts.TTL, opts.MaxEntries, opts.MaxBytes, time.Now), nil
+	return newTTLStore(opts.TTL, k8scache.NewLRUExpireCache(opts.MaxEntries)), nil
 }
 
 // Configure sets up the process-wide default Store returned by Default. It
@@ -114,27 +96,14 @@ func Configure(opts Options) error {
 		return err
 	}
 
-	var stop func()
-
-	if ttlStore, ok := store.(*ttlStore); ok {
-		done := make(chan struct{})
-
-		go ttlStore.runSweeper(opts.TTL, done)
-
-		stop = sync.OnceFunc(func() { close(done) })
-
+	if IsEnabled(store) {
 		registerMetrics()
 	}
 
 	defaultMu.Lock()
 	defer defaultMu.Unlock()
 
-	if stopSweeper != nil {
-		stopSweeper()
-	}
-
 	defaultStore = store
-	stopSweeper = stop
 
 	return nil
 }

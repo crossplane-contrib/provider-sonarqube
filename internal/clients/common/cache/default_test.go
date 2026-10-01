@@ -30,14 +30,12 @@ func TestOptionsValidate(t *testing.T) {
 		wantErr bool
 	}{
 		"DisabledIgnoresValues": {opts: Options{Enabled: false, TTL: -1, MaxEntries: -1}},
-		"Defaults":              {opts: Options{Enabled: true, TTL: DefaultTTL, MaxEntries: DefaultMaxEntries, MaxBytes: DefaultMaxBytes}},
-		"ZeroTTL":               {opts: Options{Enabled: true, TTL: 0, MaxEntries: 1, MaxBytes: testMaxBytes}, wantErr: true},
-		"NegativeTTL":           {opts: Options{Enabled: true, TTL: -time.Second, MaxEntries: 1, MaxBytes: testMaxBytes}, wantErr: true},
-		"TTLAtGracePeriod":      {opts: Options{Enabled: true, TTL: MaxTTL, MaxEntries: 1, MaxBytes: testMaxBytes}, wantErr: true},
-		"TTLJustBelowMax":       {opts: Options{Enabled: true, TTL: MaxTTL - time.Millisecond, MaxEntries: 1, MaxBytes: testMaxBytes}},
-		"ZeroMaxEntries":        {opts: Options{Enabled: true, TTL: time.Second, MaxEntries: 0, MaxBytes: testMaxBytes}, wantErr: true},
-		"ZeroMaxBytes":          {opts: Options{Enabled: true, TTL: time.Second, MaxEntries: 1, MaxBytes: 0}, wantErr: true},
-		"NegativeMaxBytes":      {opts: Options{Enabled: true, TTL: time.Second, MaxEntries: 1, MaxBytes: -1}, wantErr: true},
+		"Defaults":              {opts: Options{Enabled: true, TTL: DefaultTTL, MaxEntries: DefaultMaxEntries}},
+		"ZeroTTL":               {opts: Options{Enabled: true, TTL: 0, MaxEntries: 1}, wantErr: true},
+		"NegativeTTL":           {opts: Options{Enabled: true, TTL: -time.Second, MaxEntries: 1}, wantErr: true},
+		"TTLAtGracePeriod":      {opts: Options{Enabled: true, TTL: MaxTTL, MaxEntries: 1}, wantErr: true},
+		"TTLJustBelowMax":       {opts: Options{Enabled: true, TTL: MaxTTL - time.Millisecond, MaxEntries: 1}},
+		"ZeroMaxEntries":        {opts: Options{Enabled: true, TTL: time.Second, MaxEntries: 0}, wantErr: true},
 	}
 
 	for name, tc := range tests {
@@ -76,7 +74,7 @@ func TestConfigure(t *testing.T) {
 		t.Fatal("Default() is enabled after a failed Configure()")
 	}
 
-	err := Configure(Options{Enabled: true, TTL: time.Second, MaxEntries: 1, MaxBytes: testMaxBytes})
+	err := Configure(Options{Enabled: true, TTL: time.Second, MaxEntries: 1})
 	if err != nil {
 		t.Fatalf("Configure() error = %v", err)
 	}
@@ -85,10 +83,10 @@ func TestConfigure(t *testing.T) {
 		t.Fatal("Default() is not enabled after Configure()")
 	}
 
-	// Reconfiguring stops the previous sweeper and replaces the store.
+	// Reconfiguring replaces the store.
 	previous := Default()
 
-	err = Configure(Options{Enabled: true, TTL: time.Second, MaxEntries: 1, MaxBytes: testMaxBytes})
+	err = Configure(Options{Enabled: true, TTL: time.Second, MaxEntries: 1})
 	if err != nil {
 		t.Fatalf("second Configure() error = %v", err)
 	}
