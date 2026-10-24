@@ -130,8 +130,21 @@ unchanged caching of other kinds. Secret list/watch requests are denied and
 unexpected requests fail the test. Existing UserToken controller tests separately
 cover token generation and revoke/regenerate renewal.
 
-A real Kubernetes RBAC/admission and SonarQube end-to-end run remains a separate
-qualification; the HTTP fixture is not an API server authorization implementation.
+After building the local package, run the integration suites with direct reads:
+
+```sh
+ENABLE_SECRET_CACHE=false make e2e.run
+```
+
+The harness defaults to Secret caching when this variable is omitted.
+`TestUserTokenCRUD` verifies renewal by changing the renewal window so that the
+existing token is due immediately, then checking that its connection Secret
+receives a new value. The replacement token falls outside that window.
+
+Kubernetes RBAC/admission requires a separate effective-permissions check on the
+runtime ServiceAccount; a package installation may grant broader access than
+these paths need. The HTTP fixture is not an API server authorization
+implementation.
 
 ## References
 
