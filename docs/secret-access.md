@@ -148,9 +148,13 @@ implementation.
 
 ## References
 
-Grafana — Optional Secret cache, upstream PR #701 (open when examined on 24 October 2026).
+Crossplane provider-kubernetes — Optional Secret caching in the merged runtime v2.4.0 update, PR #549 (examined on 24 October 2026).
 
-https://github.com/grafana/crossplane-provider-grafana/pull/701
+https://github.com/crossplane-contrib/provider-kubernetes/pull/549
+
+Crossplane runtime — Reduce Provider memory footprint by optimizing CRD and Secret caching, issue #1056 (closed; examined on 24 October 2026).
+
+https://github.com/crossplane/crossplane-runtime/issues/1056
 
 Crossplane — crossplane-runtime v2.4.0, native connection publishers.
 
