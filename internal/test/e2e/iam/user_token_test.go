@@ -19,6 +19,7 @@ limitations under the License.
 package iam_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -28,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 
 	iamv1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
@@ -46,7 +48,7 @@ func TestUserTokenCRUD(t *testing.T) {
 		tokenName             = "e2e-usertoken-crud"
 		tokenSecretName       = "e2e-usertoken-secret"
 		tokenSecretKey        = "token"
-		renewalDays     int64 = 90
+		renewalDays     int64 = 1
 	)
 
 	token := &iamv1alpha1.UserToken{
@@ -106,6 +108,29 @@ func TestUserTokenCRUD(t *testing.T) {
 	if token.Status.AtProvider.Type != sonar.TokenTypeUserToken {
 		t.Errorf("observed token type = %q, want %q", token.Status.AtProvider.Type, sonar.TokenTypeUserToken)
 	}
+
+	// The initial token expires tomorrow. Moving to a 90-day policy with an
+	// 89-day renewal window makes that existing token immediately due, while
+	// its replacement is outside the window. No clock changes are needed.
+	if err := f.Kube.Get(context.Background(), kubeKey(token), token); err != nil {
+		t.Fatalf("refreshing token before renewal: %v", err)
+	}
+	token.Spec.ForProvider.RenewalPeriodDays = ptr.To(int64(90))
+	token.Spec.ForProvider.RenewBeforeDays = ptr.To(int64(89))
+	f.Update(t, token)
+
+	err := wait.PollUntilContextTimeout(context.Background(), time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		current := &corev1.Secret{}
+		if err := f.Kube.Get(ctx, kubeKey(secret), current); err != nil {
+			return false, err
+		}
+		value := current.Data[tokenSecretKey]
+		return len(value) > 0 && !bytes.Equal(value, tokenValue), nil
+	})
+	if err != nil {
+		t.Fatalf("waiting for renewed token connection details: %v", err)
+	}
+	t.Log("token renewed and connection Secret refreshed")
 
 	// Cleanup
 	if err := f.Kube.Delete(context.Background(), token); err != nil && !apierrors.IsNotFound(err) {

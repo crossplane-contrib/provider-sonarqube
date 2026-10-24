@@ -57,6 +57,13 @@ your platform:
 Available examples live under `examples/` and are a practical starting point for
 understanding the resource shapes supported by the provider.
 
+## Kubernetes Secret access
+
+Use `--no-enable-secret-cache` for direct Secret reads with namespace-scoped
+permissions. Secret caching remains enabled by default. See
+[least-privilege Secret access](docs/secret-access.md) for DeploymentRuntimeConfig,
+connection Secret publication and rotation, and RBAC limitations.
+
 ## Observe cache (alpha)
 
 Many managed resources of the same kind usually read the same SonarQube list
