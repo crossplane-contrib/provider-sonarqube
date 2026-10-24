@@ -28,9 +28,11 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
@@ -66,6 +68,8 @@ func main() {
 		pollStateMetricInterval = app.Flag("poll-state-metric", "State metric recording interval").Default("5s").Duration()
 
 		maxReconcileRate = app.Flag("max-reconcile-rate", "The global maximum rate per second at which resources may checked for drift from the desired state.").Default("10").Int()
+
+		enableSecretCache = app.Flag("enable-secret-cache", "Enable caching of Kubernetes Secrets. Disable to read Secrets directly from the API server.").Default("true").Envar("ENABLE_SECRET_CACHE").Bool()
 
 		enableManagementPolicies = app.Flag("enable-management-policies", "Enable support for Management Policies.").Default("true").Envar("ENABLE_MANAGEMENT_POLICIES").Bool()
 		enableChangeLogs         = app.Flag("enable-changelogs", "Enable support for capturing change logs during reconciliation.").Default("false").Envar("ENABLE_CHANGE_LOGS").Bool()
@@ -112,6 +116,7 @@ func main() {
 	kingpin.FatalIfError(err, "Cannot get API server rest config")
 
 	mgr, err := ctrl.NewManager(ratelimiter.LimitRESTConfig(cfg, *maxReconcileRate), ctrl.Options{
+		Client: secretCacheClientOptions(*enableSecretCache),
 		// SyncPeriod in ctrl.Options has been removed since controller-runtime v0.16.0
 		// The recommended way is to move it to cache.Options instead
 		Cache: cache.Options{
@@ -185,4 +190,18 @@ func main() {
 	kingpin.FatalIfError(customresourcesgate.Setup(mgr, o), "Cannot setup CRD gate controller")
 	kingpin.FatalIfError(sonarqube.SetupGated(mgr, o), "Cannot setup SonarQube controllers")
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
+}
+
+// secretCacheClientOptions bypasses the Secret cache for manager clients
+// and native connection publishers, leaving other resource caches unchanged.
+func secretCacheClientOptions(enabled bool) client.Options {
+	if enabled {
+		return client.Options{}
+	}
+
+	return client.Options{
+		Cache: &client.CacheOptions{
+			DisableFor: []client.Object{&corev1.Secret{}},
+		},
+	}
 }
