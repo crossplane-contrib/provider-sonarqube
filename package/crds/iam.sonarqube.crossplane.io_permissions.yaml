@@ -245,12 +245,12 @@ spec:
                     type: object
                   permissions:
                     description: |-
-                      Permissions is the desired set of permissions to assign.
+                      Permissions is the desired set of permissions to assign. An empty set revokes all permissions in this scope.
                       Global permissions: admin, gateadmin, profileadmin, provisioning, scan, applicationcreator, portfoliocreator.
                       Project permissions: admin, codeviewer, issueadmin, securityhotspotadmin, scan, user.
                     items:
                       type: string
-                    minItems: 1
+                    minItems: 0
                     type: array
                   projectKey:
                     description: |-

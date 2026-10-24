@@ -76,11 +76,11 @@ type PermissionsParameters struct {
 	// +kubebuilder:validation:Optional
 	ProjectKeySelector *xpv1.NamespacedSelector `json:"projectKeySelector,omitempty"`
 
-	// Permissions is the desired set of permissions to assign.
+	// Permissions is the desired set of permissions to assign. An empty set revokes all permissions in this scope.
 	// Global permissions: admin, gateadmin, profileadmin, provisioning, scan, applicationcreator, portfoliocreator.
 	// Project permissions: admin, codeviewer, issueadmin, securityhotspotadmin, scan, user.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MinItems=0
 	Permissions []string `json:"permissions"`
 }
 
