@@ -216,6 +216,23 @@ func TestObserve(t *testing.T) {
 		},
 	}
 
+	// Empty sets must remain available after SonarQube stops returning the subject.
+	for _, subject := range []struct {
+		name, existing string
+		resource       resource.Managed
+	}{
+		{"EmptyGroupPermissionsConverge", "GroupNotFoundReturnsNotExists", newTestGroupPermissions("group:devs", "devs", []string{})},
+		{"EmptyUserPermissionsConverge", "UserNotFoundReturnsNotExists", newTestUserPermissions("user:alice", "alice", []string{})},
+	} {
+		tc := cases[subject.existing]
+		tc.args.mg = subject.resource
+		tc.want.observation = managed.ExternalObservation{
+			ResourceExists: true, ResourceUpToDate: true,
+			ConnectionDetails: managed.ConnectionDetails{},
+		}
+		cases[subject.name] = tc
+	}
+
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

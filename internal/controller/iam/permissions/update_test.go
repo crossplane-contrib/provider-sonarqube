@@ -195,3 +195,51 @@ func TestUpdate(t *testing.T) {
 		}
 	})
 }
+
+// TestEmptyPermissionsRevokeLastGrantAndConverge checks revocation
+// and the following observation.
+func TestEmptyPermissionsRevokeLastGrantAndConverge(t *testing.T) {
+	t.Parallel()
+
+	removed := false
+	p := newTestGroupPermissions("group:devs:project", "devs", []string{})
+	project := "project"
+	p.Spec.ForProvider.ProjectKey = &project
+	e := &external{client: &fake.MockPermissionsClient{
+		GroupsFn: func(_ *sonar.PermissionsGroupsOptions) (*sonar.PermissionsGroups, *http.Response, error) {
+			groups := []sonar.PermissionGroup{}
+			if !removed {
+				groups = append(groups, sonar.PermissionGroup{Name: "devs", Permissions: []string{"scan"}})
+			}
+
+			return &sonar.PermissionsGroups{
+				Groups: groups,
+				Paging: sonar.Paging{Total: int64(len(groups)), PageIndex: 1, PageSize: 100},
+			}, mockHTTPResponse(http.StatusOK), nil
+		},
+		RemoveGroupFn: func(opt *sonar.PermissionsRemoveGroupOptions) (*http.Response, error) {
+			if opt.Permission != "scan" {
+				t.Errorf("removed permission = %q, want scan", opt.Permission)
+			}
+
+			removed = true
+
+			return mockHTTPResponse(http.StatusNoContent), nil
+		},
+	}}
+
+	before, err := e.Observe(context.Background(), p)
+	if err != nil || !before.ResourceExists || before.ResourceUpToDate {
+		t.Fatalf("Observe before revocation = %+v, error = %v", before, err)
+	}
+
+	_, err = e.Update(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Update empty permissions: %v", err)
+	}
+
+	after, err := e.Observe(context.Background(), p)
+	if err != nil || !removed || !after.ResourceExists || !after.ResourceUpToDate {
+		t.Fatalf("Observe after revocation = %+v, removed = %v, error = %v", after, removed, err)
+	}
+}
