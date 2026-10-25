@@ -129,7 +129,9 @@ func TestUserTokenCRUD(t *testing.T) {
 	err = wait.PollUntilContextTimeout(context.Background(), time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 		current := &corev1.Secret{}
 		if err := f.Kube.Get(ctx, kubeKey(secret), current); err != nil {
-			return false, err
+			// Tolerate transient read errors; the timeout bounds the wait.
+			t.Logf("reading token secret: %v", err)
+			return false, nil
 		}
 		value := current.Data[tokenSecretKey]
 		return len(value) > 0 && !bytes.Equal(value, tokenValue), nil
