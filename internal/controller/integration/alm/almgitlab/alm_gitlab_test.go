@@ -31,11 +31,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -711,6 +714,7 @@ func TestGetSavedAPIToken(t *testing.T) {
 
 	cases := map[string]struct {
 		objects   []runtime.Object
+		getErr    error
 		alm       *v1alpha1.ALMGitLab
 		wantToken string
 		wantError string
@@ -765,6 +769,16 @@ func TestGetSavedAPIToken(t *testing.T) {
 			wantToken: "saved-token",
 			wantError: "",
 		},
+		"ForbiddenSecretReturnsError": {
+			getErr: apierrors.NewForbidden(corev1.Resource("secrets"), "connection-secret", nil),
+			alm: func() *v1alpha1.ALMGitLab {
+				alm := newTestALMGitLab(testExternalName, tokenRef)
+				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
+
+				return alm
+			}(),
+			wantError: "cannot get saved API token",
+		},
 	}
 
 	for name, tc := range cases {
@@ -778,8 +792,16 @@ func TestGetSavedAPIToken(t *testing.T) {
 				t.Fatalf("AddToScheme() unexpected error: %v", err)
 			}
 
-			kubeClient := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...).Build()
-			e := &external{kubeClient: kubeClient}
+			builder := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...)
+			if tc.getErr != nil {
+				builder = builder.WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(context.Context, client.WithWatch, client.ObjectKey, client.Object, ...client.GetOption) error {
+						return tc.getErr
+					},
+				})
+			}
+
+			e := &external{kubeClient: builder.Build()}
 
 			got, err := e.getSavedAPIToken(context.Background(), tc.alm)
 			checkError(t, "getSavedAPIToken", tc.wantError, err)

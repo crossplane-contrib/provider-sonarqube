@@ -24,10 +24,12 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 // newFakeClient creates a fake Kubernetes client for testing.
@@ -92,6 +94,27 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 			want:        nil,
 			wantErr:     true,
 			errContains: ErrSecretNotFound,
+		},
+		"ForbiddenIsNotReportedAsNotFound": {
+			args: args{
+				ctx: context.Background(),
+				client: fakeclient.NewClientBuilder().WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(_ context.Context, _ client.WithWatch, key client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
+						return apierrors.NewForbidden(corev1.Resource("secrets"), key.Name, nil)
+					},
+				}).Build(),
+				m: &fake.Managed{},
+				selector: &xpv1.SecretKeySelector{
+					SecretReference: xpv1.SecretReference{
+						Name:      "restricted",
+						Namespace: "default",
+					},
+					Key: "token",
+				},
+			},
+			want:        nil,
+			wantErr:     true,
+			errContains: ErrSecretGet,
 		},
 		"KeyNotFoundReturnsError": {
 			args: args{

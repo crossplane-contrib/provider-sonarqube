@@ -23,6 +23,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -30,6 +31,9 @@ import (
 const (
 	// ErrSecretNotFound is the error string used when a secret cannot be found.
 	ErrSecretNotFound = "Cannot find referenced secret"
+	// ErrSecretGet is the error string used when a secret cannot be read for
+	// any other reason, such as missing RBAC permissions.
+	ErrSecretGet = "Cannot get referenced secret"
 	// ErrSecretKeyNotFound is the error string used when a key in a secret cannot
 	// be found.
 	ErrSecretKeyNotFound = "Cannot find key in referenced secret"
@@ -47,8 +51,12 @@ func GetTokenValueFromSecret(ctx context.Context, kubeClient client.Client, m re
 	secret := &corev1.Secret{}
 
 	err := kubeClient.Get(ctx, types.NamespacedName{Name: selector.Name, Namespace: selector.Namespace}, secret)
-	if err != nil {
+	if apierrors.IsNotFound(err) {
 		return nil, errors.Wrap(err, ErrSecretNotFound)
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, ErrSecretGet)
 	}
 
 	value := secret.Data[selector.Key]
