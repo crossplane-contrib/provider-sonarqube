@@ -22,6 +22,7 @@ import (
 	"maps"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"slices"
 	"sync"
 	"testing"
@@ -94,12 +95,7 @@ func (a *secretAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // serveNamedSecret supports the native publisher's GET, POST and merge
 // PATCH flow.
 func (a *secretAPI) serveNamedSecret(w http.ResponseWriter, r *http.Request) {
-	name := "analysis"
-	if r.URL.Path == "/api/v1/namespaces/"+secretNamespace+"/secrets/credentials" {
-		name = "credentials"
-	}
-
-	secret, exists := a.secrets[name]
+	secret, exists := a.secrets[path.Base(r.URL.Path)]
 	if !exists {
 		writeSecretStatus(w, http.StatusNotFound, metav1.StatusReasonNotFound)
 
