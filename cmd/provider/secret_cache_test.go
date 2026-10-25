@@ -178,8 +178,7 @@ func newSecretTestManager(t *testing.T, api *secretAPI, cached bool) ctrl.Manage
 	return mgr
 }
 
-// TestSecretCacheEnabled preserves cached Secret reads and other resource
-// caches.
+// TestSecretCacheEnabled verifies Secret reads use the cache by default.
 func TestSecretCacheEnabled(t *testing.T) {
 	t.Parallel()
 
