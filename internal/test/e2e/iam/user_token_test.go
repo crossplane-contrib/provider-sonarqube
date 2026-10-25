@@ -30,6 +30,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 
 	iamv1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
@@ -112,14 +113,20 @@ func TestUserTokenCRUD(t *testing.T) {
 	// The initial token expires in two days. Moving to a 90-day policy with an
 	// 89-day renewal window makes that existing token immediately due, while
 	// its replacement is outside the window. No clock changes are needed.
-	if err := f.Kube.Get(context.Background(), kubeKey(token), token); err != nil {
-		t.Fatalf("refreshing token before renewal: %v", err)
-	}
-	token.Spec.ForProvider.RenewalPeriodDays = ptr.To(int64(90))
-	token.Spec.ForProvider.RenewBeforeDays = ptr.To(int64(89))
-	f.Update(t, token)
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if err := f.Kube.Get(context.Background(), kubeKey(token), token); err != nil {
+			return err
+		}
+		token.Spec.ForProvider.RenewalPeriodDays = ptr.To(int64(90))
+		token.Spec.ForProvider.RenewBeforeDays = ptr.To(int64(89))
 
-	err := wait.PollUntilContextTimeout(context.Background(), time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		return f.Kube.Update(context.Background(), token)
+	})
+	if err != nil {
+		t.Fatalf("updating token renewal policy: %v", err)
+	}
+
+	err = wait.PollUntilContextTimeout(context.Background(), time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 		current := &corev1.Secret{}
 		if err := f.Kube.Get(ctx, kubeKey(secret), current); err != nil {
 			return false, err
