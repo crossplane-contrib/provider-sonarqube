@@ -116,7 +116,7 @@ func main() {
 	kingpin.FatalIfError(err, "Cannot get API server rest config")
 
 	mgr, err := ctrl.NewManager(ratelimiter.LimitRESTConfig(cfg, *maxReconcileRate), ctrl.Options{
-		Client: secretCacheClientOptions(*enableSecretCache),
+		Client: clientOptions(*enableSecretCache),
 		// SyncPeriod in ctrl.Options has been removed since controller-runtime v0.16.0
 		// The recommended way is to move it to cache.Options instead
 		Cache: cache.Options{
@@ -192,16 +192,15 @@ func main() {
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
 }
 
-// secretCacheClientOptions bypasses the Secret cache for manager clients
-// and native connection publishers, leaving other resource caches unchanged.
-func secretCacheClientOptions(enabled bool) client.Options {
-	if enabled {
-		return client.Options{}
+// clientOptions returns the manager client options, which also apply to the
+// native connection publishers. Kinds listed in DisableFor are read directly
+// from the API server instead of the cache.
+func clientOptions(enableSecretCache bool) client.Options {
+	opts := client.Options{Cache: &client.CacheOptions{}}
+
+	if !enableSecretCache {
+		opts.Cache.DisableFor = append(opts.Cache.DisableFor, &corev1.Secret{})
 	}
 
-	return client.Options{
-		Cache: &client.CacheOptions{
-			DisableFor: []client.Object{&corev1.Secret{}},
-		},
-	}
+	return opts
 }

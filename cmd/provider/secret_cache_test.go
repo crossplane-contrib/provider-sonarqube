@@ -168,7 +168,7 @@ func newSecretTestManager(t *testing.T, api *secretAPI, cached bool) ctrl.Manage
 	mgr, err := ctrl.NewManager(&rest.Config{Host: server.URL, ContentConfig: rest.ContentConfig{ContentType: "application/json", AcceptContentTypes: "application/json"}}, ctrl.Options{
 		Scheme:         scheme,
 		MapperProvider: func(*rest.Config, *http.Client) (meta.RESTMapper, error) { return mapper, nil },
-		Client:         secretCacheClientOptions(cached),
+		Client:         clientOptions(cached),
 		Metrics:        metricsserver.Options{BindAddress: "0"},
 	})
 	if err != nil {
