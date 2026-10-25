@@ -105,6 +105,12 @@ Things to know before disabling it:
   generates for the provider can still grant broader Secret access, and a
   narrower Role does not take it away. Check the effective permissions of the
   provider's ServiceAccount.
+* **API traffic:** every Secret read becomes an API request. The provider reads
+  credentials on every reconcile, and reads the connection Secret each time it
+  publishes connection details, which happens on every reconcile of a resource
+  with `writeConnectionSecretToRef`. These requests share the provider's
+  Kubernetes client rate limit of 5 × `--max-reconcile-rate` requests per
+  second, so large numbers of managed resources can slow reconciliation.
 
 ## Observe cache (alpha)
 
