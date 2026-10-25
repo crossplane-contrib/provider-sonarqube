@@ -72,8 +72,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	// Search endpoints omit subjects after their last permission is removed.
-	// An empty desired set is already converged when no grants are found.
+	// Unfiltered searches still return a subject with an empty permission
+	// list once its last grant is removed. A subject can only be missing
+	// when it never had grants, which is converged for an empty desired set.
 
 	// Deleting: Check that the resource has no permissions left; mark the
 	// external resource as non-existent so the managed reconciler can
