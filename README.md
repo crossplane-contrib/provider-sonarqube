@@ -59,10 +59,52 @@ understanding the resource shapes supported by the provider.
 
 ## Kubernetes Secret access
 
-Use `--no-enable-secret-cache` for direct Secret reads with namespace-scoped
-permissions. Secret caching remains enabled by default. See
-[least-privilege Secret access](docs/secret-access.md) for DeploymentRuntimeConfig,
-connection Secret publication and rotation, and RBAC limitations.
+By default the provider reads Kubernetes Secrets through the controller-runtime
+cache. The first read starts an informer that lists and watches every Secret the
+provider can access and keeps them in memory, which requires cluster-wide `list`
+and `watch` permissions on Secrets.
+
+Disabling the Secret cache sends each Secret read directly to the Kubernetes API,
+so the provider only needs access to the Secrets it actually uses. Other
+Kubernetes kinds stay cached. This setting is independent of the observe cache
+below.
+
+| Flag | Environment variable | Default | Description |
+| --- | --- | --- | --- |
+| `--enable-secret-cache` | `ENABLE_SECRET_CACHE` | `true` | Serves Secret reads from the informer cache. Set to `false`, or pass `--no-enable-secret-cache`, to read Secrets directly. |
+
+```yaml
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: provider-sonarqube
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      template:
+        spec:
+          containers:
+            - name: package-runtime
+              env:
+                - name: ENABLE_SECRET_CACHE
+                  value: "false"
+```
+
+Things to know before disabling it:
+
+* **Permissions:** with the cache disabled, the provider needs `get` on every
+  Secret it reads (`ProviderConfig` credentials and Secret references such as
+  user passwords, ALM credentials, webhook secrets and license keys), and
+  `get`, `create` and `patch` on connection Secrets in their namespace. `list`,
+  `watch`, `update` and `delete` are not needed. `get` and `patch` can be
+  restricted with `resourceNames`, but `create` cannot, so it allows any Secret
+  name in the namespace. A missing grant is reported as
+  `Cannot get referenced secret: ... is forbidden`.
+* **Existing grants:** the flag does not change RBAC. The ClusterRole Crossplane
+  generates for the provider can still grant broader Secret access, and a
+  narrower Role does not take it away. Check the effective permissions of the
+  provider's ServiceAccount.
 
 ## Observe cache (alpha)
 
