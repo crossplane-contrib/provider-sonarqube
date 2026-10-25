@@ -48,7 +48,7 @@ func TestUserTokenCRUD(t *testing.T) {
 		tokenName             = "e2e-usertoken-crud"
 		tokenSecretName       = "e2e-usertoken-secret"
 		tokenSecretKey        = "token"
-		renewalDays     int64 = 1
+		renewalDays     int64 = 2 // SonarQube can reject a one-day token when the request crosses midnight
 	)
 
 	token := &iamv1alpha1.UserToken{
@@ -109,7 +109,7 @@ func TestUserTokenCRUD(t *testing.T) {
 		t.Errorf("observed token type = %q, want %q", token.Status.AtProvider.Type, sonar.TokenTypeUserToken)
 	}
 
-	// The initial token expires tomorrow. Moving to a 90-day policy with an
+	// The initial token expires in two days. Moving to a 90-day policy with an
 	// 89-day renewal window makes that existing token immediately due, while
 	// its replacement is outside the window. No clock changes are needed.
 	if err := f.Kube.Get(context.Background(), kubeKey(token), token); err != nil {
