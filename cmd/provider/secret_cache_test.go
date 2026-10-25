@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -109,8 +110,9 @@ func (a *secretAPI) serveNamedSecret(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		writeSecretJSON(w, secret)
 	case http.MethodPatch:
-		// The runtime publisher supplies the complete desired object as a merge
-		// patch. Preserve the API object's metadata, including its controller.
+		// The runtime publisher supplies the complete desired object as a JSON
+		// merge patch. Merge Data per key, as the API server does, and preserve
+		// the API object's metadata, including its controller.
 		desired := new(corev1.Secret)
 
 		err := json.NewDecoder(r.Body).Decode(desired)
@@ -120,9 +122,11 @@ func (a *secretAPI) serveNamedSecret(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if desired.Data != nil {
-			secret.Data = desired.Data
+		if len(desired.Data) > 0 && secret.Data == nil {
+			secret.Data = make(map[string][]byte, len(desired.Data))
 		}
+
+		maps.Copy(secret.Data, desired.Data)
 
 		writeSecretJSON(w, secret)
 	default:
