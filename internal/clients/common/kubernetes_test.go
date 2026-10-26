@@ -205,6 +205,86 @@ func TestGetTokenValueFromSecret(t *testing.T) {
 	}
 }
 
+// TestGetTokenValueFromSecretInNamespace tests that namespace-bound secret
+// reads refuse selectors pointing at another namespace without reading them.
+func TestGetTokenValueFromSecretInNamespace(t *testing.T) {
+	t.Parallel()
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-secret", Namespace: "tenant-b"},
+		Data:       map[string][]byte{"token": []byte("tenant-b-token")},
+	}
+
+	tests := map[string]struct {
+		namespace   string
+		selector    *xpv1.SecretKeySelector
+		want        string
+		errContains string
+	}{
+		"NilSelectorReturnsError": {
+			namespace:   "tenant-b",
+			errContains: ErrSecretSelectorNil,
+		},
+		"SameNamespaceSucceeds": {
+			namespace: "tenant-b",
+			selector: &xpv1.SecretKeySelector{
+				SecretReference: xpv1.SecretReference{Name: "my-secret", Namespace: "tenant-b"},
+				Key:             "token",
+			},
+			want: "tenant-b-token",
+		},
+		"CrossNamespaceRejected": {
+			namespace: "tenant-a",
+			selector: &xpv1.SecretKeySelector{
+				SecretReference: xpv1.SecretReference{Name: "my-secret", Namespace: "tenant-b"},
+				Key:             "token",
+			},
+			errContains: ErrSecretCrossNamespace,
+		},
+		"EmptySelectorNamespaceRejected": {
+			namespace: "tenant-b",
+			selector: &xpv1.SecretKeySelector{
+				SecretReference: xpv1.SecretReference{Name: "my-secret"},
+				Key:             "token",
+			},
+			errContains: ErrSecretCrossNamespace,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			kubeClient := fakeclient.NewClientBuilder().WithObjects(secret).WithInterceptorFuncs(interceptor.Funcs{
+				Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+					if key.Namespace != tc.namespace {
+						t.Errorf("unexpected Get in namespace %q, want only %q", key.Namespace, tc.namespace)
+					}
+
+					return c.Get(ctx, key, obj, opts...)
+				},
+			}).Build()
+
+			got, err := GetTokenValueFromSecretInNamespace(context.Background(), kubeClient, &fake.Managed{}, tc.namespace, tc.selector)
+			if tc.errContains != "" {
+				if err == nil || !containsString(err.Error(), tc.errContains) {
+					t.Errorf("GetTokenValueFromSecretInNamespace() error = %v, should contain %v", err, tc.errContains)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("GetTokenValueFromSecretInNamespace() unexpected error: %v", err)
+			}
+
+			if got == nil || *got != tc.want {
+				t.Errorf("GetTokenValueFromSecretInNamespace() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 // TestGetTokenValueFromLocalSecret tests retrieving token values from local.
 func TestGetTokenValueFromLocalSecret(t *testing.T) {
 	t.Parallel()

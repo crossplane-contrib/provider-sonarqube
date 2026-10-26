@@ -875,3 +875,182 @@ func TestGetConfigModernManagedSuccess(t *testing.T) {
 
 	runGetConfigTests(t, tests)
 }
+
+// TestGetConfigSecretNamespaceBinding tests that namespaced ProviderConfig
+// credentials are bound to the ProviderConfig's namespace, while
+// ClusterProviderConfig credentials may live in any namespace.
+func TestGetConfigSecretNamespaceBinding(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]getConfigTestCase{
+		"ProviderConfigTokenSecretInOtherNamespaceRejected": {
+			managed: func() *fake.ModernManaged {
+				m := &fake.ModernManaged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-resource",
+						Namespace: "tenant-a",
+						UID:       "test-uid-8",
+					},
+				}
+				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "my-pc-foreign-token", Kind: "ProviderConfig"})
+
+				return m
+			}(),
+			setupClient: func() client.Client {
+				return newSonarTestClient(
+					&v1alpha1.ProviderConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "my-pc-foreign-token",
+							Namespace: "tenant-a",
+						},
+						Spec: v1alpha1.ProviderConfigSpec{
+							BaseURL: "http://localhost:9000",
+							Token: &v1alpha1.ProviderCredentials{
+								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
+									SecretRef: &xpv1.SecretKeySelector{
+										SecretReference: xpv1.SecretReference{
+											Name:      "admin-creds",
+											Namespace: "crossplane-system",
+										},
+										Key: "token",
+									},
+								},
+								Source: xpv1.CredentialsSourceSecret,
+							},
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "admin-creds",
+							Namespace: "crossplane-system",
+						},
+						Data: map[string][]byte{
+							"token": []byte("admin-token"),
+						},
+					},
+				)
+			},
+			wantErr: true,
+			errMsg:  ErrSecretCrossNamespace,
+		},
+		"ProviderConfigBasicAuthSecretsInOtherNamespaceRejected": {
+			managed: func() *fake.ModernManaged {
+				m := &fake.ModernManaged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-resource",
+						Namespace: "tenant-a",
+						UID:       "test-uid-9",
+					},
+				}
+				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "my-pc-foreign-basic", Kind: "ProviderConfig"})
+
+				return m
+			}(),
+			setupClient: func() client.Client {
+				return newSonarTestClient(
+					&v1alpha1.ProviderConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "my-pc-foreign-basic",
+							Namespace: "tenant-a",
+						},
+						Spec: v1alpha1.ProviderConfigSpec{
+							BaseURL: "http://localhost:9000",
+							Username: &v1alpha1.ProviderCredentials{
+								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
+									SecretRef: &xpv1.SecretKeySelector{
+										SecretReference: xpv1.SecretReference{
+											Name:      "b-creds",
+											Namespace: "tenant-b",
+										},
+										Key: "username",
+									},
+								},
+								Source: xpv1.CredentialsSourceSecret,
+							},
+							Password: &v1alpha1.ProviderCredentials{
+								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
+									SecretRef: &xpv1.SecretKeySelector{
+										SecretReference: xpv1.SecretReference{
+											Name:      "b-creds",
+											Namespace: "tenant-b",
+										},
+										Key: "password",
+									},
+								},
+								Source: xpv1.CredentialsSourceSecret,
+							},
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "b-creds",
+							Namespace: "tenant-b",
+						},
+						Data: map[string][]byte{
+							"username": []byte("b-user"),
+							"password": []byte("b-pass"),
+						},
+					},
+				)
+			},
+			wantErr: true,
+			errMsg:  ErrSecretCrossNamespace,
+		},
+		"ClusterProviderConfigSecretInOtherNamespaceAllowed": {
+			managed: func() *fake.ModernManaged {
+				m := &fake.ModernManaged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-resource",
+						Namespace: "tenant-a",
+						UID:       "test-uid-10",
+					},
+				}
+				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "my-cpc-system", Kind: clusterProviderConfigKind})
+
+				return m
+			}(),
+			setupClient: func() client.Client {
+				return newSonarTestClient(
+					&v1alpha1.ClusterProviderConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "my-cpc-system",
+						},
+						Spec: v1alpha1.ProviderConfigSpec{
+							BaseURL: "http://localhost:9000",
+							Token: &v1alpha1.ProviderCredentials{
+								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
+									SecretRef: &xpv1.SecretKeySelector{
+										SecretReference: xpv1.SecretReference{
+											Name:      "admin-creds",
+											Namespace: "crossplane-system",
+										},
+										Key: "token",
+									},
+								},
+								Source: xpv1.CredentialsSourceSecret,
+							},
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "admin-creds",
+							Namespace: "crossplane-system",
+						},
+						Data: map[string][]byte{
+							"token": []byte("admin-token"),
+						},
+					},
+				)
+			},
+			wantErr: false,
+			wantConfig: &Config{
+				AuthType:           PersonalAccessToken,
+				Token:              "admin-token",
+				BaseURL:            "http://localhost:9000",
+				InsecureSkipVerify: false,
+			},
+		},
+	}
+
+	runGetConfigTests(t, tests)
+}

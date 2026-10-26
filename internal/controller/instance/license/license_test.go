@@ -114,6 +114,15 @@ func secretRef(name, key string) *xpv1.SecretKeySelector {
 	}
 }
 
+// crossNamespaceSecretRef builds a SecretKeySelector pointing outside the
+// License's "default" namespace.
+func crossNamespaceSecretRef(name, key string) *xpv1.SecretKeySelector {
+	return &xpv1.SecretKeySelector{
+		SecretReference: xpv1.SecretReference{Name: name, Namespace: "other-ns"},
+		Key:             key,
+	}
+}
+
 // testSecret creates a test secret with a single key-value pair.
 func testSecret(name, namespace, key, value string) *corev1.Secret {
 	return &corev1.Secret{

@@ -52,14 +52,16 @@ type LicenseEndpoint struct {
 	BasicAuthUsername *string `json:"basicAuthUsername,omitempty"`
 
 	// BasicAuthPasswordSecretRef references the secret key holding the
-	// password sent using HTTP Basic authentication.
+	// password sent using HTTP Basic authentication. The secret must be in
+	// the same namespace as the License.
 	// Requires BasicAuthUsername to also be set.
 	// +optional
 	BasicAuthPasswordSecretRef *xpv1.SecretKeySelector `json:"basicAuthPasswordSecretRef,omitempty"`
 
 	// BearerTokenSecretRef references the secret key holding a bearer token
 	// sent in the endpoint request's Authorization header. Mutually
-	// exclusive with BasicAuthUsername.
+	// exclusive with BasicAuthUsername. The secret must be in the same
+	// namespace as the License.
 	// +optional
 	BearerTokenSecretRef *xpv1.SecretKeySelector `json:"bearerTokenSecretRef,omitempty"`
 }
@@ -71,7 +73,8 @@ type LicenseEndpoint struct {
 // +kubebuilder:validation:XValidation:rule="has(self.licenseKeySecretRef) != has(self.endpoint)",message="exactly one of licenseKeySecretRef or endpoint must be set"
 type LicenseParameters struct {
 	// LicenseKeySecretRef references the secret key holding the license key
-	// to apply directly to the SonarQube instance.
+	// to apply directly to the SonarQube instance. The secret must be in the
+	// same namespace as the License.
 	// Exactly one of LicenseKeySecretRef or Endpoint must be set.
 	// +optional
 	LicenseKeySecretRef *xpv1.SecretKeySelector `json:"licenseKeySecretRef,omitempty"`

@@ -87,7 +87,8 @@ spec:
                       basicAuthPasswordSecretRef:
                         description: |-
                           BasicAuthPasswordSecretRef references the secret key holding the
-                          password sent using HTTP Basic authentication.
+                          password sent using HTTP Basic authentication. The secret must be in
+                          the same namespace as the License.
                           Requires BasicAuthUsername to also be set.
                         properties:
                           key:
@@ -114,7 +115,8 @@ spec:
                         description: |-
                           BearerTokenSecretRef references the secret key holding a bearer token
                           sent in the endpoint request's Authorization header. Mutually
-                          exclusive with BasicAuthUsername.
+                          exclusive with BasicAuthUsername. The secret must be in the same
+                          namespace as the License.
                         properties:
                           key:
                             description: The key to select.
@@ -152,7 +154,8 @@ spec:
                   licenseKeySecretRef:
                     description: |-
                       LicenseKeySecretRef references the secret key holding the license key
-                      to apply directly to the SonarQube instance.
+                      to apply directly to the SonarQube instance. The secret must be in the
+                      same namespace as the License.
                       Exactly one of LicenseKeySecretRef or Endpoint must be set.
                     properties:
                       key:

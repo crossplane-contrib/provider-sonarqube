@@ -40,6 +40,9 @@ const (
 	// ErrSecretSelectorNil is the error string used when a secret selector
 	// is nil.
 	ErrSecretSelectorNil = "Secret selector is nil"
+	// ErrSecretCrossNamespace is the error string used when a namespaced
+	// object references a secret outside of its own namespace.
+	ErrSecretCrossNamespace = "Referenced secret must be in the same namespace as the referencing object"
 )
 
 // GetTokenValueFromSecret retrieves the token value from the referenced secret.
@@ -67,6 +70,24 @@ func GetTokenValueFromSecret(ctx context.Context, kubeClient client.Client, m re
 	data := string(value)
 
 	return &data, nil
+}
+
+// GetTokenValueFromSecretInNamespace retrieves the token value from the
+// referenced secret, refusing the read when the selector targets a namespace
+// other than the given one. Use it for selectors carried by namespaced
+// objects, so a tenant cannot make the provider read Secrets from other
+// namespaces. The mismatch is rejected rather than rewritten so that
+// misconfigured references surface instead of silently resolving elsewhere.
+func GetTokenValueFromSecretInNamespace(ctx context.Context, kubeClient client.Client, managedResource resource.Managed, namespace string, selector *xpv1.SecretKeySelector) (*string, error) {
+	if selector == nil {
+		return nil, errors.Errorf(ErrSecretSelectorNil)
+	}
+
+	if selector.Namespace != namespace {
+		return nil, errors.Errorf("%s: secret namespace %q, expected %q", ErrSecretCrossNamespace, selector.Namespace, namespace)
+	}
+
+	return GetTokenValueFromSecret(ctx, kubeClient, managedResource, selector)
 }
 
 // GetTokenValueFromLocalSecret retrieves the token value from a local secret

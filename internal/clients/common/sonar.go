@@ -157,7 +157,9 @@ func UseProviderConfig(ctx context.Context, kubeClient client.Client, managedRes
 			return nil, errors.Wrap(err, "cannot get referenced ClusterProviderConfig")
 		}
 
-		return buildConfigFromSpec(ctx, kubeClient, managedResource, cpc.Spec)
+		// ClusterProviderConfigs are cluster-scoped and operator-owned, so
+		// their credentials may live in any namespace.
+		return buildConfigFromSpec(ctx, kubeClient, managedResource, cpc.Spec, "")
 	default: // "ProviderConfig" or empty (default)
 		providerConfig := &v1alpha1.ProviderConfig{}
 
@@ -166,12 +168,14 @@ func UseProviderConfig(ctx context.Context, kubeClient client.Client, managedRes
 			return nil, errors.Wrap(err, "cannot get referenced ProviderConfig")
 		}
 
-		return buildConfigFromSpec(ctx, kubeClient, managedResource, providerConfig.Spec)
+		return buildConfigFromSpec(ctx, kubeClient, managedResource, providerConfig.Spec, providerConfig.GetNamespace())
 	}
 }
 
 // buildConfigFromSpec builds a Config from the given ProviderConfigSpec.
-func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedResource resource.ModernManaged, spec v1alpha1.ProviderConfigSpec) (*Config, error) {
+// secretNamespace is the namespace every credential secret must live in; an
+// empty value means the spec is cluster-scoped and secrets may live anywhere.
+func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedResource resource.ModernManaged, spec v1alpha1.ProviderConfigSpec, secretNamespace string) (*Config, error) {
 	t := resource.NewProviderConfigUsageTracker(kubeClient, &v1alpha1.ProviderConfigUsage{})
 
 	err := t.Track(ctx, managedResource)
@@ -191,21 +195,29 @@ func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedR
 
 	config.AuthType = authType
 
+	readSecret := func(selector *xpv1.SecretKeySelector) (*string, error) {
+		if secretNamespace == "" {
+			return GetTokenValueFromSecret(ctx, kubeClient, managedResource, selector)
+		}
+
+		return GetTokenValueFromSecretInNamespace(ctx, kubeClient, managedResource, secretNamespace, selector)
+	}
+
 	switch authType {
 	case PersonalAccessToken:
-		token, err := GetTokenValueFromSecret(ctx, kubeClient, managedResource, spec.Token.SecretRef)
+		token, err := readSecret(spec.Token.SecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get token from secret")
 		}
 
 		config.Token = *token
 	case BasicAuth:
-		username, err := GetTokenValueFromSecret(ctx, kubeClient, managedResource, spec.Username.SecretRef)
+		username, err := readSecret(spec.Username.SecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get username from secret")
 		}
 
-		password, err := GetTokenValueFromSecret(ctx, kubeClient, managedResource, spec.Password.SecretRef)
+		password, err := readSecret(spec.Password.SecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get password from secret")
 		}

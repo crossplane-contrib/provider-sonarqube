@@ -47,13 +47,16 @@ type ProviderConfigSpec struct {
 
 	// Token is the User Token required to authenticate with the SonarQube instance.
 	// WARNING: This MUST NOT be an Analysis token / project token, it MUST be a User token with appropriate permissions.
+	// For a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace.
 	// +kubebuilder:validation:Optional
 	Token *ProviderCredentials `json:"token,omitempty"`
 
 	// Username is the username for Basic Authentication to the SonarQube instance.
+	// For a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace.
 	// +kubebuilder:validation:Optional
 	Username *ProviderCredentials `json:"username,omitempty"`
 	// Password is the password for Basic Authentication to the SonarQube instance.
+	// For a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace.
 	// +kubebuilder:validation:Optional
 	Password *ProviderCredentials `json:"password,omitempty"`
 }

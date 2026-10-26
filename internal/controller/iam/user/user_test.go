@@ -40,6 +40,7 @@ import (
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
@@ -194,6 +195,47 @@ func TestCreate(t *testing.T) {
 			t.Fatalf("Create() password connection detail missing: %v", created.ConnectionDetails)
 		}
 	})
+}
+
+// TestCreateRejectsCrossNamespacePasswordSecret tests that a local User cannot
+// read its password from a secret in another namespace.
+func TestCreateRejectsCrossNamespacePasswordSecret(t *testing.T) {
+	t.Parallel()
+
+	scheme := runtime.NewScheme()
+
+	err := corev1.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("AddToScheme(corev1) = %v", err)
+	}
+
+	kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "other-ns"}, Data: map[string][]byte{"password": []byte("other-tenant-secret")}}).Build()
+	user := newUserWithSpec(v1alpha1.UserParameters{
+		Login: testUserLogin,
+		Name:  "Alice",
+		Local: new(true),
+		PasswordSecretRef: &xpv1.SecretKeySelector{Key: "password", SecretReference: xpv1.SecretReference{
+			Name:      "pwd",
+			Namespace: "other-ns",
+		}},
+	})
+
+	created, err := (&external{
+		kube: kube,
+		usersClient: &sonarfake.MockUsersClient{CreateFn: func(_ *sonar.UsersCreateOptionsV2) (*sonar.UserV2, *http.Response, error) {
+			t.Fatal("Create() must not call SonarQube when the password secret is in another namespace")
+
+			return nil, nil, nil
+		}},
+		groupsClient: &sonarfake.MockGroupsClient{},
+	}).Create(context.Background(), user)
+	if err == nil || !strings.Contains(err.Error(), common.ErrSecretCrossNamespace) {
+		t.Fatalf("Create() error = %v, want %q", err, common.ErrSecretCrossNamespace)
+	}
+
+	if len(created.ConnectionDetails) != 0 {
+		t.Fatalf("Create() connection details = %v, want none", created.ConnectionDetails)
+	}
 }
 
 // TestDelete tests the Delete method for users.

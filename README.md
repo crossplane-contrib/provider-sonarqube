@@ -59,6 +59,13 @@ understanding the resource shapes supported by the provider.
 
 ## Kubernetes Secret access
 
+Secret references on namespaced objects resolve only inside that object's
+namespace: a `ProviderConfig`'s credentials must be in the `ProviderConfig`'s
+namespace, and managed resource Secret references (user passwords, license keys,
+ALM credentials, webhook secrets) must be in the managed resource's namespace.
+A reference to another namespace is rejected. Only the cluster-scoped
+`ClusterProviderConfig` can reference Secrets in any namespace.
+
 By default the provider reads Kubernetes Secrets through the controller-runtime
 cache. The first read starts an informer that lists and watches every Secret the
 provider can access and keeps them in memory, which requires cluster-wide `list`

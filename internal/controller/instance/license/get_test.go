@@ -31,6 +31,7 @@ import (
 	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
@@ -218,6 +219,28 @@ func TestResolveLicenseKey(t *testing.T) {
 			objects: []runtime.Object{},
 			license: newTestLicense(externalLicenseName, licenseKeyRef),
 			want:    want{errSubstr: "cannot get license key from secret"},
+		},
+		"SecretRefCrossNamespaceRejected": {
+			objects: []runtime.Object{testSecret("license-key", "other-ns", "license", testLicenseKey)},
+			license: newTestLicense(externalLicenseName, crossNamespaceSecretRef("license-key", "license")),
+			want:    want{errSubstr: common.ErrSecretCrossNamespace},
+		},
+		"EndpointBasicAuthPasswordCrossNamespaceRejected": {
+			objects: []runtime.Object{testSecret("endpoint-password", "other-ns", "password", "s3cret")},
+			license: newTestLicenseWithEndpoint(externalLicenseName, &v1alpha1.LicenseEndpoint{
+				URL:                        "http://example.invalid",
+				BasicAuthUsername:          new("alice"),
+				BasicAuthPasswordSecretRef: crossNamespaceSecretRef("endpoint-password", "password"),
+			}),
+			want: want{errSubstr: common.ErrSecretCrossNamespace},
+		},
+		"EndpointBearerTokenCrossNamespaceRejected": {
+			objects: []runtime.Object{testSecret("endpoint-token", "other-ns", "token", "tok123")},
+			license: newTestLicenseWithEndpoint(externalLicenseName, &v1alpha1.LicenseEndpoint{
+				URL:                  "http://example.invalid",
+				BearerTokenSecretRef: crossNamespaceSecretRef("endpoint-token", "token"),
+			}),
+			want: want{errSubstr: common.ErrSecretCrossNamespace},
 		},
 		"NeitherSourceSet": {
 			objects: []runtime.Object{},
