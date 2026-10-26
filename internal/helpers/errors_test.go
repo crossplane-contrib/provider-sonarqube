@@ -72,6 +72,22 @@ func TestRedactURLError(t *testing.T) {
 			}),
 			want: `cannot create webhook: Post "http://sonar.example.com/api/webhooks/create": connection refused`,
 		},
+		"WrappedQuoteEscapedURLRedacted": {
+			err: fmt.Errorf("cannot create webhook: %w", &url.Error{
+				Op:  "parse",
+				URL: "http://sonar.example.com/api/webhooks/create?secret=" + testSecretValue + "\x7f",
+				Err: errors.New("invalid control character in URL"),
+			}),
+			want: `cannot create webhook: parse "` + redactedURL + `": invalid control character in URL`,
+		},
+		"NoQueryUnchanged": {
+			err: &url.Error{
+				Op:  "Post",
+				URL: "http://sonar.example.com/api/webhooks/create",
+				Err: errors.New("connection refused"),
+			},
+			want: `Post "http://sonar.example.com/api/webhooks/create": connection refused`,
+		},
 		"UnparsableURLReplaced": {
 			err: &url.Error{
 				Op:  "Post",

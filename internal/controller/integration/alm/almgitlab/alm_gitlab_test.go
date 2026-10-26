@@ -19,6 +19,7 @@ package almgitlab
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -1009,4 +1010,55 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	}()
 
 	g.callback()
+}
+
+// TestTransportErrorDoesNotLeakSecret tests that a transport failure while
+// sending the personal access token does not put it in the returned error,
+// which crossplane-runtime publishes to conditions, events and logs.
+func TestTransportErrorDoesNotLeakSecret(t *testing.T) {
+	t.Parallel()
+
+	transportErr := func() error {
+		return &url.Error{
+			Op:  http.MethodPost,
+			URL: "http://sonar.example.com/api/alm_settings/op?secret=" + url.QueryEscape(gitlabPATValue),
+			Err: errors.New("connection refused"),
+		}
+	}
+
+	scheme := runtime.NewScheme()
+
+	err := corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("AddToScheme() unexpected error: %v", err)
+	}
+
+	kubeClient := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tokenSecret("pat-secret", "default", "token", gitlabPATValue)).Build()
+	e := &external{
+		kubeClient:         kubeClient,
+		integrationsClient: &fake.MockALMIntegrationsGitLabClient{},
+		settingsClient: &fake.MockALMSettingsGitLabClient{
+			CreateGitlabFn: func(_ *sonar.AlmSettingsCreateGitlabOptions) (*http.Response, error) {
+				return nil, transportErr()
+			},
+			UpdateGitlabFn: func(_ *sonar.AlmSettingsUpdateGitlabOptions) (*http.Response, error) {
+				return nil, transportErr()
+			},
+		},
+	}
+
+	tokenRef := &xpv1.LocalSecretKeySelector{LocalSecretReference: xpv1.LocalSecretReference{Name: "pat-secret"}, Key: "token"}
+
+	_, createErr := e.Create(context.Background(), newTestALMGitLab("", tokenRef))
+	_, updateErr := e.Update(context.Background(), newTestALMGitLab(testExternalName, tokenRef))
+
+	for operation, gotErr := range map[string]error{"Create": createErr, "Update": updateErr} {
+		if gotErr == nil {
+			t.Fatalf("%s() expected a transport error, got nil", operation)
+		}
+
+		if strings.Contains(gotErr.Error(), url.QueryEscape(gitlabPATValue)) {
+			t.Errorf("%s() error leaks the personal access token: %q", operation, gotErr.Error())
+		}
+	}
 }

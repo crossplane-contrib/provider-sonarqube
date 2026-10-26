@@ -19,6 +19,7 @@ package helpers
 import (
 	"errors"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -54,13 +55,25 @@ func RedactURLError(err error) error {
 	}
 
 	originalURL := urlErr.URL
-	urlErr.URL = redactURL(originalURL)
+
+	redacted := redactURL(originalURL)
+	if redacted == originalURL {
+		return err
+	}
+
+	urlErr.URL = redacted
 
 	// Wrappers such as fmt.Errorf compute their message eagerly, so it may
 	// still hold the original URL even though the url.Error is redacted.
+	// url.Error formats its URL with %q, so replace the quoted form first in
+	// case quoting escaped any of its characters.
 	msg := err.Error()
-	if strings.Contains(msg, originalURL) {
-		return &redactedError{msg: strings.ReplaceAll(msg, originalURL, urlErr.URL), err: err}
+
+	redactedMsg := strings.ReplaceAll(msg, strconv.Quote(originalURL), strconv.Quote(redacted))
+	redactedMsg = strings.ReplaceAll(redactedMsg, originalURL, redacted)
+
+	if redactedMsg != msg {
+		return &redactedError{msg: redactedMsg, err: err}
 	}
 
 	return err

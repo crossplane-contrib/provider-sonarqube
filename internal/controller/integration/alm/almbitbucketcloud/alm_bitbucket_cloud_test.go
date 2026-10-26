@@ -19,6 +19,7 @@ package almbitbucketcloud
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -991,4 +992,55 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	}()
 
 	g.callback()
+}
+
+// TestTransportErrorDoesNotLeakSecret tests that a transport failure while
+// sending the client secret does not put it in the returned error, which
+// crossplane-runtime publishes to conditions, events and logs.
+func TestTransportErrorDoesNotLeakSecret(t *testing.T) {
+	t.Parallel()
+
+	transportErr := func() error {
+		return &url.Error{
+			Op:  http.MethodPost,
+			URL: "http://sonar.example.com/api/alm_settings/op?secret=" + url.QueryEscape(bitbucketCloudClientSecretValue),
+			Err: errors.New("connection refused"),
+		}
+	}
+
+	scheme := runtime.NewScheme()
+
+	err := corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("AddToScheme() unexpected error: %v", err)
+	}
+
+	kubeClient := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(clientSecretSecret("client-secret", "default", "clientSecret", bitbucketCloudClientSecretValue)).Build()
+	e := &external{
+		kubeClient:         kubeClient,
+		integrationsClient: &fake.MockALMIntegrationsBitbucketCloudClient{},
+		settingsClient: &fake.MockALMSettingsBitbucketCloudClient{
+			CreateBitbucketCloudFn: func(_ *sonar.AlmSettingsCreateBitbucketCloudOptions) (*http.Response, error) {
+				return nil, transportErr()
+			},
+			UpdateBitbucketCloudFn: func(_ *sonar.AlmSettingsUpdateBitbucketCloudOptions) (*http.Response, error) {
+				return nil, transportErr()
+			},
+		},
+	}
+
+	clientSecretRef := &xpv1.LocalSecretKeySelector{LocalSecretReference: xpv1.LocalSecretReference{Name: "client-secret"}, Key: "clientSecret"}
+
+	_, createErr := e.Create(context.Background(), newTestALMBitbucketCloud("", clientSecretRef))
+	_, updateErr := e.Update(context.Background(), newTestALMBitbucketCloud(testExternalName, clientSecretRef))
+
+	for operation, gotErr := range map[string]error{"Create": createErr, "Update": updateErr} {
+		if gotErr == nil {
+			t.Fatalf("%s() expected a transport error, got nil", operation)
+		}
+
+		if strings.Contains(gotErr.Error(), url.QueryEscape(bitbucketCloudClientSecretValue)) {
+			t.Errorf("%s() error leaks the client secret: %q", operation, gotErr.Error())
+		}
+	}
 }

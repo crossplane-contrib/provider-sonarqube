@@ -19,6 +19,7 @@ package almazure
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -987,4 +988,55 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	}()
 
 	g.callback()
+}
+
+// TestTransportErrorDoesNotLeakSecret tests that a transport failure while
+// sending the personal access token does not put it in the returned error,
+// which crossplane-runtime publishes to conditions, events and logs.
+func TestTransportErrorDoesNotLeakSecret(t *testing.T) {
+	t.Parallel()
+
+	transportErr := func() error {
+		return &url.Error{
+			Op:  http.MethodPost,
+			URL: "http://sonar.example.com/api/alm_settings/op?secret=" + url.QueryEscape(azurePATValue),
+			Err: errors.New("connection refused"),
+		}
+	}
+
+	scheme := runtime.NewScheme()
+
+	err := corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("AddToScheme() unexpected error: %v", err)
+	}
+
+	kubeClient := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tokenSecret("pat-secret", "default", "token", azurePATValue)).Build()
+	e := &external{
+		kubeClient:         kubeClient,
+		integrationsClient: &fake.MockALMIntegrationsAzureClient{},
+		settingsClient: &fake.MockALMSettingsAzureClient{
+			CreateAzureFn: func(_ *sonar.AlmSettingsCreateAzureOptions) (*http.Response, error) {
+				return nil, transportErr()
+			},
+			UpdateAzureFn: func(_ *sonar.AlmSettingsUpdateAzureOptions) (*http.Response, error) {
+				return nil, transportErr()
+			},
+		},
+	}
+
+	tokenRef := &xpv1.LocalSecretKeySelector{LocalSecretReference: xpv1.LocalSecretReference{Name: "pat-secret"}, Key: "token"}
+
+	_, createErr := e.Create(context.Background(), newTestALMAzure("", tokenRef))
+	_, updateErr := e.Update(context.Background(), newTestALMAzure(testExternalName, tokenRef))
+
+	for operation, gotErr := range map[string]error{"Create": createErr, "Update": updateErr} {
+		if gotErr == nil {
+			t.Fatalf("%s() expected a transport error, got nil", operation)
+		}
+
+		if strings.Contains(gotErr.Error(), url.QueryEscape(azurePATValue)) {
+			t.Errorf("%s() error leaks the personal access token: %q", operation, gotErr.Error())
+		}
+	}
 }
