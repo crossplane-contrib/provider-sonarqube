@@ -86,6 +86,7 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 		managed.WithLogger(opts.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(opts.PollInterval),
 		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
+		managed.WithReferenceResolver(common.NewSameNamespaceReferenceResolver(mgr.GetClient())),
 	}
 
 	if opts.Features.Enabled(feature.EnableBetaManagementPolicies) {

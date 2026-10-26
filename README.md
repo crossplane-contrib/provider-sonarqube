@@ -120,6 +120,14 @@ Things to know before disabling it:
   Kubernetes client rate limit of 5 × `--max-reconcile-rate` requests per
   second, so large numbers of managed resources can slow reconciliation.
 
+## Cross-resource references
+
+References and selectors between managed resources (for example
+`groupIdRef` or `qualityGateNameSelector`) resolve only within the referencing
+resource's namespace. Setting `namespace` on a reference or selector to any
+other namespace fails resolution, so one tenant cannot read identifiers from
+another tenant's resources.
+
 ## Observe cache (alpha)
 
 Many managed resources of the same kind usually read the same SonarQube list
