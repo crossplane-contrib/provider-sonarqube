@@ -18,7 +18,9 @@ package almgithub
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -39,6 +41,8 @@ import (
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
@@ -1253,4 +1257,52 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	}()
 
 	g.callback()
+}
+
+// TestTransportErrorDoesNotLeakSecrets tests that a transport failure while
+// sending the GitHub App credentials does not put them in the returned error,
+// which crossplane-runtime publishes to conditions, events and logs.
+func TestTransportErrorDoesNotLeakSecrets(t *testing.T) {
+	t.Parallel()
+
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() unexpected error: %v", err)
+	}
+
+	unreachableURL := "http://" + listener.Addr().String() + "/api"
+	_ = listener.Close()
+
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	kube := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(
+		testSecret("client-secret", "default", "clientSecret", githubCSValue),
+		testSecret("private-key", "default", "privateKey", privateKeyValue),
+	).Build()
+	externalClient := &external{
+		kubeClient: kube,
+		settingsClient: integration.NewALMSettingsGitHubClient(common.Config{
+			AuthType: common.PersonalAccessToken,
+			Token:    "dummy-token",
+			BaseURL:  unreachableURL,
+		}),
+	}
+
+	clientSecretRef := secretRef("client-secret", "clientSecret")
+	privateKeyRef := secretRef("private-key", "privateKey")
+
+	_, createErr := externalClient.Create(context.Background(), newTestALMGitHub("", clientSecretRef, privateKeyRef))
+	_, updateErr := externalClient.Update(context.Background(), newTestALMGitHub(testExternalName, clientSecretRef, privateKeyRef))
+
+	for operation, gotErr := range map[string]error{"Create": createErr, "Update": updateErr} {
+		if gotErr == nil {
+			t.Fatalf("%s() expected a transport error, got nil", operation)
+		}
+
+		for _, secret := range []string{githubCSValue, url.QueryEscape(privateKeyValue)} {
+			if strings.Contains(gotErr.Error(), secret) {
+				t.Errorf("%s() error leaks a GitHub App secret: %q", operation, gotErr.Error())
+			}
+		}
+	}
 }

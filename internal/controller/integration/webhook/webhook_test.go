@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -788,4 +789,40 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	}()
 
 	g.callback()
+}
+
+// TestTransportErrorDoesNotLeakSecret tests that a transport failure while
+// sending the webhook secret does not put the secret in the returned error,
+// which crossplane-runtime publishes to conditions, events and logs.
+func TestTransportErrorDoesNotLeakSecret(t *testing.T) {
+	t.Parallel()
+
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() unexpected error: %v", err)
+	}
+
+	unreachableURL := "http://" + listener.Addr().String() + "/api"
+	_ = listener.Close()
+
+	webhooksClient := integration.NewWebhooksClient(common.Config{
+		AuthType: common.PersonalAccessToken,
+		Token:    "dummy-token",
+		BaseURL:  unreachableURL,
+	})
+	kube := buildKubeClient([]runtime.Object{testKubeSecret("hook-secret", "default", "value", testSecretValue)}).Build()
+	externalClient := &external{kubeClient: kube, client: webhooksClient}
+
+	_, createErr := externalClient.Create(context.Background(), newTestWebhook("", webhookSecretRef("hook-secret", "value")))
+	_, updateErr := externalClient.Update(context.Background(), newTestWebhook(testExternalName, webhookSecretRef("hook-secret", "value")))
+
+	for operation, gotErr := range map[string]error{"Create": createErr, "Update": updateErr} {
+		if gotErr == nil {
+			t.Fatalf("%s() expected a transport error, got nil", operation)
+		}
+
+		if strings.Contains(gotErr.Error(), testSecretValue) {
+			t.Errorf("%s() error leaks the webhook secret: %q", operation, gotErr.Error())
+		}
+	}
 }

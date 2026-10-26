@@ -18,6 +18,7 @@ package license
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -39,6 +40,7 @@ import (
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	instance "github.com/crossplane/provider-sonarqube/internal/clients/instance"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
@@ -592,4 +594,49 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	}()
 
 	g.callback()
+}
+
+// TestTransportErrorDoesNotLeakLicenseKey tests that a transport failure while
+// sending the license key does not put the key in the returned error, which
+// crossplane-runtime publishes to conditions, events and logs.
+func TestTransportErrorDoesNotLeakLicenseKey(t *testing.T) {
+	t.Parallel()
+
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() unexpected error: %v", err)
+	}
+
+	unreachableURL := "http://" + listener.Addr().String() + "/api"
+	_ = listener.Close()
+
+	scheme := runtime.NewScheme()
+
+	err = corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("AddToScheme() unexpected error: %v", err)
+	}
+
+	kube := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(testSecret("license-key", "default", "license", testLicenseKey)).Build()
+	externalClient := &external{
+		kube: kube,
+		client: instance.NewLicensesClient(common.Config{
+			AuthType: common.PersonalAccessToken,
+			Token:    "dummy-token",
+			BaseURL:  unreachableURL,
+		}),
+	}
+
+	_, createErr := externalClient.Create(context.Background(), newTestLicense(externalLicenseName, secretRef("license-key", "license")))
+	_, updateErr := externalClient.Update(context.Background(), newTestLicense(externalLicenseName, secretRef("license-key", "license")))
+
+	for operation, gotErr := range map[string]error{"Create": createErr, "Update": updateErr} {
+		if gotErr == nil {
+			t.Fatalf("%s() expected a transport error, got nil", operation)
+		}
+
+		if strings.Contains(gotErr.Error(), testLicenseKey) {
+			t.Errorf("%s() error leaks the license key: %q", operation, gotErr.Error())
+		}
+	}
 }

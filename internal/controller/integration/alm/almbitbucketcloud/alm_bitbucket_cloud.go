@@ -259,7 +259,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, "cannot create ALMBitbucketCloud resource in SonarQube API")
+		return managed.ExternalCreation{}, errors.Wrap(helpers.RedactURLError(err), "cannot create ALMBitbucketCloud resource in SonarQube API")
 	}
 
 	meta.SetExternalName(almBitbucketCloud, createOptions.Key)
@@ -295,7 +295,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot update ALMBitbucketCloud resource in SonarQube API")
+		return managed.ExternalUpdate{}, errors.Wrap(helpers.RedactURLError(err), "cannot update ALMBitbucketCloud resource in SonarQube API")
 	}
 
 	if updateOptions.NewKey != "" {

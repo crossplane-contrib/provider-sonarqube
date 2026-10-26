@@ -263,7 +263,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, "cannot create ALMAzure resource in SonarQube API")
+		return managed.ExternalCreation{}, errors.Wrap(helpers.RedactURLError(err), "cannot create ALMAzure resource in SonarQube API")
 	}
 
 	meta.SetExternalName(almAzure, createOptions.Key)
@@ -302,7 +302,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot update ALMAzure resource in SonarQube API")
+		return managed.ExternalUpdate{}, errors.Wrap(helpers.RedactURLError(err), "cannot update ALMAzure resource in SonarQube API")
 	}
 
 	if updateOptions.NewKey != "" {

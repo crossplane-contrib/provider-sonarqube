@@ -255,7 +255,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, errCreateWebhook)
+		return managed.ExternalCreation{}, errors.Wrap(helpers.RedactURLError(err), errCreateWebhook)
 	}
 
 	if result == nil || result.Webhook.Key == "" {
@@ -290,7 +290,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateWebhook)
+		return managed.ExternalUpdate{}, errors.Wrap(helpers.RedactURLError(err), errUpdateWebhook)
 	}
 
 	return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{connectionDetailSecretKey: []byte(secret)}}, nil

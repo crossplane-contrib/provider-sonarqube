@@ -267,7 +267,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, "cannot create ALMGitLab resource in SonarQube API")
+		return managed.ExternalCreation{}, errors.Wrap(helpers.RedactURLError(err), "cannot create ALMGitLab resource in SonarQube API")
 	}
 
 	// Set the external name to the Name of the created ALMGitLab resource if it is not already set. This assumes that the Name of the ALMGitLab resource in SonarQube API is used as the identifier for the resource, and that it is returned in the API response after creation.
@@ -313,7 +313,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot update ALMGitLab resource in SonarQube API")
+		return managed.ExternalUpdate{}, errors.Wrap(helpers.RedactURLError(err), "cannot update ALMGitLab resource in SonarQube API")
 	}
 
 	if updateOptions.NewKey != "" {

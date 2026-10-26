@@ -192,7 +192,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, errSetLicense)
+		return managed.ExternalCreation{}, errors.Wrap(helpers.RedactURLError(err), errSetLicense)
 	}
 
 	meta.SetExternalName(license, externalLicenseName)
@@ -221,7 +221,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
-		return managed.ExternalUpdate{}, errors.Wrap(err, errSetLicense)
+		return managed.ExternalUpdate{}, errors.Wrap(helpers.RedactURLError(err), errSetLicense)
 	}
 
 	return managed.ExternalUpdate{
