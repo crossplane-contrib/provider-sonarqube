@@ -52,8 +52,12 @@ type ProjectParameters struct {
 	// Tags are the list of tags associated with the project.
 	// +kubebuilder:validation:Optional
 	Tags *[]string `json:"tags,omitempty"`
-	// Links are the list of links associated with the project.
+	// Links are the list of links associated with the project. Link names
+	// must be unique.
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=64
+	// +listType=map
+	// +listMapKey=name
 	Links []ProjectLinkParameters `json:"links,omitempty"`
 	// DefaultBranch is the default branch of the project.
 	// +kubebuilder:validation:Optional

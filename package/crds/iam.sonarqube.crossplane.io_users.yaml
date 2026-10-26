@@ -164,6 +164,7 @@ spec:
                               type: object
                           type: object
                       type: object
+                    maxItems: 256
                     type: array
                   local:
                     description: Local indicates whether the user is authenticated

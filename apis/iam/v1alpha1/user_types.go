@@ -53,6 +53,7 @@ type UserParameters struct {
 	ScmAccounts *[]string `json:"scmAccounts,omitempty"`
 	// Groups is the desired set of group ids the user should belong to.
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=256
 	Groups *[]UserGroupsParameters `json:"groups,omitempty"`
 	// ExternalId is the user's external identifier.
 	// +kubebuilder:validation:Optional

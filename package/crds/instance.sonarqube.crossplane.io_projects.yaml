@@ -231,7 +231,9 @@ spec:
                     - message: Key is immutable.
                       rule: self == oldSelf
                   links:
-                    description: Links are the list of links associated with the project.
+                    description: |-
+                      Links are the list of links associated with the project. Link names
+                      must be unique.
                     items:
                       description: |-
                         ProjectLinkParameters represent the parameters of a link
@@ -256,7 +258,11 @@ spec:
                       - name
                       - url
                       type: object
+                    maxItems: 64
                     type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   name:
                     description: |-
                       Name is the display name of the project.

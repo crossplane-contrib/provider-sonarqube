@@ -19,10 +19,13 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -30,6 +33,7 @@ import (
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 // TestUpdate tests the Update method.
@@ -169,5 +173,74 @@ func TestUpdateAggregatesFieldAndGroupErrors(t *testing.T) {
 
 	if len(updated.ConnectionDetails) != 0 {
 		t.Fatalf("Update() connection details should be empty: %v", updated.ConnectionDetails)
+	}
+}
+
+// inFlightTracker records the peak number of concurrent calls.
+type inFlightTracker struct {
+	current atomic.Int32
+	peak    atomic.Int32
+	total   atomic.Int32
+}
+
+// track marks a call as in flight for a short time so concurrent calls overlap.
+func (tracker *inFlightTracker) track() {
+	tracker.total.Add(1)
+
+	current := tracker.current.Add(1)
+	for {
+		peak := tracker.peak.Load()
+		if current <= peak || tracker.peak.CompareAndSwap(peak, current) {
+			break
+		}
+	}
+
+	time.Sleep(5 * time.Millisecond)
+	tracker.current.Add(-1)
+}
+
+// TestReconcileGroupMembershipsBoundsConcurrency tests that a long groups list
+// does not open one concurrent SonarQube request per item.
+func TestReconcileGroupMembershipsBoundsConcurrency(t *testing.T) {
+	t.Parallel()
+
+	const itemCount = 40
+
+	desiredGroups := make([]v1alpha1.UserGroupsParameters, 0, itemCount)
+	observedGroups := make(map[string]string, itemCount)
+
+	for i := range itemCount {
+		desiredGroups = append(desiredGroups, v1alpha1.UserGroupsParameters{GroupId: new(fmt.Sprintf("new-group-%d", i))})
+		observedGroups[fmt.Sprintf("old-group-%d", i)] = fmt.Sprintf("membership-%d", i)
+	}
+
+	user := newUserWithSpec(v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice", Groups: &desiredGroups})
+	user.Status.AtProvider.Groups = observedGroups
+
+	tracker := &inFlightTracker{}
+	ext := &external{groupsClient: &sonarfake.MockGroupsClient{
+		CreateGroupMembershipFn: func(_ *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error) {
+			tracker.track()
+
+			return &sonar.AuthorizationsGroupMembership{Id: "membership"}, nil, nil
+		},
+		DeleteGroupMembershipFn: func(_ string) (*http.Response, error) {
+			tracker.track()
+
+			return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody}, nil
+		},
+	}}
+
+	err := ext.reconcileGroupMemberships(context.Background(), user, testUserID)
+	if err != nil {
+		t.Fatalf("reconcileGroupMemberships() unexpected error: %v", err)
+	}
+
+	if got := tracker.total.Load(); got != 2*itemCount {
+		t.Errorf("reconcileGroupMemberships() made %d requests, want %d", got, 2*itemCount)
+	}
+
+	if got := tracker.peak.Load(); got > helpers.MaxConcurrentRequests {
+		t.Errorf("reconcileGroupMemberships() peak concurrency = %d, want at most %d", got, helpers.MaxConcurrentRequests)
 	}
 }

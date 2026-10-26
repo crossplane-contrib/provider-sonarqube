@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/ptr"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -168,67 +169,65 @@ func (c *external) updateProjectLinks(ctx context.Context, project *v1alpha1.Pro
 		return
 	}
 
-	linksUpdateWaitGroup := sync.WaitGroup{}
-	linksUpdateWaitGroup.Go(func() {
-		c.deleteNonSpecLinks(ctx, project, errChan)
-	})
+	// Bound the number of concurrent SonarQube requests: the links list
+	// comes from the spec, so its length is controlled by the tenant.
+	var linksGroup errgroup.Group
+	linksGroup.SetLimit(helpers.MaxConcurrentRequests)
+
+	c.deleteNonSpecLinks(ctx, project, &linksGroup, errChan)
 
 	for _, link := range project.Spec.ForProvider.Links {
 		linkObservation, linkExists := project.Status.AtProvider.Links[link.Name]
 		linkUpToDate := linkExists && instance.IsProjectLinkUpToDate(link, &linkObservation)
+		deleteLink := linkExists && !linkUpToDate
+		createLink := !linkUpToDate
 
-		linksUpdateWaitGroup.Add(1)
-
-		go func(linkId string, linkSpec v1alpha1.ProjectLinkParameters, deleteLink bool, createLink bool) {
-			defer linksUpdateWaitGroup.Done()
-
+		linksGroup.Go(func() error {
 			if deleteLink {
-				resp, err := c.projectLinksClient.Delete(ctx, instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
+				resp, err := c.projectLinksClient.Delete(ctx, instance.GenerateProjectLinksDeleteOptions(linkObservation.ID)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot delete Project link %s", linkSpec.Name)
+					errChan <- errors.Wrapf(err, "cannot delete Project link %s", link.Name)
 				}
 			}
 
 			if createLink {
-				_, resp, err := c.projectLinksClient.Create(ctx, instance.GenerateProjectLinksCreateOptions(projectId, linkSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+				_, resp, err := c.projectLinksClient.Create(ctx, instance.GenerateProjectLinksCreateOptions(projectId, link)) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot create Project link %s", linkSpec.Name)
+					errChan <- errors.Wrapf(err, "cannot create Project link %s", link.Name)
 				}
 			}
-		}(linkObservation.ID, link, linkExists && !linkUpToDate, !linkUpToDate)
+
+			return nil
+		})
 	}
 
-	linksUpdateWaitGroup.Wait()
+	// Errors are reported through errChan.
+	_ = linksGroup.Wait()
 }
 
-// deleteNonSpecLinks deletes the project links that exist in the observed state
-// but not in the desired state, or that differ between the observed
-// and desired state.
-func (c *external) deleteNonSpecLinks(ctx context.Context, project *v1alpha1.Project, errChan chan<- error) {
-	deleteWaitGroup := sync.WaitGroup{}
-	// Delete links that exist in the observed state but not in the desired state, or that differ between the observed and desired state.
+// deleteNonSpecLinks schedules on linksGroup the deletion of the project links
+// that exist in the observed state but not in the desired state.
+func (c *external) deleteNonSpecLinks(ctx context.Context, project *v1alpha1.Project, linksGroup *errgroup.Group, errChan chan<- error) {
 	for linkName, linkObservation := range project.Status.AtProvider.Links {
-		if !c.isProjectLinkInSpec(project.Spec.ForProvider.Links, linkName) {
-			deleteWaitGroup.Add(1)
-
-			go func(linkName string, linkId string) {
-				defer deleteWaitGroup.Done()
-
-				resp, err := c.projectLinksClient.Delete(ctx, instance.GenerateProjectLinksDeleteOptions(linkId)) //nolint:bodyclose // closed via helpers.CloseBody
-				helpers.CloseBody(resp)
-
-				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot delete Project link %s", linkName)
-				}
-			}(linkName, linkObservation.ID)
+		if c.isProjectLinkInSpec(project.Spec.ForProvider.Links, linkName) {
+			continue
 		}
-	}
 
-	deleteWaitGroup.Wait()
+		linksGroup.Go(func() error {
+			resp, err := c.projectLinksClient.Delete(ctx, instance.GenerateProjectLinksDeleteOptions(linkObservation.ID)) //nolint:bodyclose // closed via helpers.CloseBody
+			helpers.CloseBody(resp)
+
+			if err != nil {
+				errChan <- errors.Wrapf(err, "cannot delete Project link %s", linkName)
+			}
+
+			return nil
+		})
+	}
 }
 
 // isProjectLinkInSpec checks if a link with the given name exists in the spec.
