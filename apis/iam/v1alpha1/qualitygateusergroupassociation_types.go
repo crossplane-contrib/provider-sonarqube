@@ -43,48 +43,43 @@ type QualityGateUsergroupAssociationParameters struct {
 	// +kubebuilder:validation:MaxLength=100
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Optional
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.QualityGate
 	GateName string `json:"gateName,omitempty"`
 
 	// GateNameRef references a QualityGate resource to populate GateName.
 	// +kubebuilder:validation:Optional
-	GateNameRef *xpv1.NamespacedReference `json:"gateNameRef,omitempty"`
+	GateNameRef *xpv1.Reference `json:"gateNameRef,omitempty"`
 
 	// GateNameSelector selects a QualityGate resource to populate GateName.
 	// +kubebuilder:validation:Optional
-	GateNameSelector *xpv1.NamespacedSelector `json:"gateNameSelector,omitempty"`
+	GateNameSelector *xpv1.Selector `json:"gateNameSelector,omitempty"`
 
 	// GroupName is the name of the group granted edit rights on the Quality
 	// Gate. Mutually exclusive with login. Immutable once set.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="GroupName is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.Group
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.GroupName()
 	GroupName *string `json:"groupName,omitempty"`
 
 	// GroupNameRef references a Group resource to populate GroupName.
 	// +kubebuilder:validation:Optional
-	GroupNameRef *xpv1.NamespacedReference `json:"groupNameRef,omitempty"`
+	GroupNameRef *xpv1.Reference `json:"groupNameRef,omitempty"`
 
 	// GroupNameSelector selects a Group resource to populate GroupName.
 	// +kubebuilder:validation:Optional
-	GroupNameSelector *xpv1.NamespacedSelector `json:"groupNameSelector,omitempty"`
+	GroupNameSelector *xpv1.Selector `json:"groupNameSelector,omitempty"`
 
 	// Login is the login of the user granted edit rights on the Quality Gate.
 	// Mutually exclusive with groupName. Immutable once set.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Login is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.User
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.UserLogin()
 	Login *string `json:"login,omitempty"`
 
 	// LoginRef references a User resource to populate Login.
 	// +kubebuilder:validation:Optional
-	LoginRef *xpv1.NamespacedReference `json:"loginRef,omitempty"`
+	LoginRef *xpv1.Reference `json:"loginRef,omitempty"`
 
 	// LoginSelector selects a User resource to populate Login.
 	// +kubebuilder:validation:Optional
-	LoginSelector *xpv1.NamespacedSelector `json:"loginSelector,omitempty"`
+	LoginSelector *xpv1.Selector `json:"loginSelector,omitempty"`
 }
 
 // QualityGateUsergroupAssociationObservation are the observable fields of a

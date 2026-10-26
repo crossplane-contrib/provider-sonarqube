@@ -55,18 +55,15 @@ type ApplicationParameters struct {
 	// Any member project that is not in this list is removed from the application.
 	// +kubebuilder:validation:Optional
 	// +listType=set
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.Project
-	// +crossplane:generate:reference:refFieldName=ProjectRefs
-	// +crossplane:generate:reference:selectorFieldName=ProjectSelector
 	Projects []string `json:"projects,omitempty"`
 
 	// ProjectRefs are references to Projects used to populate Projects.
 	// +kubebuilder:validation:Optional
-	ProjectRefs []xpv1.NamespacedReference `json:"projectRefs,omitempty"`
+	ProjectRefs []xpv1.Reference `json:"projectRefs,omitempty"`
 
 	// ProjectSelector selects references to Projects used to populate Projects.
 	// +kubebuilder:validation:Optional
-	ProjectSelector *xpv1.NamespacedSelector `json:"projectSelector,omitempty"`
+	ProjectSelector *xpv1.Selector `json:"projectSelector,omitempty"`
 
 	// Branches is the exhaustive list of the application branches, excluding the main branch
 	// which is managed by SonarQube. Any non-main application branch that is not in this list

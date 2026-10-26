@@ -77,7 +77,6 @@ func Setup(mgr ctrl.Manager, o controller.Options) error { //nolint:varnamelen /
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
 		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
-		managed.WithReferenceResolver(common.NewSameNamespaceReferenceResolver(mgr.GetClient())),
 	}
 
 	if o.Features.Enabled(feature.EnableBetaManagementPolicies) {

@@ -115,7 +115,7 @@ func TestApplicationCRUD(t *testing.T) {
 				Name:        appName,
 				Description: new("created by the enterprise e2e suite"),
 				Visibility:  "public",
-				ProjectRefs: []xpv1.NamespacedReference{{Name: projectA}, {Name: projectB}},
+				ProjectRefs: []xpv1.Reference{{Name: projectA}, {Name: projectB}},
 			},
 		},
 	}
@@ -146,7 +146,7 @@ func TestApplicationCRUD(t *testing.T) {
 		t.Fatalf("re-fetching application CR: %v", err)
 	}
 	application.Spec.ForProvider.Projects = nil
-	application.Spec.ForProvider.ProjectRefs = []xpv1.NamespacedReference{{Name: projectA}}
+	application.Spec.ForProvider.ProjectRefs = []xpv1.Reference{{Name: projectA}}
 	f.Update(t, application)
 
 	waitForApplicationProjects(t, f, appKey, []string{projectA})

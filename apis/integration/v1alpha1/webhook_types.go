@@ -45,16 +45,15 @@ type WebhookParameters struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxLength=400
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="ProjectKey is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.Project
 	ProjectKey *string `json:"projectKey,omitempty"`
 
 	// ProjectKeyRef resolves projectKey from a Project managed resource.
 	// +kubebuilder:validation:Optional
-	ProjectKeyRef *xpv1.NamespacedReference `json:"projectKeyRef,omitempty"`
+	ProjectKeyRef *xpv1.Reference `json:"projectKeyRef,omitempty"`
 
 	// ProjectKeySelector selects a Project managed resource to resolve projectKey.
 	// +kubebuilder:validation:Optional
-	ProjectKeySelector *xpv1.NamespacedSelector `json:"projectKeySelector,omitempty"`
+	ProjectKeySelector *xpv1.Selector `json:"projectKeySelector,omitempty"`
 
 	// SecretRef references a Kubernetes Secret containing the HMAC signing secret.
 	// The secret value must be 16-200 characters (SonarQube requirement).

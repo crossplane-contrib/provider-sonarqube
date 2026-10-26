@@ -72,14 +72,13 @@ type UserParameters struct {
 type UserGroupsParameters struct {
 	// GroupId is the unique identifier of the group in SonarQube.
 	// +kubebuilder:validation:Optional
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.Group
 	GroupId *string `json:"groupId,omitempty"`
 	// GroupIdRef references a Group to retrieve its ID from.
 	// +kubebuilder:validation:Optional
-	GroupIdRef *xpv1.NamespacedReference `json:"groupIdRef,omitempty"`
+	GroupIdRef *xpv1.Reference `json:"groupIdRef,omitempty"`
 	// GroupIdSelector selects a Group to retrieve its ID from, based on labels.
 	// +kubebuilder:validation:Optional
-	GroupIdSelector *xpv1.NamespacedSelector `json:"groupIdSelector,omitempty"`
+	GroupIdSelector *xpv1.Selector `json:"groupIdSelector,omitempty"`
 }
 
 // UserObservation are the observable fields of a User.

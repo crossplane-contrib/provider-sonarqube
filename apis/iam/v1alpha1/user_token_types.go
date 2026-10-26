@@ -44,17 +44,15 @@ type UserTokenParameters struct {
 	// Login is the user login the token belongs to.
 	// WARNING: This field is immutable once set.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Login is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.User
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.UserLogin()
 	Login *string `json:"login,omitempty"`
 
 	// LoginRef references a User to populate the login field.
 	// +kubebuilder:validation:Optional
-	LoginRef *xpv1.NamespacedReference `json:"loginRef,omitempty"`
+	LoginRef *xpv1.Reference `json:"loginRef,omitempty"`
 
 	// LoginSelector selects a User to populate the login field.
 	// +kubebuilder:validation:Optional
-	LoginSelector *xpv1.NamespacedSelector `json:"loginSelector,omitempty"`
+	LoginSelector *xpv1.Selector `json:"loginSelector,omitempty"`
 
 	// Type is the token type.
 	// WARNING: This field is immutable once set.

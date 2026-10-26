@@ -80,9 +80,6 @@ spec:
                       name:
                         description: Name of the referenced object.
                         type: string
-                      namespace:
-                        description: Namespace of the referenced object
-                        type: string
                       policy:
                         description: Policies for referencing.
                         properties:
@@ -126,9 +123,6 @@ spec:
                         description: MatchLabels ensures an object with matching labels
                           is selected.
                         type: object
-                      namespace:
-                        description: Namespace for the selector
-                        type: string
                       policy:
                         description: Policies for selection.
                         properties:

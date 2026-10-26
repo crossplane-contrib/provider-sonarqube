@@ -57,7 +57,7 @@ func setExtName(obj metav1.Object, name string) {
 const testNamespace = "default"
 
 // TestUserResolveReferences tests reference resolution for User resources.
-func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
+func TestUserResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // Exhaustive table-driven test intentionally covers many reference-resolution scenarios.
 	t.Parallel()
 
 	cases := map[string]struct {
@@ -94,7 +94,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 				u := newTestUser(testNamespace)
 				groups := []UserGroupsParameters{{
 					GroupId:    new("cached-group"),
-					GroupIdRef: &xpv1.NamespacedReference{Name: "example-group"},
+					GroupIdRef: &xpv1.Reference{Name: "example-group"},
 				}}
 				u.Spec.ForProvider.Groups = &groups
 
@@ -109,7 +109,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 				u := newTestUser(testNamespace)
 				groups := []UserGroupsParameters{{
 					GroupId: new("stale-group"),
-					GroupIdRef: &xpv1.NamespacedReference{
+					GroupIdRef: &xpv1.Reference{
 						Name:   "example-group",
 						Policy: &xpv1.Policy{Resolve: new(xpv1.ResolvePolicyAlways)},
 					},
@@ -131,7 +131,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			reason: "GroupIdRef.Name is the Kubernetes object name and resolves to the external name.",
 			user: func() *User {
 				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupIdRef: &xpv1.NamespacedReference{Name: "example-group"}}}
+				groups := []UserGroupsParameters{{GroupIdRef: &xpv1.Reference{Name: "example-group"}}}
 				u.Spec.ForProvider.Groups = &groups
 
 				return u
@@ -145,21 +145,25 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			},
 			wantGroups: map[int]string{0: "devs"},
 		},
-		"GroupIdRef_WithExplicitNamespace": {
-			reason: "An explicit namespace in GroupIdRef is respected.",
+		"GroupIdRef_ResolvesInOwnNamespace": {
+			reason: "GroupIdRef resolves in the referencing resource's namespace.",
 			user: func() *User {
 				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupIdRef: &xpv1.NamespacedReference{Name: "example-group", Namespace: testNamespace}}}
+				groups := []UserGroupsParameters{{GroupIdRef: &xpv1.Reference{Name: "example-group"}}}
 				u.Spec.ForProvider.Groups = &groups
 
 				return u
 			}(),
 			client: &test.MockClient{
-				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+				MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
+					if key.Namespace != testNamespace {
+						return kerrors.NewNotFound(schema.GroupResource{}, key.Name)
+					}
+
 					setExtName(obj, "ops")
 
 					return nil
-				}),
+				},
 			},
 			wantGroups: map[int]string{0: "ops"},
 		},
@@ -167,7 +171,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			reason: "Using a non-existing Kubernetes group object name returns not found.",
 			user: func() *User {
 				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupIdRef: &xpv1.NamespacedReference{Name: "sonarqube-group-key-instead-of-k8s-name"}}}
+				groups := []UserGroupsParameters{{GroupIdRef: &xpv1.Reference{Name: "sonarqube-group-key-instead-of-k8s-name"}}}
 				u.Spec.ForProvider.Groups = &groups
 
 				return u
@@ -181,7 +185,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 			reason: "A selector lists matching Groups and resolves the external name.",
 			user: func() *User {
 				u := newTestUser(testNamespace)
-				groups := []UserGroupsParameters{{GroupIdSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"team": "platform"}}}}
+				groups := []UserGroupsParameters{{GroupIdSelector: &xpv1.Selector{MatchLabels: map[string]string{"team": "platform"}}}}
 				u.Spec.ForProvider.Groups = &groups
 
 				return u
@@ -193,7 +197,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 						return nil
 					}
 
-					group := Group{ObjectMeta: metav1.ObjectMeta{Name: "platform-group", Namespace: testNamespace}}
+					group := Group{ObjectMeta: metav1.ObjectMeta{Name: "platform-group"}}
 					setExtName(&group, "platform")
 					groupList.Items = []Group{group}
 
@@ -208,8 +212,8 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 				u := newTestUser(testNamespace)
 				groups := []UserGroupsParameters{
 					{GroupId: new("devs")},
-					{GroupIdRef: &xpv1.NamespacedReference{Name: "group-ref-ops"}},
-					{GroupIdSelector: &xpv1.NamespacedSelector{MatchLabels: map[string]string{"team": "sec"}}},
+					{GroupIdRef: &xpv1.Reference{Name: "group-ref-ops"}},
+					{GroupIdSelector: &xpv1.Selector{MatchLabels: map[string]string{"team": "sec"}}},
 				}
 				u.Spec.ForProvider.Groups = &groups
 
@@ -231,7 +235,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit // Exhaustive t
 						return nil
 					}
 
-					group := Group{ObjectMeta: metav1.ObjectMeta{Name: "selector-group", Namespace: testNamespace}}
+					group := Group{ObjectMeta: metav1.ObjectMeta{Name: "selector-group"}}
 					setExtName(&group, "sec")
 					groupList.Items = []Group{group}
 
@@ -294,8 +298,8 @@ func TestUserResolveReferences_StopsOnFirstError(t *testing.T) {
 
 	u := newTestUser(testNamespace)
 	groups := []UserGroupsParameters{
-		{GroupIdRef: &xpv1.NamespacedReference{Name: "missing-group"}},
-		{GroupIdRef: &xpv1.NamespacedReference{Name: "second-group"}},
+		{GroupIdRef: &xpv1.Reference{Name: "missing-group"}},
+		{GroupIdRef: &xpv1.Reference{Name: "second-group"}},
 	}
 	u.Spec.ForProvider.Groups = &groups
 

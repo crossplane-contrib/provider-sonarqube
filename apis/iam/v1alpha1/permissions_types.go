@@ -33,48 +33,43 @@ type PermissionsParameters struct {
 	// Mutually exclusive with Login. Immutable once set.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="GroupName is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.Group
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.GroupName()
 	GroupName *string `json:"groupName,omitempty"`
 
 	// GroupNameRef references a Group resource to populate GroupName.
 	// +kubebuilder:validation:Optional
-	GroupNameRef *xpv1.NamespacedReference `json:"groupNameRef,omitempty"`
+	GroupNameRef *xpv1.Reference `json:"groupNameRef,omitempty"`
 
 	// GroupNameSelector selects a Group resource to populate GroupName.
 	// +kubebuilder:validation:Optional
-	GroupNameSelector *xpv1.NamespacedSelector `json:"groupNameSelector,omitempty"`
+	GroupNameSelector *xpv1.Selector `json:"groupNameSelector,omitempty"`
 
 	// Login is the login of the user to assign permissions to.
 	// Mutually exclusive with GroupName. Immutable once set.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Login is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.User
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.UserLogin()
 	Login *string `json:"login,omitempty"`
 
 	// LoginRef references a User resource to populate Login.
 	// +kubebuilder:validation:Optional
-	LoginRef *xpv1.NamespacedReference `json:"loginRef,omitempty"`
+	LoginRef *xpv1.Reference `json:"loginRef,omitempty"`
 
 	// LoginSelector selects a User resource to populate Login.
 	// +kubebuilder:validation:Optional
-	LoginSelector *xpv1.NamespacedSelector `json:"loginSelector,omitempty"`
+	LoginSelector *xpv1.Selector `json:"loginSelector,omitempty"`
 
 	// ProjectKey scopes permissions to a specific project. If omitted, global permissions are managed.
 	// Immutable once set.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="ProjectKey is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.Project
 	ProjectKey *string `json:"projectKey,omitempty"`
 
 	// ProjectKeyRef references a Project resource to populate ProjectKey.
 	// +kubebuilder:validation:Optional
-	ProjectKeyRef *xpv1.NamespacedReference `json:"projectKeyRef,omitempty"`
+	ProjectKeyRef *xpv1.Reference `json:"projectKeyRef,omitempty"`
 
 	// ProjectKeySelector selects a Project resource to populate ProjectKey.
 	// +kubebuilder:validation:Optional
-	ProjectKeySelector *xpv1.NamespacedSelector `json:"projectKeySelector,omitempty"`
+	ProjectKeySelector *xpv1.Selector `json:"projectKeySelector,omitempty"`
 
 	// Permissions is the desired set of permissions to assign. An empty set revokes all permissions in this scope.
 	// Global permissions: admin, gateadmin, profileadmin, provisioning, scan, applicationcreator, portfoliocreator.

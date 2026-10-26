@@ -90,14 +90,13 @@ type QualityProfileRuleParameters struct {
 	// Rule is the unique key (identifier) of the rule to be activated in the Quality Profile.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.Rule
 	Rule *string `json:"rule"`
 	// RuleRef is a reference to a Rule to retrieve its id and associate it with the project.
 	// +kubebuilder:validation:Optional
-	RuleRef *xpv1.NamespacedReference `json:"ruleRef,omitempty"`
+	RuleRef *xpv1.Reference `json:"ruleRef,omitempty"`
 	// RuleSelector selects reference to a Rule to retrieve its id and associate it with the project.
 	// +kubebuilder:validation:Optional
-	RuleSelector *xpv1.NamespacedSelector `json:"ruleSelector,omitempty"`
+	RuleSelector *xpv1.Selector `json:"ruleSelector,omitempty"`
 	// Severity. Cannot be used as the same time as 'impacts'.
 	// If used together with 'impacts', 'impacts' will take precedence.
 	// +kubebuilder:validation:Enum=INFO;MINOR;MAJOR;CRITICAL;BLOCKER

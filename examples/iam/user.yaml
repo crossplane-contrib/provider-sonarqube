@@ -32,7 +32,6 @@ spec:
       # This references the Group example in examples/iam/group.yaml.
       - groupIdRef:
           name: example-group
-          namespace: default
           policy:
             resolve: Always
       # Directly specify the group ID (This is for instance "sonar-users" group on my sonarqube).

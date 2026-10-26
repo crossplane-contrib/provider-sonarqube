@@ -105,7 +105,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			webhook: func() *Webhook {
 				w := newTestWebhook()
 				w.Spec.ForProvider.ProjectKey = new(projectExternalName)
-				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{Name: testProjectK8sName}
 
 				return w
 			}(),
@@ -117,7 +117,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			webhook: func() *Webhook {
 				w := newTestWebhook()
 				w.Spec.ForProvider.ProjectKey = new("stale-project-key")
-				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{
 					Name:   testProjectK8sName,
 					Policy: &xpv1.Policy{Resolve: new(xpv1.ResolvePolicyAlways)},
 				}
@@ -137,7 +137,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			reason: "ProjectKeyRef.Name is the K8s object name; ExternalName is resolved.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{Name: testProjectK8sName}
 
 				return w
 			}(),
@@ -150,23 +150,26 @@ func TestWebhookResolveReferences(t *testing.T) {
 			},
 			wantKey: projectExternalName,
 		},
-		"ProjectKeyRef_WithExplicitNamespace": {
-			reason: "An explicit namespace in ProjectKeyRef is respected.",
+		"ProjectKeyRef_ResolvesInOwnNamespace": {
+			reason: "ProjectKeyRef resolves in the referencing resource's namespace.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{
-					Name:      testProjectK8sName,
-					Namespace: testNamespace,
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{
+					Name: testProjectK8sName,
 				}
 
 				return w
 			}(),
 			client: &test.MockClient{
-				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+				MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
+					if key.Namespace != testNamespace {
+						return kerrors.NewNotFound(schema.GroupResource{}, key.Name)
+					}
+
 					setExtName(obj, projectExternalName)
 
 					return nil
-				}),
+				},
 			},
 			wantKey: projectExternalName,
 		},
@@ -176,20 +179,20 @@ func TestWebhookResolveReferences(t *testing.T) {
 			reason: "Using a non-existing K8s name in ProjectKeyRef returns an error.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: "sonarqube-key-not-k8s-name"}
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{Name: "sonarqube-key-not-k8s-name"}
 
 				return w
 			}(),
 			client: &test.MockClient{
 				MockGet: test.NewMockGetFn(notFoundProject),
 			},
-			errSubstr: "mg.Spec.ForProvider.ProjectKey",
+			errSubstr: "spec.forProvider.projectKey",
 		},
 		"ProjectKeySelector_ResolvesToExternalName": {
 			reason: "A selector lists matching Projects and resolves the ExternalName.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKeySelector = &xpv1.NamespacedSelector{
+				w.Spec.ForProvider.ProjectKeySelector = &xpv1.Selector{
 					MatchLabels: map[string]string{"env": "prod"},
 				}
 
@@ -220,7 +223,7 @@ func TestWebhookResolveReferences(t *testing.T) {
 			reason: "A selector that matches no Projects returns an error.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKeySelector = &xpv1.NamespacedSelector{
+				w.Spec.ForProvider.ProjectKeySelector = &xpv1.Selector{
 					MatchLabels: map[string]string{"env": "nonexistent"},
 				}
 
@@ -238,13 +241,13 @@ func TestWebhookResolveReferences(t *testing.T) {
 					return nil
 				}),
 			},
-			errSubstr: "mg.Spec.ForProvider.ProjectKey",
+			errSubstr: "spec.forProvider.projectKey",
 		},
 		"ProjectKeySelector_ListAPIError_ReturnsError": {
 			reason: "A List API failure during selector resolution propagates as an error.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKeySelector = &xpv1.NamespacedSelector{
+				w.Spec.ForProvider.ProjectKeySelector = &xpv1.Selector{
 					MatchLabels: map[string]string{"env": "prod"},
 				}
 
@@ -253,20 +256,20 @@ func TestWebhookResolveReferences(t *testing.T) {
 			client: &test.MockClient{
 				MockList: test.NewMockListFn(errors.New("list API failure")),
 			},
-			errSubstr: "mg.Spec.ForProvider.ProjectKey",
+			errSubstr: "spec.forProvider.projectKey",
 		},
 		"ProjectKeyRef_GetAPIError_ReturnsError": {
 			reason: "A Get API failure during ref resolution propagates as an error.",
 			webhook: func() *Webhook {
 				w := newTestWebhook()
-				w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
+				w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{Name: testProjectK8sName}
 
 				return w
 			}(),
 			client: &test.MockClient{
 				MockGet: test.NewMockGetFn(errors.New("get API failure")),
 			},
-			errSubstr: "mg.Spec.ForProvider.ProjectKey",
+			errSubstr: "spec.forProvider.projectKey",
 		},
 	}
 
@@ -317,8 +320,8 @@ func TestWebhookResolveReferences_RefTakesPrecedenceOverSelector(t *testing.T) {
 	)
 
 	w := newTestWebhook()
-	w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
-	w.Spec.ForProvider.ProjectKeySelector = &xpv1.NamespacedSelector{
+	w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{Name: testProjectK8sName}
+	w.Spec.ForProvider.ProjectKeySelector = &xpv1.Selector{
 		MatchLabels: map[string]string{"env": "prod"},
 	}
 
@@ -338,7 +341,7 @@ func TestWebhookResolveReferences_RefTakesPrecedenceOverSelector(t *testing.T) {
 			}
 
 			p := instancev1alpha1.Project{
-				ObjectMeta: metav1.ObjectMeta{Name: "other-project", Namespace: testNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: "other-project"},
 			}
 			setExtName(&p, selectorExtName)
 			projectList.Items = []instancev1alpha1.Project{p}
@@ -368,7 +371,7 @@ func TestWebhookResolveReferences_ProjectKeyRefIsUpdated(t *testing.T) {
 	t.Parallel()
 
 	w := newTestWebhook()
-	w.Spec.ForProvider.ProjectKeyRef = &xpv1.NamespacedReference{Name: testProjectK8sName}
+	w.Spec.ForProvider.ProjectKeyRef = &xpv1.Reference{Name: testProjectK8sName}
 
 	c := &test.MockClient{
 		MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {

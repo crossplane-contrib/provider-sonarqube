@@ -40,19 +40,17 @@ type QualityProfileUsergroupAssociationParameters struct {
 	// +kubebuilder:validation:MaxLength=100
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Optional
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.QualityProfile
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1.QualityProfileName()
 	QualityProfile string `json:"qualityProfile,omitempty"`
 
 	// QualityProfileRef references a QualityProfile resource to populate
 	// QualityProfile.
 	// +kubebuilder:validation:Optional
-	QualityProfileRef *xpv1.NamespacedReference `json:"qualityProfileRef,omitempty"`
+	QualityProfileRef *xpv1.Reference `json:"qualityProfileRef,omitempty"`
 
 	// QualityProfileSelector selects a QualityProfile resource to populate
 	// QualityProfile.
 	// +kubebuilder:validation:Optional
-	QualityProfileSelector *xpv1.NamespacedSelector `json:"qualityProfileSelector,omitempty"`
+	QualityProfileSelector *xpv1.Selector `json:"qualityProfileSelector,omitempty"`
 
 	// Language is the programming language of the Quality Profile.
 	// WARNING: This field is immutable once set.
@@ -65,33 +63,29 @@ type QualityProfileUsergroupAssociationParameters struct {
 	// Profile. Mutually exclusive with login. Immutable once set.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="GroupName is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.Group
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.GroupName()
 	GroupName *string `json:"groupName,omitempty"`
 
 	// GroupNameRef references a Group resource to populate GroupName.
 	// +kubebuilder:validation:Optional
-	GroupNameRef *xpv1.NamespacedReference `json:"groupNameRef,omitempty"`
+	GroupNameRef *xpv1.Reference `json:"groupNameRef,omitempty"`
 
 	// GroupNameSelector selects a Group resource to populate GroupName.
 	// +kubebuilder:validation:Optional
-	GroupNameSelector *xpv1.NamespacedSelector `json:"groupNameSelector,omitempty"`
+	GroupNameSelector *xpv1.Selector `json:"groupNameSelector,omitempty"`
 
 	// Login is the login of the user granted edit rights on the Quality
 	// Profile. Mutually exclusive with groupName. Immutable once set.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Login is immutable."
-	// +crossplane:generate:reference:type=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.User
-	// +crossplane:generate:reference:extractor=github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1.UserLogin()
 	Login *string `json:"login,omitempty"`
 
 	// LoginRef references a User resource to populate Login.
 	// +kubebuilder:validation:Optional
-	LoginRef *xpv1.NamespacedReference `json:"loginRef,omitempty"`
+	LoginRef *xpv1.Reference `json:"loginRef,omitempty"`
 
 	// LoginSelector selects a User resource to populate Login.
 	// +kubebuilder:validation:Optional
-	LoginSelector *xpv1.NamespacedSelector `json:"loginSelector,omitempty"`
+	LoginSelector *xpv1.Selector `json:"loginSelector,omitempty"`
 }
 
 // QualityProfileUsergroupAssociationObservation are the observable fields

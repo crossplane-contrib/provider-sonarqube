@@ -189,14 +189,14 @@ func (in *ApplicationParameters) DeepCopyInto(out *ApplicationParameters) {
 	}
 	if in.ProjectRefs != nil {
 		in, out := &in.ProjectRefs, &out.ProjectRefs
-		*out = make([]v2.NamespacedReference, len(*in))
+		*out = make([]v2.Reference, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.ProjectSelector != nil {
 		in, out := &in.ProjectSelector, &out.ProjectSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Branches != nil {
@@ -1216,12 +1216,12 @@ func (in *ProjectParameters) DeepCopyInto(out *ProjectParameters) {
 	}
 	if in.QualityGateNameRef != nil {
 		in, out := &in.QualityGateNameRef, &out.QualityGateNameRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.QualityGateNameSelector != nil {
 		in, out := &in.QualityGateNameSelector, &out.QualityGateNameSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.QualityProfiles != nil {
@@ -1273,12 +1273,12 @@ func (in *ProjectQualityProfileReference) DeepCopyInto(out *ProjectQualityProfil
 	}
 	if in.IdRef != nil {
 		in, out := &in.IdRef, &out.IdRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.IdSelector != nil {
 		in, out := &in.IdSelector, &out.IdSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 }
@@ -1726,12 +1726,12 @@ func (in *QualityProfileRuleParameters) DeepCopyInto(out *QualityProfileRulePara
 	}
 	if in.RuleRef != nil {
 		in, out := &in.RuleRef, &out.RuleRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.RuleSelector != nil {
 		in, out := &in.RuleSelector, &out.RuleSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Severity != nil {

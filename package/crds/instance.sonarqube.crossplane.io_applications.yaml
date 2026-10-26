@@ -133,13 +133,10 @@ spec:
                     description: ProjectRefs are references to Projects used to populate
                       Projects.
                     items:
-                      description: A NamespacedReference to a named object.
+                      description: A Reference to a named object.
                       properties:
                         name:
                           description: Name of the referenced object.
-                          type: string
-                        namespace:
-                          description: Namespace of the referenced object
                           type: string
                         policy:
                           description: Policies for referencing.
@@ -185,9 +182,6 @@ spec:
                         description: MatchLabels ensures an object with matching labels
                           is selected.
                         type: object
-                      namespace:
-                        description: Namespace for the selector
-                        type: string
                       policy:
                         description: Policies for selection.
                         properties:

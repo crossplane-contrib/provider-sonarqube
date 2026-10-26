@@ -26,13 +26,14 @@ import (
 )
 
 // ResolveReferences resolves references to other managed resources for Project.
+// References and selectors resolve in the Project's own namespace.
 // Resolution respects the ref/selector Policy: with the default IfNotPresent
 // policy a resolved value is cached and not re-fetched on every reconcile;
 // set policy.resolve=Always on a reference to force re-resolution each time.
 func (project *Project) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
-	resolver := reference.NewAPINamespacedResolver(readerClient, project)
+	resolver := reference.NewAPIResolver(readerClient, project)
 
-	response, err := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
+	response, err := resolver.Resolve(ctx, reference.ResolutionRequest{
 		CurrentValue: reference.FromPtrValue(project.Spec.ForProvider.QualityGateName),
 		Extract:      reference.ExternalName(),
 		Namespace:    project.GetNamespace(),
@@ -51,7 +52,7 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 	project.Spec.ForProvider.QualityGateNameRef = response.ResolvedReference
 
 	for language, profile := range project.Spec.ForProvider.QualityProfiles {
-		profileResponse, profileErr := resolver.Resolve(ctx, reference.NamespacedResolutionRequest{
+		profileResponse, profileErr := resolver.Resolve(ctx, reference.ResolutionRequest{
 			CurrentValue: reference.FromPtrValue(profile.Id),
 			Extract:      reference.ExternalName(),
 			Namespace:    project.GetNamespace(),
@@ -70,6 +71,64 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 		qualityProfile.Id = reference.ToPtrValue(profileResponse.ResolvedValue)
 		qualityProfile.IdRef = profileResponse.ResolvedReference
 		project.Spec.ForProvider.QualityProfiles[language] = qualityProfile
+	}
+
+	return nil
+}
+
+// ResolveReferences resolves references to other managed resources for
+// Application. References and selectors resolve in the Application's own
+// namespace.
+func (application *Application) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	resolver := reference.NewAPIResolver(readerClient, application)
+
+	response, err := resolver.ResolveMultiple(ctx, reference.MultiResolutionRequest{
+		CurrentValues: application.Spec.ForProvider.Projects,
+		Extract:       reference.ExternalName(),
+		Namespace:     application.GetNamespace(),
+		References:    application.Spec.ForProvider.ProjectRefs,
+		Selector:      application.Spec.ForProvider.ProjectSelector,
+		To: reference.To{
+			List:    &ProjectList{},
+			Managed: &Project{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.projects")
+	}
+
+	application.Spec.ForProvider.Projects = response.ResolvedValues
+	application.Spec.ForProvider.ProjectRefs = response.ResolvedReferences
+
+	return nil
+}
+
+// ResolveReferences resolves references to other managed resources for
+// QualityProfile. References and selectors resolve in the QualityProfile's
+// own namespace.
+func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	resolver := reference.NewAPIResolver(readerClient, qualityProfile)
+
+	for ruleIdx := range qualityProfile.Spec.ForProvider.Rules {
+		rule := &qualityProfile.Spec.ForProvider.Rules[ruleIdx]
+
+		response, err := resolver.Resolve(ctx, reference.ResolutionRequest{
+			CurrentValue: reference.FromPtrValue(rule.Rule),
+			Extract:      reference.ExternalName(),
+			Namespace:    qualityProfile.GetNamespace(),
+			Reference:    rule.RuleRef,
+			Selector:     rule.RuleSelector,
+			To: reference.To{
+				List:    &RuleList{},
+				Managed: &Rule{},
+			},
+		})
+		if err != nil {
+			return errors.Wrapf(err, "spec.forProvider.rules[%d].rule", ruleIdx)
+		}
+
+		rule.Rule = reference.ToPtrValue(response.ResolvedValue)
+		rule.RuleRef = response.ResolvedReference
 	}
 
 	return nil

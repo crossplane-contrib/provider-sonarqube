@@ -134,9 +134,9 @@ func TestQualityProfileUsergroupAssociationGroupByReference(t *testing.T) {
 	e2e.AssertReady(t, group)
 
 	assoc := newE2EQualityProfileUsergroupAssociation(f, assocCRName, iamv1alpha1.QualityProfileUsergroupAssociationParameters{
-		QualityProfileRef: &xpv1.NamespacedReference{Name: profileCRName},
+		QualityProfileRef: &xpv1.Reference{Name: profileCRName},
 		Language:          qpAssocLanguage,
-		GroupNameRef:      &xpv1.NamespacedReference{Name: groupCRName},
+		GroupNameRef:      &xpv1.Reference{Name: groupCRName},
 	})
 	f.CreateAndWaitForReady(t, assoc, 2*time.Minute)
 	e2e.AssertReady(t, assoc)
@@ -305,7 +305,7 @@ func TestQualityProfileUsergroupAssociationRejectsBothPrincipals(t *testing.T) {
 		QualityProfile: "e2e-qpassoc-invalid-profile",
 		Language:       qpAssocLanguage,
 		GroupName:      ptr.To("e2e-qpassoc-invalid-group"),
-		LoginRef:       &xpv1.NamespacedReference{Name: "e2e-qpassoc-invalid-user"},
+		LoginRef:       &xpv1.Reference{Name: "e2e-qpassoc-invalid-user"},
 	})
 
 	err := f.Kube.Create(context.Background(), assoc)

@@ -244,12 +244,12 @@ func (in *PermissionsParameters) DeepCopyInto(out *PermissionsParameters) {
 	}
 	if in.GroupNameRef != nil {
 		in, out := &in.GroupNameRef, &out.GroupNameRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.GroupNameSelector != nil {
 		in, out := &in.GroupNameSelector, &out.GroupNameSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Login != nil {
@@ -259,12 +259,12 @@ func (in *PermissionsParameters) DeepCopyInto(out *PermissionsParameters) {
 	}
 	if in.LoginRef != nil {
 		in, out := &in.LoginRef, &out.LoginRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.LoginSelector != nil {
 		in, out := &in.LoginSelector, &out.LoginSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.ProjectKey != nil {
@@ -274,12 +274,12 @@ func (in *PermissionsParameters) DeepCopyInto(out *PermissionsParameters) {
 	}
 	if in.ProjectKeyRef != nil {
 		in, out := &in.ProjectKeyRef, &out.ProjectKeyRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.ProjectKeySelector != nil {
 		in, out := &in.ProjectKeySelector, &out.ProjectKeySelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Permissions != nil {
@@ -696,12 +696,12 @@ func (in *QualityGateUsergroupAssociationParameters) DeepCopyInto(out *QualityGa
 	*out = *in
 	if in.GateNameRef != nil {
 		in, out := &in.GateNameRef, &out.GateNameRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.GateNameSelector != nil {
 		in, out := &in.GateNameSelector, &out.GateNameSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.GroupName != nil {
@@ -711,12 +711,12 @@ func (in *QualityGateUsergroupAssociationParameters) DeepCopyInto(out *QualityGa
 	}
 	if in.GroupNameRef != nil {
 		in, out := &in.GroupNameRef, &out.GroupNameRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.GroupNameSelector != nil {
 		in, out := &in.GroupNameSelector, &out.GroupNameSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Login != nil {
@@ -726,12 +726,12 @@ func (in *QualityGateUsergroupAssociationParameters) DeepCopyInto(out *QualityGa
 	}
 	if in.LoginRef != nil {
 		in, out := &in.LoginRef, &out.LoginRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.LoginSelector != nil {
 		in, out := &in.LoginSelector, &out.LoginSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 }
@@ -859,12 +859,12 @@ func (in *QualityProfileUsergroupAssociationParameters) DeepCopyInto(out *Qualit
 	*out = *in
 	if in.QualityProfileRef != nil {
 		in, out := &in.QualityProfileRef, &out.QualityProfileRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.QualityProfileSelector != nil {
 		in, out := &in.QualityProfileSelector, &out.QualityProfileSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.GroupName != nil {
@@ -874,12 +874,12 @@ func (in *QualityProfileUsergroupAssociationParameters) DeepCopyInto(out *Qualit
 	}
 	if in.GroupNameRef != nil {
 		in, out := &in.GroupNameRef, &out.GroupNameRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.GroupNameSelector != nil {
 		in, out := &in.GroupNameSelector, &out.GroupNameSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Login != nil {
@@ -889,12 +889,12 @@ func (in *QualityProfileUsergroupAssociationParameters) DeepCopyInto(out *Qualit
 	}
 	if in.LoginRef != nil {
 		in, out := &in.LoginRef, &out.LoginRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.LoginSelector != nil {
 		in, out := &in.LoginSelector, &out.LoginSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 }
@@ -980,12 +980,12 @@ func (in *UserGroupsParameters) DeepCopyInto(out *UserGroupsParameters) {
 	}
 	if in.GroupIdRef != nil {
 		in, out := &in.GroupIdRef, &out.GroupIdRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.GroupIdSelector != nil {
 		in, out := &in.GroupIdSelector, &out.GroupIdSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 }
@@ -1259,12 +1259,12 @@ func (in *UserTokenParameters) DeepCopyInto(out *UserTokenParameters) {
 	}
 	if in.LoginRef != nil {
 		in, out := &in.LoginRef, &out.LoginRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.LoginSelector != nil {
 		in, out := &in.LoginSelector, &out.LoginSelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.ProjectKey != nil {

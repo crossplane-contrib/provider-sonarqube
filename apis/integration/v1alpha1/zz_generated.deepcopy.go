@@ -774,12 +774,12 @@ func (in *WebhookParameters) DeepCopyInto(out *WebhookParameters) {
 	}
 	if in.ProjectKeyRef != nil {
 		in, out := &in.ProjectKeyRef, &out.ProjectKeyRef
-		*out = new(v2.NamespacedReference)
+		*out = new(v2.Reference)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.ProjectKeySelector != nil {
 		in, out := &in.ProjectKeySelector, &out.ProjectKeySelector
-		*out = new(v2.NamespacedSelector)
+		*out = new(v2.Selector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.SecretRef != nil {
