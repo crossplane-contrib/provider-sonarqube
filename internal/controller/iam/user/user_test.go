@@ -33,7 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakekube "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -206,13 +208,24 @@ func TestCreateReadsPasswordSecretFromUserNamespace(t *testing.T) {
 		t.Fatalf("AddToScheme(corev1) = %v", err)
 	}
 
-	kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "other-ns"}, Data: map[string][]byte{"password": []byte("other-tenant-secret")}}).Build()
 	user := newUserWithSpec(v1alpha1.UserParameters{
 		Login:             testUserLogin,
 		Name:              "Alice",
 		Local:             new(true),
 		PasswordSecretRef: &xpv1.LocalSecretKeySelector{Key: "password", LocalSecretReference: xpv1.LocalSecretReference{Name: "pwd"}},
 	})
+
+	kube := fakekube.NewClientBuilder().WithScheme(scheme).
+		WithObjects(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "other-ns"}, Data: map[string][]byte{"password": []byte("other-tenant-secret")}}).
+		WithInterceptorFuncs(interceptor.Funcs{
+			Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+				if key.Namespace != user.GetNamespace() {
+					t.Errorf("unexpected Get in namespace %q, want only %q", key.Namespace, user.GetNamespace())
+				}
+
+				return c.Get(ctx, key, obj, opts...)
+			},
+		}).Build()
 
 	created, err := (&external{
 		kube: kube,

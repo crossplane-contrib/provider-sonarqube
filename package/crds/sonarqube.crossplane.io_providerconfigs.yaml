@@ -63,7 +63,7 @@ spec:
               password:
                 description: |-
                   Password is the password for Basic Authentication to the SonarQube instance.
-                  For a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace.
+                  In a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace; a ClusterProviderConfig may reference any namespace.
                 properties:
                   env:
                     description: |-
@@ -122,7 +122,7 @@ spec:
                 description: |-
                   Token is the User Token required to authenticate with the SonarQube instance.
                   WARNING: This MUST NOT be an Analysis token / project token, it MUST be a User token with appropriate permissions.
-                  For a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace.
+                  In a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace; a ClusterProviderConfig may reference any namespace.
                 properties:
                   env:
                     description: |-
@@ -180,7 +180,7 @@ spec:
               username:
                 description: |-
                   Username is the username for Basic Authentication to the SonarQube instance.
-                  For a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace.
+                  In a namespaced ProviderConfig, the referenced secret must be in the ProviderConfig's namespace; a ClusterProviderConfig may reference any namespace.
                 properties:
                   env:
                     description: |-
