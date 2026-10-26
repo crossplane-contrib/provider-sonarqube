@@ -23,9 +23,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -176,29 +174,6 @@ func TestUpdateAggregatesFieldAndGroupErrors(t *testing.T) {
 	}
 }
 
-// inFlightTracker records the peak number of concurrent calls.
-type inFlightTracker struct {
-	current atomic.Int32
-	peak    atomic.Int32
-	total   atomic.Int32
-}
-
-// track marks a call as in flight for a short time so concurrent calls overlap.
-func (tracker *inFlightTracker) track() {
-	tracker.total.Add(1)
-
-	current := tracker.current.Add(1)
-	for {
-		peak := tracker.peak.Load()
-		if current <= peak || tracker.peak.CompareAndSwap(peak, current) {
-			break
-		}
-	}
-
-	time.Sleep(5 * time.Millisecond)
-	tracker.current.Add(-1)
-}
-
 // TestReconcileGroupMembershipsBoundsConcurrency tests that a long groups list
 // does not open one concurrent SonarQube request per item.
 func TestReconcileGroupMembershipsBoundsConcurrency(t *testing.T) {
@@ -217,15 +192,15 @@ func TestReconcileGroupMembershipsBoundsConcurrency(t *testing.T) {
 	user := newUserWithSpec(v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice", Groups: &desiredGroups})
 	user.Status.AtProvider.Groups = observedGroups
 
-	tracker := &inFlightTracker{}
+	tracker := &sonarfake.InFlightTracker{}
 	ext := &external{groupsClient: &sonarfake.MockGroupsClient{
 		CreateGroupMembershipFn: func(_ *sonar.AuthorizationsCreateGroupMembershipOptions) (*sonar.AuthorizationsGroupMembership, *http.Response, error) {
-			tracker.track()
+			tracker.Track()
 
 			return &sonar.AuthorizationsGroupMembership{Id: "membership"}, nil, nil
 		},
 		DeleteGroupMembershipFn: func(_ string) (*http.Response, error) {
-			tracker.track()
+			tracker.Track()
 
 			return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody}, nil
 		},
@@ -236,11 +211,11 @@ func TestReconcileGroupMembershipsBoundsConcurrency(t *testing.T) {
 		t.Fatalf("reconcileGroupMemberships() unexpected error: %v", err)
 	}
 
-	if got := tracker.total.Load(); got != 2*itemCount {
+	if got := tracker.Total(); got != 2*itemCount {
 		t.Errorf("reconcileGroupMemberships() made %d requests, want %d", got, 2*itemCount)
 	}
 
-	if got := tracker.peak.Load(); got > helpers.MaxConcurrentRequests {
+	if got := tracker.Peak(); got > helpers.MaxConcurrentRequests {
 		t.Errorf("reconcileGroupMemberships() peak concurrency = %d, want at most %d", got, helpers.MaxConcurrentRequests)
 	}
 }

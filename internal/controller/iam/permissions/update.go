@@ -20,7 +20,7 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
-	"sync"
+	"net/http"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -54,15 +54,50 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}}, nil
 }
 
-// applyPermissions concurrently adds toAdd permissions and removes toRemove
-// permissions for the subject described in spec.
-// Either slice may be nil (no-op for that direction).
-//
-//nolint:gocyclo,cyclop,nestif,funlen // Fan-out logic for two subject types and two directions requires nesting.
-func (c *external) applyPermissions(ctx context.Context, spec v1alpha1.PermissionsParameters, toAdd, toRemove []string) error {
+// permissionCall sends one SonarQube request for a single permission.
+type permissionCall func(permission string) (*http.Response, error)
+
+// permissionCalls returns the subject described in spec and the calls that add
+// and remove one of its permissions. ok is false when spec names no subject.
+func (c *external) permissionCalls(ctx context.Context, spec v1alpha1.PermissionsParameters) (subject string, add, remove permissionCall, ok bool) {
 	var projectKey *string
 	if spec.ProjectKey != nil && *spec.ProjectKey != "" {
 		projectKey = spec.ProjectKey
+	}
+
+	switch {
+	case spec.GroupName != nil:
+		groupName := *spec.GroupName
+		add = func(permission string) (*http.Response, error) {
+			return c.client.AddGroup(ctx, iam.GeneratePermissionsAddGroupOptions(groupName, permission, projectKey))
+		}
+		remove = func(permission string) (*http.Response, error) {
+			return c.client.RemoveGroup(ctx, iam.GeneratePermissionsRemoveGroupOptions(groupName, permission, projectKey))
+		}
+
+		return "group " + groupName, add, remove, true
+	case spec.Login != nil:
+		login := *spec.Login
+		add = func(permission string) (*http.Response, error) {
+			return c.client.AddUser(ctx, iam.GeneratePermissionsAddUserOptions(login, permission, projectKey))
+		}
+		remove = func(permission string) (*http.Response, error) {
+			return c.client.RemoveUser(ctx, iam.GeneratePermissionsRemoveUserOptions(login, permission, projectKey))
+		}
+
+		return "user " + login, add, remove, true
+	default:
+		return "", nil, nil, false
+	}
+}
+
+// applyPermissions concurrently adds toAdd permissions and removes toRemove
+// permissions for the subject described in spec.
+// Either slice may be nil (no-op for that direction).
+func (c *external) applyPermissions(ctx context.Context, spec v1alpha1.PermissionsParameters, toAdd, toRemove []string) error {
+	subject, add, remove, ok := c.permissionCalls(ctx, spec)
+	if !ok {
+		return nil
 	}
 
 	total := len(toAdd) + len(toRemove)
@@ -72,75 +107,31 @@ func (c *external) applyPermissions(ctx context.Context, spec v1alpha1.Permissio
 
 	errChan := make(chan error, total)
 
-	var waitGroup sync.WaitGroup
+	// Bound the number of concurrent SonarQube requests: the permissions list
+	// comes from the spec, so its length is controlled by the tenant.
+	requestGroup := helpers.NewRequestGroup()
 
-	if spec.GroupName != nil {
-		groupName := *spec.GroupName
-
-		for _, perm := range toAdd {
-			waitGroup.Add(1)
-
-			go func(permission string) {
-				defer waitGroup.Done()
-
-				resp, err := c.client.AddGroup(ctx, iam.GeneratePermissionsAddGroupOptions(groupName, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+	schedule := func(permissions []string, call permissionCall, errFormat string) {
+		for _, permission := range permissions {
+			requestGroup.Go(func() error {
+				resp, err := call(permission) //nolint:bodyclose // closed via helpers.CloseBody
 				helpers.CloseBody(resp)
 
 				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot add permission %s to group %s", permission, groupName)
+					errChan <- errors.Wrapf(err, errFormat, permission, subject)
 				}
-			}(perm)
-		}
 
-		for _, perm := range toRemove {
-			waitGroup.Add(1)
-
-			go func(permission string) {
-				defer waitGroup.Done()
-
-				resp, err := c.client.RemoveGroup(ctx, iam.GeneratePermissionsRemoveGroupOptions(groupName, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
-				helpers.CloseBody(resp)
-
-				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot remove permission %s from group %s", permission, groupName)
-				}
-			}(perm)
-		}
-	} else if spec.Login != nil {
-		login := *spec.Login
-
-		for _, perm := range toAdd {
-			waitGroup.Add(1)
-
-			go func(permission string) {
-				defer waitGroup.Done()
-
-				resp, err := c.client.AddUser(ctx, iam.GeneratePermissionsAddUserOptions(login, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
-				helpers.CloseBody(resp)
-
-				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot add permission %s to user %s", permission, login)
-				}
-			}(perm)
-		}
-
-		for _, perm := range toRemove {
-			waitGroup.Add(1)
-
-			go func(permission string) {
-				defer waitGroup.Done()
-
-				resp, err := c.client.RemoveUser(ctx, iam.GeneratePermissionsRemoveUserOptions(login, permission, projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
-				helpers.CloseBody(resp)
-
-				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot remove permission %s from user %s", permission, login)
-				}
-			}(perm)
+				return nil
+			})
 		}
 	}
 
-	waitGroup.Wait()
+	schedule(toAdd, add, "cannot add permission %s to %s")
+	schedule(toRemove, remove, "cannot remove permission %s from %s")
+
+	// Errors are reported through errChan.
+	_ = requestGroup.Wait()
+
 	close(errChan)
 
 	var errs []error

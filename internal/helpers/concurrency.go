@@ -16,7 +16,19 @@ limitations under the License.
 
 package helpers
 
+import "golang.org/x/sync/errgroup"
+
 // MaxConcurrentRequests bounds how many SonarQube requests a single reconcile
 // sends at once when it fans out over a list from the spec, so that the size
 // of a tenant-controlled list does not set the number of open connections.
 const MaxConcurrentRequests = 8
+
+// NewRequestGroup returns a group that runs at most MaxConcurrentRequests
+// goroutines at once. Group.Go blocks while the limit is reached, so a long
+// list never spawns more goroutines than the limit.
+func NewRequestGroup() *errgroup.Group {
+	group := &errgroup.Group{}
+	group.SetLimit(MaxConcurrentRequests)
+
+	return group
+}

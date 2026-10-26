@@ -27,7 +27,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"golang.org/x/sync/errgroup"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
@@ -106,8 +105,7 @@ func (c *external) reconcileGroupMemberships(ctx context.Context, userResource *
 
 	// Bound the number of concurrent SonarQube requests: the groups list
 	// comes from the spec, so its length is controlled by the tenant.
-	var membershipsGroup errgroup.Group
-	membershipsGroup.SetLimit(helpers.MaxConcurrentRequests)
+	membershipsGroup := helpers.NewRequestGroup()
 
 	errorSlice := make([]error, 0, len(toAdd)+len(toRemove))
 	errorSliceMutex := sync.Mutex{}

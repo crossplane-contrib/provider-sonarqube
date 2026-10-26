@@ -20,9 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
@@ -30,29 +28,6 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
-
-// inFlightTracker records the peak number of concurrent calls.
-type inFlightTracker struct {
-	current atomic.Int32
-	peak    atomic.Int32
-	total   atomic.Int32
-}
-
-// track marks a call as in flight for a short time so concurrent calls overlap.
-func (tracker *inFlightTracker) track() {
-	tracker.total.Add(1)
-
-	current := tracker.current.Add(1)
-	for {
-		peak := tracker.peak.Load()
-		if current <= peak || tracker.peak.CompareAndSwap(peak, current) {
-			break
-		}
-	}
-
-	time.Sleep(5 * time.Millisecond)
-	tracker.current.Add(-1)
-}
 
 // TestUpdateProjectLinksBoundsConcurrency tests that a long links list does
 // not open one concurrent SonarQube request per item.
@@ -75,15 +50,15 @@ func TestUpdateProjectLinksBoundsConcurrency(t *testing.T) {
 		project.Status.AtProvider.Links[stale] = v1alpha1.ProjectLinkObservation{ID: "id-" + stale, Name: stale, URL: "https://old.example.com"}
 	}
 
-	tracker := &inFlightTracker{}
+	tracker := &fake.InFlightTracker{}
 	ext := &external{projectLinksClient: &fake.MockProjectLinksClient{
 		CreateFn: func(_ *sonar.ProjectLinksCreateOptions) (*sonar.ProjectLinksCreate, *http.Response, error) {
-			tracker.track()
+			tracker.Track()
 
 			return &sonar.ProjectLinksCreate{}, nil, nil
 		},
 		DeleteFn: func(_ *sonar.ProjectLinksDeleteOptions) (*http.Response, error) {
-			tracker.track()
+			tracker.Track()
 
 			return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody}, nil
 		},
@@ -109,11 +84,11 @@ func TestUpdateProjectLinksBoundsConcurrency(t *testing.T) {
 	}
 
 	// Each changed link is deleted and recreated, each stale link deleted.
-	if got := tracker.total.Load(); got != 3*itemCount {
+	if got := tracker.Total(); got != 3*itemCount {
 		t.Errorf("updateProjectLinks() made %d requests, want %d", got, 3*itemCount)
 	}
 
-	if got := tracker.peak.Load(); got > helpers.MaxConcurrentRequests {
+	if got := tracker.Peak(); got > helpers.MaxConcurrentRequests {
 		t.Errorf("updateProjectLinks() peak concurrency = %d, want at most %d", got, helpers.MaxConcurrentRequests)
 	}
 }

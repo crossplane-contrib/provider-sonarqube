@@ -48,7 +48,9 @@ func (c *external) updateProjectConcurrently(ctx context.Context, project *v1alp
 		c.updateDefaultBranch(ctx, project, projectKey, errChan)
 	})
 
-	c.updateBranchNewCodePeriods(ctx, project, projectKey, &waitGr, errChan)
+	waitGr.Go(func() {
+		c.updateBranchNewCodePeriods(ctx, project, projectKey, errChan)
+	})
 
 	waitGr.Go(func() {
 		c.updateProjectLinks(ctx, project, projectId, errChan)
@@ -138,28 +140,35 @@ func (c *external) updateDefaultBranch(ctx context.Context, project *v1alpha1.Pr
 
 // updateBranchNewCodePeriods updates the new code periods of branches that
 // differ from the desired state.
-func (c *external) updateBranchNewCodePeriods(ctx context.Context, project *v1alpha1.Project, projectKey string, waitGr *sync.WaitGroup, errChan chan<- error) {
+func (c *external) updateBranchNewCodePeriods(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if instance.AreProjectBranchesUpToDate(project.Spec.ForProvider.Branches, project.Status.AtProvider.Branches) {
 		return
 	}
 
-	for branch, codePeriodSpec := range project.Spec.ForProvider.Branches {
-		waitGr.Add(1)
+	// Bound the number of concurrent SonarQube requests: the branches map
+	// comes from the spec, so its size is controlled by the tenant.
+	branchesGroup := helpers.NewRequestGroup()
 
-		go func(branchName string, newCodePeriodSpec *v1alpha1.ProjectNewCodePeriodParameters) {
-			defer waitGr.Done()
+	for branchName, newCodePeriodSpec := range project.Spec.ForProvider.Branches {
+		branchObservation, branchExists := project.Status.AtProvider.Branches[branchName]
+		if !branchExists || instance.IsNewCodePeriodUpToDate(newCodePeriodSpec, &branchObservation.NewCodePeriod) {
+			continue
+		}
 
-			branchObservation, branchExists := project.Status.AtProvider.Branches[branchName]
-			if branchExists && !instance.IsNewCodePeriodUpToDate(newCodePeriodSpec, &branchObservation.NewCodePeriod) {
-				resp, err := c.projectNewCodePeriodsClient.Set(ctx, instance.GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName, newCodePeriodSpec)) //nolint:bodyclose // closed via helpers.CloseBody
-				helpers.CloseBody(resp)
+		branchesGroup.Go(func() error {
+			resp, err := c.projectNewCodePeriodsClient.Set(ctx, instance.GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName, newCodePeriodSpec)) //nolint:bodyclose // closed via helpers.CloseBody
+			helpers.CloseBody(resp)
 
-				if err != nil {
-					errChan <- errors.Wrapf(err, "cannot update new code period for branch %s", branchName)
-				}
+			if err != nil {
+				errChan <- errors.Wrapf(err, "cannot update new code period for branch %s", branchName)
 			}
-		}(branch, codePeriodSpec)
+
+			return nil
+		})
 	}
+
+	// Errors are reported through errChan.
+	_ = branchesGroup.Wait()
 }
 
 // updateProjectLinks updates the links of the project if they differ from the
@@ -171,10 +180,9 @@ func (c *external) updateProjectLinks(ctx context.Context, project *v1alpha1.Pro
 
 	// Bound the number of concurrent SonarQube requests: the links list
 	// comes from the spec, so its length is controlled by the tenant.
-	var linksGroup errgroup.Group
-	linksGroup.SetLimit(helpers.MaxConcurrentRequests)
+	linksGroup := helpers.NewRequestGroup()
 
-	c.deleteNonSpecLinks(ctx, project, &linksGroup, errChan)
+	c.deleteNonSpecLinks(ctx, project, linksGroup, errChan)
 
 	for _, link := range project.Spec.ForProvider.Links {
 		linkObservation, linkExists := project.Status.AtProvider.Links[link.Name]
