@@ -105,7 +105,7 @@ func (c *external) passwordFromSecret(ctx context.Context, userResource *v1alpha
 		return nil, errors.New("passwordSecretRef must be set for local user creation")
 	}
 
-	password, err := common.GetTokenValueFromSecretInNamespace(ctx, c.kube, userResource, userResource.GetNamespace(), userResource.Spec.ForProvider.PasswordSecretRef)
+	password, err := common.GetTokenValueFromLocalSecret(ctx, c.kube, userResource, userResource.Spec.ForProvider.PasswordSecretRef)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot get password from secret")
 	}

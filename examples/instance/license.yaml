@@ -10,7 +10,6 @@ spec:
   forProvider:
     licenseKeySecretRef:
       name: example-license-key
-      namespace: default
       key: licenseKey
 
   providerConfigRef:
@@ -53,12 +52,10 @@ spec:
       # auth, or omit both for an unauthenticated endpoint.
       bearerTokenSecretRef:
         name: example-license-endpoint-token
-        namespace: default
         key: token
       # basicAuthUsername: example-user
       # basicAuthPasswordSecretRef:
       #   name: example-license-endpoint-password
-      #   namespace: default
       #   key: password
 
   providerConfigRef:

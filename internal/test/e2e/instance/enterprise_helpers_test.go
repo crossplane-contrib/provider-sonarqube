@@ -105,9 +105,9 @@ func applyLicense(f *e2e.Framework, key string) error {
 					},
 				},
 				ForProvider: instancev1alpha1.LicenseParameters{
-					LicenseKeySecretRef: &xpv1.SecretKeySelector{
-						SecretReference: xpv1.SecretReference{Name: secret.Name, Namespace: secret.Namespace},
-						Key:             "licenseKey",
+					LicenseKeySecretRef: &xpv1.LocalSecretKeySelector{
+						LocalSecretReference: xpv1.LocalSecretReference{Name: secret.Name},
+						Key:                  "licenseKey",
 					},
 				},
 			},

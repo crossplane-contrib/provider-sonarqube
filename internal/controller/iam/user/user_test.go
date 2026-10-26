@@ -171,13 +171,10 @@ func TestCreate(t *testing.T) {
 
 		kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "default"}, Data: map[string][]byte{"password": []byte("super-secret")}}).Build()
 		user := newUserWithSpec(v1alpha1.UserParameters{
-			Login: testUserLogin,
-			Name:  "Alice",
-			Local: new(true),
-			PasswordSecretRef: &xpv1.SecretKeySelector{Key: "password", SecretReference: xpv1.SecretReference{
-				Name:      "pwd",
-				Namespace: "default",
-			}},
+			Login:             testUserLogin,
+			Name:              "Alice",
+			Local:             new(true),
+			PasswordSecretRef: &xpv1.LocalSecretKeySelector{Key: "password", LocalSecretReference: xpv1.LocalSecretReference{Name: "pwd"}},
 		})
 
 		created, err := (&external{
@@ -197,9 +194,9 @@ func TestCreate(t *testing.T) {
 	})
 }
 
-// TestCreateRejectsCrossNamespacePasswordSecret tests that a local User cannot
-// read its password from a secret in another namespace.
-func TestCreateRejectsCrossNamespacePasswordSecret(t *testing.T) {
+// TestCreateReadsPasswordSecretFromUserNamespace tests that a local User only
+// reads its password from a secret in its own namespace.
+func TestCreateReadsPasswordSecretFromUserNamespace(t *testing.T) {
 	t.Parallel()
 
 	scheme := runtime.NewScheme()
@@ -211,13 +208,10 @@ func TestCreateRejectsCrossNamespacePasswordSecret(t *testing.T) {
 
 	kube := fakekube.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pwd", Namespace: "other-ns"}, Data: map[string][]byte{"password": []byte("other-tenant-secret")}}).Build()
 	user := newUserWithSpec(v1alpha1.UserParameters{
-		Login: testUserLogin,
-		Name:  "Alice",
-		Local: new(true),
-		PasswordSecretRef: &xpv1.SecretKeySelector{Key: "password", SecretReference: xpv1.SecretReference{
-			Name:      "pwd",
-			Namespace: "other-ns",
-		}},
+		Login:             testUserLogin,
+		Name:              "Alice",
+		Local:             new(true),
+		PasswordSecretRef: &xpv1.LocalSecretKeySelector{Key: "password", LocalSecretReference: xpv1.LocalSecretReference{Name: "pwd"}},
 	})
 
 	created, err := (&external{
@@ -229,8 +223,8 @@ func TestCreateRejectsCrossNamespacePasswordSecret(t *testing.T) {
 		}},
 		groupsClient: &sonarfake.MockGroupsClient{},
 	}).Create(context.Background(), user)
-	if err == nil || !strings.Contains(err.Error(), common.ErrSecretCrossNamespace) {
-		t.Fatalf("Create() error = %v, want %q", err, common.ErrSecretCrossNamespace)
+	if err == nil || !strings.Contains(err.Error(), common.ErrSecretNotFound) {
+		t.Fatalf("Create() error = %v, want %q", err, common.ErrSecretNotFound)
 	}
 
 	if len(created.ConnectionDetails) != 0 {

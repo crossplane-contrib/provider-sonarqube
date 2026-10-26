@@ -220,27 +220,27 @@ func TestResolveLicenseKey(t *testing.T) {
 			license: newTestLicense(externalLicenseName, licenseKeyRef),
 			want:    want{errSubstr: "cannot get license key from secret"},
 		},
-		"SecretRefCrossNamespaceRejected": {
+		"SecretRefInOtherNamespaceNotRead": {
 			objects: []runtime.Object{testSecret("license-key", "other-ns", "license", testLicenseKey)},
-			license: newTestLicense(externalLicenseName, crossNamespaceSecretRef("license-key", "license")),
-			want:    want{errSubstr: common.ErrSecretCrossNamespace},
+			license: newTestLicense(externalLicenseName, licenseKeyRef),
+			want:    want{errSubstr: common.ErrSecretNotFound},
 		},
-		"EndpointBasicAuthPasswordCrossNamespaceRejected": {
+		"EndpointBasicAuthPasswordInOtherNamespaceNotRead": {
 			objects: []runtime.Object{testSecret("endpoint-password", "other-ns", "password", "s3cret")},
 			license: newTestLicenseWithEndpoint(externalLicenseName, &v1alpha1.LicenseEndpoint{
 				URL:                        "http://example.invalid",
 				BasicAuthUsername:          new("alice"),
-				BasicAuthPasswordSecretRef: crossNamespaceSecretRef("endpoint-password", "password"),
+				BasicAuthPasswordSecretRef: secretRef("endpoint-password", "password"),
 			}),
-			want: want{errSubstr: common.ErrSecretCrossNamespace},
+			want: want{errSubstr: common.ErrSecretNotFound},
 		},
-		"EndpointBearerTokenCrossNamespaceRejected": {
+		"EndpointBearerTokenInOtherNamespaceNotRead": {
 			objects: []runtime.Object{testSecret("endpoint-token", "other-ns", "token", "tok123")},
 			license: newTestLicenseWithEndpoint(externalLicenseName, &v1alpha1.LicenseEndpoint{
 				URL:                  "http://example.invalid",
-				BearerTokenSecretRef: crossNamespaceSecretRef("endpoint-token", "token"),
+				BearerTokenSecretRef: secretRef("endpoint-token", "token"),
 			}),
-			want: want{errSubstr: common.ErrSecretCrossNamespace},
+			want: want{errSubstr: common.ErrSecretNotFound},
 		},
 		"NeitherSourceSet": {
 			objects: []runtime.Object{},

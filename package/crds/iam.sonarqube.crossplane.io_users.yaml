@@ -188,22 +188,17 @@ spec:
                   passwordSecretRef:
                     description: |-
                       PasswordSecretRef points to a secret containing the password for local user creation.
-                      The secret must be in the same namespace as the User.
+                      The secret is read from the User's namespace.
                       WARNING: this field is only used during creation and is not reconciled. Updating the password in the secret after creation will have no effect on the external resource. To change the password after creation, please use SonarQube's Change Password API directly.
                     properties:
                       key:
-                        description: The key to select.
                         type: string
                       name:
                         description: Name of the secret.
                         type: string
-                      namespace:
-                        description: Namespace of the secret.
-                        type: string
                     required:
                     - key
                     - name
-                    - namespace
                     type: object
                   scmAccounts:
                     description: ScmAccounts are the SCM accounts associated with

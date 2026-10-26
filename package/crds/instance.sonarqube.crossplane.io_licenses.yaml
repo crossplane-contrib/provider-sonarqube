@@ -87,23 +87,18 @@ spec:
                       basicAuthPasswordSecretRef:
                         description: |-
                           BasicAuthPasswordSecretRef references the secret key holding the
-                          password sent using HTTP Basic authentication. The secret must be in
-                          the same namespace as the License.
+                          password sent using HTTP Basic authentication. The secret is read
+                          from the License's namespace.
                           Requires BasicAuthUsername to also be set.
                         properties:
                           key:
-                            description: The key to select.
                             type: string
                           name:
                             description: Name of the secret.
                             type: string
-                          namespace:
-                            description: Namespace of the secret.
-                            type: string
                         required:
                         - key
                         - name
-                        - namespace
                         type: object
                       basicAuthUsername:
                         description: |-
@@ -115,22 +110,17 @@ spec:
                         description: |-
                           BearerTokenSecretRef references the secret key holding a bearer token
                           sent in the endpoint request's Authorization header. Mutually
-                          exclusive with BasicAuthUsername. The secret must be in the same
-                          namespace as the License.
+                          exclusive with BasicAuthUsername. The secret is read from the
+                          License's namespace.
                         properties:
                           key:
-                            description: The key to select.
                             type: string
                           name:
                             description: Name of the secret.
                             type: string
-                          namespace:
-                            description: Namespace of the secret.
-                            type: string
                         required:
                         - key
                         - name
-                        - namespace
                         type: object
                       url:
                         description: |-
@@ -154,23 +144,18 @@ spec:
                   licenseKeySecretRef:
                     description: |-
                       LicenseKeySecretRef references the secret key holding the license key
-                      to apply directly to the SonarQube instance. The secret must be in the
-                      same namespace as the License.
+                      to apply directly to the SonarQube instance. The secret is read from
+                      the License's namespace.
                       Exactly one of LicenseKeySecretRef or Endpoint must be set.
                     properties:
                       key:
-                        description: The key to select.
                         type: string
                       name:
                         description: Name of the secret.
                         type: string
-                      namespace:
-                        description: Namespace of the secret.
-                        type: string
                     required:
                     - key
                     - name
-                    - namespace
                     type: object
                 type: object
                 x-kubernetes-validations:

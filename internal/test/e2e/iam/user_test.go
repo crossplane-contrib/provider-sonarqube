@@ -75,12 +75,9 @@ func TestUserCRUD(t *testing.T) {
 				Name:  userName,
 				Email: ptr.To(userEmail),
 				Local: ptr.To(true),
-				PasswordSecretRef: &xpv1.SecretKeySelector{
-					Key: secretKey,
-					SecretReference: xpv1.SecretReference{
-						Name:      secretName,
-						Namespace: f.Namespace,
-					},
+				PasswordSecretRef: &xpv1.LocalSecretKeySelector{
+					Key:                  secretKey,
+					LocalSecretReference: xpv1.LocalSecretReference{Name: secretName},
 				},
 				// Anonymise on delete so re-creating with the same login
 				// after a previous run leaves no observable trace.

@@ -114,7 +114,7 @@ func (c *external) resolveLicenseKey(ctx context.Context, license *v1alpha1.Lice
 
 	switch {
 	case forProvider.LicenseKeySecretRef != nil:
-		licenseKey, err := common.GetTokenValueFromSecretInNamespace(ctx, c.kube, license, license.GetNamespace(), forProvider.LicenseKeySecretRef)
+		licenseKey, err := common.GetTokenValueFromLocalSecret(ctx, c.kube, license, forProvider.LicenseKeySecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get license key from secret")
 		}
@@ -160,14 +160,14 @@ func (c *external) licenseFromEndpoint(ctx context.Context, license *v1alpha1.Li
 func (c *external) endpointAuth(ctx context.Context, license *v1alpha1.License, endpoint *v1alpha1.LicenseEndpoint) (*common.EndpointAuth, error) {
 	switch {
 	case endpoint.BearerTokenSecretRef != nil:
-		token, err := common.GetTokenValueFromSecretInNamespace(ctx, c.kube, license, license.GetNamespace(), endpoint.BearerTokenSecretRef)
+		token, err := common.GetTokenValueFromLocalSecret(ctx, c.kube, license, endpoint.BearerTokenSecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get bearer token from secret")
 		}
 
 		return &common.EndpointAuth{BearerToken: ptr.Deref(token, "")}, nil
 	case endpoint.BasicAuthUsername != nil:
-		password, err := common.GetTokenValueFromSecretInNamespace(ctx, c.kube, license, license.GetNamespace(), endpoint.BasicAuthPasswordSecretRef)
+		password, err := common.GetTokenValueFromLocalSecret(ctx, c.kube, license, endpoint.BasicAuthPasswordSecretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get basic auth password from secret")
 		}

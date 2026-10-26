@@ -106,20 +106,11 @@ func checkError(t *testing.T, method, wantErrSubstr string, gotErr error) {
 	}
 }
 
-// secretRef builds a SecretKeySelector for the "default" namespace.
-func secretRef(name, key string) *xpv1.SecretKeySelector {
-	return &xpv1.SecretKeySelector{
-		SecretReference: xpv1.SecretReference{Name: name, Namespace: "default"},
-		Key:             key,
-	}
-}
-
-// crossNamespaceSecretRef builds a SecretKeySelector pointing outside the
-// License's "default" namespace.
-func crossNamespaceSecretRef(name, key string) *xpv1.SecretKeySelector {
-	return &xpv1.SecretKeySelector{
-		SecretReference: xpv1.SecretReference{Name: name, Namespace: "other-ns"},
-		Key:             key,
+// secretRef builds a LocalSecretKeySelector read from the License namespace.
+func secretRef(name, key string) *xpv1.LocalSecretKeySelector {
+	return &xpv1.LocalSecretKeySelector{
+		LocalSecretReference: xpv1.LocalSecretReference{Name: name},
+		Key:                  key,
 	}
 }
 
@@ -132,7 +123,7 @@ func testSecret(name, namespace, key, value string) *corev1.Secret {
 }
 
 // newTestLicense creates a test License resource.
-func newTestLicense(externalName string, licenseKeyRef *xpv1.SecretKeySelector) *v1alpha1.License {
+func newTestLicense(externalName string, licenseKeyRef *xpv1.LocalSecretKeySelector) *v1alpha1.License {
 	l := &v1alpha1.License{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "test-license",

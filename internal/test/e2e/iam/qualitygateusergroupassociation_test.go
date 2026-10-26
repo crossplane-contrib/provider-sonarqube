@@ -218,12 +218,9 @@ func TestQualityGateUsergroupAssociationUserDrift(t *testing.T) {
 				Name:      userName,
 				Local:     ptr.To(true),
 				Anonymize: ptr.To(true),
-				PasswordSecretRef: &xpv1.SecretKeySelector{
-					Key: secretKey,
-					SecretReference: xpv1.SecretReference{
-						Name:      secretName,
-						Namespace: f.Namespace,
-					},
+				PasswordSecretRef: &xpv1.LocalSecretKeySelector{
+					Key:                  secretKey,
+					LocalSecretReference: xpv1.LocalSecretReference{Name: secretName},
 				},
 			},
 		},

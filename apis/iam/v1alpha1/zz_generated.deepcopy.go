@@ -1074,7 +1074,7 @@ func (in *UserParameters) DeepCopyInto(out *UserParameters) {
 	}
 	if in.PasswordSecretRef != nil {
 		in, out := &in.PasswordSecretRef, &out.PasswordSecretRef
-		*out = new(v2.SecretKeySelector)
+		*out = new(v2.LocalSecretKeySelector)
 		**out = **in
 	}
 	if in.ScmAccounts != nil {

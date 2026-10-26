@@ -94,7 +94,7 @@ func TestGenerateLicenseObservation(t *testing.T) {
 func TestLateInitializeLicense(t *testing.T) {
 	t.Parallel()
 
-	spec := &v1alpha1.LicenseParameters{LicenseKeySecretRef: &xpv1.SecretKeySelector{Key: "license"}}
+	spec := &v1alpha1.LicenseParameters{LicenseKeySecretRef: &xpv1.LocalSecretKeySelector{Key: "license"}}
 	specCopy := spec.DeepCopy()
 	obs := &v1alpha1.LicenseObservation{ProductEdition: "enterprise"}
 
@@ -125,8 +125,8 @@ func TestLateInitializeLicense(t *testing.T) {
 func TestIsLicenseLateInitialized(t *testing.T) {
 	t.Parallel()
 
-	ref := &xpv1.SecretKeySelector{Key: "license"}
-	otherRef := &xpv1.SecretKeySelector{Key: "other"}
+	ref := &xpv1.LocalSecretKeySelector{Key: "license"}
+	otherRef := &xpv1.LocalSecretKeySelector{Key: "other"}
 	cases := map[string]struct {
 		former  *v1alpha1.LicenseParameters
 		current *v1alpha1.LicenseParameters

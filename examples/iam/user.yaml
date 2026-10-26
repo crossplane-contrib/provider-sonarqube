@@ -18,7 +18,6 @@ spec:
 
     passwordSecretRef:
       name: example-user-password
-      namespace: default
       key: password
 
     # Optional SCM account associations.

@@ -44,10 +44,10 @@ type UserParameters struct {
 	// +kubebuilder:validation:Optional
 	Local *bool `json:"local,omitempty"`
 	// PasswordSecretRef points to a secret containing the password for local user creation.
-	// The secret must be in the same namespace as the User.
+	// The secret is read from the User's namespace.
 	// WARNING: this field is only used during creation and is not reconciled. Updating the password in the secret after creation will have no effect on the external resource. To change the password after creation, please use SonarQube's Change Password API directly.
 	// +kubebuilder:validation:Optional
-	PasswordSecretRef *xpv1.SecretKeySelector `json:"passwordSecretRef,omitempty"`
+	PasswordSecretRef *xpv1.LocalSecretKeySelector `json:"passwordSecretRef,omitempty"`
 	// ScmAccounts are the SCM accounts associated with the user.
 	// +kubebuilder:validation:Optional
 	ScmAccounts *[]string `json:"scmAccounts,omitempty"`

@@ -289,12 +289,12 @@ func (in *LicenseEndpoint) DeepCopyInto(out *LicenseEndpoint) {
 	}
 	if in.BasicAuthPasswordSecretRef != nil {
 		in, out := &in.BasicAuthPasswordSecretRef, &out.BasicAuthPasswordSecretRef
-		*out = new(v2.SecretKeySelector)
+		*out = new(v2.LocalSecretKeySelector)
 		**out = **in
 	}
 	if in.BearerTokenSecretRef != nil {
 		in, out := &in.BearerTokenSecretRef, &out.BearerTokenSecretRef
-		*out = new(v2.SecretKeySelector)
+		*out = new(v2.LocalSecretKeySelector)
 		**out = **in
 	}
 }
@@ -361,7 +361,7 @@ func (in *LicenseParameters) DeepCopyInto(out *LicenseParameters) {
 	*out = *in
 	if in.LicenseKeySecretRef != nil {
 		in, out := &in.LicenseKeySecretRef, &out.LicenseKeySecretRef
-		*out = new(v2.SecretKeySelector)
+		*out = new(v2.LocalSecretKeySelector)
 		**out = **in
 	}
 	if in.Endpoint != nil {
