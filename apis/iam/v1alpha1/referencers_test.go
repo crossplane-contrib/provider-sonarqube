@@ -179,7 +179,7 @@ func TestUserResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // Exh
 			client: &test.MockClient{
 				MockGet: test.NewMockGetFn(kerrors.NewNotFound(schema.GroupResource{Group: APIGroup, Resource: "groups"}, "wrong-group-name")),
 			},
-			errSubstr: "spec.forProvider.groups.groupId",
+			errSubstr: "spec.forProvider.groups[0].groupId",
 		},
 		"GroupIdSelector_ResolvesToExternalName": {
 			reason: "A selector lists matching Groups and resolves the external name.",
@@ -317,7 +317,7 @@ func TestUserResolveReferences_StopsOnFirstError(t *testing.T) {
 		t.Fatal("expected an error but got nil")
 	}
 
-	if !strings.Contains(err.Error(), "spec.forProvider.groups.groupId") {
+	if !strings.Contains(err.Error(), "spec.forProvider.groups[0].groupId") {
 		t.Fatalf("expected wrapped error path, got %q", err.Error())
 	}
 

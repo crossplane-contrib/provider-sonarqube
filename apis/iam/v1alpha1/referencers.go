@@ -53,7 +53,7 @@ func (user *User) ResolveReferences(ctx context.Context, readerClient client.Rea
 			},
 		})
 		if groupErr != nil {
-			return errors.Wrap(groupErr, "spec.forProvider.groups.groupId")
+			return errors.Wrapf(groupErr, "spec.forProvider.groups[%d].groupId", groupIdx)
 		}
 
 		userGroup.GroupId = reference.ToPtrValue(groupResponse.ResolvedValue)
@@ -80,25 +80,9 @@ func (permissions *Permissions) ResolveReferences(ctx context.Context, readerCli
 		return err
 	}
 
-	projectResponse, err := resolver.Resolve(ctx, reference.ResolutionRequest{
-		CurrentValue: reference.FromPtrValue(permissions.Spec.ForProvider.ProjectKey),
-		Extract:      reference.ExternalName(),
-		Namespace:    permissions.GetNamespace(),
-		Reference:    permissions.Spec.ForProvider.ProjectKeyRef,
-		Selector:     permissions.Spec.ForProvider.ProjectKeySelector,
-		To: reference.To{
-			List:    &instancev1alpha1.ProjectList{},
-			Managed: &instancev1alpha1.Project{},
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "spec.forProvider.projectKey")
-	}
-
-	permissions.Spec.ForProvider.ProjectKey = reference.ToPtrValue(projectResponse.ResolvedValue)
-	permissions.Spec.ForProvider.ProjectKeyRef = projectResponse.ResolvedReference
-
-	return nil
+	return resolveStringPtr(ctx, resolver, permissions.GetNamespace(), "spec.forProvider.projectKey",
+		reference.To{List: &instancev1alpha1.ProjectList{}, Managed: &instancev1alpha1.Project{}}, reference.ExternalName(),
+		&permissions.Spec.ForProvider.ProjectKey, &permissions.Spec.ForProvider.ProjectKeyRef, permissions.Spec.ForProvider.ProjectKeySelector)
 }
 
 // ResolveReferences resolves references to other managed resources for
@@ -176,48 +160,45 @@ func (userToken *UserToken) ResolveReferences(ctx context.Context, readerClient 
 
 // resolveGroupName resolves a group name from a Group reference or selector in
 // the given namespace, and stores the resolved name and reference.
-func resolveGroupName(ctx context.Context, resolver *reference.APIResolver, namespace string, groupName **string, groupNameRef **xpv1.Reference, groupNameSelector *xpv1.Selector) error { //nolint:dupl // Same shape as resolveUserLogin, but bound to the Group type.
-	response, err := resolver.Resolve(ctx, reference.ResolutionRequest{
-		CurrentValue: reference.FromPtrValue(*groupName),
-		Extract:      GroupName(),
-		Namespace:    namespace,
-		Reference:    *groupNameRef,
-		Selector:     groupNameSelector,
-		To: reference.To{
-			List:    &GroupList{},
-			Managed: &Group{},
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "spec.forProvider.groupName")
-	}
-
-	*groupName = reference.ToPtrValue(response.ResolvedValue)
-	*groupNameRef = response.ResolvedReference
-
-	return nil
+func resolveGroupName(ctx context.Context, resolver *reference.APIResolver, namespace string, groupName **string, groupNameRef **xpv1.Reference, groupNameSelector *xpv1.Selector) error {
+	return resolveStringPtr(ctx, resolver, namespace, "spec.forProvider.groupName", reference.To{List: &GroupList{}, Managed: &Group{}}, GroupName(),
+		groupName, groupNameRef, groupNameSelector)
 }
 
 // resolveUserLogin resolves a user login from a User reference or selector in
 // the given namespace, and stores the resolved login and reference.
-func resolveUserLogin(ctx context.Context, resolver *reference.APIResolver, namespace string, login **string, loginRef **xpv1.Reference, loginSelector *xpv1.Selector) error { //nolint:dupl // Same shape as resolveGroupName, but bound to the User type.
+func resolveUserLogin(ctx context.Context, resolver *reference.APIResolver, namespace string, login **string, loginRef **xpv1.Reference, loginSelector *xpv1.Selector) error {
+	return resolveStringPtr(ctx, resolver, namespace, "spec.forProvider.login", reference.To{List: &UserList{}, Managed: &User{}}, UserLogin(),
+		login, loginRef, loginSelector)
+}
+
+// resolveStringPtr resolves a reference or selector for a *string field in the
+// given namespace, and stores the resolved value and reference. fieldPath
+// names the field in resolution errors.
+func resolveStringPtr(
+	ctx context.Context,
+	resolver *reference.APIResolver,
+	namespace, fieldPath string,
+	target reference.To,
+	extract reference.ExtractValueFn,
+	value **string,
+	ref **xpv1.Reference,
+	selector *xpv1.Selector,
+) error {
 	response, err := resolver.Resolve(ctx, reference.ResolutionRequest{
-		CurrentValue: reference.FromPtrValue(*login),
-		Extract:      UserLogin(),
+		CurrentValue: reference.FromPtrValue(*value),
+		Extract:      extract,
 		Namespace:    namespace,
-		Reference:    *loginRef,
-		Selector:     loginSelector,
-		To: reference.To{
-			List:    &UserList{},
-			Managed: &User{},
-		},
+		Reference:    *ref,
+		Selector:     selector,
+		To:           target,
 	})
 	if err != nil {
-		return errors.Wrap(err, "spec.forProvider.login")
+		return errors.Wrap(err, fieldPath)
 	}
 
-	*login = reference.ToPtrValue(response.ResolvedValue)
-	*loginRef = response.ResolvedReference
+	*value = reference.ToPtrValue(response.ResolvedValue)
+	*ref = response.ResolvedReference
 
 	return nil
 }

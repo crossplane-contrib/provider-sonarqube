@@ -64,7 +64,7 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 			},
 		})
 		if profileErr != nil {
-			return errors.Wrap(profileErr, "spec.forProvider.qualityProfileId")
+			return errors.Wrapf(profileErr, "spec.forProvider.qualityProfiles[%s].id", language)
 		}
 
 		qualityProfile := project.Spec.ForProvider.QualityProfiles[language]

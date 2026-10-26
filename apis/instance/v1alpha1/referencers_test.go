@@ -618,7 +618,7 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 			client: &test.MockClient{
 				MockGet: test.NewMockGetFn(notFoundQP),
 			},
-			errSubstr: "spec.forProvider.qualityProfileId",
+			errSubstr: "spec.forProvider.qualityProfiles[go].id",
 		},
 		"QualityProfileIdAlreadySet_NoRef": {
 			reason: "When Id is already set and no ref/selector exists, it is preserved.",

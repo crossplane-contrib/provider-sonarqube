@@ -127,6 +127,12 @@ References and selectors between managed resources (for example
 resource's own `metadata.namespace`. They have no `namespace` field, so one
 tenant cannot read identifiers from another tenant's resources.
 
+When upgrading, a value that was already resolved from another namespace
+stays in `spec.forProvider` because the default `IfNotPresent` policy does
+not re-resolve it. Clear the resolved field (for example `groupId` or
+`projectKey`) so it resolves again in the resource's own namespace. Fields
+marked immutable cannot be cleared, so recreate those resources instead.
+
 ## Observe cache (alpha)
 
 Many managed resources of the same kind usually read the same SonarQube list
