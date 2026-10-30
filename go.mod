@@ -7,11 +7,11 @@ tool sigs.k8s.io/controller-tools/cmd/controller-gen
 tool github.com/crossplane/crossplane-tools/cmd/angryjet
 
 require (
-	github.com/KimMachineGun/automemlimit v1.0.0
+	github.com/KimMachineGun/automemlimit v1.0.1
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/boxboxjason/sonarqube-client-go/v2 v2.3.0
-	github.com/crossplane/crossplane-runtime/v2 v2.4.2
-	github.com/crossplane/crossplane/apis/v2 v2.4.2
+	github.com/boxboxjason/sonarqube-client-go/v2 v2.4.0
+	github.com/crossplane/crossplane-runtime/v2 v2.4.3
+	github.com/crossplane/crossplane/apis/v2 v2.4.3
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/pkg/errors v0.9.1
@@ -22,7 +22,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.37.1
 	k8s.io/apimachinery v0.37.1
 	k8s.io/client-go v0.37.1
-	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
+	k8s.io/utils v0.0.0-20261023123148-ca04ba58ecab
 	sigs.k8s.io/controller-runtime v0.25.2
 )
 
@@ -84,7 +84,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
