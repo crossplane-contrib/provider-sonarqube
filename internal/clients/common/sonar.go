@@ -19,6 +19,7 @@ package common
 import (
 	"context"
 	"crypto/tls"
+	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -36,6 +37,26 @@ const (
 	// clusterProviderConfigKind is the kind name for
 	// ClusterProviderConfig resources.
 	clusterProviderConfigKind = "ClusterProviderConfig"
+
+	// maxIdleConnsPerHost bounds the idle connections kept per SonarQube
+	// instance. The transport default follows GOMAXPROCS, which is too low
+	// for a provider that keeps several reconciles of concurrent requests in
+	// flight against the same host on a small CPU limit.
+	maxIdleConnsPerHost = 32
+)
+
+var (
+	// pooledHTTPClient is shared by every SonarQube client that verifies TLS
+	// certificates. A client is built on each reconcile, so connections are
+	// only reused when the transport outlives it. Sharing the transport is
+	// safe because credentials are set on each request, never on a
+	// connection.
+	pooledHTTPClient = newPooledHTTPClient(false)
+	// insecurePooledHTTPClient is shared by every SonarQube client that skips
+	// TLS verification. It is kept apart from pooledHTTPClient so that a
+	// connection opened without verification is never handed to a client
+	// that requires it.
+	insecurePooledHTTPClient = newPooledHTTPClient(true)
 )
 
 // BasicAuthArgs is the expected struct that can be passed in the Config.Token
@@ -106,11 +127,18 @@ func NewClient(clientConfig Config) *sonar.Client {
 		panic(errors.New("unsupported authentication type"))
 	}
 
-	httpClient := cleanhttp.DefaultClient()
+	sonarClient.SetHTTPClient(sharedHTTPClient(clientConfig.InsecureSkipVerify))
 
-	// Configure TLS settings if InsecureSkipVerify is set to true
-	if clientConfig.InsecureSkipVerify {
-		transport := cleanhttp.DefaultPooledTransport()
+	return sonarClient
+}
+
+// newPooledHTTPClient returns an HTTP client that keeps connections alive,
+// optionally skipping TLS certificate verification.
+func newPooledHTTPClient(insecureSkipVerify bool) *http.Client {
+	transport := cleanhttp.DefaultPooledTransport()
+	transport.MaxIdleConnsPerHost = maxIdleConnsPerHost
+
+	if insecureSkipVerify {
 		if transport.TLSClientConfig == nil {
 			transport.TLSClientConfig = &tls.Config{
 				MinVersion: tls.VersionTLS12,
@@ -118,12 +146,19 @@ func NewClient(clientConfig Config) *sonar.Client {
 		}
 
 		transport.TLSClientConfig.InsecureSkipVerify = true
-		httpClient.Transport = transport
 	}
 
-	sonarClient.SetHTTPClient(httpClient)
+	return &http.Client{Transport: transport}
+}
 
-	return sonarClient
+// sharedHTTPClient returns the shared HTTP client matching the TLS
+// verification setting.
+func sharedHTTPClient(insecureSkipVerify bool) *http.Client {
+	if insecureSkipVerify {
+		return insecurePooledHTTPClient
+	}
+
+	return pooledHTTPClient
 }
 
 // GetConfig constructs a Config that can be used to authenticate to SonarQube's
