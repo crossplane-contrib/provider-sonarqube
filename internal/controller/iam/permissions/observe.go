@@ -21,7 +21,6 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 
@@ -32,12 +31,7 @@ import (
 
 // Observe checks whether the external Permissions resource exists and
 // is up to date.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	permissions, ok := mg.(*v1alpha1.Permissions)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotPermissions)
-	}
-
+func (c *external) Observe(ctx context.Context, permissions *v1alpha1.Permissions) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(permissions)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil

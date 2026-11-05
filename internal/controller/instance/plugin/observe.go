@@ -22,7 +22,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 
@@ -33,12 +32,7 @@ import (
 
 // Observe checks whether the plugin is installed in SonarQube and
 // populates status.atProvider.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	managedPlugin, ok := mg.(*v1alpha1.Plugin)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotPlugin)
-	}
-
+func (c *external) Observe(ctx context.Context, managedPlugin *v1alpha1.Plugin) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(managedPlugin)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil

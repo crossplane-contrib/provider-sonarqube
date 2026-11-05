@@ -24,10 +24,10 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
+	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
@@ -39,7 +39,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Permissions
 	}
 
 	type want struct {
@@ -52,11 +52,6 @@ func TestObserve(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPermissionsType": {
-			client: &fake.MockPermissionsClient{},
-			args:   args{ctx: context.Background(), mg: &notPermissions{}},
-			want:   want{errSubstr: errNotPermissions},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fake.MockPermissionsClient{},
 			args: args{
@@ -220,7 +215,7 @@ func TestObserve(t *testing.T) {
 	// Empty sets must remain available after SonarQube stops returning the subject.
 	for _, subject := range []struct {
 		name, existing string
-		resource       resource.Managed
+		resource       *v1alpha1.Permissions
 	}{
 		{"EmptyGroupPermissionsConverge", "GroupNotFoundReturnsNotExists", newTestGroupPermissions("group:devs", "devs", []string{})},
 		{"EmptyUserPermissionsConverge", "UserNotFoundReturnsNotExists", newTestUserPermissions("user:alice", "alice", []string{})},

@@ -40,9 +40,6 @@ import (
 )
 
 const (
-	// errNotPermissionsTemplate indicates managed resource is not
-	// PermissionsTemplate.
-	errNotPermissionsTemplate = "managed resource is not a PermissionsTemplate custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -67,7 +64,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.PermissionsTemplateGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.PermissionsTemplate](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: iam.NewPermissionsTemplatesClient,
@@ -102,24 +99,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	permissionstemplate, isValid := managedResource.(*v1alpha1.PermissionsTemplate)
-	if !isValid {
-		return nil, errors.New(errNotPermissionsTemplate)
-	}
-
+func (c *connector) Connect(ctx context.Context, permissionstemplate *v1alpha1.PermissionsTemplate) (managed.TypedExternalClient[*v1alpha1.PermissionsTemplate], error) {
 	err := c.usage.Track(ctx, permissionstemplate)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, permissionstemplate)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -143,12 +129,7 @@ type external struct {
 // SonarQube API, based on the desired state of the managed resource.
 // It returns an ExternalCreation which may include connection details to be
 // stored in a secret.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotPermissionsTemplate)
-	}
-
+func (c *external) Create(ctx context.Context, permissionsTemplate *v1alpha1.PermissionsTemplate) (managed.ExternalCreation, error) {
 	permissionsTemplate.SetConditions(xpv1.Creating())
 
 	creationOptions := iam.GeneratePermissionsTemplateCreationOptions(&permissionsTemplate.Spec.ForProvider)
@@ -169,12 +150,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 // SonarQube API, based on the desired state of the managed resource.
 // It returns an ExternalDelete which may include connection details to be
 // stored in a secret.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotPermissionsTemplate)
-	}
-
+func (c *external) Delete(ctx context.Context, permissionsTemplate *v1alpha1.PermissionsTemplate) (managed.ExternalDelete, error) {
 	permissionsTemplate.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(permissionsTemplate)

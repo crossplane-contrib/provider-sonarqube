@@ -63,11 +63,6 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-// notGroup is a test type that is not a Group.
-type notGroup struct {
-	resource.Managed
-}
-
 // mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
@@ -145,7 +140,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Group
 	}
 
 	type want struct {
@@ -158,14 +153,6 @@ func TestObserve(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotGroupError": {
-			client: &fake.MockGroupsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notGroup{},
-			},
-			want: want{errSubstr: errNotGroup},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fake.MockGroupsClient{},
 			args: args{
@@ -299,7 +286,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Group
 	}
 
 	type want struct {
@@ -312,14 +299,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotGroupError": {
-			client: &fake.MockGroupsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notGroup{},
-			},
-			want: want{errSubstr: errNotGroup},
-		},
 		"CreateFails": {
 			client: &fake.MockGroupsClient{
 				CreateGroupFn: func(_ *sonar.AuthorizationsCreateGroupOptions) (*sonar.AuthorizationsGroup, *http.Response, error) {
@@ -387,8 +366,8 @@ func TestCreate(t *testing.T) {
 				t.Errorf("Create() mismatch (-want +got):\n%s", diff)
 			}
 
-			group, ok := tc.args.mg.(*v1alpha1.Group)
-			if ok && name == "SuccessfulCreate" {
+			group := tc.args.mg
+			if name == "SuccessfulCreate" {
 				if gotName := meta.GetExternalName(group); gotName != "group-1" {
 					t.Fatalf("Create() external name = %q, want %q", gotName, "group-1")
 				}
@@ -429,12 +408,12 @@ func TestCreate(t *testing.T) {
 // TestUpdate tests updating a Group resource.
 //
 //nolint:gocognit // Table-driven test plus focused subtests for permission update branches.
-func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path coverage requires a larger test body.
+func TestUpdate(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Group
 	}
 
 	type want struct {
@@ -447,11 +426,6 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // Comprehensive update-path c
 		args   args
 		want   want
 	}{
-		"NotGroupError": {
-			client: &fake.MockGroupsClient{},
-			args:   args{ctx: context.Background(), mg: &notGroup{}},
-			want:   want{errSubstr: errNotGroup},
-		},
 		"EmptyExternalName": {
 			client: &fake.MockGroupsClient{},
 			args:   args{ctx: context.Background(), mg: newTestGroup("", v1alpha1.GroupParameters{Name: "devs"})},
@@ -637,7 +611,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Group
 	}
 
 	type want struct {
@@ -650,11 +624,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotGroupError": {
-			client: &fake.MockGroupsClient{},
-			args:   args{ctx: context.Background(), mg: &notGroup{}},
-			want:   want{errSubstr: errNotGroup},
-		},
 		"NoExternalNameReturnsSuccess": {
 			client: &fake.MockGroupsClient{},
 			args:   args{ctx: context.Background(), mg: newTestGroup("", v1alpha1.GroupParameters{Name: "devs"})},
@@ -746,22 +715,6 @@ func TestDisconnect(t *testing.T) {
 	err := e.Disconnect(context.Background())
 	if err != nil {
 		t.Fatalf("Disconnect() unexpected error: %v", err)
-	}
-}
-
-// TestConnectTypeAssertion tests Connect with invalid resource type.
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-
-	_, err := c.Connect(context.Background(), &notGroup{})
-	if err == nil {
-		t.Fatal("Connect() expected error for non-Group type, got nil")
-	}
-
-	if !strings.Contains(err.Error(), errNotGroup) {
-		t.Fatalf("Connect() error = %q, want to contain %q", err.Error(), errNotGroup)
 	}
 }
 

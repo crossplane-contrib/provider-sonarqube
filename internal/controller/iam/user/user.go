@@ -40,8 +40,6 @@ import (
 )
 
 const (
-	// errNotUser indicates managed resource is not a User.
-	errNotUser = "managed resource is not a User custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -73,7 +71,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.UserGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.User](&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
@@ -106,23 +104,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	user, isValid := managedResource.(*v1alpha1.User)
-	if !isValid {
-		return nil, errors.New(errNotUser)
-	}
-
+func (c *connector) Connect(ctx context.Context, user *v1alpha1.User) (managed.TypedExternalClient[*v1alpha1.User], error) {
 	err := c.usage.Track(ctx, user)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, user)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -146,13 +134,8 @@ type external struct {
 
 // Create is responsible for creating the external resource based on the
 // desired state of the managed resource.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	userResource, ok := mg.(*v1alpha1.User)
+func (c *external) Create(ctx context.Context, userResource *v1alpha1.User) (managed.ExternalCreation, error) {
 	result := managed.ExternalCreation{}
-
-	if !ok {
-		return result, errors.New(errNotUser)
-	}
 
 	userResource.Status.SetConditions(xpv1.Creating())
 
@@ -185,12 +168,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Delete is responsible for deleting the external resource when the
 // managed resource is deleted.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	userResource, ok := mg.(*v1alpha1.User)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotUser)
-	}
-
+func (c *external) Delete(ctx context.Context, userResource *v1alpha1.User) (managed.ExternalDelete, error) {
 	userResource.Status.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(userResource)

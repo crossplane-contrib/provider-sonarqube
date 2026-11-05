@@ -25,7 +25,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,11 +48,6 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-// notQualityGate is a type for testing non-QualityGate resources.
-type notQualityGate struct {
-	resource.Managed
-}
-
 // mockHTTPResponse returns a mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
 	return &http.Response{
@@ -68,7 +62,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityGate
 	}
 
 	type want struct {
@@ -81,17 +75,6 @@ func TestObserve(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotQualityGateError": {
-			client: &fake.MockQualityGatesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notQualityGate{},
-			},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.New(errNotQualityGate),
-			},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fake.MockQualityGatesClient{},
 			args: args{
@@ -309,7 +292,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityGate
 	}
 
 	type want struct {
@@ -322,17 +305,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotQualityGateError": {
-			client: &fake.MockQualityGatesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notQualityGate{},
-			},
-			want: want{
-				o:   managed.ExternalCreation{},
-				err: errors.New(errNotQualityGate),
-			},
-		},
 		"CreateFails": {
 			client: &fake.MockQualityGatesClient{
 				CreateFn: func(opt *sonar.QualitygatesCreateOptions) (*sonar.QualitygatesCreate, *http.Response, error) {
@@ -490,7 +462,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityGate
 	}
 
 	type want struct {
@@ -503,17 +475,6 @@ func TestUpdate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotQualityGateError": {
-			client: &fake.MockQualityGatesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notQualityGate{},
-			},
-			want: want{
-				o:   managed.ExternalUpdate{},
-				err: errors.New(errNotQualityGate),
-			},
-		},
 		"EmptyExternalNameReturnsError": {
 			client: &fake.MockQualityGatesClient{},
 			args: args{
@@ -618,7 +579,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityGate
 	}
 
 	type want struct {
@@ -631,17 +592,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotQualityGateError": {
-			client: &fake.MockQualityGatesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notQualityGate{},
-			},
-			want: want{
-				o:   managed.ExternalDelete{},
-				err: errors.New(errNotQualityGate),
-			},
-		},
 		"EmptyExternalNameDoesNothing": {
 			client: &fake.MockQualityGatesClient{},
 			args: args{
@@ -997,7 +947,7 @@ func TestUpdateWithConditions(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityGate
 	}
 
 	type want struct {
@@ -1228,7 +1178,7 @@ func TestObserveWithConditions(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityGate
 	}
 
 	type want struct {

@@ -51,15 +51,6 @@ const (
 	testLicenseKey = "test-license-key-abc123"
 )
 
-// notLicense is a fake Managed resource that is not a License.
-type notLicense struct{ resource.Managed }
-
-// GetObjectKind returns an empty ObjectKind.
-func (n *notLicense) GetObjectKind() schema.ObjectKind { return schema.EmptyObjectKind }
-
-// DeepCopyObject returns nil.
-func (n *notLicense) DeepCopyObject() runtime.Object { return nil }
-
 // mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
@@ -174,7 +165,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.License
 	}
 
 	type want struct {
@@ -188,12 +179,6 @@ func TestCreate(t *testing.T) {
 		args    args
 		want    want
 	}{
-		"NotLicense": {
-			objects: []runtime.Object{},
-			client:  &fake.MockLicensesClient{},
-			args:    args{ctx: context.Background(), mg: &notLicense{}},
-			want:    want{creation: managed.ExternalCreation{}, errSubstr: errNotLicense},
-		},
 		"MissingLicenseSource": {
 			objects: []runtime.Object{},
 			client:  &fake.MockLicensesClient{},
@@ -253,7 +238,7 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Create() mismatch (-want +got):\n%s", diff)
 			}
 
-			if l, ok := tc.args.mg.(*v1alpha1.License); ok && name == "Success" {
+			if l := tc.args.mg; name == "Success" {
 				if gotExternalName := meta.GetExternalName(l); gotExternalName != externalLicenseName {
 					t.Fatalf("Create() external name = %q, want %q", gotExternalName, externalLicenseName)
 				}
@@ -270,7 +255,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.License
 	}
 
 	type want struct {
@@ -284,12 +269,6 @@ func TestUpdate(t *testing.T) {
 		args    args
 		want    want
 	}{
-		"NotLicense": {
-			objects: []runtime.Object{},
-			client:  &fake.MockLicensesClient{},
-			args:    args{ctx: context.Background(), mg: &notLicense{}},
-			want:    want{update: managed.ExternalUpdate{}, errSubstr: errNotLicense},
-		},
 		"MissingLicenseSource": {
 			objects: []runtime.Object{},
 			client:  &fake.MockLicensesClient{},
@@ -358,7 +337,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.License
 	}
 
 	type want struct {
@@ -371,11 +350,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotLicense": {
-			client: &fake.MockLicensesClient{},
-			args:   args{ctx: context.Background(), mg: &notLicense{}},
-			want:   want{o: managed.ExternalDelete{}, errSubstr: errNotLicense},
-		},
 		"UnsetAPIError": {
 			client: &fake.MockLicensesClient{
 				UnsetLicenseFn: func() (*http.Response, error) {
@@ -449,15 +423,6 @@ func newScheme(t *testing.T) *runtime.Scheme {
 	}
 
 	return scheme
-}
-
-// TestConnectNotLicenseError verifies Connect fails on non-License input.
-func TestConnectNotLicenseError(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-	_, err := c.Connect(context.Background(), &notLicense{})
-	checkError(t, "Connect", errNotLicense, err)
 }
 
 // TestConnectTrackUsageError verifies Connect returns an error when usage

@@ -23,7 +23,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
@@ -39,12 +38,7 @@ const defaultMembershipPageSize = 500
 
 // Observe is responsible for observing the external resource and
 // determining if it needs to be created or updated.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	userResource, ok := mg.(*v1alpha1.User)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotUser)
-	}
-
+func (c *external) Observe(ctx context.Context, userResource *v1alpha1.User) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(userResource)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil

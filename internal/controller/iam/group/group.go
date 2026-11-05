@@ -43,8 +43,6 @@ import (
 )
 
 const (
-	// errNotGroup indicates managed resource is not a Group.
-	errNotGroup = "managed resource is not a Group custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -79,7 +77,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.GroupGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Group](&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
@@ -112,24 +110,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	group, isValid := managedResource.(*v1alpha1.Group)
-	if !isValid {
-		return nil, errors.New(errNotGroup)
-	}
-
+func (c *connector) Connect(ctx context.Context, group *v1alpha1.Group) (managed.TypedExternalClient[*v1alpha1.Group], error) {
 	err := c.usage.Track(ctx, group)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, group)
 	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -157,12 +144,7 @@ type external struct {
 }
 
 // Observe observes the external Group resource.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	group, ok := mg.(*v1alpha1.Group)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotGroup)
-	}
-
+func (c *external) Observe(ctx context.Context, group *v1alpha1.Group) (managed.ExternalObservation, error) {
 	// Use external name as the identifier to observe the resource
 	externalName := meta.GetExternalName(group)
 	if externalName == "" {
@@ -213,12 +195,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 // Create a new external resource based on the managed resource spec.
 // The external resource should be created in a way that it will be observed as
 // up to date by Observe for the managed resource.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	group, ok := mg.(*v1alpha1.Group)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotGroup)
-	}
-
+func (c *external) Create(ctx context.Context, group *v1alpha1.Group) (managed.ExternalCreation, error) {
 	group.Status.SetConditions(xpv1.Creating())
 
 	createdGroup, resp, err := c.groupClient.CreateGroup(ctx, iam.GenerateCreateGroupOptions(&group.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
@@ -239,12 +216,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Update is required to update an existing external resource to match the
 // desired state of the managed resource.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	group, ok := mg.(*v1alpha1.Group)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotGroup)
-	}
-
+func (c *external) Update(ctx context.Context, group *v1alpha1.Group) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(group)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, errors.New("cannot update Group without external name")
@@ -282,12 +254,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 // Delete will delete the external resource if it exists.
 // After deletion, Observe should return ResourceExists=false to indicate
 // that the external resource no longer exists.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	group, ok := mg.(*v1alpha1.Group)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotGroup)
-	}
-
+func (c *external) Delete(ctx context.Context, group *v1alpha1.Group) (managed.ExternalDelete, error) {
 	group.Status.SetConditions(xpv1.Deleting())
 
 	// Use external name as the identifier to delete the resource

@@ -25,7 +25,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,11 +37,6 @@ const (
 	// projectVisibilityPublic is a test project visibility.
 	projectVisibilityPublic = "public"
 )
-
-// notProject is a type for testing non-Project resources.
-type notProject struct {
-	resource.Managed
-}
 
 // mockHTTPResponse returns a mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
@@ -211,7 +205,7 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Project
 	}
 
 	type want struct {
@@ -224,21 +218,6 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 		args args
 		want want
 	}{
-		"NotProjectError": {
-			ext: func() *external {
-				p, l, b, n, q, qp, tg, alm := defaultMockClients()
-
-				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
-			}(),
-			args: args{
-				ctx: context.Background(),
-				mg:  &notProject{},
-			},
-			want: want{
-				observation: managed.ExternalObservation{},
-				errSubstr:   errNotProject,
-			},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg, alm := defaultMockClients()
@@ -786,7 +765,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Project
 	}
 
 	type want struct {
@@ -799,21 +778,6 @@ func TestCreate(t *testing.T) {
 		args args
 		want want
 	}{
-		"NotProjectError": {
-			ext: func() *external {
-				p, l, b, n, q, qp, tg, alm := defaultMockClients()
-
-				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
-			}(),
-			args: args{
-				ctx: context.Background(),
-				mg:  &notProject{},
-			},
-			want: want{
-				creation: managed.ExternalCreation{},
-				err:      errors.New(errNotProject),
-			},
-		},
 		"CreateFailsReturnsError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg, alm := defaultMockClients()
@@ -881,7 +845,7 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Project
 	}
 
 	type want struct {
@@ -894,21 +858,6 @@ func TestUpdate(t *testing.T) { //nolint:maintidx // table-driven test with many
 		args args
 		want want
 	}{
-		"NotProjectError": {
-			ext: func() *external {
-				p, l, b, n, q, qp, tg, alm := defaultMockClients()
-
-				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
-			}(),
-			args: args{
-				ctx: context.Background(),
-				mg:  &notProject{},
-			},
-			want: want{
-				update:    managed.ExternalUpdate{},
-				errSubstr: errNotProject,
-			},
-		},
 		"EmptyExternalNameReturnsError": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg, alm := defaultMockClients()
@@ -1415,7 +1364,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Project
 	}
 
 	type want struct {
@@ -1428,21 +1377,6 @@ func TestDelete(t *testing.T) {
 		args args
 		want want
 	}{
-		"NotProjectError": {
-			ext: func() *external {
-				p, l, b, n, q, qp, tg, alm := defaultMockClients()
-
-				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
-			}(),
-			args: args{
-				ctx: context.Background(),
-				mg:  &notProject{},
-			},
-			want: want{
-				deletion: managed.ExternalDelete{},
-				err:      errors.New(errNotProject),
-			},
-		},
 		"EmptyExternalNameReturnsSuccess": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg, alm := defaultMockClients()
@@ -1530,25 +1464,6 @@ func TestDisconnect(t *testing.T) {
 	err := ext.Disconnect(context.Background())
 	if err != nil {
 		t.Errorf("Disconnect() unexpected error: %v", err)
-	}
-}
-
-// TestConnectTypeAssertion verifies that Connect returns errNotProject when
-// the managed resource is not a *v1alpha1.Project (regression test for the
-// copy-paste bug where the connector asserted *v1alpha1.QualityGate).
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-
-	// Passing a non-Project type must return errNotProject immediately.
-	_, err := c.Connect(context.Background(), &notProject{})
-	if err == nil {
-		t.Fatal("Connect() expected error for non-Project type, got nil")
-	}
-
-	if !strings.Contains(err.Error(), errNotProject) {
-		t.Errorf("Connect() error: want %q, got %q", errNotProject, err.Error())
 	}
 }
 

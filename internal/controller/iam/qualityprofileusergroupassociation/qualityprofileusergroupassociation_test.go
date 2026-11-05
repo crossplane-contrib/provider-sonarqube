@@ -25,7 +25,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,12 +51,6 @@ const (
 	// testLogin is the user login used across tests.
 	testLogin = "alice"
 )
-
-// notQualityProfileUsergroupAssociation is a type for testing
-// non-association resources.
-type notQualityProfileUsergroupAssociation struct {
-	resource.Managed
-}
 
 // fakeQualityProfilesClient is an in-test fake of
 // qualityProfilesAssociationClient.
@@ -207,7 +200,7 @@ func newTestUserAssociation(externalName, language, qualityProfile, login string
 // observeArgs are the arguments passed to Observe in table tests.
 type observeArgs struct {
 	ctx context.Context
-	mg  resource.Managed
+	mg  *v1alpha1.QualityProfileUsergroupAssociation
 }
 
 // observeWant is the expected result of Observe in table tests.
@@ -246,10 +239,7 @@ func runObserveCases(t *testing.T, cases map[string]observeCase) {
 				t.Errorf("Observe() mismatch (-want +got):\n%s", diff)
 			}
 
-			association, ok := tc.args.mg.(*v1alpha1.QualityProfileUsergroupAssociation)
-			if !ok {
-				return
-			}
+			association := tc.args.mg
 
 			if diff := cmp.Diff(tc.want.atProvider, association.Status.AtProvider); diff != "" {
 				t.Errorf("Observe() AtProvider mismatch (-want +got):\n%s", diff)
@@ -270,11 +260,6 @@ func TestObserve(t *testing.T) {
 	})
 
 	runObserveCases(t, map[string]observeCase{
-		"NotAssociationType": {
-			client: &fakeQualityProfilesClient{},
-			args:   observeArgs{ctx: context.Background(), mg: &notQualityProfileUsergroupAssociation{}},
-			want:   observeWant{errSubstr: errNotQualityProfileUsergroupAssociation},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fakeQualityProfilesClient{},
 			args: observeArgs{
@@ -490,14 +475,6 @@ func TestObserveUser(t *testing.T) {
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("NotAssociationType", func(t *testing.T) {
-		t.Parallel()
-
-		e := &external{client: &fakeQualityProfilesClient{}}
-		_, err := e.Create(context.Background(), &notQualityProfileUsergroupAssociation{})
-		checkError(t, "Create", errNotQualityProfileUsergroupAssociation, err)
-	})
-
 	t.Run("GroupCallsAddGroupAndSetsExternalName", func(t *testing.T) {
 		t.Parallel()
 
@@ -562,14 +539,6 @@ func TestCreate(t *testing.T) {
 // TestDelete tests deleting a QualityProfileUsergroupAssociation.
 func TestDelete(t *testing.T) {
 	t.Parallel()
-
-	t.Run("NotAssociationType", func(t *testing.T) {
-		t.Parallel()
-
-		e := &external{client: &fakeQualityProfilesClient{}}
-		_, err := e.Delete(context.Background(), &notQualityProfileUsergroupAssociation{})
-		checkError(t, "Delete", errNotQualityProfileUsergroupAssociation, err)
-	})
 
 	t.Run("EmptyExternalNameSuccess", func(t *testing.T) {
 		t.Parallel()
@@ -653,14 +622,6 @@ func TestDelete(t *testing.T) {
 // TestUpdate tests updating a QualityProfileUsergroupAssociation.
 func TestUpdate(t *testing.T) {
 	t.Parallel()
-
-	t.Run("NotAssociationType", func(t *testing.T) {
-		t.Parallel()
-
-		e := &external{client: &fakeQualityProfilesClient{}}
-		_, err := e.Update(context.Background(), &notQualityProfileUsergroupAssociation{})
-		checkError(t, "Update", errNotQualityProfileUsergroupAssociation, err)
-	})
 
 	t.Run("GroupCallsAddGroup", func(t *testing.T) {
 		t.Parallel()

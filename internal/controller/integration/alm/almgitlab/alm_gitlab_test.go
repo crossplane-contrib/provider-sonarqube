@@ -66,11 +66,6 @@ const (
 	gitlabPATValue = "gitlabPATValue"
 )
 
-// notALMGitLab is a test type that is not an ALMGitLab.
-type notALMGitLab struct {
-	resource.Managed
-}
-
 // mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
@@ -164,7 +159,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMGitLab
 	}
 
 	type want struct {
@@ -178,12 +173,6 @@ func TestObserve(t *testing.T) {
 		args           args
 		want           want
 	}{
-		"NotALMGitLab": {
-			objects:        []runtime.Object{},
-			settingsClient: &fake.MockALMSettingsGitLabClient{},
-			args:           args{ctx: context.Background(), mg: &notALMGitLab{}},
-			want:           want{observation: managed.ExternalObservation{}, errSubstr: errNotALMGitLab},
-		},
 		"MissingExternalNameReturnsNotExists": {
 			objects:        []runtime.Object{},
 			settingsClient: &fake.MockALMSettingsGitLabClient{},
@@ -207,7 +196,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsGitLabClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Gitlab: []sonar.GitlabDefinition{{Key: testExternalName, URL: testGitLabURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "missing-connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -225,7 +214,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsGitLabClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Gitlab: []sonar.GitlabDefinition{{Key: testExternalName, URL: testGitLabURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -243,7 +232,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsGitLabClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Gitlab: []sonar.GitlabDefinition{{Key: testExternalName, URL: testGitLabURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -261,7 +250,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsGitLabClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Gitlab: []sonar.GitlabDefinition{{Key: testExternalName, URL: testGitLabURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -279,7 +268,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsGitLabClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Gitlab: []sonar.GitlabDefinition{{Key: testExternalName, URL: testGitLabURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				// No SetWriteConnectionSecretToReference → saved token is empty string.
 				alm.Status.AtProvider.Key = testExternalName
@@ -331,7 +320,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMGitLab
 	}
 
 	type want struct {
@@ -345,12 +334,6 @@ func TestCreate(t *testing.T) {
 		args           args
 		want           want
 	}{
-		"NotALMGitLab": {
-			objects:        []runtime.Object{},
-			settingsClient: &fake.MockALMSettingsGitLabClient{},
-			args:           args{ctx: context.Background(), mg: &notALMGitLab{}},
-			want:           want{creation: managed.ExternalCreation{}, errSubstr: errNotALMGitLab},
-		},
 		"PATReadError": {
 			objects:        []runtime.Object{},
 			settingsClient: &fake.MockALMSettingsGitLabClient{},
@@ -419,8 +402,8 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Create() mismatch (-want +got):\n%s", diff)
 			}
 
-			alm, ok := tc.args.mg.(*v1alpha1.ALMGitLab)
-			if ok && name == "SuccessfulCreate" {
+			alm := tc.args.mg
+			if name == "SuccessfulCreate" {
 				if gotExternalName := meta.GetExternalName(alm); gotExternalName != "gitlab-main" {
 					t.Fatalf("Create() external name = %q, want %q", gotExternalName, "gitlab-main")
 				}
@@ -437,7 +420,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMGitLab
 	}
 
 	type want struct {
@@ -452,12 +435,6 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 		want           want
 		registerMG     bool // pre-register tc.args.mg with the fake kube client (needed for kubeClient.Update after key change)
 	}{
-		"NotALMGitLab": {
-			objects:        []runtime.Object{},
-			settingsClient: &fake.MockALMSettingsGitLabClient{},
-			args:           args{ctx: context.Background(), mg: &notALMGitLab{}},
-			want:           want{update: managed.ExternalUpdate{}, errSubstr: errNotALMGitLab},
-		},
 		"MissingExternalName": {
 			objects:        []runtime.Object{},
 			settingsClient: &fake.MockALMSettingsGitLabClient{},
@@ -512,7 +489,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 					return mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				alm.Spec.ForProvider.Key = testRenamedGitLabKey
 
@@ -529,7 +506,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 				},
 			},
 			// registerMG is false → ALMGitLab not in fake client → kubeClient.Update returns not-found
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMGitLab {
 				alm := newTestALMGitLab(testExternalName, tokenRef)
 				alm.Spec.ForProvider.Key = testRenamedGitLabKey
 
@@ -558,9 +535,8 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 			builder := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...)
 
 			if tc.registerMG {
-				if alm, ok := tc.args.mg.(*v1alpha1.ALMGitLab); ok {
-					builder = builder.WithRuntimeObjects(alm)
-				}
+				alm := tc.args.mg
+				builder = builder.WithRuntimeObjects(alm)
 			}
 
 			kubeClient := builder.Build()
@@ -581,7 +557,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 				t.Fatalf("Update() mismatch (-want +got):\n%s", diff)
 			}
 
-			if alm, ok := tc.args.mg.(*v1alpha1.ALMGitLab); ok && name == "SuccessfulUpdateWithKeyChange" {
+			if alm := tc.args.mg; name == "SuccessfulUpdateWithKeyChange" {
 				if gotExternalName := meta.GetExternalName(alm); gotExternalName != testRenamedGitLabKey {
 					t.Fatalf("Update() external name = %q, want %q", gotExternalName, testRenamedGitLabKey)
 				}
@@ -608,7 +584,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMGitLab
 	}
 
 	type want struct {
@@ -622,12 +598,6 @@ func TestDelete(t *testing.T) {
 		want           want
 		wantCall       bool
 	}{
-		"NotALMGitLab": {
-			settingsClient: &fake.MockALMSettingsGitLabClient{},
-			args:           args{ctx: context.Background(), mg: &notALMGitLab{}},
-			want:           want{deletion: managed.ExternalDelete{}, errSubstr: errNotALMGitLab},
-			wantCall:       false,
-		},
 		"MissingExternalName": {
 			settingsClient: &fake.MockALMSettingsGitLabClient{},
 			args:           args{ctx: context.Background(), mg: newTestALMGitLab("", nil)},
@@ -685,11 +655,9 @@ func TestDelete(t *testing.T) {
 				t.Fatalf("Delete() mismatch (-want +got):\n%s", diff)
 			}
 
-			alm, ok := tc.args.mg.(*v1alpha1.ALMGitLab)
-			if ok {
-				if cond := alm.GetCondition(xpv1.TypeReady); cond.Reason != xpv1.ReasonDeleting {
-					t.Fatalf("Delete() expected deleting condition, got %s", cond.Reason)
-				}
+			alm := tc.args.mg
+			if cond := alm.GetCondition(xpv1.TypeReady); cond.Reason != xpv1.ReasonDeleting {
+				t.Fatalf("Delete() expected deleting condition, got %s", cond.Reason)
 			}
 		})
 	}
@@ -822,17 +790,6 @@ func TestGetSavedAPIToken(t *testing.T) {
 // TestConnect tests connecting to an ALMGitLab resource.
 func TestConnect(t *testing.T) {
 	t.Parallel()
-
-	t.Run("TypeAssertionError", func(t *testing.T) {
-		t.Parallel()
-
-		c := &connector{}
-
-		_, err := c.Connect(context.Background(), &notALMGitLab{})
-		if err == nil || !strings.Contains(err.Error(), errNotALMGitLab) {
-			t.Fatalf("Connect() error = %v, want to contain %q", err, errNotALMGitLab)
-		}
-	})
 
 	t.Run("TrackUsageError", func(t *testing.T) {
 		t.Parallel()

@@ -39,8 +39,6 @@ import (
 )
 
 const (
-	// errNotPortfolio indicates the managed resource is not a Portfolio.
-	errNotPortfolio = "managed resource is not a Portfolio custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -89,7 +87,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.PortfolioGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Portfolio](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewPortfoliosClient,
@@ -124,12 +122,7 @@ type connector struct {
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
 // retrieving credentials, and constructing a SonarQube portfolios client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	portfolio, isValid := managedResource.(*v1alpha1.Portfolio)
-	if !isValid {
-		return nil, errors.New(errNotPortfolio)
-	}
-
+func (c *connector) Connect(ctx context.Context, portfolio *v1alpha1.Portfolio) (managed.TypedExternalClient[*v1alpha1.Portfolio], error) {
 	err := c.usage.Track(ctx, portfolio)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
@@ -152,12 +145,7 @@ type external struct {
 
 // Observe checks if the Portfolio exists in SonarQube and whether it
 // matches the desired state.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	portfolio, ok := mg.(*v1alpha1.Portfolio)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotPortfolio)
-	}
-
+func (c *external) Observe(ctx context.Context, portfolio *v1alpha1.Portfolio) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(portfolio)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil
@@ -190,12 +178,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 // Create creates the Portfolio in SonarQube and sets the external
 // name to the portfolio key.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	portfolio, ok := mg.(*v1alpha1.Portfolio)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotPortfolio)
-	}
-
+func (c *external) Create(ctx context.Context, portfolio *v1alpha1.Portfolio) (managed.ExternalCreation, error) {
 	portfolio.Status.SetConditions(xpv1.Creating())
 
 	resp, err := c.client.Create(ctx, &sonar.ViewsCreateOptions{ //nolint:bodyclose // closed via helpers.CloseBody
@@ -222,12 +205,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Update updates the Portfolio name, description, and selection
 // mode in SonarQube.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	portfolio, ok := mg.(*v1alpha1.Portfolio)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotPortfolio)
-	}
-
+func (c *external) Update(ctx context.Context, portfolio *v1alpha1.Portfolio) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(portfolio)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, errors.Errorf(errExternalNameNotSet, portfolio.Name)
@@ -253,12 +231,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Delete deletes the Portfolio from SonarQube.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	portfolio, ok := mg.(*v1alpha1.Portfolio)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotPortfolio)
-	}
-
+func (c *external) Delete(ctx context.Context, portfolio *v1alpha1.Portfolio) (managed.ExternalDelete, error) {
 	portfolio.Status.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(portfolio)

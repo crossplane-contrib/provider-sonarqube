@@ -26,7 +26,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	pkgerrors "github.com/pkg/errors"
 
@@ -45,12 +44,7 @@ var errPermissionsTemplateNotFound = errors.New(permissionsTemplateNotFound)
 // Observe observes the external resource and returns an ExternalObservation.
 // It is used to determine if the resource exists, is up to date,
 // and late initialize the spec if needed.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
-	if !ok {
-		return managed.ExternalObservation{}, pkgerrors.New(errNotPermissionsTemplate)
-	}
-
+func (c *external) Observe(ctx context.Context, permissionsTemplate *v1alpha1.PermissionsTemplate) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(permissionsTemplate)
 	if externalName == "" {
 		return managed.ExternalObservation{

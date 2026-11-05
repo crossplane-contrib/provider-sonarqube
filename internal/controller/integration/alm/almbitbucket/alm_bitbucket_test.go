@@ -63,11 +63,6 @@ const (
 	bitbucketPATValue = "bitbucketPATValue"
 )
 
-// notALMBitbucket is a test type that is not an ALMBitbucket.
-type notALMBitbucket struct {
-	resource.Managed
-}
-
 // mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
@@ -161,7 +156,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMBitbucket
 	}
 
 	type want struct {
@@ -175,12 +170,6 @@ func TestObserve(t *testing.T) {
 		args           args
 		want           want
 	}{
-		"NotALMBitbucket": {
-			objects:        []runtime.Object{},
-			settingsClient: &fake.MockALMSettingsBitbucketClient{},
-			args:           args{ctx: context.Background(), mg: &notALMBitbucket{}},
-			want:           want{observation: managed.ExternalObservation{}, errSubstr: errNotALMBitbucket},
-		},
 		"MissingExternalNameReturnsNotExists": {
 			objects:        []runtime.Object{},
 			settingsClient: &fake.MockALMSettingsBitbucketClient{},
@@ -204,7 +193,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsBitbucketClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Bitbucket: []sonar.BitbucketDefinition{{Key: testExternalName, URL: testBitbucketURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMBitbucket {
 				alm := newTestALMBitbucket(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "missing-connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -222,7 +211,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsBitbucketClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Bitbucket: []sonar.BitbucketDefinition{{Key: testExternalName, URL: testBitbucketURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMBitbucket {
 				alm := newTestALMBitbucket(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -240,7 +229,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsBitbucketClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Bitbucket: []sonar.BitbucketDefinition{{Key: testExternalName, URL: testBitbucketURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMBitbucket {
 				alm := newTestALMBitbucket(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -258,7 +247,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsBitbucketClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Bitbucket: []sonar.BitbucketDefinition{{Key: testExternalName, URL: testBitbucketURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMBitbucket {
 				alm := newTestALMBitbucket(testExternalName, tokenRef)
 				alm.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 				alm.Status.AtProvider.Key = testExternalName
@@ -276,7 +265,7 @@ func TestObserve(t *testing.T) {
 			settingsClient: &fake.MockALMSettingsBitbucketClient{ListDefinitionsFn: func() (*sonar.AlmSettingsListDefinitions, *http.Response, error) {
 				return &sonar.AlmSettingsListDefinitions{Bitbucket: []sonar.BitbucketDefinition{{Key: testExternalName, URL: testBitbucketURL}}}, mockHTTPResponse(http.StatusOK), nil
 			}},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMBitbucket {
 				alm := newTestALMBitbucket(testExternalName, tokenRef)
 				// No SetWriteConnectionSecretToReference → saved token is empty string.
 				alm.Status.AtProvider.Key = testExternalName
@@ -328,7 +317,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMBitbucket
 	}
 
 	type want struct {
@@ -342,12 +331,6 @@ func TestCreate(t *testing.T) {
 		args           args
 		want           want
 	}{
-		"NotALMBitbucket": {
-			objects:        []runtime.Object{},
-			settingsClient: &fake.MockALMSettingsBitbucketClient{},
-			args:           args{ctx: context.Background(), mg: &notALMBitbucket{}},
-			want:           want{creation: managed.ExternalCreation{}, errSubstr: errNotALMBitbucket},
-		},
 		"PATReadError": {
 			objects:        []runtime.Object{},
 			settingsClient: &fake.MockALMSettingsBitbucketClient{},
@@ -416,8 +399,8 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Create() mismatch (-want +got):\n%s", diff)
 			}
 
-			alm, ok := tc.args.mg.(*v1alpha1.ALMBitbucket)
-			if ok && name == "SuccessfulCreate" {
+			alm := tc.args.mg
+			if name == "SuccessfulCreate" {
 				if gotExternalName := meta.GetExternalName(alm); gotExternalName != testExternalName {
 					t.Fatalf("Create() external name = %q, want %q", gotExternalName, testExternalName)
 				}
@@ -434,7 +417,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMBitbucket
 	}
 
 	type want struct {
@@ -449,12 +432,6 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 		want           want
 		registerMG     bool // pre-register tc.args.mg with the fake kube client (needed for kubeClient.Update after key change)
 	}{
-		"NotALMBitbucket": {
-			objects:        []runtime.Object{},
-			settingsClient: &fake.MockALMSettingsBitbucketClient{},
-			args:           args{ctx: context.Background(), mg: &notALMBitbucket{}},
-			want:           want{update: managed.ExternalUpdate{}, errSubstr: errNotALMBitbucket},
-		},
 		"MissingExternalName": {
 			objects:        []runtime.Object{},
 			settingsClient: &fake.MockALMSettingsBitbucketClient{},
@@ -509,7 +486,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 					return mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMBitbucket {
 				alm := newTestALMBitbucket(testExternalName, tokenRef)
 				alm.Spec.ForProvider.Key = testRenamedBitbucketKey
 
@@ -526,7 +503,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 				},
 			},
 			// registerMG is false → ALMBitbucket not in fake client → kubeClient.Update returns not-found
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.ALMBitbucket {
 				alm := newTestALMBitbucket(testExternalName, tokenRef)
 				alm.Spec.ForProvider.Key = testRenamedBitbucketKey
 
@@ -555,9 +532,8 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 			builder := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...)
 
 			if tc.registerMG {
-				if alm, ok := tc.args.mg.(*v1alpha1.ALMBitbucket); ok {
-					builder = builder.WithRuntimeObjects(alm)
-				}
+				alm := tc.args.mg
+				builder = builder.WithRuntimeObjects(alm)
 			}
 
 			kubeClient := builder.Build()
@@ -578,7 +554,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 				t.Fatalf("Update() mismatch (-want +got):\n%s", diff)
 			}
 
-			if alm, ok := tc.args.mg.(*v1alpha1.ALMBitbucket); ok && name == "SuccessfulUpdateWithKeyChange" {
+			if alm := tc.args.mg; name == "SuccessfulUpdateWithKeyChange" {
 				if gotExternalName := meta.GetExternalName(alm); gotExternalName != testRenamedBitbucketKey {
 					t.Fatalf("Update() external name = %q, want %q", gotExternalName, testRenamedBitbucketKey)
 				}
@@ -605,7 +581,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.ALMBitbucket
 	}
 
 	type want struct {
@@ -619,12 +595,6 @@ func TestDelete(t *testing.T) {
 		want           want
 		wantCall       bool
 	}{
-		"NotALMBitbucket": {
-			settingsClient: &fake.MockALMSettingsBitbucketClient{},
-			args:           args{ctx: context.Background(), mg: &notALMBitbucket{}},
-			want:           want{deletion: managed.ExternalDelete{}, errSubstr: errNotALMBitbucket},
-			wantCall:       false,
-		},
 		"MissingExternalName": {
 			settingsClient: &fake.MockALMSettingsBitbucketClient{},
 			args:           args{ctx: context.Background(), mg: newTestALMBitbucket("", nil)},
@@ -682,11 +652,9 @@ func TestDelete(t *testing.T) {
 				t.Fatalf("Delete() mismatch (-want +got):\n%s", diff)
 			}
 
-			alm, ok := tc.args.mg.(*v1alpha1.ALMBitbucket)
-			if ok {
-				if cond := alm.GetCondition(xpv1.TypeReady); cond.Reason != xpv1.ReasonDeleting {
-					t.Fatalf("Delete() expected deleting condition, got %s", cond.Reason)
-				}
+			alm := tc.args.mg
+			if cond := alm.GetCondition(xpv1.TypeReady); cond.Reason != xpv1.ReasonDeleting {
+				t.Fatalf("Delete() expected deleting condition, got %s", cond.Reason)
 			}
 		})
 	}
@@ -800,17 +768,6 @@ func TestGetSavedAPIToken(t *testing.T) {
 // TestConnect tests connecting to an ALMBitbucket resource.
 func TestConnect(t *testing.T) {
 	t.Parallel()
-
-	t.Run("TypeAssertionError", func(t *testing.T) {
-		t.Parallel()
-
-		c := &connector{}
-
-		_, err := c.Connect(context.Background(), &notALMBitbucket{})
-		if err == nil || !strings.Contains(err.Error(), errNotALMBitbucket) {
-			t.Fatalf("Connect() error = %v, want to contain %q", err, errNotALMBitbucket)
-		}
-	})
 
 	t.Run("TrackUsageError", func(t *testing.T) {
 		t.Parallel()

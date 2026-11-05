@@ -38,8 +38,6 @@ import (
 )
 
 const (
-	// errNotPlugin indicates the managed resource is not a Plugin.
-	errNotPlugin = "managed resource is not a Plugin custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -71,7 +69,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.PluginGroupKind)
 
 	options := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Plugin](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewPluginsClient,
@@ -106,23 +104,13 @@ type connector struct {
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
 // retrieving credentials, and constructing a SonarQube plugins client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	managedPlugin, isValid := managedResource.(*v1alpha1.Plugin)
-	if !isValid {
-		return nil, errors.New(errNotPlugin)
-	}
-
+func (c *connector) Connect(ctx context.Context, managedPlugin *v1alpha1.Plugin) (managed.TypedExternalClient[*v1alpha1.Plugin], error) {
 	err := c.usage.Track(ctx, managedPlugin)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, managedPlugin)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -140,12 +128,7 @@ type external struct {
 
 // Create installs the plugin in SonarQube and sets the external name to
 // the plugin key.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	managedPlugin, ok := mg.(*v1alpha1.Plugin)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotPlugin)
-	}
-
+func (c *external) Create(ctx context.Context, managedPlugin *v1alpha1.Plugin) (managed.ExternalCreation, error) {
 	managedPlugin.Status.SetConditions(xpv1.Creating())
 
 	resp, err := c.client.Install(ctx, &sonar.PluginsInstallOptions{Key: managedPlugin.Spec.ForProvider.Key}) //nolint:bodyclose // closed via helpers.CloseBody
@@ -163,12 +146,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 // Update upgrades the plugin in SonarQube. If the upgrade is already
 // queued (pending a restart), the Update call is skipped to avoid
 // re-queuing the same operation.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	plugin, ok := mg.(*v1alpha1.Plugin)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotPlugin)
-	}
-
+func (c *external) Update(ctx context.Context, plugin *v1alpha1.Plugin) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(plugin)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, errors.New("cannot update SonarQube Plugin without external name")
@@ -198,12 +176,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 // Delete uninstalls the plugin from SonarQube. If the removal is already
 // queued (pending a restart), the Uninstall call is skipped to avoid
 // re-queuing the same operation.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	managedPlugin, ok := mg.(*v1alpha1.Plugin)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotPlugin)
-	}
-
+func (c *external) Delete(ctx context.Context, managedPlugin *v1alpha1.Plugin) (managed.ExternalDelete, error) {
 	managedPlugin.Status.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(managedPlugin)

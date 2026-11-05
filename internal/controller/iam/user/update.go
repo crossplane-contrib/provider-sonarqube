@@ -26,7 +26,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
@@ -36,15 +35,10 @@ import (
 
 // Update is responsible for updating the external resource to match the
 // desired state of the managed resource.
-func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
+func (c *external) Update(ctx context.Context, userResource *v1alpha1.User) (managed.ExternalUpdate, error) {
 	const updateErrorCapacity = 2
 
 	result := managed.ExternalUpdate{}
-
-	userResource, ok := managedResource.(*v1alpha1.User)
-	if !ok {
-		return result, errors.New(errNotUser)
-	}
 
 	externalName := meta.GetExternalName(userResource)
 	if externalName == "" {

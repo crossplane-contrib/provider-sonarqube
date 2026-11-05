@@ -60,12 +60,6 @@ const (
 	testPortfolioName = "My Portfolio"
 )
 
-// notPortfolio is a sentinel type used to test invalid managed
-// resource handling.
-type notPortfolio struct {
-	resource.Managed
-}
-
 // mockGate is a minimal implementation of the feature gate used by SetupGated.
 type mockGate struct {
 	registered bool
@@ -234,23 +228,6 @@ func TestSetupGatedCallbackCoverage(t *testing.T) {
 	g.callback()
 }
 
-// TestConnectTypeAssertion verifies Connect returns an error for
-// non-Portfolio types.
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-
-	_, err := c.Connect(context.Background(), &notPortfolio{})
-	if err == nil {
-		t.Fatal("Connect() expected error for non-Portfolio type, got nil")
-	}
-
-	if !strings.Contains(err.Error(), errNotPortfolio) {
-		t.Fatalf("Connect() error = %q, want to contain %q", err.Error(), errNotPortfolio)
-	}
-}
-
 // TestConnectTrackUsageError verifies Connect returns an error when
 // usage tracking fails.
 func TestConnectTrackUsageError(t *testing.T) {
@@ -357,7 +334,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Portfolio
 	}
 
 	type want struct {
@@ -370,14 +347,6 @@ func TestObserve(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPortfolioError": {
-			client: &fake.MockPortfoliosClient{},
-			args:   args{ctx: context.Background(), mg: &notPortfolio{}},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.New(errNotPortfolio),
-			},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fake.MockPortfoliosClient{},
 			args:   args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, "")},
@@ -480,7 +449,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Portfolio
 	}
 
 	type want struct {
@@ -498,14 +467,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPortfolioError": {
-			client: &fake.MockPortfoliosClient{},
-			args:   args{ctx: context.Background(), mg: &notPortfolio{}},
-			want: want{
-				o:   managed.ExternalCreation{},
-				err: errors.New(errNotPortfolio),
-			},
-		},
 		"CreateAPIError": {
 			client: &fake.MockPortfoliosClient{
 				CreateFn: func(_ *sonar.ViewsCreateOptions) (*http.Response, error) {
@@ -629,10 +590,9 @@ func TestCreate(t *testing.T) {
 			}
 
 			if tc.want.externalName != "" {
-				if p, ok := tc.args.mg.(*v1alpha1.Portfolio); ok {
-					if gotName := meta.GetExternalName(p); gotName != tc.want.externalName {
-						t.Errorf("Create() external name = %q, want %q", gotName, tc.want.externalName)
-					}
+				p := tc.args.mg
+				if gotName := meta.GetExternalName(p); gotName != tc.want.externalName {
+					t.Errorf("Create() external name = %q, want %q", gotName, tc.want.externalName)
 				}
 			}
 		})
@@ -645,7 +605,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Portfolio
 	}
 
 	type want struct {
@@ -662,11 +622,6 @@ func TestUpdate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPortfolioError": {
-			client: &fake.MockPortfoliosClient{},
-			args:   args{ctx: context.Background(), mg: &notPortfolio{}},
-			want:   want{o: managed.ExternalUpdate{}, err: errors.New(errNotPortfolio)},
-		},
 		"EmptyExternalNameReturnsError": {
 			client: &fake.MockPortfoliosClient{},
 			args:   args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, "")},
@@ -741,7 +696,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Portfolio
 	}
 
 	type want struct {
@@ -754,11 +709,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPortfolioError": {
-			client: &fake.MockPortfoliosClient{},
-			args:   args{ctx: context.Background(), mg: &notPortfolio{}},
-			want:   want{o: managed.ExternalDelete{}, err: errors.New(errNotPortfolio)},
-		},
 		"EmptyExternalNameReturnsNil": {
 			client: &fake.MockPortfoliosClient{},
 			args:   args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, "")},

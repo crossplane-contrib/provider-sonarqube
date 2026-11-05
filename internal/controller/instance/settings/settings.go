@@ -39,8 +39,6 @@ import (
 )
 
 const (
-	// errNotSettings indicates managed resource is not Settings.
-	errNotSettings = "managed resource is not a Settings custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -65,7 +63,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.SettingsGroupKind)
 
 	reconcilerOpts := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Settings](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewSettingsClient,
@@ -101,24 +99,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	settings, ok := managedResource.(*v1alpha1.Settings)
-	if !ok {
-		return nil, errors.New(errNotSettings)
-	}
-
+func (c *connector) Connect(ctx context.Context, settings *v1alpha1.Settings) (managed.TypedExternalClient[*v1alpha1.Settings], error) {
 	err := c.usage.Track(ctx, settings)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	m, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, m)
+	config, err := common.GetConfig(ctx, c.kube, settings)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -139,12 +126,7 @@ type external struct {
 // state specified by the managed resource. It returns an ExternalObservation
 // indicating whether the resource exists,
 // whether it is up to date, and any connection details or errors.
-func (c *external) Observe(ctx context.Context, managedResource resource.Managed) (managed.ExternalObservation, error) {
-	settings, ok := managedResource.(*v1alpha1.Settings)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotSettings)
-	}
-
+func (c *external) Observe(ctx context.Context, settings *v1alpha1.Settings) (managed.ExternalObservation, error) {
 	// Deleting: SonarQube settings cannot be deleted; mark the
 	// external resource as non-existent so the managed reconciler can
 	// remove the finalizer and allow the CR to be deleted.
@@ -173,12 +155,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 // Create sets the SonarQube Settings based on the desired state in the managed
 // resource. It should return an error if the creation failed,
 // or nil if it succeeded.
-func (c *external) Create(ctx context.Context, managedResource resource.Managed) (managed.ExternalCreation, error) {
-	settings, ok := managedResource.(*v1alpha1.Settings)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotSettings)
-	}
-
+func (c *external) Create(ctx context.Context, settings *v1alpha1.Settings) (managed.ExternalCreation, error) {
 	settings.SetConditions(xpv1.Creating())
 
 	errs := make([]error, 0, len(settings.Spec.ForProvider.Settings))
@@ -211,12 +188,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 // resource and the observed state in SonarQube. If there are differences,
 // it updates the SonarQube settings to match the desired state.
 // It returns an error if the update failed, or nil if it succeeded.
-func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
-	settings, ok := managedResource.(*v1alpha1.Settings)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotSettings)
-	}
-
+func (c *external) Update(ctx context.Context, settings *v1alpha1.Settings) (managed.ExternalUpdate, error) {
 	// Update out of date settings
 	updateErrors := c.updateOutOfDateSettings(ctx, settings)
 	// Reset obsolete settings
@@ -235,12 +207,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 
 // Delete resets the settings in SonarQube based on the given managed resource.
 // It returns any error that occurred during deletion.
-func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
-	settings, ok := managedResource.(*v1alpha1.Settings)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotSettings)
-	}
-
+func (c *external) Delete(ctx context.Context, settings *v1alpha1.Settings) (managed.ExternalDelete, error) {
 	settings.SetConditions(xpv1.Deleting())
 
 	// Reset the settings and then delete the resource. This ensures that we don't leave any orphaned settings in SonarQube after the resource is deleted.

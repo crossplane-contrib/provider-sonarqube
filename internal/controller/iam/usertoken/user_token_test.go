@@ -25,24 +25,16 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
-	"github.com/crossplane/provider-sonarqube/internal/clients/common"
-	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
 // testTokenName is the token name used across controller tests.
 const testTokenName = "my-ci-token"
-
-// notUserToken is a sentinel for testing type assertion failures.
-type notUserToken struct {
-	resource.Managed
-}
 
 // mockHTTPOK returns a 200 OK HTTP response for testing.
 func mockHTTPOK() *http.Response {
@@ -97,7 +89,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.UserToken
 	}
 
 	type want struct {
@@ -110,11 +102,6 @@ func TestObserve(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotUserTokenError": {
-			client: &fake.MockUserTokensClient{},
-			args:   args{ctx: context.Background(), mg: &notUserToken{}},
-			want:   want{o: managed.ExternalObservation{}, err: errors.New(errNotUserToken)},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fake.MockUserTokensClient{},
 			args:   args{ctx: context.Background(), mg: newToken(testTokenName, "")},
@@ -233,7 +220,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.UserToken
 	}
 
 	type want struct {
@@ -247,11 +234,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotUserTokenError": {
-			client: &fake.MockUserTokensClient{},
-			args:   args{ctx: context.Background(), mg: &notUserToken{}},
-			want:   want{o: managed.ExternalCreation{}, err: errors.New(errNotUserToken)},
-		},
 		"GenerateAPIError": {
 			client: &fake.MockUserTokensClient{
 				GenerateFn: func(_ *sonar.UserTokensGenerateOptions) (*sonar.UserTokensGenerate, *http.Response, error) {
@@ -301,10 +283,9 @@ func TestCreate(t *testing.T) {
 			}
 
 			if tc.want.externalName != "" {
-				if tok, ok := tc.args.mg.(*v1alpha1.UserToken); ok {
-					if got := meta.GetExternalName(tok); got != tc.want.externalName {
-						t.Errorf("Create() external name = %q, want %q", got, tc.want.externalName)
-					}
+				tok := tc.args.mg
+				if got := meta.GetExternalName(tok); got != tc.want.externalName {
+					t.Errorf("Create() external name = %q, want %q", got, tc.want.externalName)
 				}
 			}
 		})
@@ -317,7 +298,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.UserToken
 	}
 
 	type want struct {
@@ -330,11 +311,6 @@ func TestUpdate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotUserTokenError": {
-			client: &fake.MockUserTokensClient{},
-			args:   args{ctx: context.Background(), mg: &notUserToken{}},
-			want:   want{o: managed.ExternalUpdate{}, err: errors.New(errNotUserToken)},
-		},
 		"EmptyExternalNameReturnsError": {
 			client: &fake.MockUserTokensClient{},
 			args:   args{ctx: context.Background(), mg: newToken(testTokenName, "")},
@@ -423,7 +399,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.UserToken
 	}
 
 	type want struct {
@@ -436,11 +412,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotUserTokenError": {
-			client: &fake.MockUserTokensClient{},
-			args:   args{ctx: context.Background(), mg: &notUserToken{}},
-			want:   want{o: managed.ExternalDelete{}, err: errors.New(errNotUserToken)},
-		},
 		"EmptyExternalNameIsNoOp": {
 			client: &fake.MockUserTokensClient{},
 			args:   args{ctx: context.Background(), mg: newToken(testTokenName, "")},
@@ -805,25 +776,5 @@ func TestDeleteWithLogin(t *testing.T) {
 
 	if capturedRevokeOpt.Login != testLoginUser {
 		t.Errorf("Delete() Revoke Login = %q, want %q", capturedRevokeOpt.Login, testLoginUser)
-	}
-}
-
-// TestConnectNotUserToken verifies Connect rejects non-UserToken resources.
-func TestConnectNotUserToken(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{
-		kube:         nil,
-		usage:        nil,
-		newServiceFn: func(config common.Config) iam.UserTokensClient { return nil },
-	}
-
-	_, err := c.Connect(context.Background(), &notUserToken{})
-	if err == nil {
-		t.Fatal("Connect() error = nil, want error")
-	}
-
-	if err.Error() != errNotUserToken {
-		t.Errorf("Connect() error = %q, want %q", err.Error(), errNotUserToken)
 	}
 }

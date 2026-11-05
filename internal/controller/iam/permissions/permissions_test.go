@@ -54,11 +54,6 @@ import (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-// notPermissions is a test type that is not a Permissions resource.
-type notPermissions struct {
-	resource.Managed
-}
-
 // mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
@@ -183,7 +178,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Permissions
 	}
 
 	type want struct {
@@ -196,11 +191,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPermissionsType": {
-			client: &fake.MockPermissionsClient{},
-			args:   args{ctx: context.Background(), mg: &notPermissions{}},
-			want:   want{errSubstr: errNotPermissions},
-		},
 		"GroupAddFails": {
 			client: &fake.MockPermissionsClient{
 				AddGroupFn: func(_ *sonar.PermissionsAddGroupOptions) (*http.Response, error) {
@@ -356,7 +346,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Permissions
 	}
 
 	type want struct {
@@ -369,11 +359,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPermissionsType": {
-			client: &fake.MockPermissionsClient{},
-			args:   args{ctx: context.Background(), mg: &notPermissions{}},
-			want:   want{errSubstr: errNotPermissions},
-		},
 		"EmptyExternalNameSuccess": {
 			client: &fake.MockPermissionsClient{},
 			args: args{
@@ -513,22 +498,6 @@ func TestDisconnect(t *testing.T) {
 	err := e.Disconnect(context.Background())
 	if err != nil {
 		t.Fatalf("Disconnect() unexpected error: %v", err)
-	}
-}
-
-// TestConnectTypeAssertion tests Connect with invalid resource type.
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-
-	_, err := c.Connect(context.Background(), &notPermissions{})
-	if err == nil {
-		t.Fatal("Connect() expected error for non-Permissions type, got nil")
-	}
-
-	if !strings.Contains(err.Error(), errNotPermissions) {
-		t.Fatalf("Connect() error = %q, want to contain %q", err.Error(), errNotPermissions)
 	}
 }
 

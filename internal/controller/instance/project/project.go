@@ -41,8 +41,6 @@ import (
 )
 
 const (
-	// errNotProject indicates managed resource is not a Project.
-	errNotProject = "managed resource is not a Project custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -67,7 +65,7 @@ func Setup(mgr ctrl.Manager, o helpers.Options) error { //nolint:varnamelen // c
 	name := managed.ControllerName(v1alpha1.ProjectGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, o,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Project](&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
@@ -103,24 +101,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	project, isValid := managedResource.(*v1alpha1.Project)
-	if !isValid {
-		return nil, errors.New(errNotProject)
-	}
-
+func (c *connector) Connect(ctx context.Context, project *v1alpha1.Project) (managed.TypedExternalClient[*v1alpha1.Project], error) {
 	err := c.usage.Track(ctx, project)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, project)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -172,12 +159,7 @@ type observeResult struct {
 
 // Observe observes the external resource and updates the managed
 // resource's status with the observed state of the external resource.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	project, ok := mg.(*v1alpha1.Project)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotProject)
-	}
-
+func (c *external) Observe(ctx context.Context, project *v1alpha1.Project) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(project)
 	if externalName == "" {
 		return managed.ExternalObservation{
@@ -224,12 +206,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 // Create creates the project in SonarQube using the SonarQube API client.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	project, ok := mg.(*v1alpha1.Project)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotProject)
-	}
-
+func (c *external) Create(ctx context.Context, project *v1alpha1.Project) (managed.ExternalCreation, error) {
 	project.SetConditions(xpv1.Creating())
 
 	// Create the SonarQube Project using the SonarQube API client
@@ -249,12 +226,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Update will update the external resource if it exists and is not up to date.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	project, ok := mg.(*v1alpha1.Project)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotProject)
-	}
-
+func (c *external) Update(ctx context.Context, project *v1alpha1.Project) (managed.ExternalUpdate, error) {
 	projectKey := meta.GetExternalName(project)
 	if projectKey == "" {
 		return managed.ExternalUpdate{}, errors.New("external name is not set for the Project")
@@ -272,12 +244,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Delete will delete the external resource if it exists.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	project, ok := mg.(*v1alpha1.Project)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotProject)
-	}
-
+func (c *external) Delete(ctx context.Context, project *v1alpha1.Project) (managed.ExternalDelete, error) {
 	externalName := meta.GetExternalName(project)
 	if externalName == "" {
 		// External name is not set, so we cannot delete the resource in SonarQube.

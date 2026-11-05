@@ -44,8 +44,6 @@ import (
 )
 
 const (
-	// errNotQualityProfile indicates managed resource is not QualityProfile.
-	errNotQualityProfile = "managed resource is not a QualityProfile custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -81,7 +79,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.QualityProfileGroupKind)
 
 	options := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.QualityProfile](&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
@@ -114,24 +112,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	profile, ok := managedResource.(*v1alpha1.QualityProfile)
-	if !ok {
-		return nil, errors.New(errNotQualityProfile)
-	}
-
+func (c *connector) Connect(ctx context.Context, profile *v1alpha1.QualityProfile) (managed.TypedExternalClient[*v1alpha1.QualityProfile], error) {
 	err := c.usage.Track(ctx, profile)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, profile)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -152,12 +139,7 @@ type external struct {
 
 // Observe checks if the external resource exists and if it matches the
 // desired state of the managed resource.
-func (c *external) Observe(ctx context.Context, managedResource resource.Managed) (managed.ExternalObservation, error) {
-	profile, ok := managedResource.(*v1alpha1.QualityProfile)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotQualityProfile)
-	}
-
+func (c *external) Observe(ctx context.Context, profile *v1alpha1.QualityProfile) (managed.ExternalObservation, error) {
 	// Use external name as the identifier to check if the resource exists
 	// This allows returning early when the external name is not set
 	externalName := meta.GetExternalName(profile)
@@ -209,12 +191,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 }
 
 // Create creates the external resource and sets the external name.
-func (c *external) Create(ctx context.Context, managedResource resource.Managed) (managed.ExternalCreation, error) {
-	profile, ok := managedResource.(*v1alpha1.QualityProfile)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotQualityProfile)
-	}
-
+func (c *external) Create(ctx context.Context, profile *v1alpha1.QualityProfile) (managed.ExternalCreation, error) {
 	profile.Status.SetConditions(xpv1.Creating())
 
 	qualityProfile, resp, err := c.qualityProfilesClient.Create(ctx, instance.GenerateCreateQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
@@ -242,12 +219,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 // Update updates the external resource to match the desired state of the
 // managed resource.
-func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
-	profile, ok := managedResource.(*v1alpha1.QualityProfile)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotQualityProfile)
-	}
-
+func (c *external) Update(ctx context.Context, profile *v1alpha1.QualityProfile) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(profile)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for Quality Profile %s", profile.Name)
@@ -285,12 +257,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 }
 
 // Delete deletes the external resource.
-func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
-	profile, ok := managedResource.(*v1alpha1.QualityProfile)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotQualityProfile)
-	}
-
+func (c *external) Delete(ctx context.Context, profile *v1alpha1.QualityProfile) (managed.ExternalDelete, error) {
 	profile.Status.SetConditions(xpv1.Deleting())
 
 	// Use external name as the identifier to delete the resource

@@ -38,8 +38,6 @@ import (
 )
 
 const (
-	// errNotApplication indicates the managed resource is not an Application.
-	errNotApplication = "managed resource is not an Application custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -87,7 +85,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.ApplicationGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Application](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewApplicationsClient,
@@ -122,12 +120,7 @@ type connector struct {
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
 // retrieving credentials, and constructing a SonarQube applications client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	application, isValid := managedResource.(*v1alpha1.Application)
-	if !isValid {
-		return nil, errors.New(errNotApplication)
-	}
-
+func (c *connector) Connect(ctx context.Context, application *v1alpha1.Application) (managed.TypedExternalClient[*v1alpha1.Application], error) {
 	err := c.usage.Track(ctx, application)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
@@ -150,12 +143,7 @@ type external struct {
 
 // Observe checks if the Application exists in SonarQube and whether its
 // name, description, member projects and branches match the desired state.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	application, ok := mg.(*v1alpha1.Application)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotApplication)
-	}
-
+func (c *external) Observe(ctx context.Context, application *v1alpha1.Application) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(application)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil
@@ -194,12 +182,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 // Create creates the Application in SonarQube and sets the external name
 // to the application key. Member projects and branches are reconciled by
 // the subsequent Update.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	application, ok := mg.(*v1alpha1.Application)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotApplication)
-	}
-
+func (c *external) Create(ctx context.Context, application *v1alpha1.Application) (managed.ExternalCreation, error) {
 	application.Status.SetConditions(xpv1.Creating())
 
 	_, resp, err := c.client.Create(ctx, instance.GenerateApplicationCreateOptions(&application.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
@@ -216,12 +199,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Update reconciles the Application name, description, member projects and
 // branches in SonarQube.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	application, ok := mg.(*v1alpha1.Application)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotApplication)
-	}
-
+func (c *external) Update(ctx context.Context, application *v1alpha1.Application) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(application)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, errors.Errorf(errExternalNameNotSet, application.Name)
@@ -261,12 +239,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Delete deletes the Application from SonarQube.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	application, ok := mg.(*v1alpha1.Application)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotApplication)
-	}
-
+func (c *external) Delete(ctx context.Context, application *v1alpha1.Application) (managed.ExternalDelete, error) {
 	application.Status.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(application)

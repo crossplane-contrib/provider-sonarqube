@@ -43,8 +43,6 @@ import (
 )
 
 const (
-	// errNotQualityGate indicates managed resource is not QualityGate.
-	errNotQualityGate = "managed resource is not a QualityGate custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -78,7 +76,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.QualityGateGroupKind)
 
 	options := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.QualityGate](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewQualityGatesClient}),
@@ -115,24 +113,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
-	if !isValid {
-		return nil, errors.New(errNotQualityGate)
-	}
-
+func (c *connector) Connect(ctx context.Context, qualityGate *v1alpha1.QualityGate) (managed.TypedExternalClient[*v1alpha1.QualityGate], error) {
 	err := c.usage.Track(ctx, qualityGate)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, qualityGate)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -150,12 +137,7 @@ type external struct {
 
 // Observe checks if the external resource exists and if it matches the
 // desired state of the managed resource.
-func (c *external) Observe(ctx context.Context, managedResource resource.Managed) (managed.ExternalObservation, error) {
-	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
-	if !isValid {
-		return managed.ExternalObservation{}, errors.New(errNotQualityGate)
-	}
-
+func (c *external) Observe(ctx context.Context, qualityGate *v1alpha1.QualityGate) (managed.ExternalObservation, error) {
 	// Use external name as the identifier to check if the resource exists
 	// This allows returning early when the external name is not set
 	externalName := meta.GetExternalName(qualityGate)
@@ -207,12 +189,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 }
 
 // Create creates the external resource and sets the external name.
-func (c *external) Create(ctx context.Context, managedResource resource.Managed) (managed.ExternalCreation, error) {
-	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
-	if !isValid {
-		return managed.ExternalCreation{}, errors.New(errNotQualityGate)
-	}
-
+func (c *external) Create(ctx context.Context, qualityGate *v1alpha1.QualityGate) (managed.ExternalCreation, error) {
 	qualityGate.Status.SetConditions(xpv1.Creating())
 
 	qualityGateCreateOptions := instance.GenerateQualityGateCreateOptions(qualityGate.Spec.ForProvider)
@@ -244,12 +221,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 
 // Update updates the external resource to match the desired state of the
 // managed resource.
-func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
-	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
-	if !isValid {
-		return managed.ExternalUpdate{}, errors.New(errNotQualityGate)
-	}
-
+func (c *external) Update(ctx context.Context, qualityGate *v1alpha1.QualityGate) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(qualityGate)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for Quality Gate %s", qualityGate.Name)
@@ -279,12 +251,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 }
 
 // Delete deletes the external resource.
-func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
-	qualityGate, isValid := managedResource.(*v1alpha1.QualityGate)
-	if !isValid {
-		return managed.ExternalDelete{}, errors.New(errNotQualityGate)
-	}
-
+func (c *external) Delete(ctx context.Context, qualityGate *v1alpha1.QualityGate) (managed.ExternalDelete, error) {
 	qualityGate.Status.SetConditions(xpv1.Deleting())
 
 	// Use external name as the identifier to delete the resource

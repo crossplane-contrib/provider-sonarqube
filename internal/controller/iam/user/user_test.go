@@ -54,11 +54,6 @@ const (
 	testUserLogin = "alice"
 )
 
-// notUser is a type for testing non-User resources.
-type notUser struct {
-	resource.Managed
-}
-
 // mockGate is a mock implementation of a gate for testing.
 type mockGate struct {
 	registered bool
@@ -92,15 +87,6 @@ func newUserWithSpec(spec v1alpha1.UserParameters) *v1alpha1.User {
 // TestCreate tests the Create method for users.
 func TestCreate(t *testing.T) {
 	t.Parallel()
-
-	t.Run("invalid managed resource", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := (&external{usersClient: &sonarfake.MockUsersClient{}}).Create(context.Background(), &notUser{})
-		if err == nil || !strings.Contains(err.Error(), errNotUser) {
-			t.Fatalf("Create() error = %v, want %q", err, errNotUser)
-		}
-	})
 
 	t.Run("local user without secret returns error", func(t *testing.T) {
 		t.Parallel()
@@ -250,15 +236,6 @@ func TestCreateReadsPasswordSecretFromUserNamespace(t *testing.T) {
 func TestDelete(t *testing.T) {
 	t.Parallel()
 
-	t.Run("invalid managed resource", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := (&external{usersClient: &sonarfake.MockUsersClient{}}).Delete(context.Background(), &notUser{})
-		if err == nil || !strings.Contains(err.Error(), errNotUser) {
-			t.Fatalf("Delete() error = %v, want %q", err, errNotUser)
-		}
-	})
-
 	t.Run("missing external name is no-op", func(t *testing.T) {
 		t.Parallel()
 
@@ -380,16 +357,6 @@ func TestSetupGatedRegistersUserGVK(t *testing.T) {
 
 	if diff := cmp.Diff(v1alpha1.UserGroupVersionKind, gate.gvks[0]); diff != "" {
 		t.Fatalf("SetupGated() gvk mismatch (-want +got):\n%s", diff)
-	}
-}
-
-// TestConnectTypeAssertion tests Connect type assertion error handling.
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	_, err := (&connector{}).Connect(context.Background(), &notUser{})
-	if err == nil || !strings.Contains(err.Error(), errNotUser) {
-		t.Fatalf("Connect() error = %v, want %q", err, errNotUser)
 	}
 }
 

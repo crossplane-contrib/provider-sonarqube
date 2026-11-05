@@ -42,8 +42,6 @@ import (
 )
 
 const (
-	// errNotALMGitHub indicates managed resource is not ALMGitHub.
-	errNotALMGitHub = "managed resource is not a ALMGitHub custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -78,7 +76,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.ALMGitHubGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.ALMGitHub](&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
@@ -114,23 +112,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	almgithub, isValid := managedResource.(*v1alpha1.ALMGitHub)
-	if !isValid {
-		return nil, errors.New(errNotALMGitHub)
-	}
-
+func (c *connector) Connect(ctx context.Context, almgithub *v1alpha1.ALMGitHub) (managed.TypedExternalClient[*v1alpha1.ALMGitHub], error) {
 	err := c.usage.Track(ctx, almgithub)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, almgithub)
 	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -153,12 +141,7 @@ type external struct {
 
 // Observe observes the ALMGitHub corresponding external resource using the
 // SonarQube API, and returns an ExternalObservation.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	almGitHub, ok := mg.(*v1alpha1.ALMGitHub)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotALMGitHub)
-	}
-
+func (c *external) Observe(ctx context.Context, almGitHub *v1alpha1.ALMGitHub) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(almGitHub)
 	if externalName == "" {
 		return managed.ExternalObservation{
@@ -212,12 +195,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 // Create creates the ALMGitHub external resource using the SonarQube API.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	almGitHub, ok := mg.(*v1alpha1.ALMGitHub)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotALMGitHub)
-	}
-
+func (c *external) Create(ctx context.Context, almGitHub *v1alpha1.ALMGitHub) (managed.ExternalCreation, error) {
 	clientSecret, privateKey, err := c.getRequiredSecrets(ctx, almGitHub)
 	if err != nil {
 		return managed.ExternalCreation{}, err
@@ -250,12 +228,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Update updates the ALMGitHub corresponding external resource to reflect the
 // desired state of the managed resource.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	almGitHub, ok := mg.(*v1alpha1.ALMGitHub)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotALMGitHub)
-	}
-
+func (c *external) Update(ctx context.Context, almGitHub *v1alpha1.ALMGitHub) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(almGitHub)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf(errExternalNameNotSet, almGitHub.Name)
@@ -300,12 +273,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Delete deletes the ALMGitHub corresponding external resource using the
 // SonarQube API.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	almGitHub, ok := mg.(*v1alpha1.ALMGitHub)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotALMGitHub)
-	}
-
+func (c *external) Delete(ctx context.Context, almGitHub *v1alpha1.ALMGitHub) (managed.ExternalDelete, error) {
 	almGitHub.Status.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(almGitHub)

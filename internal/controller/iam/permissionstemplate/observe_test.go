@@ -25,7 +25,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -77,16 +76,10 @@ func TestObserve(t *testing.T) {
 
 	cases := map[string]struct {
 		client  *fake.MockPermissionsTemplatesClient
-		mg      resource.Managed
+		mg      *v1alpha1.PermissionsTemplate
 		want    managed.ExternalObservation
 		wantErr string
 	}{
-		"WrongTypeReturnsError": {
-			client:  &fake.MockPermissionsTemplatesClient{},
-			mg:      &notPermissionsTemplate{},
-			want:    managed.ExternalObservation{},
-			wantErr: errNotPermissionsTemplate,
-		},
 		"MissingExternalNameReturnsNotExists": {
 			client: &fake.MockPermissionsTemplatesClient{},
 			mg: &v1alpha1.PermissionsTemplate{
@@ -156,7 +149,7 @@ func TestObserve(t *testing.T) {
 					return &sonar.PermissionsTemplateUsers{Users: []sonar.PermissionsTemplateUser{{Login: "alice", Permissions: []string{}}, {Login: "alice", Permissions: []string{"scan"}}}, Paging: singlePage}, mockHTTPResponse(), nil
 				},
 			},
-			mg: func() resource.Managed {
+			mg: func() *v1alpha1.PermissionsTemplate {
 				template := withExternalName(newPermissionsTemplate("template-empty"), "template-id-empty")
 				template.Spec.ForProvider.Description = new("desc")
 				template.Spec.ForProvider.ProjectKeyPattern = new("proj-.*")

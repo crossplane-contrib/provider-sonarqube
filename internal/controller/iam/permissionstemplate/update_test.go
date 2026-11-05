@@ -26,7 +26,6 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -68,14 +67,9 @@ func TestUpdate(t *testing.T) {
 
 	cases := map[string]struct {
 		client  *fake.MockPermissionsTemplatesClient
-		mg      resource.Managed
+		mg      *v1alpha1.PermissionsTemplate
 		wantErr string
 	}{
-		"WrongTypeReturnsError": {
-			client:  &fake.MockPermissionsTemplatesClient{},
-			mg:      &notPermissionsTemplate{},
-			wantErr: errNotPermissionsTemplate,
-		},
 		"MissingExternalNameReturnsError": {
 			client:  &fake.MockPermissionsTemplatesClient{},
 			mg:      newPermissionsTemplate("template-a"),
@@ -96,7 +90,7 @@ func TestUpdate(t *testing.T) {
 					return nil, errors.New("default failed")
 				},
 			},
-			mg: func() resource.Managed {
+			mg: func() *v1alpha1.PermissionsTemplate {
 				template := baseTemplate()
 				template.Spec.ForProvider.Default = new(true)
 
@@ -131,7 +125,7 @@ func TestUpdate(t *testing.T) {
 					return mockHTTPResponse(), nil
 				},
 			},
-			mg: func() resource.Managed {
+			mg: func() *v1alpha1.PermissionsTemplate {
 				template := baseTemplate()
 				template.Spec.ForProvider.Default = new(true)
 				template.Spec.ForProvider.CreatorPermissions = stringSlice("admin")

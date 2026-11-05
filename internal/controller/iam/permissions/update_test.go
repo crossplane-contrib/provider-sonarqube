@@ -23,10 +23,10 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
+	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
 
@@ -36,7 +36,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Permissions
 	}
 
 	type want struct {
@@ -49,11 +49,6 @@ func TestUpdate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPermissionsType": {
-			client: &fake.MockPermissionsClient{},
-			args:   args{ctx: context.Background(), mg: &notPermissions{}},
-			want:   want{errSubstr: errNotPermissions},
-		},
 		"EmptyExternalName": {
 			client: &fake.MockPermissionsClient{},
 			args: args{

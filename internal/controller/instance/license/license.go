@@ -39,8 +39,6 @@ import (
 )
 
 const (
-	// errNotLicense indicates managed resource is not a License.
-	errNotLicense = "managed resource is not a License custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -82,7 +80,7 @@ func SetupGated(mgr ctrl.Manager, opts helpers.Options) error {
 // Setup adds a controller that reconciles License resources.
 func Setup(mgr ctrl.Manager, opts helpers.Options, name string) error {
 	options := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.License](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewLicensesClient,
@@ -118,23 +116,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	license, isValid := managedResource.(*v1alpha1.License)
-	if !isValid {
-		return nil, errors.New(errNotLicense)
-	}
-
+func (c *connector) Connect(ctx context.Context, license *v1alpha1.License) (managed.TypedExternalClient[*v1alpha1.License], error) {
 	err := c.usage.Track(ctx, license)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, license)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -152,12 +140,7 @@ type external struct {
 }
 
 // Create creates the License external resource using the SonarQube API.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	license, ok := mg.(*v1alpha1.License)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotLicense)
-	}
-
+func (c *external) Create(ctx context.Context, license *v1alpha1.License) (managed.ExternalCreation, error) {
 	license.SetConditions(xpv1.Creating())
 
 	licenseKey, err := c.resolveLicenseKey(ctx, license)
@@ -183,12 +166,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Update updates the License corresponding external resource to reflect the
 // desired state of the managed resource.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	license, ok := mg.(*v1alpha1.License)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotLicense)
-	}
-
+func (c *external) Update(ctx context.Context, license *v1alpha1.License) (managed.ExternalUpdate, error) {
 	licenseKey, err := c.resolveLicenseKey(ctx, license)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errGetLicenseKey)
@@ -210,12 +188,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Delete deletes the License corresponding external resource using the
 // SonarQube API.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	license, ok := mg.(*v1alpha1.License)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotLicense)
-	}
-
+func (c *external) Delete(ctx context.Context, license *v1alpha1.License) (managed.ExternalDelete, error) {
 	license.SetConditions(xpv1.Deleting())
 
 	resp, err := c.client.UnsetLicense(ctx) //nolint:bodyclose // closed via helpers.CloseBody
