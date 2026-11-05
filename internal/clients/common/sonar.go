@@ -63,6 +63,16 @@ const (
 	// matches the timeout of the HTTP client the SonarQube SDK would otherwise
 	// use.
 	DefaultResponseHeaderTimeout = 30 * time.Second
+
+	// maxRequestAttempts is the number of times an idempotent request is
+	// sent before its failure is reported to the reconciler, which then
+	// requeues it with its own backoff.
+	maxRequestAttempts = 3
+	// initialRetryDelay is the base of the exponential backoff between
+	// attempts. Retries stay short so that they fit in the reconcile timeout.
+	initialRetryDelay = 500 * time.Millisecond
+	// maxRetryDelay caps the backoff between attempts.
+	maxRetryDelay = 5 * time.Second
 )
 
 var (
@@ -77,6 +87,21 @@ var (
 	// connection opened without verification is never handed to a client
 	// that requires it.
 	insecurePooledHTTPClient = newPooledHTTPClient(true, DefaultResponseHeaderTimeout)
+
+	// requestRetryOptions rides out short SonarQube unavailability, such as a
+	// restart behind a proxy. Only idempotent methods are retried: SonarQube
+	// mutations are POST requests, and resending one could repeat its effect.
+	requestRetryOptions = sonar.RetryOptions{
+		MaxAttempts:  maxRequestAttempts,
+		InitialDelay: initialRetryDelay,
+		MaxDelay:     maxRetryDelay,
+		RetryableStatusCodes: []int{
+			http.StatusTooManyRequests,
+			http.StatusBadGateway,
+			http.StatusServiceUnavailable,
+			http.StatusGatewayTimeout,
+		},
+	}
 )
 
 // BasicAuthArgs is the expected struct that can be passed in the Config.Token
@@ -114,6 +139,10 @@ type Config struct {
 func NewClient(clientConfig Config) *sonar.Client {
 	var sonarClient *sonar.Client
 
+	// The HTTP client must be given at construction: the retry wrapper is
+	// built around it there, and replacing it afterwards would drop retries.
+	httpClient := sharedHTTPClient(clientConfig.InsecureSkipVerify)
+
 	switch clientConfig.AuthType {
 	case BasicAuth:
 		if clientConfig.BasicAuth == nil {
@@ -122,10 +151,12 @@ func NewClient(clientConfig Config) *sonar.Client {
 		// Create SonarQube client with Basic Auth
 		basicAuthClient, err := sonar.NewClient(
 			&sonar.ClientCreateOptions{
-				URL:      &clientConfig.BaseURL,
-				Username: &clientConfig.BasicAuth.Username,
-				Password: &clientConfig.BasicAuth.Password,
-			})
+				URL:        &clientConfig.BaseURL,
+				Username:   &clientConfig.BasicAuth.Username,
+				Password:   &clientConfig.BasicAuth.Password,
+				HttpClient: httpClient,
+			},
+			sonar.WithRetry(requestRetryOptions))
 		if err != nil {
 			panic(err)
 		}
@@ -135,9 +166,11 @@ func NewClient(clientConfig Config) *sonar.Client {
 		// Create SonarQube client with Personal Access Token
 		tokenClient, err := sonar.NewClient(
 			&sonar.ClientCreateOptions{
-				URL:   &clientConfig.BaseURL,
-				Token: &clientConfig.Token,
-			})
+				URL:        &clientConfig.BaseURL,
+				Token:      &clientConfig.Token,
+				HttpClient: httpClient,
+			},
+			sonar.WithRetry(requestRetryOptions))
 		if err != nil {
 			panic(err)
 		}
@@ -146,8 +179,6 @@ func NewClient(clientConfig Config) *sonar.Client {
 	default:
 		panic(errors.New("unsupported authentication type"))
 	}
-
-	sonarClient.SetHTTPClient(sharedHTTPClient(clientConfig.InsecureSkipVerify))
 
 	return sonarClient
 }

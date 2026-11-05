@@ -199,3 +199,80 @@ func TestNewClientKeepsTLSVerificationApart(t *testing.T) {
 		t.Fatal("Ping() succeeded against an untrusted certificate, want a verification error")
 	}
 }
+
+// TestNewClientRetries checks which requests the client retries.
+func TestNewClientRetries(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		send         func(ctx context.Context, client *sonar.Client) (*http.Response, error)
+		statuses     []int
+		wantRequests int32
+		wantErr      bool
+	}{
+		"ReadRecoversFromTransientFailure": {
+			send:         sendRead,
+			statuses:     []int{http.StatusServiceUnavailable, http.StatusBadGateway, http.StatusOK},
+			wantRequests: maxRequestAttempts,
+		},
+		"ReadGivesUpAfterMaxAttempts": {
+			send:         sendRead,
+			statuses:     []int{http.StatusServiceUnavailable},
+			wantRequests: maxRequestAttempts,
+			wantErr:      true,
+		},
+		"ReadDoesNotRetryNotFound": {
+			send:         sendRead,
+			statuses:     []int{http.StatusNotFound},
+			wantRequests: 1,
+			wantErr:      true,
+		},
+		"MutationIsNeverResent": {
+			send:         sendMutation,
+			statuses:     []int{http.StatusServiceUnavailable},
+			wantRequests: 1,
+			wantErr:      true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var requests atomic.Int32
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				attempt := int(requests.Add(1))
+				w.WriteHeader(test.statuses[min(attempt, len(test.statuses))-1])
+			}))
+			t.Cleanup(server.Close)
+
+			client := NewClient(Config{AuthType: PersonalAccessToken, Token: "token", BaseURL: server.URL + "/api/"})
+
+			resp, err := test.send(t.Context(), client)
+			if resp != nil {
+				_ = resp.Body.Close()
+			}
+
+			if (err != nil) != test.wantErr {
+				t.Errorf("request error = %v, wantErr %v", err, test.wantErr)
+			}
+
+			if got := requests.Load(); got != test.wantRequests {
+				t.Errorf("server received %d requests, want %d", got, test.wantRequests)
+			}
+		})
+	}
+}
+
+// sendRead sends an idempotent GET request.
+func sendRead(ctx context.Context, client *sonar.Client) (*http.Response, error) {
+	_, resp, err := client.System.Ping(ctx)
+
+	return resp, err //nolint:nilnil // Both are forwarded as the client returned them.
+}
+
+// sendMutation sends a non-idempotent POST request.
+func sendMutation(ctx context.Context, client *sonar.Client) (*http.Response, error) {
+	return client.System.Restart(ctx)
+}
