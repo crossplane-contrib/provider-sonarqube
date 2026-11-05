@@ -69,6 +69,7 @@ flags also accept a `--no-` prefix.
 | `--sync`, `-s` | `CROSSPLANE_SONARQUBE_PROVIDER_SYNC` | `1h` | How often all resources are re-checked for drift. |
 | `--poll` | `CROSSPLANE_SONARQUBE_PROVIDER_POLL` | `1m` | How often each resource is checked for drift. |
 | `--min-poll-interval` | `CROSSPLANE_SONARQUBE_PROVIDER_MIN_POLL_INTERVAL` | `30s` | Shortest interval the `crossplane.io/poll-interval` annotation can request. Must not be negative, `0` removes the limit. |
+| `--poll-jitter-percentage` | `CROSSPLANE_SONARQUBE_PROVIDER_POLL_JITTER_PERCENTAGE` | `10` | Spreads each poll by up to this percentage of its interval, so resources created or restarted together stop polling SonarQube together. `0` disables it, the maximum is `50`. |
 | `--poll-state-metric` | `CROSSPLANE_SONARQUBE_PROVIDER_POLL_STATE_METRIC` | `5s` | State metric recording interval. |
 | `--max-reconcile-rate` | `CROSSPLANE_SONARQUBE_PROVIDER_MAX_RECONCILE_RATE` | `10` | Maximum reconciles per second. |
 | `--enable-management-policies` | `ENABLE_MANAGEMENT_POLICIES` | `true` | Enable Management Policies. |

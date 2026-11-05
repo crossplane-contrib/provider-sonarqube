@@ -66,6 +66,7 @@ func TestReconcilerOptions(t *testing.T) {
 		features []feature.Flag
 		metrics  *controller.MetricOptions
 		specific int
+		jitter   int
 		want     int
 	}{
 		"NoFeatures": {
@@ -83,6 +84,10 @@ func TestReconcilerOptions(t *testing.T) {
 			metrics: &controller.MetricOptions{},
 			want:    commonOptions + 1,
 		},
+		"PollJitter": {
+			jitter: MaxPollJitterPercentage,
+			want:   commonOptions + 1,
+		},
 		"SpecificOptions": {
 			specific: 2,
 			want:     commonOptions + 2,
@@ -99,12 +104,15 @@ func TestReconcilerOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := Options{Options: controller.Options{
-				Logger:           logging.NewNopLogger(),
-				Features:         &feature.Flags{},
-				MetricOptions:    test.metrics,
-				ChangeLogOptions: &controller.ChangeLogOptions{},
-			}}
+			opts := Options{
+				Options: controller.Options{
+					Logger:           logging.NewNopLogger(),
+					Features:         &feature.Flags{},
+					MetricOptions:    test.metrics,
+					ChangeLogOptions: &controller.ChangeLogOptions{},
+				},
+				PollJitterPercentage: test.jitter,
+			}
 			for _, flag := range test.features {
 				opts.Features.Enable(flag)
 			}
@@ -337,5 +345,101 @@ func TestValidateMinPollInterval(t *testing.T) {
 				t.Errorf("ValidateMinPollInterval() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+// TestPollJitterHook checks the bounds of the jittered interval.
+func TestPollJitterHook(t *testing.T) {
+	t.Parallel()
+
+	const samples = 2000
+
+	tests := map[string]struct {
+		percentage      int
+		minPollInterval time.Duration
+		pollInterval    time.Duration
+		wantMin         time.Duration
+		wantMax         time.Duration
+	}{
+		"SpreadsInBothDirections": {
+			percentage:   10,
+			pollInterval: time.Minute,
+			wantMin:      54 * time.Second,
+			wantMax:      66 * time.Second,
+		},
+		"ScalesWithTheInterval": {
+			percentage:   10,
+			pollInterval: time.Hour,
+			wantMin:      54 * time.Minute,
+			wantMax:      66 * time.Minute,
+		},
+		"NeverGoesBelowTheMinimum": {
+			percentage:      10,
+			minPollInterval: 30 * time.Second,
+			pollInterval:    30 * time.Second,
+			wantMin:         30 * time.Second,
+			wantMax:         33 * time.Second,
+		},
+		"KeepsAnIntervalBelowTheMinimum": {
+			percentage:      10,
+			minPollInterval: 30 * time.Second,
+			pollInterval:    10 * time.Second,
+			wantMin:         10 * time.Second,
+			wantMax:         11 * time.Second,
+		},
+		"MaximumPercentageStaysPositive": {
+			percentage:   MaxPollJitterPercentage,
+			pollInterval: time.Minute,
+			wantMin:      30 * time.Second,
+			wantMax:      90 * time.Second,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			hook := pollJitterHook(test.percentage, test.minPollInterval)
+			seen := make(map[time.Duration]struct{}, samples)
+
+			for range samples {
+				got := hook(nil, test.pollInterval)
+				if got < test.wantMin || got > test.wantMax {
+					t.Fatalf("hook() = %v, want between %v and %v", got, test.wantMin, test.wantMax)
+				}
+
+				seen[got] = struct{}{}
+			}
+
+			if len(seen) < 2 {
+				t.Errorf("hook() always returned the same interval: %v", seen)
+			}
+		})
+	}
+}
+
+// TestReconcilerOptionsApplyPollJitter checks the requeue delay of a real
+// reconcile when jitter is enabled.
+func TestReconcilerOptionsApplyPollJitter(t *testing.T) {
+	t.Parallel()
+
+	group := &v1alpha1.Group{ObjectMeta: metav1.ObjectMeta{Name: "group", Namespace: "team"}}
+	opts := Options{
+		Options: controller.Options{
+			Logger:       logging.NewNopLogger(),
+			Features:     &feature.Flags{},
+			PollInterval: time.Minute,
+		},
+		PollJitterPercentage: 10,
+	}
+	request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "group", Namespace: "team"}}
+
+	got, err := newTestReconciler(t, opts, group).Reconcile(t.Context(), request)
+	if err != nil {
+		t.Fatalf("Reconcile() unexpected error: %v", err)
+	}
+
+	if got.RequeueAfter < 54*time.Second || got.RequeueAfter > 66*time.Second {
+		t.Errorf("Reconcile() RequeueAfter = %v, want between 54s and 66s", got.RequeueAfter)
 	}
 }

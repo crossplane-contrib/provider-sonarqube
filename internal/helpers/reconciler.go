@@ -17,6 +17,7 @@ limitations under the License.
 package helpers
 
 import (
+	"math/rand/v2"
 	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
@@ -28,6 +29,14 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+// MaxPollJitterPercentage is the highest accepted Options.PollJitterPercentage.
+// It keeps the poll interval well above zero, as a zero requeue delay would
+// stop polling the resource altogether.
+const MaxPollJitterPercentage = 50
+
+// percent is the divisor of a percentage.
+const percent = 100.0
+
 // Options are the crossplane-runtime controller options, extended with the
 // settings of this provider.
 type Options struct {
@@ -38,6 +47,11 @@ type Options struct {
 	// raised to it, which keeps the annotation from letting one resource use
 	// the reconcile budget shared by all tenants.
 	MinPollInterval time.Duration
+
+	// PollJitterPercentage spreads each poll by up to this percentage of its
+	// interval, in both directions, so that resources created or restarted
+	// together do not keep polling SonarQube together. Zero disables it.
+	PollJitterPercentage int
 }
 
 // ValidateMinPollInterval returns an error if minimum is negative. A negative
@@ -72,6 +86,10 @@ func ReconcilerOptions(mgr ctrl.Manager, name string, opts Options, specific ...
 		options = append(options, managed.WithMetricRecorder(opts.MetricOptions.MRMetrics))
 	}
 
+	if opts.PollJitterPercentage > 0 {
+		options = append(options, managed.WithPollIntervalHook(pollJitterHook(opts.PollJitterPercentage, opts.MinPollInterval)))
+	}
+
 	return append(options, specific...)
 }
 
@@ -92,4 +110,17 @@ func AddMRStateRecorder(mgr ctrl.Manager, opts Options, list resource.ManagedLis
 	}
 
 	return nil
+}
+
+// pollJitterHook returns a hook spreading the poll interval by a percentage of
+// its value, which unlike the fixed jitter of managed.WithPollJitterHook scales
+// with the per-resource intervals set through crossplane.io/poll-interval.
+// Jitter never takes an interval that respects minPollInterval below it.
+func pollJitterHook(percentage int, minPollInterval time.Duration) managed.PollIntervalHook {
+	return func(_ resource.Managed, pollInterval time.Duration) time.Duration {
+		spread := float64(pollInterval) * float64(percentage) / percent
+		jittered := pollInterval + time.Duration((rand.Float64()*2-1)*spread) //nolint:gosec // No need for secure randomness.
+
+		return max(jittered, min(pollInterval, minPollInterval))
+	}
 }
