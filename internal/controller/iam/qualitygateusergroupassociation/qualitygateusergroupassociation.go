@@ -90,6 +90,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: iam.NewQualityGateUsergroupAssociationClient,
 		}),
+		managed.WithDeterministicExternalName(true),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.QualityGateUsergroupAssociationList{})

@@ -17,17 +17,20 @@ limitations under the License.
 package helpers
 
 import (
+	"context"
 	"math"
 	"math/rand/v2"
 	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 	"github.com/pkg/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MaxPollJitterPercentage is the highest accepted Options.PollJitterPercentage.
@@ -146,4 +149,31 @@ func pollJitterHook(percentage int, minPollInterval time.Duration) managed.PollI
 
 		return lowest + rand.N(highest-lowest+1) //nolint:gosec // No need for secure randomness.
 	}
+}
+
+// NewSpecExternalNameInitializer returns an initializer that sets the external
+// name of a managed resource from its spec, instead of the default
+// metadata.name. It is meant for the kinds whose SonarQube identifier is chosen
+// by the spec: Observe then looks for the right resource before Create runs,
+// which is what makes managed.WithDeterministicExternalName safe. Without it, a
+// Create interrupted before its result was recorded would be sent again for a
+// resource Observe cannot find.
+//
+// Initializers run before references are resolved, so externalName must only
+// read fields that are set directly in the spec.
+func NewSpecExternalNameInitializer[T resource.Managed](kube client.Client, externalName func(T) string) managed.Initializer {
+	return managed.InitializerFn(func(ctx context.Context, managedResource resource.Managed) error {
+		if meta.GetExternalName(managedResource) != "" {
+			return nil
+		}
+
+		typed, ok := managedResource.(T)
+		if !ok {
+			return errors.Errorf("cannot initialize the external name of unexpected type %T", managedResource)
+		}
+
+		meta.SetExternalName(managedResource, externalName(typed))
+
+		return errors.Wrap(kube.Update(ctx, managedResource), "cannot update the managed resource external name")
+	})
 }

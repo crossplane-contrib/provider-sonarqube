@@ -80,6 +80,10 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewQualityGatesClient}),
+		managed.WithDeterministicExternalName(true),
+		managed.WithInitializers(helpers.NewSpecExternalNameInitializer(mgr.GetClient(), func(mg *v1alpha1.QualityGate) string {
+			return mg.Spec.ForProvider.Name
+		})),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.QualityGateList{})

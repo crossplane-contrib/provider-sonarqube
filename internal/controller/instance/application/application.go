@@ -92,6 +92,10 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewApplicationsClient,
 		}),
+		managed.WithDeterministicExternalName(true),
+		managed.WithInitializers(helpers.NewSpecExternalNameInitializer(mgr.GetClient(), func(mg *v1alpha1.Application) string {
+			return mg.Spec.ForProvider.Key
+		})),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, options, &v1alpha1.ApplicationList{})

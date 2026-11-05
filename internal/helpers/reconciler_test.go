@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
+	instancev1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
 
 // recorderManager is a manager that only provides event recorders.
@@ -535,5 +536,141 @@ func TestReconcilerOptionsApplyPollJitter(t *testing.T) {
 				t.Errorf("Reconcile() RequeueAfter = %v, want it spread", got.RequeueAfter)
 			}
 		})
+	}
+}
+
+// gateName returns the SonarQube identifier of a QualityGate.
+func gateName(gate *instancev1alpha1.QualityGate) string {
+	return gate.Spec.ForProvider.Name
+}
+
+// newGateClient returns a Kubernetes client holding the supplied QualityGate.
+func newGateClient(t *testing.T, gate *instancev1alpha1.QualityGate) client.Client {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+
+	err := instancev1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("AddToScheme() unexpected error: %v", err)
+	}
+
+	return clientfake.NewClientBuilder().WithScheme(scheme).WithObjects(gate).WithStatusSubresource(gate).Build()
+}
+
+// TestNewSpecExternalNameInitializer checks the external name left on a
+// managed resource by the initializer.
+func TestNewSpecExternalNameInitializer(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		externalName string
+		want         string
+	}{
+		"UsesTheSpecRatherThanTheResourceName": {
+			want: "sonar-way",
+		},
+		"KeepsAnExistingExternalName": {
+			externalName: "imported",
+			want:         "imported",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			gate := &instancev1alpha1.QualityGate{ObjectMeta: metav1.ObjectMeta{Name: "gate", Namespace: "team"}}
+			gate.Spec.ForProvider.Name = "sonar-way"
+			meta.SetExternalName(gate, test.externalName)
+
+			kube := newGateClient(t, gate)
+
+			err := NewSpecExternalNameInitializer(kube, gateName).Initialize(t.Context(), gate)
+			if err != nil {
+				t.Fatalf("Initialize() unexpected error: %v", err)
+			}
+
+			persisted := &instancev1alpha1.QualityGate{}
+
+			err = kube.Get(t.Context(), client.ObjectKeyFromObject(gate), persisted)
+			if err != nil {
+				t.Fatalf("Get() unexpected error: %v", err)
+			}
+
+			if got := meta.GetExternalName(persisted); got != test.want {
+				t.Errorf("external name = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+// TestNewSpecExternalNameInitializerRejectsOtherKinds checks that a resource of
+// another kind is reported rather than given a wrong external name.
+func TestNewSpecExternalNameInitializerRejectsOtherKinds(t *testing.T) {
+	t.Parallel()
+
+	initializer := NewSpecExternalNameInitializer(nil, gateName)
+
+	err := initializer.Initialize(t.Context(), &instancev1alpha1.Project{})
+	if err == nil {
+		t.Fatal("Initialize() expected an error for another kind")
+	}
+}
+
+// TestDeterministicExternalNameRecoversInterruptedCreate reconciles a resource
+// whose Create was interrupted before its result was recorded, as after a
+// provider crash. It must find the resource created by that attempt instead of
+// staying blocked or creating it again.
+func TestDeterministicExternalNameRecoversInterruptedCreate(t *testing.T) {
+	t.Parallel()
+
+	gate := &instancev1alpha1.QualityGate{ObjectMeta: metav1.ObjectMeta{Name: "gate", Namespace: "team"}}
+	gate.Spec.ForProvider.Name = "sonar-way"
+	meta.SetExternalCreatePending(gate, time.Now())
+
+	kube := newGateClient(t, gate)
+
+	var observed, created string
+
+	connector := managed.ExternalConnectorFn(func(context.Context, resource.Managed) (managed.ExternalClient, error) {
+		return &managed.ExternalClientFns{
+			ObserveFn: func(_ context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
+				observed = meta.GetExternalName(mg)
+
+				return managed.ExternalObservation{ResourceExists: observed == "sonar-way", ResourceUpToDate: true}, nil
+			},
+			CreateFn: func(_ context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
+				created = meta.GetExternalName(mg)
+
+				return managed.ExternalCreation{}, nil
+			},
+			DisconnectFn: func(context.Context) error { return nil },
+		}, nil
+	})
+
+	mgr := recorderManager{Manager: &resourcefake.Manager{Client: kube, Scheme: kube.Scheme()}}
+	opts := Options{Options: controller.Options{Logger: logging.NewNopLogger(), Features: &feature.Flags{}, PollInterval: time.Minute}}
+
+	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(instancev1alpha1.QualityGateGroupVersionKind),
+		ReconcilerOptions(mgr, "test", opts,
+			managed.WithExternalConnector(connector),
+			managed.WithDeterministicExternalName(true),
+			managed.WithInitializers(NewSpecExternalNameInitializer(kube, gateName)),
+		)...)
+
+	request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "gate", Namespace: "team"}}
+
+	_, err := reconciler.Reconcile(t.Context(), request)
+	if err != nil {
+		t.Fatalf("Reconcile() unexpected error: %v", err)
+	}
+
+	if observed != "sonar-way" {
+		t.Errorf("Observe() saw external name %q, want %q", observed, "sonar-way")
+	}
+
+	if created != "" {
+		t.Errorf("Create() was called again with external name %q", created)
 	}
 }

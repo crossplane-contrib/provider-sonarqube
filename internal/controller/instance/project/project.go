@@ -71,6 +71,10 @@ func Setup(mgr ctrl.Manager, o helpers.Options) error { //nolint:varnamelen // c
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
+		managed.WithDeterministicExternalName(true),
+		managed.WithInitializers(helpers.NewSpecExternalNameInitializer(mgr.GetClient(), func(mg *v1alpha1.Project) string {
+			return mg.Spec.ForProvider.Key
+		})),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, o, &v1alpha1.ProjectList{})
