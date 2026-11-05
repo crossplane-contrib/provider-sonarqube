@@ -19,7 +19,6 @@ package project
 import (
 	"context"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	stderrors "errors"
@@ -69,27 +68,12 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 func Setup(mgr ctrl.Manager, o controller.Options) error { //nolint:varnamelen // consistent with other controllers
 	name := managed.ControllerName(v1alpha1.ProjectGroupKind)
 
-	opts := []managed.ReconcilerOption{
+	opts := helpers.ReconcilerOptions(mgr, name, o,
 		managed.WithExternalConnector(&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
-		managed.WithLogger(o.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(o.PollInterval),
-		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
-	}
-
-	if o.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		opts = append(opts, managed.WithManagementPolicies())
-	}
-
-	if o.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		opts = append(opts, managed.WithChangeLogger(o.ChangeLogOptions.ChangeLogger))
-	}
-
-	if o.MetricOptions != nil {
-		opts = append(opts, managed.WithMetricRecorder(o.MetricOptions.MRMetrics))
-	}
+	)
 
 	if o.MetricOptions != nil && o.MetricOptions.MRStateMetrics != nil {
 		stateMetricsRecorder := statemetrics.NewMRStateRecorder(

@@ -19,7 +19,6 @@ package user
 import (
 	"context"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
@@ -75,27 +74,12 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 func Setup(mgr ctrl.Manager, options controller.Options) error {
 	name := managed.ControllerName(v1alpha1.UserGroupKind)
 
-	opts := []managed.ReconcilerOption{
+	opts := helpers.ReconcilerOptions(mgr, name, options,
 		managed.WithExternalConnector(&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
-		managed.WithLogger(options.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(options.PollInterval),
-		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
-	}
-
-	if options.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		opts = append(opts, managed.WithManagementPolicies())
-	}
-
-	if options.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		opts = append(opts, managed.WithChangeLogger(options.ChangeLogOptions.ChangeLogger))
-	}
-
-	if options.MetricOptions != nil {
-		opts = append(opts, managed.WithMetricRecorder(options.MetricOptions.MRMetrics))
-	}
+	)
 
 	if options.MetricOptions != nil && options.MetricOptions.MRStateMetrics != nil {
 		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
