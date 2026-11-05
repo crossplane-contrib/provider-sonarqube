@@ -42,7 +42,14 @@ if [ ! -f "${OUTPUT_DIR}/xpkg/${PLATFORM}/${PACKAGE_NAME}-${VERSION}.xpkg" ]; th
     echo_error "xpkg not built - run 'make build' first"
 fi
 
-echo_step "creating kind controlplane and installing crossplane"
+# controlplane.up cannot choose the node image, but reuses an existing cluster
+# of the same name, so create it here to run on the pinned Kubernetes version.
+echo_step "creating kind cluster on kindest/node:${KIND_NODE_IMAGE_TAG:?run through make test-integration}"
+if ! "${KIND}" get kubeconfig --name="${KIND_CLUSTER_NAME}" >/dev/null 2>&1; then
+    "${KIND}" create cluster --name="${KIND_CLUSTER_NAME}" --image="kindest/node:${KIND_NODE_IMAGE_TAG}"
+fi
+
+echo_step "installing crossplane"
 make -C "${projectdir}" controlplane.up
 
 # kind_load_image loads a pulled image into the kind cluster. Docker hosts

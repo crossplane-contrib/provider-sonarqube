@@ -20,7 +20,7 @@ GO_STATIC_PACKAGES = $(GO_PROJECT)/cmd/provider
 GO_LDFLAGS += -X $(GO_PROJECT)/internal/version.Version=$(VERSION)
 GO_SUBDIRS += cmd internal apis
 GO111MODULE = on
-# renovate: datasource=go depName=github.com/golangci/golangci-lint/v2
+# renovate: datasource=go depName=github.com/golangci/golangci-lint/v2 extractVersion=^v(?<version>.+)$
 GOLANGCILINT_VERSION = 2.13.2
 -include build/makelib/golang.mk
 
@@ -31,9 +31,12 @@ GOLANGCILINT_VERSION = 2.13.2
 # cluster/local/integration_tests.sh fails on `helm repo add`/`helm install`.
 USE_HELM := true
 
-# Default kindest/node tag. KIND v0.23.0 (the submodule's pinned version)
-# supports kindest/node tags up to v1.30.0. Override via env if needed.
-KIND_NODE_IMAGE_TAG ?= v1.30.0
+# kindest/node tag of the e2e and dev clusters. Pinning it keeps the Kubernetes
+# version under test from following the default of the submodule's kind. Keep
+# the digest: kind only guarantees an image built for its release through it.
+# Override via env if needed.
+# renovate: datasource=docker depName=kindest/node
+KIND_NODE_IMAGE_TAG ?= v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
 
 -include build/makelib/k8s_tools.mk
 
@@ -67,7 +70,8 @@ KIND_CLUSTER_NAME ?= $(BUILD_REGISTRY)-inttests
 # `helm install ... --version $(CROSSPLANE_VERSION)`, which fails with
 # "flag needs an argument" when CROSSPLANE_VERSION is empty. Pinning here
 # also keeps e2e runs reproducible.
-CROSSPLANE_VERSION ?= 2.2.1
+# renovate: datasource=helm depName=crossplane registryUrl=https://charts.crossplane.io/stable
+CROSSPLANE_VERSION ?= 2.4.3
 
 -include build/makelib/controlplane.mk
 -include build/makelib/local.xpkg.mk
@@ -141,7 +145,7 @@ run: go.build
 
 dev: $(KIND) $(KUBECTL)
 	@$(INFO) Creating kind cluster
-	@$(KIND) create cluster --name=$(PROJECT_NAME)-dev
+	@$(KIND) create cluster --name=$(PROJECT_NAME)-dev --image=kindest/node:$(KIND_NODE_IMAGE_TAG)
 	@$(KUBECTL) cluster-info --context kind-$(PROJECT_NAME)-dev
 	@$(INFO) Installing Provider SonarQube CRDs
 	@$(KUBECTL) apply -R -f package/crds
