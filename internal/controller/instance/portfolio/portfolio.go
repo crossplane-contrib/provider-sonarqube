@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -74,7 +73,7 @@ const (
 
 // SetupGated adds a controller that reconciles Portfolio managed
 // resources with safe-start support.
-func SetupGated(mgr ctrl.Manager, o controller.Options) error {
+func SetupGated(mgr ctrl.Manager, o helpers.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
 		if err != nil {
@@ -86,7 +85,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 }
 
 // Setup adds a controller that reconciles Portfolio managed resources.
-func Setup(mgr ctrl.Manager, options controller.Options) error {
+func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.PortfolioGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,

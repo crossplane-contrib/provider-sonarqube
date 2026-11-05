@@ -29,7 +29,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -75,7 +74,7 @@ const (
 
 // SetupGated adds a controller that reconciles Permissions managed resources
 // with safe-start support.
-func SetupGated(mgr ctrl.Manager, o controller.Options) error {
+func SetupGated(mgr ctrl.Manager, o helpers.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
 		if err != nil {
@@ -87,7 +86,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 }
 
 // Setup adds a controller that reconciles Permissions managed resources.
-func Setup(mgr ctrl.Manager, options controller.Options) error {
+func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.PermissionsGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,

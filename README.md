@@ -68,6 +68,7 @@ flags also accept a `--no-` prefix.
 | `--leader-election`, `-l` | `LEADER_ELECTION` | `false` | Use leader election for the controller manager. |
 | `--sync`, `-s` | `CROSSPLANE_SONARQUBE_PROVIDER_SYNC` | `1h` | How often all resources are re-checked for drift. |
 | `--poll` | `CROSSPLANE_SONARQUBE_PROVIDER_POLL` | `1m` | How often each resource is checked for drift. |
+| `--min-poll-interval` | `MIN_POLL_INTERVAL` | `30s` | Shortest interval the `crossplane.io/poll-interval` annotation can request. `0` removes the limit. |
 | `--poll-state-metric` | `CROSSPLANE_SONARQUBE_PROVIDER_POLL_STATE_METRIC` | `5s` | State metric recording interval. |
 | `--max-reconcile-rate` | `CROSSPLANE_SONARQUBE_PROVIDER_MAX_RECONCILE_RATE` | `10` | Maximum reconciles per second. |
 | `--enable-management-policies` | `ENABLE_MANAGEMENT_POLICIES` | `true` | Enable Management Policies. |
@@ -115,6 +116,18 @@ Secrets it reads, plus `get`, `create` and `patch` on connection Secrets.
 * The flag does not change RBAC: restrict the provider's ServiceAccount yourself.
 * Each read counts against the client limit of 5 × `--max-reconcile-rate`
   requests per second, which can slow reconciliation at scale.
+
+## Reconciliation frequency
+
+The provider checks every managed resource for drift every `--poll` interval,
+one minute by default. Two annotations adjust this for a single resource:
+
+- `crossplane.io/poll-interval` overrides the interval, for example `1h` for a
+  rarely changing resource. A value below `--min-poll-interval` is raised to it,
+  so that a namespace tenant cannot use up the reconcile budget that
+  `--max-reconcile-rate` shares between all tenants.
+- `crossplane.io/reconcile-requested-at` triggers a reconcile when its value
+  changes. The handled value is reported in `status.lastHandledReconcileAt`.
 
 ## Cross-resource references
 

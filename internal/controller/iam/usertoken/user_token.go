@@ -20,7 +20,6 @@ package usertoken
 import (
 	"context"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -61,7 +60,7 @@ const (
 
 // SetupGated adds a controller that reconciles UserToken managed resources
 // with safe-start support.
-func SetupGated(mgr ctrl.Manager, o controller.Options) error {
+func SetupGated(mgr ctrl.Manager, o helpers.Options) error {
 	o.Gate.Register(func() {
 		err := Setup(mgr, o)
 		if err != nil {
@@ -73,7 +72,7 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 }
 
 // Setup adds a controller that reconciles UserToken managed resources.
-func Setup(mgr ctrl.Manager, opts controller.Options) error {
+func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.UserTokenGroupKind)
 
 	options := helpers.ReconcilerOptions(mgr, name, opts,

@@ -17,6 +17,8 @@ limitations under the License.
 package helpers
 
 import (
+	"time"
+
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -26,12 +28,25 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+// Options are the crossplane-runtime controller options, extended with the
+// settings of this provider.
+type Options struct {
+	controller.Options
+
+	// MinPollInterval is the shortest poll interval a resource may request
+	// through the crossplane.io/poll-interval annotation. Shorter requests are
+	// raised to it, which keeps the annotation from letting one resource use
+	// the reconcile budget shared by all tenants.
+	MinPollInterval time.Duration
+}
+
 // ReconcilerOptions returns the managed reconciler options shared by every
 // controller, followed by the options specific to the calling controller.
-func ReconcilerOptions(mgr ctrl.Manager, name string, opts controller.Options, specific ...managed.ReconcilerOption) []managed.ReconcilerOption {
+func ReconcilerOptions(mgr ctrl.Manager, name string, opts Options, specific ...managed.ReconcilerOption) []managed.ReconcilerOption {
 	options := []managed.ReconcilerOption{
 		managed.WithLogger(opts.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(opts.PollInterval),
+		managed.WithMinPollInterval(opts.MinPollInterval),
 		managed.WithRecorder(NewEventRecorder(mgr, name, opts.EventFilterFunctions...)),
 	}
 
@@ -52,7 +67,7 @@ func ReconcilerOptions(mgr ctrl.Manager, name string, opts controller.Options, s
 
 // AddMRStateRecorder registers a recorder of the state metrics of the managed
 // resources in list with mgr. It does nothing when state metrics are disabled.
-func AddMRStateRecorder(mgr ctrl.Manager, opts controller.Options, list resource.ManagedList) error {
+func AddMRStateRecorder(mgr ctrl.Manager, opts Options, list resource.ManagedList) error {
 	if opts.MetricOptions == nil || opts.MetricOptions.MRStateMetrics == nil {
 		return nil
 	}

@@ -42,6 +42,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/clients/integration"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 const (
@@ -739,7 +740,7 @@ func TestSetupGatedRegistersWebhookGVK(t *testing.T) {
 	t.Parallel()
 
 	g := &mockGate{}
-	o := controller.DefaultOptions()
+	o := helpers.Options{Options: controller.DefaultOptions()}
 	o.Gate = g
 
 	err := SetupGated(nil, o)
@@ -770,7 +771,7 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	t.Parallel()
 
 	g := &mockGate{}
-	o := controller.DefaultOptions()
+	o := helpers.Options{Options: controller.DefaultOptions()}
 	o.Gate = g
 
 	err := SetupGated(nil, o)

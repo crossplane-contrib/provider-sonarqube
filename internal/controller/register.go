@@ -17,7 +17,6 @@ limitations under the License.
 package controller
 
 import (
-	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/crossplane/provider-sonarqube/internal/controller/config"
@@ -44,12 +43,13 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgithub"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/webhook"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 // SetupGated creates all SonarQube controllers with safe-start support and
 // adds them to the supplied manager.
-func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
-	for _, setup := range []func(ctrl.Manager, controller.Options) error{
+func SetupGated(mgr ctrl.Manager, opts helpers.Options) error {
+	for _, setup := range []func(ctrl.Manager, helpers.Options) error{
 		config.Setup,
 		application.SetupGated,
 		license.SetupGated,

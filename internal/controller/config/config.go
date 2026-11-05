@@ -18,7 +18,6 @@ limitations under the License.
 package config
 
 import (
-	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/providerconfig"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -31,7 +30,7 @@ import (
 
 // Setup adds a controller that reconciles ProviderConfigs by accounting for
 // their current usage.
-func Setup(mgr ctrl.Manager, opts controller.Options) error {
+func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	err := setupNamespacedProviderConfig(mgr, opts)
 	if err != nil {
 		return err
@@ -42,7 +41,7 @@ func Setup(mgr ctrl.Manager, opts controller.Options) error {
 
 // setupNamespacedProviderConfig initializes the namespaced provider
 // config controller.
-func setupNamespacedProviderConfig(mgr ctrl.Manager, opts controller.Options) error {
+func setupNamespacedProviderConfig(mgr ctrl.Manager, opts helpers.Options) error {
 	return setupProviderConfig(
 		mgr,
 		opts,
@@ -64,7 +63,7 @@ func setupNamespacedProviderConfig(mgr ctrl.Manager, opts controller.Options) er
 // is a namespaced ProviderConfigUsage. There is no cluster scoped usage type,
 // even for a ClusterProviderConfig: the usage lives beside the managed resource
 // that created it and records which kind of config it refers to.
-func setupClusterProviderConfig(mgr ctrl.Manager, opts controller.Options) error {
+func setupClusterProviderConfig(mgr ctrl.Manager, opts helpers.Options) error {
 	return setupProviderConfig(
 		mgr,
 		opts,
@@ -82,7 +81,7 @@ func setupClusterProviderConfig(mgr ctrl.Manager, opts controller.Options) error
 // setupProviderConfig sets up a provider config controller.
 func setupProviderConfig(
 	mgr ctrl.Manager,
-	opts controller.Options,
+	opts helpers.Options,
 	groupKind string,
 	kinds resource.ProviderConfigKinds,
 	config client.Object,

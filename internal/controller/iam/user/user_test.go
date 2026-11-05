@@ -44,6 +44,7 @@ import (
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	sonarfake "github.com/crossplane/provider-sonarqube/internal/fake"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 const (
@@ -325,7 +326,7 @@ func TestSetupGatedCallbackPanicsWithoutManager(t *testing.T) {
 	t.Parallel()
 
 	gate := &mockGate{}
-	opts := controller.DefaultOptions()
+	opts := helpers.Options{Options: controller.DefaultOptions()}
 	opts.Gate = gate
 
 	err := SetupGated(nil, opts)
@@ -361,7 +362,7 @@ func TestSetupGatedRegistersUserGVK(t *testing.T) {
 	t.Parallel()
 
 	gate := &mockGate{}
-	opts := controller.DefaultOptions()
+	opts := helpers.Options{Options: controller.DefaultOptions()}
 	opts.Gate = gate
 
 	err := SetupGated(nil, opts)
