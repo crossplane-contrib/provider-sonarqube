@@ -18,7 +18,6 @@ package common
 
 import (
 	"context"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -30,17 +29,16 @@ import (
 	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
-// ping sends a request through the SonarQube client and consumes the response.
+// ping sends a request through the SonarQube client.
 func ping(t *testing.T, client *sonar.Client) error {
 	t.Helper()
 
-	_, resp, err := client.System.Ping(context.Background())
-	if resp != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-	}
+	_, resp, err := client.System.Ping(context.Background()) //nolint:bodyclose // closed via helpers.CloseBody
+	helpers.CloseBody(resp)
 
 	return err
 }
@@ -53,14 +51,16 @@ func TestNewClientReusesConnections(t *testing.T) {
 	var (
 		connections atomic.Int32
 		mu          sync.Mutex
-		authHeaders []string
+		usernames   []string
 	)
 
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
 
-		authHeaders = append(authHeaders, r.Header.Get("Authorization"))
+		// A personal access token is sent as the basic auth username.
+		username, _, _ := r.BasicAuth()
+		usernames = append(usernames, username)
 
 		_, _ = w.Write([]byte("pong"))
 	}))
@@ -89,13 +89,8 @@ func TestNewClientReusesConnections(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if len(authHeaders) != len(tokens) {
-		t.Fatalf("server received %d requests, want %d", len(authHeaders), len(tokens))
-	}
-
-	sorted := slices.Sorted(slices.Values(authHeaders))
-	if len(slices.Compact(sorted)) != len(tokens) {
-		t.Errorf("clients sharing a connection sent the same credentials: %v", authHeaders)
+	if !slices.Equal(usernames, tokens) {
+		t.Errorf("server received credentials %v, want %v", usernames, tokens)
 	}
 }
 
@@ -108,6 +103,14 @@ func TestNewPooledHTTPClientTransport(t *testing.T) {
 		transport, ok := newPooledHTTPClient(insecureSkipVerify, DefaultResponseHeaderTimeout).Transport.(*http.Transport)
 		if !ok {
 			t.Fatalf("newPooledHTTPClient(%t) transport is not an *http.Transport", insecureSkipVerify)
+		}
+
+		if transport.IdleConnTimeout != idleConnTimeout {
+			t.Errorf("newPooledHTTPClient(%t) IdleConnTimeout = %s, want %s", insecureSkipVerify, transport.IdleConnTimeout, idleConnTimeout)
+		}
+
+		if transport.HTTP2 == nil || transport.HTTP2.SendPingTimeout != http2HealthCheckTimeout {
+			t.Errorf("newPooledHTTPClient(%t) HTTP2 = %+v, want SendPingTimeout %s", insecureSkipVerify, transport.HTTP2, http2HealthCheckTimeout)
 		}
 
 		if transport.ResponseHeaderTimeout != DefaultResponseHeaderTimeout {

@@ -45,6 +45,18 @@ const (
 	// flight against the same host on a small CPU limit.
 	maxIdleConnsPerHost = 32
 
+	// idleConnTimeout closes idle connections before the server does. Tomcat
+	// and the usual proxies in front of it drop them after 60 to 75 seconds,
+	// and a POST written to a connection the peer is closing fails instead of
+	// being retried, as the transport cannot know whether it was processed.
+	idleConnTimeout = 45 * time.Second
+
+	// http2HealthCheckTimeout is how long an HTTP/2 connection may stay silent
+	// before it is pinged. All requests to a host share one such connection,
+	// so without this check a dead peer stalls them until the kernel gives up
+	// on it, as a cancelled request does not close the connection.
+	http2HealthCheckTimeout = 30 * time.Second
+
 	// DefaultResponseHeaderTimeout bounds the wait for a response once a
 	// request is written, so a reused connection to a vanished peer fails the
 	// request instead of holding a worker until the reconcile deadline. It
@@ -159,16 +171,15 @@ func ConfigureHTTPClients(responseHeaderTimeout time.Duration) error {
 func newPooledHTTPClient(insecureSkipVerify bool, responseHeaderTimeout time.Duration) *http.Client {
 	transport := cleanhttp.DefaultPooledTransport()
 	transport.MaxIdleConnsPerHost = maxIdleConnsPerHost
+	transport.IdleConnTimeout = idleConnTimeout
+	transport.HTTP2 = &http.HTTP2Config{SendPingTimeout: http2HealthCheckTimeout}
 	transport.ResponseHeaderTimeout = responseHeaderTimeout
 
 	if insecureSkipVerify {
-		if transport.TLSClientConfig == nil {
-			transport.TLSClientConfig = &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			}
+		transport.TLSClientConfig = &tls.Config{
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: true, //nolint:gosec // opted into by the ProviderConfig, for self-signed certificates
 		}
-
-		transport.TLSClientConfig.InsecureSkipVerify = true
 	}
 
 	return &http.Client{Transport: transport}
