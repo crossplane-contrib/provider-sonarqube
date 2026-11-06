@@ -26,9 +26,12 @@ import (
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -115,13 +118,13 @@ func main() {
 	cfg, err := ctrl.GetConfig()
 	kingpin.FatalIfError(err, "Cannot get API server rest config")
 
+	scheme, err := newScheme()
+	kingpin.FatalIfError(err, "Cannot build the manager scheme")
+
 	mgr, err := ctrl.NewManager(ratelimiter.LimitRESTConfig(cfg, *maxReconcileRate), ctrl.Options{
+		Scheme: scheme,
 		Client: clientOptions(*enableSecretCache),
-		// SyncPeriod in ctrl.Options has been removed since controller-runtime v0.16.0
-		// The recommended way is to move it to cache.Options instead
-		Cache: cache.Options{
-			SyncPeriod: syncInterval,
-		},
+		Cache:  cacheOptions(syncInterval),
 
 		// controller-runtime uses both ConfigMaps and Leases for leader
 		// election by default. Leases expire after 15 seconds, with a
@@ -143,9 +146,6 @@ func main() {
 		}(),
 	})
 	kingpin.FatalIfError(err, "Cannot create controller manager")
-
-	kingpin.FatalIfError(apis.AddToScheme(mgr.GetScheme()), "Cannot add SonarQube APIs to scheme")
-	kingpin.FatalIfError(apiextensionsv1.AddToScheme(mgr.GetScheme()), "Cannot add CustomResourceDefinition to scheme")
 
 	metricRecorder := managed.NewMRMetricRecorder()
 	stateMetrics := statemetrics.NewMRStateMetrics()
@@ -190,6 +190,42 @@ func main() {
 	kingpin.FatalIfError(customresourcesgate.Setup(mgr, o), "Cannot setup CRD gate controller")
 	kingpin.FatalIfError(sonarqube.SetupGated(mgr, o), "Cannot setup SonarQube controllers")
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
+}
+
+// newScheme returns the manager scheme. It must be complete before the manager
+// is built: cacheOptions refers to CustomResourceDefinitions, and
+// ctrl.NewManager resolves the types of cache.Options.ByObject against it.
+func newScheme() (*runtime.Scheme, error) {
+	scheme := runtime.NewScheme()
+	builder := runtime.NewSchemeBuilder(clientgoscheme.AddToScheme, apis.AddToScheme, apiextensionsv1.AddToScheme)
+
+	err := builder.AddToScheme(scheme)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot add types to scheme")
+	}
+
+	return scheme, nil
+}
+
+// cacheOptions returns the manager cache options.
+//
+// SyncPeriod in ctrl.Options has been removed since controller-runtime v0.16.0;
+// the recommended way is to set it in cache.Options instead.
+//
+// The safe-start CRD gate watches every CustomResourceDefinition in the
+// cluster, not only the ones of this provider, and only reads their group,
+// kind, versions and status, so their schemas are stripped before they enter
+// the informer cache. CRDs read through the cache are therefore incomplete and
+// must never be written back to the API server.
+func cacheOptions(syncInterval *time.Duration) cache.Options {
+	return cache.Options{
+		SyncPeriod: syncInterval,
+		ByObject: map[client.Object]cache.ByObject{
+			&apiextensionsv1.CustomResourceDefinition{}: {
+				Transform: customresourcesgate.TransformStripCRDSchema,
+			},
+		},
+	}
 }
 
 // clientOptions returns the manager client options, which also apply to the
