@@ -22,7 +22,6 @@ import (
 	"net/http"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
@@ -34,7 +33,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -69,37 +67,16 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 func Setup(mgr ctrl.Manager, o controller.Options) error { //nolint:varnamelen // consistent with other controllers
 	name := managed.ControllerName(v1alpha1.RuleGroupKind)
 
-	opts := []managed.ReconcilerOption{
+	opts := helpers.ReconcilerOptions(mgr, name, o,
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewRulesClient}),
-		managed.WithLogger(o.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(o.PollInterval),
-		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
-	}
+	)
 
-	if o.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		opts = append(opts, managed.WithManagementPolicies())
-	}
-
-	if o.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		opts = append(opts, managed.WithChangeLogger(o.ChangeLogOptions.ChangeLogger))
-	}
-
-	if o.MetricOptions != nil {
-		opts = append(opts, managed.WithMetricRecorder(o.MetricOptions.MRMetrics))
-	}
-
-	if o.MetricOptions != nil && o.MetricOptions.MRStateMetrics != nil {
-		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &v1alpha1.RuleList{}, o.MetricOptions.PollStateMetricInterval,
-		)
-
-		err := mgr.Add(stateMetricsRecorder)
-		if err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.RuleList")
-		}
+	err := helpers.AddMRStateRecorder(mgr, o, &v1alpha1.RuleList{})
+	if err != nil {
+		return err
 	}
 
 	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.RuleGroupVersionKind), opts...)

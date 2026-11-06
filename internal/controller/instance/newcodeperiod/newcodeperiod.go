@@ -21,11 +21,9 @@ import (
 	"context"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -64,38 +62,17 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	name := managed.ControllerName(v1alpha1.NewCodePeriodGroupKind)
 
-	reconcilerOpts := []managed.ReconcilerOption{
+	reconcilerOpts := helpers.ReconcilerOptions(mgr, name, opts,
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewNewCodePeriodsClient,
 		}),
-		managed.WithLogger(opts.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(opts.PollInterval),
-		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
-	}
+	)
 
-	if opts.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		reconcilerOpts = append(reconcilerOpts, managed.WithManagementPolicies())
-	}
-
-	if opts.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		reconcilerOpts = append(reconcilerOpts, managed.WithChangeLogger(opts.ChangeLogOptions.ChangeLogger))
-	}
-
-	if opts.MetricOptions != nil {
-		reconcilerOpts = append(reconcilerOpts, managed.WithMetricRecorder(opts.MetricOptions.MRMetrics))
-	}
-
-	if opts.MetricOptions != nil && opts.MetricOptions.MRStateMetrics != nil {
-		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), opts.Logger, opts.MetricOptions.MRStateMetrics, &v1alpha1.NewCodePeriodList{}, opts.MetricOptions.PollStateMetricInterval,
-		)
-
-		err := mgr.Add(stateMetricsRecorder)
-		if err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.NewCodePeriodList")
-		}
+	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.NewCodePeriodList{})
+	if err != nil {
+		return err
 	}
 
 	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.NewCodePeriodGroupVersionKind), reconcilerOpts...)

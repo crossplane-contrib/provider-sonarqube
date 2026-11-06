@@ -20,8 +20,6 @@ package settings
 import (
 	"context"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
-
 	stderrors "errors"
 
 	"github.com/pkg/errors"
@@ -32,7 +30,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
@@ -68,38 +65,17 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 func Setup(mgr ctrl.Manager, opts controller.Options) error {
 	name := managed.ControllerName(v1alpha1.SettingsGroupKind)
 
-	reconcilerOpts := []managed.ReconcilerOption{
+	reconcilerOpts := helpers.ReconcilerOptions(mgr, name, opts,
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewSettingsClient,
 		}),
-		managed.WithLogger(opts.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(opts.PollInterval),
-		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
-	}
+	)
 
-	if opts.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		reconcilerOpts = append(reconcilerOpts, managed.WithManagementPolicies())
-	}
-
-	if opts.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		reconcilerOpts = append(reconcilerOpts, managed.WithChangeLogger(opts.ChangeLogOptions.ChangeLogger))
-	}
-
-	if opts.MetricOptions != nil {
-		reconcilerOpts = append(reconcilerOpts, managed.WithMetricRecorder(opts.MetricOptions.MRMetrics))
-	}
-
-	if opts.MetricOptions != nil && opts.MetricOptions.MRStateMetrics != nil {
-		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), opts.Logger, opts.MetricOptions.MRStateMetrics, &v1alpha1.SettingsList{}, opts.MetricOptions.PollStateMetricInterval,
-		)
-
-		err := mgr.Add(stateMetricsRecorder)
-		if err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.SettingsList")
-		}
+	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.SettingsList{})
+	if err != nil {
+		return err
 	}
 
 	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.SettingsGroupVersionKind), reconcilerOpts...)

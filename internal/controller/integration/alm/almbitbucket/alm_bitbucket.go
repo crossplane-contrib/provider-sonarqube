@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"k8s.io/utils/ptr"
 
@@ -35,7 +34,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -76,37 +74,16 @@ func SetupGated(mgr ctrl.Manager, o controller.Options) error {
 func Setup(mgr ctrl.Manager, options controller.Options) error {
 	name := managed.ControllerName(v1alpha1.ALMBitbucketGroupKind)
 
-	opts := []managed.ReconcilerOption{
+	opts := helpers.ReconcilerOptions(mgr, name, options,
 		managed.WithExternalConnector(&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
-		managed.WithLogger(options.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(options.PollInterval),
-		managed.WithRecorder(helpers.NewEventRecorder(mgr, name)),
-	}
+	)
 
-	if options.Features.Enabled(feature.EnableBetaManagementPolicies) {
-		opts = append(opts, managed.WithManagementPolicies())
-	}
-
-	if options.Features.Enabled(feature.EnableAlphaChangeLogs) {
-		opts = append(opts, managed.WithChangeLogger(options.ChangeLogOptions.ChangeLogger))
-	}
-
-	if options.MetricOptions != nil {
-		opts = append(opts, managed.WithMetricRecorder(options.MetricOptions.MRMetrics))
-	}
-
-	if options.MetricOptions != nil && options.MetricOptions.MRStateMetrics != nil {
-		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), options.Logger, options.MetricOptions.MRStateMetrics, &v1alpha1.ALMBitbucketList{}, options.MetricOptions.PollStateMetricInterval,
-		)
-
-		err := mgr.Add(stateMetricsRecorder)
-		if err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.ALMBitbucketList")
-		}
+	err := helpers.AddMRStateRecorder(mgr, options, &v1alpha1.ALMBitbucketList{})
+	if err != nil {
+		return err
 	}
 
 	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.ALMBitbucketGroupVersionKind), opts...)
