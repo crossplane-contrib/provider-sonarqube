@@ -45,11 +45,12 @@ const (
 	// flight against the same host on a small CPU limit.
 	maxIdleConnsPerHost = 32
 
-	// responseHeaderTimeout bounds the wait for a response once a request is
-	// written, so a reused connection to a vanished peer fails the request
-	// instead of holding a worker until the reconcile deadline. It matches
-	// the timeout of the HTTP client the SonarQube SDK would otherwise use.
-	responseHeaderTimeout = 30 * time.Second
+	// DefaultResponseHeaderTimeout bounds the wait for a response once a
+	// request is written, so a reused connection to a vanished peer fails the
+	// request instead of holding a worker until the reconcile deadline. It
+	// matches the timeout of the HTTP client the SonarQube SDK would otherwise
+	// use.
+	DefaultResponseHeaderTimeout = 30 * time.Second
 )
 
 var (
@@ -58,12 +59,12 @@ var (
 	// only reused when the transport outlives it. Sharing the transport is
 	// safe because credentials are set on each request, never on a
 	// connection.
-	pooledHTTPClient = newPooledHTTPClient(false)
+	pooledHTTPClient = newPooledHTTPClient(false, DefaultResponseHeaderTimeout)
 	// insecurePooledHTTPClient is shared by every SonarQube client that skips
 	// TLS verification. It is kept apart from pooledHTTPClient so that a
 	// connection opened without verification is never handed to a client
 	// that requires it.
-	insecurePooledHTTPClient = newPooledHTTPClient(true)
+	insecurePooledHTTPClient = newPooledHTTPClient(true, DefaultResponseHeaderTimeout)
 )
 
 // BasicAuthArgs is the expected struct that can be passed in the Config.Token
@@ -139,9 +140,23 @@ func NewClient(clientConfig Config) *sonar.Client {
 	return sonarClient
 }
 
+// ConfigureHTTPClients sets how long the shared HTTP clients wait for response
+// headers once a request is written. Zero disables the timeout. It replaces the
+// shared clients, so it must be called before any SonarQube client is built.
+func ConfigureHTTPClients(responseHeaderTimeout time.Duration) error {
+	if responseHeaderTimeout < 0 {
+		return errors.Errorf("response header timeout must not be negative, got %s", responseHeaderTimeout)
+	}
+
+	pooledHTTPClient = newPooledHTTPClient(false, responseHeaderTimeout)
+	insecurePooledHTTPClient = newPooledHTTPClient(true, responseHeaderTimeout)
+
+	return nil
+}
+
 // newPooledHTTPClient returns an HTTP client that keeps connections alive,
 // optionally skipping TLS certificate verification.
-func newPooledHTTPClient(insecureSkipVerify bool) *http.Client {
+func newPooledHTTPClient(insecureSkipVerify bool, responseHeaderTimeout time.Duration) *http.Client {
 	transport := cleanhttp.DefaultPooledTransport()
 	transport.MaxIdleConnsPerHost = maxIdleConnsPerHost
 	transport.ResponseHeaderTimeout = responseHeaderTimeout

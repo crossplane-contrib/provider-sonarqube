@@ -208,6 +208,17 @@ When the cache is enabled, the provider exposes the following metrics:
 | `provider_sonarqube_observe_cache_invalidations_total` | Counter | `namespace` | Invalidations triggered by writes. |
 | `provider_sonarqube_observe_cache_entries` | Gauge | | Number of cached responses. |
 
+## SonarQube request timeout
+
+A request to SonarQube fails if the response headers do not arrive in time
+after the request is written, so that a connection to a vanished server does
+not hold a reconcile until its deadline. Raise the timeout if a healthy instance
+takes longer to answer, for example through a `DeploymentRuntimeConfig`:
+
+| Flag | Environment variable | Default | Description |
+| --- | --- | --- | --- |
+| `--sonarqube-response-header-timeout` | `SONARQUBE_RESPONSE_HEADER_TIMEOUT` | `30s` | How long to wait for response headers once a request is written. Must not be negative. `0` disables the timeout. |
+
 ## Documentation
 
 * [CRD documentation](https://marketplace.upbound.io/providers/crossplane-contrib/provider-sonarqube/latest/crds)

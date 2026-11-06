@@ -23,9 +23,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 )
@@ -103,14 +105,68 @@ func TestNewPooledHTTPClientTransport(t *testing.T) {
 	t.Parallel()
 
 	for _, insecureSkipVerify := range []bool{false, true} {
-		transport, ok := newPooledHTTPClient(insecureSkipVerify).Transport.(*http.Transport)
+		transport, ok := newPooledHTTPClient(insecureSkipVerify, DefaultResponseHeaderTimeout).Transport.(*http.Transport)
 		if !ok {
 			t.Fatalf("newPooledHTTPClient(%t) transport is not an *http.Transport", insecureSkipVerify)
 		}
 
-		if transport.ResponseHeaderTimeout != responseHeaderTimeout {
-			t.Errorf("newPooledHTTPClient(%t) ResponseHeaderTimeout = %s, want %s", insecureSkipVerify, transport.ResponseHeaderTimeout, responseHeaderTimeout)
+		if transport.ResponseHeaderTimeout != DefaultResponseHeaderTimeout {
+			t.Errorf("newPooledHTTPClient(%t) ResponseHeaderTimeout = %s, want %s", insecureSkipVerify, transport.ResponseHeaderTimeout, DefaultResponseHeaderTimeout)
 		}
+	}
+}
+
+// TestConfigureHTTPClients replaces the package-level shared clients, so it
+// must not run in parallel with other tests relying on them.
+//
+//nolint:paralleltest // mutates package-level state
+func TestConfigureHTTPClients(t *testing.T) {
+	t.Cleanup(func() {
+		err := ConfigureHTTPClients(DefaultResponseHeaderTimeout)
+		if err != nil {
+			t.Errorf("resetting ConfigureHTTPClients() error = %v", err)
+		}
+	})
+
+	if ConfigureHTTPClients(-time.Second) == nil {
+		t.Fatal("ConfigureHTTPClients() with a negative timeout succeeded")
+	}
+
+	const timeout = 5 * time.Second
+
+	err := ConfigureHTTPClients(timeout)
+	if err != nil {
+		t.Fatalf("ConfigureHTTPClients() error = %v", err)
+	}
+
+	for _, client := range []*http.Client{pooledHTTPClient, insecurePooledHTTPClient} {
+		transport, ok := client.Transport.(*http.Transport)
+		if !ok {
+			t.Fatal("shared client transport is not an *http.Transport")
+		}
+
+		if transport.ResponseHeaderTimeout != timeout {
+			t.Errorf("ResponseHeaderTimeout = %s, want %s", transport.ResponseHeaderTimeout, timeout)
+		}
+	}
+}
+
+// TestResponseHeaderTimeoutFailsStalledRequest checks that a request fails when
+// the server accepts it but never answers.
+func TestResponseHeaderTimeoutFailsStalledRequest(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+
+	client := NewClient(Config{AuthType: PersonalAccessToken, Token: "token", BaseURL: server.URL + "/api/"})
+	client.SetHTTPClient(newPooledHTTPClient(false, 50*time.Millisecond))
+
+	err := ping(t, client)
+	if err == nil || !strings.Contains(err.Error(), "timeout awaiting response headers") {
+		t.Errorf("Ping() error = %v, want a response header timeout", err)
 	}
 }
 
