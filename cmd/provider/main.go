@@ -197,20 +197,11 @@ func main() {
 // ctrl.NewManager resolves the types of cache.Options.ByObject against it.
 func newScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
+	builder := runtime.NewSchemeBuilder(clientgoscheme.AddToScheme, apis.AddToScheme, apiextensionsv1.AddToScheme)
 
-	err := clientgoscheme.AddToScheme(scheme)
+	err := builder.AddToScheme(scheme)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot add client-go types to scheme")
-	}
-
-	err = apis.AddToScheme(scheme)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot add SonarQube APIs to scheme")
-	}
-
-	err = apiextensionsv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot add CustomResourceDefinition to scheme")
+		return nil, errors.Wrap(err, "cannot add types to scheme")
 	}
 
 	return scheme, nil
@@ -222,8 +213,10 @@ func newScheme() (*runtime.Scheme, error) {
 // the recommended way is to set it in cache.Options instead.
 //
 // The safe-start CRD gate watches every CustomResourceDefinition in the
-// cluster, not only the ones of this provider, and only needs their metadata,
-// so their schemas are stripped before they enter the informer cache.
+// cluster, not only the ones of this provider, and only reads their group,
+// kind, versions and status, so their schemas are stripped before they enter
+// the informer cache. CRDs read through the cache are therefore incomplete and
+// must never be written back to the API server.
 func cacheOptions(syncInterval *time.Duration) cache.Options {
 	return cache.Options{
 		SyncPeriod: syncInterval,

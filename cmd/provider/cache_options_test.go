@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -93,30 +94,31 @@ func TestCacheOptionsStripCRDSchema(t *testing.T) {
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: "instance.sonarqube.crossplane.io",
+			Names: apiextensionsv1.CustomResourceDefinitionNames{Kind: "Plugin"},
 			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{{
 				Name:   "v1alpha1",
 				Served: true,
 				Schema: &apiextensionsv1.CustomResourceValidation{},
 			}},
 		},
+		Status: apiextensionsv1.CustomResourceDefinitionStatus{
+			Conditions: []apiextensionsv1.CustomResourceDefinitionCondition{{
+				Type:   apiextensionsv1.Established,
+				Status: apiextensionsv1.ConditionTrue,
+			}},
+		},
 	}
 
-	transformed, err := transform(crd)
+	// The transform works in place, so the expected object is copied first.
+	want := crd.DeepCopy()
+	want.Spec.Versions[0].Schema = nil
+
+	got, err := transform(crd)
 	if err != nil {
 		t.Fatalf("Transform() unexpected error: %v", err)
 	}
 
-	got, ok := transformed.(*apiextensionsv1.CustomResourceDefinition)
-	if !ok {
-		t.Fatalf("Transform() returned %T, want a CustomResourceDefinition", transformed)
-	}
-
-	version := got.Spec.Versions[0]
-	if version.Schema != nil {
-		t.Error("Transform() kept the CRD schema")
-	}
-
-	if version.Name != "v1alpha1" || !version.Served || got.Spec.Group != crd.Spec.Group {
-		t.Errorf("Transform() altered the fields read by the CRD gate: %+v", got.Spec)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("Transform() mismatch (-want +got):\n%s", diff)
 	}
 }
