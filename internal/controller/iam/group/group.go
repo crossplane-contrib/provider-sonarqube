@@ -301,6 +301,12 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	defer helpers.CloseBody(destroyResp)
 
 	if err != nil {
+		// The client resends a DELETE after a transient failure, so a 404
+		// can mean an earlier attempt succeeded.
+		if common.IsResponseNotFound(destroyResp) {
+			return managed.ExternalDelete{}, nil
+		}
+
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteGroup)
 	}
 

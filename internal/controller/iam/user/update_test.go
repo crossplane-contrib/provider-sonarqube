@@ -219,3 +219,25 @@ func TestReconcileGroupMembershipsBoundsConcurrency(t *testing.T) {
 		t.Errorf("reconcileGroupMemberships() peak concurrency = %d, want at most %d", got, helpers.MaxConcurrentRequests)
 	}
 }
+
+// TestReconcileGroupMembershipsIgnoresRemovedMembership checks that a 404 on a
+// membership removal is not an error, as the client resends a DELETE and an
+// earlier attempt may have succeeded.
+func TestReconcileGroupMembershipsIgnoresRemovedMembership(t *testing.T) {
+	t.Parallel()
+
+	user := newUserWithSpec(v1alpha1.UserParameters{Login: testUserLogin, Name: "Alice", Groups: &[]v1alpha1.UserGroupsParameters{}})
+	user.Status.AtProvider.Groups = map[string]string{"old-group": "membership"}
+
+	ext := &external{groupsClient: &sonarfake.MockGroupsClient{
+		DeleteGroupMembershipFn: func(_ string) (*http.Response, error) {
+			//nolint:nilnil // Intentional: the client returns the 404 response with its error.
+			return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, errors.New("not found")
+		},
+	}}
+
+	err := ext.reconcileGroupMemberships(context.Background(), user, testUserID)
+	if err != nil {
+		t.Errorf("reconcileGroupMemberships() unexpected error: %v", err)
+	}
+}

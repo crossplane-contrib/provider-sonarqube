@@ -255,7 +255,7 @@ func TestGetTokenValueFromSecretInNamespace(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			kubeClient := fakeclient.NewClientBuilder().WithObjects(secret).WithInterceptorFuncs(interceptor.Funcs{
+			kubeClient := fakeclient.NewClientBuilder().WithObjects(secret.DeepCopy()).WithInterceptorFuncs(interceptor.Funcs{
 				Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 					if key.Namespace != tc.namespace {
 						t.Errorf("unexpected Get in namespace %q, want only %q", key.Namespace, tc.namespace)

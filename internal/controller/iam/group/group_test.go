@@ -669,6 +669,16 @@ func TestDelete(t *testing.T) {
 			args: args{ctx: context.Background(), mg: newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs"})},
 			want: want{errSubstr: errDeleteGroup},
 		},
+		"AlreadyDeletedGroupReturnsSuccess": {
+			client: &fake.MockGroupsClient{
+				DeleteGroupFn: func(_ string) (*http.Response, error) {
+					//nolint:nilnil // Intentional: simulating partial HTTP failure.
+					return mockHTTPResponse(http.StatusNotFound), errors.New("not found")
+				},
+			},
+			args: args{ctx: context.Background(), mg: newTestGroup("group-1", v1alpha1.GroupParameters{Name: "devs"})},
+			want: want{deletion: managed.ExternalDelete{}},
+		},
 		"SuccessfulDelete": {
 			client: &fake.MockGroupsClient{
 				DeleteGroupFn: func(_ string) (*http.Response, error) {

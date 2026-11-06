@@ -29,6 +29,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/clients/iam"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -140,7 +141,9 @@ func (c *external) reconcileGroupMemberships(ctx context.Context, userResource *
 			resp, err := c.groupsClient.DeleteGroupMembership(ctx, groupMembershipID) //nolint:bodyclose // closed via helpers.CloseBody
 			defer helpers.CloseBody(resp)
 
-			if err != nil {
+			// The client resends a DELETE after a transient failure, so a
+			// 404 can mean an earlier attempt succeeded.
+			if err != nil && !common.IsResponseNotFound(resp) {
 				errorSliceMutex.Lock()
 
 				errorSlice = append(errorSlice, errors.Wrapf(err, "cannot remove user membership %s", groupMembershipID))
