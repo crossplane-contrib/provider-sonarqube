@@ -57,98 +57,27 @@ your platform:
 Available examples live under `examples/` and are a practical starting point for
 understanding the resource shapes supported by the provider.
 
-## Kubernetes Secret access
+## Configuration
 
-Secret references on namespaced objects resolve only inside that object's
-namespace. Managed resource Secret references (user passwords, license keys,
-ALM credentials, webhook secrets) take only a `name` and `key`, and the Secret
-is always read from the managed resource's namespace. A `ProviderConfig`'s
-credentials must be in the `ProviderConfig`'s namespace; a reference to another
-namespace is rejected. Only the cluster-scoped `ClusterProviderConfig` can
-reference Secrets in any namespace.
-
-By default the provider reads Kubernetes Secrets through the controller-runtime
-cache. The first read starts an informer that lists and watches every Secret the
-provider can access and keeps them in memory, which requires cluster-wide `list`
-and `watch` permissions on Secrets.
-
-Disabling the Secret cache sends each Secret read directly to the Kubernetes API,
-so the provider only needs access to the Secrets it actually uses. Other
-Kubernetes kinds stay cached. This setting is independent of the observe cache
-below.
+Set flags or environment variables through a `DeploymentRuntimeConfig`. Boolean
+flags also accept a `--no-` prefix.
 
 | Flag | Environment variable | Default | Description |
 | --- | --- | --- | --- |
-| `--enable-secret-cache` | `ENABLE_SECRET_CACHE` | `true` | Serves Secret reads from the informer cache. Set to `false`, or pass `--no-enable-secret-cache`, to read Secrets directly. |
-
-```yaml
-apiVersion: pkg.crossplane.io/v1beta1
-kind: DeploymentRuntimeConfig
-metadata:
-  name: provider-sonarqube
-spec:
-  deploymentTemplate:
-    spec:
-      selector: {}
-      template:
-        spec:
-          containers:
-            - name: package-runtime
-              env:
-                - name: ENABLE_SECRET_CACHE
-                  value: "false"
-```
-
-Things to know before disabling it:
-
-* **Permissions:** with the cache disabled, the provider needs `get` on every
-  Secret it reads (`ProviderConfig` credentials and Secret references such as
-  user passwords, ALM credentials, webhook secrets and license keys), and
-  `get`, `create` and `patch` on connection Secrets in their namespace. `list`,
-  `watch`, `update` and `delete` are not needed. `get` and `patch` can be
-  restricted with `resourceNames`, but `create` cannot, so it allows any Secret
-  name in the namespace. A missing grant is reported as
-  `Cannot get referenced secret: ... is forbidden`.
-* **Existing grants:** the flag does not change RBAC. The ClusterRole Crossplane
-  generates for the provider can still grant broader Secret access, and a
-  narrower Role does not take it away. Check the effective permissions of the
-  provider's ServiceAccount.
-* **API traffic:** every Secret read becomes an API request. The provider reads
-  credentials on every reconcile, and reads the connection Secret each time it
-  publishes connection details, which happens on every reconcile of a resource
-  with `writeConnectionSecretToRef`. These requests share the provider's
-  Kubernetes client rate limit of 5 × `--max-reconcile-rate` requests per
-  second, so large numbers of managed resources can slow reconciliation.
-
-## Cross-resource references
-
-References and selectors between managed resources (for example
-`groupIdRef` or `qualityGateNameSelector`) always resolve in the referencing
-resource's own `metadata.namespace`. They have no `namespace` field, so one
-tenant cannot read identifiers from another tenant's resources.
-
-When upgrading, a value that was already resolved from another namespace
-stays in `spec.forProvider` because the default `IfNotPresent` policy does
-not re-resolve it. Clear the resolved field (for example `groupId` or
-`projectKey`) so it resolves again in the resource's own namespace. Fields
-marked immutable cannot be cleared, so recreate those resources instead.
-
-## Observe cache (alpha)
-
-Many managed resources of the same kind usually read the same SonarQube list
-endpoint during `Observe` (for example, every `Plugin` reads the list of
-installed plugins). The observe cache shares those responses between
-reconciles for a short time, which cuts the number of API calls sent to
-SonarQube when many resources are managed.
-
-The cache is **disabled by default**. Enable it with the following flags, for
-example through a `DeploymentRuntimeConfig`:
-
-| Flag | Environment variable | Default | Description |
-| --- | --- | --- | --- |
-| `--enable-observe-cache` | `ENABLE_OBSERVE_CACHE` | `false` | Enables the cache. |
-| `--observe-cache-ttl` | `OBSERVE_CACHE_TTL` | `20s` | Lifetime of a cached response. Must be greater than `0` and lower than `30s` (Crossplane's creation grace period). |
-| `--observe-cache-max-entries` | `OBSERVE_CACHE_MAX_ENTRIES` | `1000` | Maximum number of cached responses. The least recently used are evicted first. Must be greater than `0`. |
+| `--debug`, `-d` | `CROSSPLANE_SONARQUBE_PROVIDER_DEBUG` | `false` | Enable debug logging. |
+| `--leader-election`, `-l` | `LEADER_ELECTION` | `false` | Use leader election for the controller manager. |
+| `--sync`, `-s` | `CROSSPLANE_SONARQUBE_PROVIDER_SYNC` | `1h` | How often all resources are re-checked for drift. |
+| `--poll` | `CROSSPLANE_SONARQUBE_PROVIDER_POLL` | `1m` | How often each resource is checked for drift. |
+| `--poll-state-metric` | `CROSSPLANE_SONARQUBE_PROVIDER_POLL_STATE_METRIC` | `5s` | State metric recording interval. |
+| `--max-reconcile-rate` | `CROSSPLANE_SONARQUBE_PROVIDER_MAX_RECONCILE_RATE` | `10` | Maximum reconciles per second. |
+| `--enable-management-policies` | `ENABLE_MANAGEMENT_POLICIES` | `true` | Enable Management Policies. |
+| `--enable-changelogs` | `ENABLE_CHANGE_LOGS` | `false` | Capture change logs during reconciliation. |
+| `--changelogs-socket-path` | `CHANGELOGS_SOCKET_PATH` | `/var/run/changelogs/changelogs.sock` | Change logs socket path. |
+| `--sonarqube-response-header-timeout` | `SONARQUBE_RESPONSE_HEADER_TIMEOUT` | `30s` | Maximum wait for SonarQube's response headers. `0` disables it. |
+| `--enable-secret-cache` | `ENABLE_SECRET_CACHE` | `true` | Read Secrets through the informer cache. See [Kubernetes Secret access](#kubernetes-secret-access). |
+| `--enable-observe-cache` | `ENABLE_OBSERVE_CACHE` | `false` | Alpha. Cache SonarQube list responses. See [Observe cache](#observe-cache-alpha). |
+| `--observe-cache-ttl` | `OBSERVE_CACHE_TTL` | `20s` | Lifetime of a cached response. Must be above `0` and below `30s`. |
+| `--observe-cache-max-entries` | `OBSERVE_CACHE_MAX_ENTRIES` | `1000` | Maximum cached responses. Must be above `0`. |
 
 ```yaml
 apiVersion: pkg.crossplane.io/v1beta1
@@ -168,26 +97,49 @@ spec:
                   value: "true"
 ```
 
-Things to know before enabling it:
+## Kubernetes Secret access
 
-* **Staleness:** changes made by the provider itself invalidate the affected
-  cached responses immediately. Drift introduced outside of Crossplane (in the
-  SonarQube UI, by another tool, ...) can however be detected up to one TTL
-  later than without the cache.
-* **Scope:** cached responses are scoped per SonarQube connection, identified by
-  a hash of the base URL, authentication type and credentials of the
-  `ProviderConfig`. Resources using different credentials never share cached
-  data, even against the same instance. Raw credentials are never kept in the
-  cache.
-* **Errors are never cached.**
-* **Memory:** the cache is bounded by entry count. When it is enabled, the
-  provider also sets `GOMEMLIMIT` to 90% of the container memory limit read
-  from the pod's cgroup (using
-  [automemlimit](https://github.com/KimMachineGun/automemlimit)), so that the
-  Go garbage collector works harder before the pod gets OOM-killed. Set
-  `GOMEMLIMIT` yourself to override it, or `AUTOMEMLIMIT` to change the ratio
-  (`off` disables it). Set the pod memory limit with the provider's own needs
-  and the cached responses in mind.
+Secret references on namespaced objects resolve only inside that object's
+namespace. Managed resource Secret references (user passwords, license keys,
+ALM credentials, webhook secrets) take only a `name` and `key`, and the Secret
+is always read from the managed resource's namespace. A `ProviderConfig`'s
+credentials must be in the `ProviderConfig`'s namespace; a reference to another
+namespace is rejected. Only the cluster-scoped `ClusterProviderConfig` can
+reference Secrets in any namespace.
+
+By default, Secrets are read through an informer cache, which needs
+cluster-wide `list` and `watch` on Secrets. With `--no-enable-secret-cache`,
+each read goes to the Kubernetes API, so the provider only needs `get` on the
+Secrets it reads, plus `get`, `create` and `patch` on connection Secrets.
+
+* The flag does not change RBAC: restrict the provider's ServiceAccount yourself.
+* Each read counts against the client limit of 5 × `--max-reconcile-rate`
+  requests per second, which can slow reconciliation at scale.
+
+## Cross-resource references
+
+References and selectors between managed resources (for example
+`groupIdRef` or `qualityGateNameSelector`) always resolve in the referencing
+resource's own `metadata.namespace`. They have no `namespace` field, so one
+tenant cannot read identifiers from another tenant's resources.
+
+When upgrading, a value that was already resolved from another namespace
+stays in `spec.forProvider` because the default `IfNotPresent` policy does
+not re-resolve it. Clear the resolved field (for example `groupId` or
+`projectKey`) so it resolves again in the resource's own namespace. Fields
+marked immutable cannot be cleared, so recreate those resources instead.
+
+## Observe cache (alpha)
+
+Shares SonarQube list responses between reconciles for a short time, which
+cuts API calls when many resources are managed. Enable it with
+`--enable-observe-cache`.
+
+* **Staleness:** drift from outside Crossplane can be detected up to one TTL
+  late. The provider's own changes invalidate entries immediately.
+* **Scope:** entries are never shared between credentials. Errors are not cached.
+* **Memory:** `GOMEMLIMIT` is set to 90% of the container limit, unless you set
+  it yourself. `AUTOMEMLIMIT` changes the ratio (`off` disables it).
 
 Supported resources:
 

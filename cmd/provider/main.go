@@ -52,6 +52,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/crossplane/provider-sonarqube/apis"
+	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	observecache "github.com/crossplane/provider-sonarqube/internal/clients/common/cache"
 	sonarqube "github.com/crossplane/provider-sonarqube/internal/controller"
 	"github.com/crossplane/provider-sonarqube/internal/version"
@@ -78,6 +79,8 @@ func main() {
 		enableChangeLogs         = app.Flag("enable-changelogs", "Enable support for capturing change logs during reconciliation.").Default("false").Envar("ENABLE_CHANGE_LOGS").Bool()
 		changelogsSocketPath     = app.Flag("changelogs-socket-path", "Path for changelogs socket (if enabled)").Default("/var/run/changelogs/changelogs.sock").Envar("CHANGELOGS_SOCKET_PATH").String()
 
+		responseHeaderTimeout = app.Flag("sonarqube-response-header-timeout", "How long to wait for SonarQube's response headers once a request is written. Must not be negative, 0 disables the timeout.").Default(common.DefaultResponseHeaderTimeout.String()).Envar("SONARQUBE_RESPONSE_HEADER_TIMEOUT").Duration()
+
 		enableObserveCache     = app.Flag("enable-observe-cache", "Enable the alpha cache of SonarQube list responses read during Observe.").Default("false").Envar("ENABLE_OBSERVE_CACHE").Bool()
 		observeCacheTTL        = app.Flag("observe-cache-ttl", "Lifetime of an observe cache entry. Must be greater than 0 and lower than 30s.").Default(observecache.DefaultTTL.String()).Envar("OBSERVE_CACHE_TTL").Duration()
 		observeCacheMaxEntries = app.Flag("observe-cache-max-entries", "Maximum number of observe cache entries. Must be greater than 0.").Default(strconv.Itoa(observecache.DefaultMaxEntries)).Envar("OBSERVE_CACHE_MAX_ENTRIES").Int()
@@ -97,6 +100,8 @@ func main() {
 		// controller-runtime.
 		ctrl.SetLogger(zap.New(zap.WriteTo(io.Discard)))
 	}
+
+	kingpin.FatalIfError(common.ConfigureHTTPClients(*responseHeaderTimeout), "Invalid SonarQube response header timeout")
 
 	if *enableObserveCache {
 		// The cache retains SonarQube responses on top of the provider's own
