@@ -52,7 +52,7 @@ func TestUserCRUD(t *testing.T) {
 	pwSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: f.Namespace},
 		Type:       corev1.SecretTypeOpaque,
-		StringData: map[string]string{secretKey: "e2e-password-123!"},
+		StringData: map[string]string{secretKey: "E2e-password-123!"},
 	}
 	if err := f.Kube.Create(context.Background(), pwSecret); err != nil && !apierrors.IsAlreadyExists(err) {
 		t.Fatalf("creating password secret: %v", err)
