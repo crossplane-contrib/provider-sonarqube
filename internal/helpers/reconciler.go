@@ -40,6 +40,16 @@ type Options struct {
 	MinPollInterval time.Duration
 }
 
+// ValidateMinPollInterval returns an error if minimum is negative. A negative
+// minimum would silently remove the limit, which only 0 is meant to do.
+func ValidateMinPollInterval(minimum time.Duration) error {
+	if minimum < 0 {
+		return errors.Errorf("minimum poll interval must not be negative, got %s", minimum)
+	}
+
+	return nil
+}
+
 // ReconcilerOptions returns the managed reconciler options shared by every
 // controller, followed by the options specific to the calling controller.
 func ReconcilerOptions(mgr ctrl.Manager, name string, opts Options, specific ...managed.ReconcilerOption) []managed.ReconcilerOption {

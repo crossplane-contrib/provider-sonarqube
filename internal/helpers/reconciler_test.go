@@ -41,8 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	iamv1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
-	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
+	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 )
 
 // recorderManager is a manager that only provides event recorders.
@@ -190,7 +189,7 @@ func TestAddMRStateRecorder(t *testing.T) {
 			mgr := &runnableManager{err: test.addErr}
 			opts := Options{Options: controller.Options{Logger: logging.NewNopLogger(), MetricOptions: test.metrics}}
 
-			err := AddMRStateRecorder(mgr, opts, &iamv1alpha1.GroupList{})
+			err := AddMRStateRecorder(mgr, opts, &v1alpha1.GroupList{})
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("AddMRStateRecorder() error = %v, want %v", err, test.wantErr)
 			}
@@ -208,9 +207,9 @@ func TestAddMRStateRecorder(t *testing.T) {
 	}
 }
 
-// newTestReconciler returns a reconciler for a QualityGate that is up to date
-// with SonarQube, using the options of ReconcilerOptions.
-func newTestReconciler(t *testing.T, opts *Options, gate *v1alpha1.QualityGate) *managed.Reconciler {
+// newTestReconciler returns a reconciler for a Group that is up to date with
+// SonarQube, using the options of ReconcilerOptions.
+func newTestReconciler(t *testing.T, opts Options, group *v1alpha1.Group) *managed.Reconciler {
 	t.Helper()
 
 	scheme := runtime.NewScheme()
@@ -220,7 +219,7 @@ func newTestReconciler(t *testing.T, opts *Options, gate *v1alpha1.QualityGate) 
 		t.Fatalf("AddToScheme() unexpected error: %v", err)
 	}
 
-	kube := clientfake.NewClientBuilder().WithScheme(scheme).WithObjects(gate).WithStatusSubresource(gate).Build()
+	kube := clientfake.NewClientBuilder().WithScheme(scheme).WithObjects(group).WithStatusSubresource(group).Build()
 	mgr := recorderManager{Manager: &resourcefake.Manager{Client: kube, Scheme: scheme}}
 
 	connector := managed.ExternalConnectorFn(func(context.Context, resource.Managed) (managed.ExternalClient, error) {
@@ -232,8 +231,8 @@ func newTestReconciler(t *testing.T, opts *Options, gate *v1alpha1.QualityGate) 
 		}, nil
 	})
 
-	return managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.QualityGateGroupVersionKind),
-		ReconcilerOptions(mgr, "test", *opts, managed.WithExternalConnector(connector))...)
+	return managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.GroupGroupVersionKind),
+		ReconcilerOptions(mgr, "test", opts, managed.WithExternalConnector(connector))...)
 }
 
 // TestReconcilerOptionsPollInterval checks the requeue delay of a real
@@ -248,10 +247,15 @@ func TestReconcilerOptionsPollInterval(t *testing.T) {
 
 	tests := map[string]struct {
 		annotation string
+		noMinimum  bool
 		want       time.Duration
 	}{
 		"NoAnnotationUsesThePollInterval": {
 			want: pollInterval,
+		},
+		"InvalidAnnotationUsesThePollInterval": {
+			annotation: "-1s",
+			want:       pollInterval,
 		},
 		"AnnotationAboveTheMinimumIsHonoured": {
 			annotation: "2h",
@@ -265,18 +269,27 @@ func TestReconcilerOptionsPollInterval(t *testing.T) {
 			annotation: "1ms",
 			want:       minPollInterval,
 		},
+		"AnnotationAtTheMinimumIsHonoured": {
+			annotation: "30s",
+			want:       minPollInterval,
+		},
+		"ZeroMinimumRemovesTheLimit": {
+			annotation: "1ms",
+			noMinimum:  true,
+			want:       time.Millisecond,
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			gate := &v1alpha1.QualityGate{ObjectMeta: metav1.ObjectMeta{Name: "gate", Namespace: "team"}}
+			group := &v1alpha1.Group{ObjectMeta: metav1.ObjectMeta{Name: "group", Namespace: "team"}}
 			if test.annotation != "" {
-				meta.AddAnnotations(gate, map[string]string{meta.AnnotationKeyPollInterval: test.annotation})
+				meta.AddAnnotations(group, map[string]string{meta.AnnotationKeyPollInterval: test.annotation})
 			}
 
-			opts := &Options{
+			opts := Options{
 				Options: controller.Options{
 					Logger:       logging.NewNopLogger(),
 					Features:     &feature.Flags{},
@@ -284,16 +297,44 @@ func TestReconcilerOptionsPollInterval(t *testing.T) {
 				},
 				MinPollInterval: minPollInterval,
 			}
+			if test.noMinimum {
+				opts.MinPollInterval = 0
+			}
 
-			request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "gate", Namespace: "team"}}
+			request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "group", Namespace: "team"}}
 
-			got, err := newTestReconciler(t, opts, gate).Reconcile(t.Context(), request)
+			got, err := newTestReconciler(t, opts, group).Reconcile(t.Context(), request)
 			if err != nil {
 				t.Fatalf("Reconcile() unexpected error: %v", err)
 			}
 
 			if got.RequeueAfter != test.want {
 				t.Errorf("Reconcile() RequeueAfter = %v, want %v", got.RequeueAfter, test.want)
+			}
+		})
+	}
+}
+
+// TestValidateMinPollInterval checks that only a negative minimum is rejected.
+func TestValidateMinPollInterval(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		minimum time.Duration
+		wantErr bool
+	}{
+		"Positive": {minimum: time.Second},
+		"Zero":     {},
+		"Negative": {minimum: -time.Second, wantErr: true},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := ValidateMinPollInterval(test.minimum)
+			if (err != nil) != test.wantErr {
+				t.Errorf("ValidateMinPollInterval() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
