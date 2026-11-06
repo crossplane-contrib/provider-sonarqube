@@ -35,7 +35,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
@@ -95,15 +94,9 @@ func Setup(mgr ctrl.Manager, options controller.Options) error {
 		}),
 	)
 
-	if options.MetricOptions != nil && options.MetricOptions.MRStateMetrics != nil {
-		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), options.Logger, options.MetricOptions.MRStateMetrics, &v1alpha1.WebhookList{}, options.MetricOptions.PollStateMetricInterval,
-		)
-
-		err := mgr.Add(stateMetricsRecorder)
-		if err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.WebhookList")
-		}
+	err := helpers.AddMRStateRecorder(mgr, options, &v1alpha1.WebhookList{})
+	if err != nil {
+		return err
 	}
 
 	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.WebhookGroupVersionKind), opts...)

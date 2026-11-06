@@ -20,6 +20,9 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
+	"github.com/pkg/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -29,7 +32,7 @@ func ReconcilerOptions(mgr ctrl.Manager, name string, opts controller.Options, s
 	options := []managed.ReconcilerOption{
 		managed.WithLogger(opts.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(opts.PollInterval),
-		managed.WithRecorder(NewEventRecorder(mgr, name)),
+		managed.WithRecorder(NewEventRecorder(mgr, name, opts.EventFilterFunctions...)),
 	}
 
 	if opts.Features.Enabled(feature.EnableBetaManagementPolicies) {
@@ -45,4 +48,23 @@ func ReconcilerOptions(mgr ctrl.Manager, name string, opts controller.Options, s
 	}
 
 	return append(options, specific...)
+}
+
+// AddMRStateRecorder registers a recorder of the state metrics of the managed
+// resources in list with mgr. It does nothing when state metrics are disabled.
+func AddMRStateRecorder(mgr ctrl.Manager, opts controller.Options, list resource.ManagedList) error {
+	if opts.MetricOptions == nil || opts.MetricOptions.MRStateMetrics == nil {
+		return nil
+	}
+
+	recorder := statemetrics.NewMRStateRecorder(
+		mgr.GetClient(), opts.Logger, opts.MetricOptions.MRStateMetrics, list, opts.MetricOptions.PollStateMetricInterval,
+	)
+
+	err := mgr.Add(recorder)
+	if err != nil {
+		return errors.Wrapf(err, "cannot register MR state metrics recorder for kind %T", list)
+	}
+
+	return nil
 }

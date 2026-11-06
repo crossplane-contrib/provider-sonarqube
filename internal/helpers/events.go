@@ -25,7 +25,7 @@ import (
 // controller. crossplane-runtime's APIRecorder still requires the legacy
 // record.EventRecorder, which controller-runtime only exposes through the
 // deprecated GetEventRecorderFor. This is the single place where that
-// deprecated call is made.
-func NewEventRecorder(mgr ctrl.Manager, name string) event.Recorder {
-	return event.NewAPIRecorder(mgr.GetEventRecorderFor(name)) //nolint:staticcheck // no non-deprecated way to obtain a legacy record.EventRecorder for crossplane-runtime.
+// deprecated call is made. Events matching any of the filters are not recorded.
+func NewEventRecorder(mgr ctrl.Manager, name string, filters ...event.FilterFn) event.Recorder {
+	return event.NewAPIRecorder(mgr.GetEventRecorderFor(name), filters...) //nolint:staticcheck // no non-deprecated way to obtain a legacy record.EventRecorder for crossplane-runtime.
 }
