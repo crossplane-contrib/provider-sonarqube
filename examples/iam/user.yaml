@@ -54,4 +54,4 @@ metadata:
   namespace: default
 type: Opaque
 stringData:
-  password: example-123
+  password: Example-12345

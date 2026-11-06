@@ -38,6 +38,19 @@
     "deps",
     "source::bot"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update the values annotated with a `# renovate:` comment",
+      "managerFilePatterns": [
+        "/^Makefile$/",
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?(?: registryUrl=(?<registryUrl>\\S+))?\\s+[A-Z0-9_]+\\s*[?:]*[=:]\\s*\"?(?<currentValue>[^@\"\\s]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\"?\\s"
+      ]
+    }
+  ],
   "postUpdateOptions": [
     "gomodTidy"
   ]
