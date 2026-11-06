@@ -97,6 +97,23 @@ func TestNewClientReusesConnections(t *testing.T) {
 	}
 }
 
+// TestNewPooledHTTPClientTransport checks the settings that keep a long-lived
+// shared connection from failing requests after its peer closed or vanished.
+func TestNewPooledHTTPClientTransport(t *testing.T) {
+	t.Parallel()
+
+	for _, insecureSkipVerify := range []bool{false, true} {
+		transport, ok := newPooledHTTPClient(insecureSkipVerify).Transport.(*http.Transport)
+		if !ok {
+			t.Fatalf("newPooledHTTPClient(%t) transport is not an *http.Transport", insecureSkipVerify)
+		}
+
+		if transport.ResponseHeaderTimeout != responseHeaderTimeout {
+			t.Errorf("newPooledHTTPClient(%t) ResponseHeaderTimeout = %s, want %s", insecureSkipVerify, transport.ResponseHeaderTimeout, responseHeaderTimeout)
+		}
+	}
+}
+
 // TestNewClientKeepsTLSVerificationApart checks that a connection opened
 // without certificate verification is not reused by a client that verifies
 // certificates.

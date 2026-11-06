@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"time"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
@@ -43,6 +44,12 @@ const (
 	// for a provider that keeps several reconciles of concurrent requests in
 	// flight against the same host on a small CPU limit.
 	maxIdleConnsPerHost = 32
+
+	// responseHeaderTimeout bounds the wait for a response once a request is
+	// written, so a reused connection to a vanished peer fails the request
+	// instead of holding a worker until the reconcile deadline. It matches
+	// the timeout of the HTTP client the SonarQube SDK would otherwise use.
+	responseHeaderTimeout = 30 * time.Second
 )
 
 var (
@@ -137,6 +144,7 @@ func NewClient(clientConfig Config) *sonar.Client {
 func newPooledHTTPClient(insecureSkipVerify bool) *http.Client {
 	transport := cleanhttp.DefaultPooledTransport()
 	transport.MaxIdleConnsPerHost = maxIdleConnsPerHost
+	transport.ResponseHeaderTimeout = responseHeaderTimeout
 
 	if insecureSkipVerify {
 		if transport.TLSClientConfig == nil {
