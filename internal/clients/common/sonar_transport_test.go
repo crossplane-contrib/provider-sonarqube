@@ -18,13 +18,16 @@ package common
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -154,22 +157,81 @@ func TestConfigureHTTPClients(t *testing.T) {
 	}
 }
 
-// TestResponseHeaderTimeoutFailsStalledRequest checks that a request fails when
-// the server accepts it but never answers.
+// TestResponseHeaderTimeoutFailsStalledRequest checks that a request fails on
+// the first timeout when the server accepts it but never answers, over both
+// HTTP versions, instead of waiting out the timeout on every attempt.
 func TestResponseHeaderTimeoutFailsStalledRequest(t *testing.T) {
 	t.Parallel()
 
-	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		<-r.Context().Done()
-	}))
-	t.Cleanup(server.Close)
+	tests := map[string]struct {
+		http2 bool
+	}{
+		"HTTP1": {},
+		"HTTP2": {http2: true},
+	}
 
-	client := NewClient(Config{AuthType: PersonalAccessToken, Token: "token", BaseURL: server.URL + "/api/"})
-	client.SetHTTPClient(newPooledHTTPClient(false, 50*time.Millisecond))
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	err := ping(t, client)
-	if err == nil || !strings.Contains(err.Error(), "timeout awaiting response headers") {
-		t.Errorf("Ping() error = %v, want a response header timeout", err)
+			var requests atomic.Int32
+
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				<-r.Context().Done()
+			}))
+			server.EnableHTTP2 = test.http2
+			server.StartTLS()
+			t.Cleanup(server.Close)
+
+			config := Config{AuthType: PersonalAccessToken, Token: "token", BaseURL: server.URL + "/api/"}
+			client := newClient(config, newPooledHTTPClient(true, 50*time.Millisecond))
+
+			err := ping(t, client)
+			if err == nil || !strings.Contains(err.Error(), "timeout awaiting response headers") {
+				t.Errorf("Ping() error = %v, want a response header timeout", err)
+			}
+
+			if got := requests.Load(); got != 1 {
+				t.Errorf("server received %d requests, want 1", got)
+			}
+		})
+	}
+}
+
+// TestIsRetryableTransportError checks which transport errors get another
+// attempt.
+func TestIsRetryableTransportError(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err  error
+		want bool
+	}{
+		"ConnectionError": {
+			err:  &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED},
+			want: true,
+		},
+		"PlainError": {
+			err:  io.ErrUnexpectedEOF,
+			want: true,
+		},
+		"Timeout": {
+			err: os.ErrDeadlineExceeded,
+		},
+		"WrappedTimeout": {
+			err: &net.OpError{Op: "dial", Err: os.ErrDeadlineExceeded},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := isRetryableTransportError(test.err); got != test.want {
+				t.Errorf("isRetryableTransportError(%v) = %t, want %t", test.err, got, test.want)
+			}
+		})
 	}
 }
 
@@ -207,6 +269,7 @@ func TestNewClientRetries(t *testing.T) {
 	tests := map[string]struct {
 		send         func(ctx context.Context, client *sonar.Client) (*http.Response, error)
 		statuses     []int
+		retryAfter   string
 		wantRequests int32
 		wantErr      bool
 	}{
@@ -233,6 +296,24 @@ func TestNewClientRetries(t *testing.T) {
 			wantRequests: 1,
 			wantErr:      true,
 		},
+		"DeleteIsResent": {
+			send:         sendDelete,
+			statuses:     []int{http.StatusServiceUnavailable, http.StatusNoContent},
+			wantRequests: 2,
+		},
+		"RateLimitWithinMaxWaitIsRetried": {
+			send:         sendRead,
+			statuses:     []int{http.StatusTooManyRequests, http.StatusOK},
+			retryAfter:   "0",
+			wantRequests: 2,
+		},
+		"RateLimitBeyondMaxWaitIsReturned": {
+			send:         sendRead,
+			statuses:     []int{http.StatusTooManyRequests},
+			retryAfter:   "120",
+			wantRequests: 1,
+			wantErr:      true,
+		},
 	}
 
 	for name, test := range tests {
@@ -243,16 +324,19 @@ func TestNewClientRetries(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				attempt := int(requests.Add(1))
+
+				if test.retryAfter != "" {
+					w.Header().Set("Retry-After", test.retryAfter)
+				}
+
 				w.WriteHeader(test.statuses[min(attempt, len(test.statuses))-1])
 			}))
 			t.Cleanup(server.Close)
 
 			client := NewClient(Config{AuthType: PersonalAccessToken, Token: "token", BaseURL: server.URL + "/api/"})
 
-			resp, err := test.send(t.Context(), client)
-			if resp != nil {
-				_ = resp.Body.Close()
-			}
+			resp, err := test.send(t.Context(), client) //nolint:bodyclose // closed via helpers.CloseBody
+			helpers.CloseBody(resp)
 
 			if (err != nil) != test.wantErr {
 				t.Errorf("request error = %v, wantErr %v", err, test.wantErr)
@@ -275,4 +359,9 @@ func sendRead(ctx context.Context, client *sonar.Client) (*http.Response, error)
 // sendMutation sends a non-idempotent POST request.
 func sendMutation(ctx context.Context, client *sonar.Client) (*http.Response, error) {
 	return client.System.Restart(ctx)
+}
+
+// sendDelete sends an idempotent DELETE request.
+func sendDelete(ctx context.Context, client *sonar.Client) (*http.Response, error) {
+	return client.V2.Authorizations.DeleteGroup(ctx, "group")
 }
