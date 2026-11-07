@@ -122,9 +122,17 @@ export ENABLE_SECRET_CACHE
 E2E_CREATION_GRACE_PERIOD="${E2E_CREATION_GRACE_PERIOD:-5s}"
 
 # Extra provider flags, space separated, e.g. E2E_PROVIDER_ARGS="--poll=10s".
-provider_args="\"--debug\", \"--creation-grace-period=${E2E_CREATION_GRACE_PERIOD}\""
-for arg in ${E2E_PROVIDER_ARGS:-}; do
-    provider_args="${provider_args}, \"${arg}\""
+# The script's own settings (debug logging, creation grace period) go through
+# the provider's environment variables instead of flags: kingpin rejects a
+# repeated flag, while a flag passed here simply overrides its variable.
+# read -a splits on spaces without glob-expanding the words.
+read -r -a extra_provider_args <<<"${E2E_PROVIDER_ARGS:-}"
+provider_args=""
+for arg in "${extra_provider_args[@]}"; do
+    # Escape for a double-quoted YAML scalar.
+    arg="${arg//\\/\\\\}"
+    arg="${arg//\"/\\\"}"
+    provider_args="${provider_args:+${provider_args}, }\"${arg}\""
 done
 
 # local.xpkg.deploy.provider.<name> uses DRC_FILE as the provider's
@@ -147,6 +155,10 @@ spec:
             - name: package-runtime
               args: [${provider_args}]
               env:
+                - name: CROSSPLANE_SONARQUBE_PROVIDER_DEBUG
+                  value: "true"
+                - name: CROSSPLANE_SONARQUBE_PROVIDER_CREATION_GRACE_PERIOD
+                  value: "${E2E_CREATION_GRACE_PERIOD}"
                 - name: ENABLE_OBSERVE_CACHE
                   value: "${ENABLE_OBSERVE_CACHE}"
                 - name: OBSERVE_CACHE_TTL
@@ -155,7 +167,7 @@ spec:
                   value: "${ENABLE_SECRET_CACHE}"
 EOF
 
-echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${ENABLE_OBSERVE_CACHE}, OBSERVE_CACHE_TTL=${OBSERVE_CACHE_TTL}, ENABLE_SECRET_CACHE=${ENABLE_SECRET_CACHE}, args=[${provider_args}])"
+echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${ENABLE_OBSERVE_CACHE}, OBSERVE_CACHE_TTL=${OBSERVE_CACHE_TTL}, ENABLE_SECRET_CACHE=${ENABLE_SECRET_CACHE}, CREATION_GRACE_PERIOD=${E2E_CREATION_GRACE_PERIOD}, args=[${provider_args}])"
 # local.xpkg.deploy.provider.<name> patches Crossplane with a dev sidecar,
 # extracts each xpkg into the cache under the cache key Crossplane >=2.2
 # expects (xpkg.crossplane.internal/dev/<name>@<digest>), kubectl-cps the
