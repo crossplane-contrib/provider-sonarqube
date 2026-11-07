@@ -727,3 +727,29 @@ func TestUpdate(t *testing.T) {
 		checkError(t, "Update", errUpdateQualityProfileUsergroupAssociation, err)
 	})
 }
+
+// TestObserveRecordsTheExternalNameBeforeCreate checks that an external name
+// still at its metadata.name default is replaced by the real one, which the
+// reconciler persists before Create runs. An interrupted Create then stays
+// observable, so that its grant is revoked if the resource is deleted.
+func TestObserveRecordsTheExternalNameBeforeCreate(t *testing.T) {
+	t.Parallel()
+
+	association := newTestGroupAssociation("test-association", testLanguage, testQualityProfile, testGroupName)
+
+	e := &external{client: &fakeQualityProfilesClient{}}
+
+	observation, err := e.Observe(context.Background(), association)
+	if err != nil {
+		t.Fatalf("Observe() unexpected error: %v", err)
+	}
+
+	if observation.ResourceExists {
+		t.Error("Observe() ResourceExists = true, want false")
+	}
+
+	want := iam.BuildQualityProfileUsergroupAssociationExternalName(&association.Spec.ForProvider)
+	if got := meta.GetExternalName(association); got != want {
+		t.Errorf("external name = %q, want %q", got, want)
+	}
+}

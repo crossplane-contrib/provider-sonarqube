@@ -70,6 +70,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewSettingsClient,
 		}),
+		managed.WithDeterministicExternalName(true),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.SettingsList{})

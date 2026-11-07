@@ -90,6 +90,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: iam.NewQualityProfileUsergroupAssociationClient,
 		}),
+		managed.WithDeterministicExternalName(true),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.QualityProfileUsergroupAssociationList{})
@@ -171,9 +172,14 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// ParseQualityProfileUsergroupAssociationExternalName returns an
 	// error for invalid format or unknown type. Crossplane defaults
 	// the external name to metadata.name before Create runs, so an
-	// unparseable name means the resource does not exist yet.
+	// unparseable name means the resource does not exist yet. The real
+	// name is set now because the reconciler persists it with the pending
+	// annotation, before Create runs: an interrupted Create stays
+	// observable, and its grant is revoked if the resource is then deleted.
 	subjectType, subject, language, qualityProfile, err := iam.ParseQualityProfileUsergroupAssociationExternalName(externalName)
 	if err != nil || subjectType == "" {
+		meta.SetExternalName(association, iam.BuildQualityProfileUsergroupAssociationExternalName(&association.Spec.ForProvider))
+
 		return managed.ExternalObservation{ResourceExists: false}, nil //nolint:nilerr // An unparseable external name means the association was not created yet.
 	}
 

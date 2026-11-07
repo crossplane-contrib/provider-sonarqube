@@ -50,6 +50,8 @@ const (
 	// errGetPC indicates ProviderConfig retrieval failed.
 	errGetPC = "cannot get ProviderConfig"
 
+	// errObserveQualityGate indicates QualityGate observation failed.
+	errObserveQualityGate = "cannot observe SonarQube Quality Gate"
 	// errCreateQualityGate indicates QualityGate creation failed.
 	errCreateQualityGate = "cannot create SonarQube Quality Gate"
 	// errDefaultQualityGate indicates setting default failed.
@@ -80,6 +82,9 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewQualityGatesClient}),
+		helpers.WithSpecExternalName(mgr.GetClient(), func(mg *v1alpha1.QualityGate) string {
+			return mg.Spec.ForProvider.Name
+		}),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.QualityGateList{})
@@ -165,8 +170,14 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
-		// If the quality gate is not found, treat as resource doesn't exist
-		return managed.ExternalObservation{ResourceExists: false}, nil
+		// Only a 404 means the gate is missing. Reporting any other failure as
+		// missing would release the finalizer of a resource being deleted,
+		// leaving the gate behind in SonarQube.
+		if common.IsResponseNotFound(resp) {
+			return managed.ExternalObservation{ResourceExists: false}, nil
+		}
+
+		return managed.ExternalObservation{}, errors.Wrap(err, errObserveQualityGate)
 	}
 
 	// Update status with observed state

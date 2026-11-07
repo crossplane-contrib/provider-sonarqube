@@ -94,6 +94,9 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewPortfoliosClient,
 		}),
+		helpers.WithSpecExternalName(mgr.GetClient(), func(mg *v1alpha1.Portfolio) string {
+			return mg.Spec.ForProvider.Key
+		}),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, options, &v1alpha1.PortfolioList{})

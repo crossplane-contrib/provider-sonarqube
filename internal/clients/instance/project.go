@@ -126,6 +126,11 @@ func IsProjectLateInitialized(former, current *v1alpha1.ProjectParameters) bool 
 
 // IsProjectUpToDate checks if the observed state of a SonarQube Project is up
 // to date with the desired state specified in the ProjectParameters.
+//
+// The display name is deliberately not compared: SonarQube offers no API to
+// rename a project, so Update could never converge on it. A project adopted
+// with a different name, or renamed by a scanner analysis, would otherwise be
+// reported out of date forever. The actual name is in status.atProvider.name.
 func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.ProjectObservation) bool { //nolint:gocyclo,cyclop // This function is complex due to the number of fields being compared, but it is necessary for determining if the project is up to date.
 	if observation == nil {
 		return false
@@ -133,7 +138,6 @@ func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.P
 
 	return spec == nil ||
 		spec.Key == observation.Key &&
-			spec.Name == observation.Name &&
 			helpers.IsComparablePtrEqualComparable(spec.Visibility, observation.Visibility) &&
 			helpers.IsComparablePtrEqualComparable(spec.QualityGateName, observation.QualityGateName) &&
 			AreProjectLinksUpToDate(spec.Links, observation.Links) &&

@@ -87,6 +87,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options, name string) error {
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewLicensesClient,
 		}),
+		managed.WithDeterministicExternalName(true),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.LicenseList{})

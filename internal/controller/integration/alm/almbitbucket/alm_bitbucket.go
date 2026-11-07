@@ -78,6 +78,9 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
+		helpers.WithSpecExternalName(mgr.GetClient(), func(mg *v1alpha1.ALMBitbucket) string {
+			return mg.Spec.ForProvider.Key
+		}),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, options, &v1alpha1.ALMBitbucketList{})

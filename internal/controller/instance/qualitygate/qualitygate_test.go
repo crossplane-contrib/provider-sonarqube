@@ -108,10 +108,10 @@ func TestObserve(t *testing.T) {
 				err: nil,
 			},
 		},
-		"ShowFailsReturnsNotExists": {
+		"ShowNotFoundReturnsNotExists": {
 			client: &fake.MockQualityGatesClient{
 				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
-					return nil, nil, errors.New("api error")
+					return nil, &http.Response{StatusCode: http.StatusNotFound}, errors.New("not found")
 				},
 			},
 			args: args{
@@ -131,6 +131,30 @@ func TestObserve(t *testing.T) {
 			want: want{
 				o:   managed.ExternalObservation{ResourceExists: false},
 				err: nil,
+			},
+		},
+		"ShowFailsReturnsError": {
+			client: &fake.MockQualityGatesClient{
+				ShowFn: func(opt *sonar.QualitygatesShowOptions) (*sonar.QualitygatesShow, *http.Response, error) {
+					return nil, &http.Response{StatusCode: http.StatusInternalServerError}, errors.New("api error")
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.QualityGate {
+					qg := &v1alpha1.QualityGate{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        "test-gate",
+							Annotations: map[string]string{},
+						},
+					}
+					meta.SetExternalName(qg, "test-gate")
+
+					return qg
+				}(),
+			},
+			want: want{
+				err: errors.Wrap(errors.New("api error"), errObserveQualityGate),
 			},
 		},
 		"SuccessfulObserveResourceExists": {
