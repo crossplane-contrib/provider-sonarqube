@@ -22,7 +22,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
@@ -45,7 +44,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.License
 	}
 
 	type want struct {
@@ -59,12 +58,6 @@ func TestObserve(t *testing.T) {
 		args    args
 		want    want
 	}{
-		"NotLicense": {
-			objects: []runtime.Object{},
-			client:  &fake.MockLicensesClient{},
-			args:    args{ctx: context.Background(), mg: &notLicense{}},
-			want:    want{observation: managed.ExternalObservation{}, errSubstr: errNotLicense},
-		},
 		"GetAPIError": {
 			objects: []runtime.Object{},
 			client: &fake.MockLicensesClient{
@@ -102,7 +95,7 @@ func TestObserve(t *testing.T) {
 					return &sonar.LicenseGet{License: sonar.License{ProductEdition: "enterprise"}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.License {
 				l := newTestLicense(externalLicenseName, licenseKeyRef)
 				l.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "missing-connection-secret"})
 
@@ -120,7 +113,7 @@ func TestObserve(t *testing.T) {
 					return &sonar.LicenseGet{License: sonar.License{ProductEdition: "enterprise"}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.License {
 				l := newTestLicense(externalLicenseName, licenseKeyRef)
 				l.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 
@@ -138,7 +131,7 @@ func TestObserve(t *testing.T) {
 					return &sonar.LicenseGet{License: sonar.License{ProductEdition: "enterprise"}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.License {
 				l := newTestLicense(externalLicenseName, licenseKeyRef)
 				l.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "connection-secret"})
 

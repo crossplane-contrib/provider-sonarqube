@@ -36,8 +36,6 @@ import (
 )
 
 const (
-	// errNotNewCodePeriod indicates managed resource is not NewCodePeriod.
-	errNotNewCodePeriod = "managed resource is not a NewCodePeriod custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -62,7 +60,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.NewCodePeriodGroupKind)
 
 	reconcilerOpts := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.NewCodePeriod](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewNewCodePeriodsClient,
@@ -98,24 +96,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	newCodePeriod, ok := managedResource.(*v1alpha1.NewCodePeriod)
-	if !ok {
-		return nil, errors.New(errNotNewCodePeriod)
-	}
-
+func (c *connector) Connect(ctx context.Context, newCodePeriod *v1alpha1.NewCodePeriod) (managed.TypedExternalClient[*v1alpha1.NewCodePeriod], error) {
 	err := c.usage.Track(ctx, newCodePeriod)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	m, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, m)
+	config, err := common.GetConfig(ctx, c.kube, newCodePeriod)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -125,8 +112,8 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 	return &external{newCodePeriodsClient: svc}, nil
 }
 
-// external implements the managed.ExternalClient interface for NewCodePeriod
-// resources.
+// external implements the managed.TypedExternalClient interface for
+// NewCodePeriod resources.
 type external struct {
 	// newCodePeriodsClient is used to interact with SonarQube New Code Periods API
 	newCodePeriodsClient instance.NewCodePeriodsClient
@@ -136,12 +123,7 @@ type external struct {
 // state specified by the managed resource. It returns an ExternalObservation
 // indicating whether the resource exists,
 // whether it is up to date, and any connection details or errors.
-func (c *external) Observe(ctx context.Context, managedResource resource.Managed) (managed.ExternalObservation, error) {
-	newCodePeriod, ok := managedResource.(*v1alpha1.NewCodePeriod)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotNewCodePeriod)
-	}
-
+func (c *external) Observe(ctx context.Context, newCodePeriod *v1alpha1.NewCodePeriod) (managed.ExternalObservation, error) {
 	// Deleting: the instance-wide default new code period is reset on delete;
 	// mark the external resource as non-existent so the managed reconciler can
 	// remove the finalizer and allow the CR to be deleted.
@@ -170,12 +152,7 @@ func (c *external) Observe(ctx context.Context, managedResource resource.Managed
 // Create sets the instance-wide default new code period based on the desired
 // state in the managed resource. It should return an error if the creation
 // failed, or nil if it succeeded.
-func (c *external) Create(ctx context.Context, managedResource resource.Managed) (managed.ExternalCreation, error) {
-	newCodePeriod, ok := managedResource.(*v1alpha1.NewCodePeriod)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotNewCodePeriod)
-	}
-
+func (c *external) Create(ctx context.Context, newCodePeriod *v1alpha1.NewCodePeriod) (managed.ExternalCreation, error) {
 	newCodePeriod.SetConditions(xpv1.Creating())
 
 	resp, err := c.newCodePeriodsClient.Set(ctx, instance.GenerateInstanceNewCodePeriodsSetOptions(&newCodePeriod.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
@@ -191,12 +168,7 @@ func (c *external) Create(ctx context.Context, managedResource resource.Managed)
 // Update sets the instance-wide default new code period to match the desired
 // state in the managed resource. It returns an error if the update failed, or
 // nil if it succeeded.
-func (c *external) Update(ctx context.Context, managedResource resource.Managed) (managed.ExternalUpdate, error) {
-	newCodePeriod, ok := managedResource.(*v1alpha1.NewCodePeriod)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotNewCodePeriod)
-	}
-
+func (c *external) Update(ctx context.Context, newCodePeriod *v1alpha1.NewCodePeriod) (managed.ExternalUpdate, error) {
 	resp, err := c.newCodePeriodsClient.Set(ctx, instance.GenerateInstanceNewCodePeriodsSetOptions(&newCodePeriod.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
@@ -210,12 +182,7 @@ func (c *external) Update(ctx context.Context, managedResource resource.Managed)
 // Delete unsets the instance-wide default new code period in SonarQube based on
 // the given managed resource. It returns any error that occurred during
 // deletion.
-func (c *external) Delete(ctx context.Context, managedResource resource.Managed) (managed.ExternalDelete, error) {
-	newCodePeriod, ok := managedResource.(*v1alpha1.NewCodePeriod)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotNewCodePeriod)
-	}
-
+func (c *external) Delete(ctx context.Context, newCodePeriod *v1alpha1.NewCodePeriod) (managed.ExternalDelete, error) {
 	newCodePeriod.SetConditions(xpv1.Deleting())
 
 	resp, err := c.newCodePeriodsClient.Unset(ctx, instance.GenerateInstanceNewCodePeriodsUnsetOptions()) //nolint:bodyclose // closed via helpers.CloseBody

@@ -26,7 +26,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -35,12 +34,6 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
-
-// notPermissionsTemplate is a type for testing non-PermissionsTemplate
-// resources.
-type notPermissionsTemplate struct {
-	resource.Managed
-}
 
 // mockGate is a mock implementation of a gate for testing.
 type mockGate struct {
@@ -126,15 +119,10 @@ func TestCreate(t *testing.T) {
 
 	cases := map[string]struct {
 		client  *fake.MockPermissionsTemplatesClient
-		mg      resource.Managed
+		mg      *v1alpha1.PermissionsTemplate
 		want    string
 		wantErr string
 	}{
-		"WrongTypeReturnsError": {
-			client:  &fake.MockPermissionsTemplatesClient{},
-			mg:      &notPermissionsTemplate{},
-			wantErr: errNotPermissionsTemplate,
-		},
 		"CreateFailureReturnsWrappedError": {
 			client: &fake.MockPermissionsTemplatesClient{
 				CreateFn: func(opt *sonar.PermissionsCreateTemplateOptions) (*sonar.PermissionsCreateTemplate, *http.Response, error) {
@@ -175,10 +163,7 @@ func TestCreate(t *testing.T) {
 			}
 
 			if tc.want != "" {
-				template, ok := tc.mg.(*v1alpha1.PermissionsTemplate)
-				if !ok {
-					t.Fatalf("Create() managed resource type = %T, want *v1alpha1.PermissionsTemplate", tc.mg)
-				}
+				template := tc.mg
 
 				if externalName := meta.GetExternalName(template); externalName != tc.want {
 					t.Fatalf("Create() external name = %q, want %q", externalName, tc.want)
@@ -194,14 +179,9 @@ func TestDelete(t *testing.T) {
 
 	cases := map[string]struct {
 		client  *fake.MockPermissionsTemplatesClient
-		mg      resource.Managed
+		mg      *v1alpha1.PermissionsTemplate
 		wantErr string
 	}{
-		"WrongTypeReturnsError": {
-			client:  &fake.MockPermissionsTemplatesClient{},
-			mg:      &notPermissionsTemplate{},
-			wantErr: errNotPermissionsTemplate,
-		},
 		"MissingExternalNameReturnsError": {
 			client:  &fake.MockPermissionsTemplatesClient{},
 			mg:      newPermissionsTemplate("template-a"),

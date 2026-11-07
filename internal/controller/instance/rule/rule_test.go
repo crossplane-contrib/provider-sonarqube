@@ -34,7 +34,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -43,11 +42,6 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
 )
-
-// notRule is a test type that does not implement Rule.
-type notRule struct {
-	resource.Managed
-}
 
 // mockHTTPResponse returns a mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
@@ -124,7 +118,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Rule
 	}
 
 	type want struct {
@@ -137,14 +131,6 @@ func TestObserve(t *testing.T) {
 		args args
 		want want
 	}{
-		"NotRuleError": {
-			ext:  newTestExternalClient(&fake.MockRulesClient{}),
-			args: args{ctx: context.Background(), mg: &notRule{}},
-			want: want{
-				observation: managed.ExternalObservation{},
-				errSubstr:   errNotRule,
-			},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			ext: newTestExternalClient(&fake.MockRulesClient{}),
 			args: args{
@@ -313,7 +299,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Rule
 	}
 
 	type want struct {
@@ -326,14 +312,6 @@ func TestCreate(t *testing.T) {
 		args args
 		want want
 	}{
-		"NotRuleError": {
-			ext:  newTestExternalClient(&fake.MockRulesClient{}),
-			args: args{ctx: context.Background(), mg: &notRule{}},
-			want: want{
-				creation:  managed.ExternalCreation{},
-				errSubstr: errNotRule,
-			},
-		},
 		"CreateFails": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				CreateFn: func(_ *sonar.RulesCreateOptions) (*sonar.RulesCreate, *http.Response, error) {
@@ -408,7 +386,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Rule
 	}
 
 	type want struct {
@@ -421,14 +399,6 @@ func TestUpdate(t *testing.T) {
 		args args
 		want want
 	}{
-		"NotRuleError": {
-			ext:  newTestExternalClient(&fake.MockRulesClient{}),
-			args: args{ctx: context.Background(), mg: &notRule{}},
-			want: want{
-				update:    managed.ExternalUpdate{},
-				errSubstr: errNotRule,
-			},
-		},
 		"UpdateFails": {
 			ext: newTestExternalClient(&fake.MockRulesClient{
 				UpdateFn: func(_ *sonar.RulesUpdateOptions) (*sonar.RulesUpdate, *http.Response, error) {
@@ -487,7 +457,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Rule
 	}
 
 	type want struct {
@@ -499,11 +469,6 @@ func TestDelete(t *testing.T) {
 		args args
 		want want
 	}{
-		"NotRuleError": {
-			ext:  newTestExternalClient(&fake.MockRulesClient{}),
-			args: args{ctx: context.Background(), mg: &notRule{}},
-			want: want{errSubstr: errNotRule},
-		},
 		"EmptyExternalNameSucceeds": {
 			ext:  newTestExternalClient(&fake.MockRulesClient{}),
 			args: args{ctx: context.Background(), mg: newTestRule("", minimalRuleSpec())},
@@ -633,22 +598,5 @@ func TestDeleteClearsExternalNameOnNotFound(t *testing.T) {
 
 	if got := meta.GetExternalName(r); got != "" {
 		t.Fatalf("Delete() external name = %q, want empty", got)
-	}
-}
-
-// TestConnectTypeAssertion verifies that Connect returns errNotRule when the
-// managed resource is not a *v1alpha1.Rule.
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-
-	_, err := c.Connect(context.Background(), &notRule{})
-	if err == nil {
-		t.Fatal("Connect() expected error for non-Rule type, got nil")
-	}
-
-	if !strings.Contains(err.Error(), errNotRule) {
-		t.Errorf("Connect() error: want %q, got %q", errNotRule, err.Error())
 	}
 }

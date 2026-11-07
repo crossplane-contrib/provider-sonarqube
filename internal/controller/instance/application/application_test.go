@@ -59,12 +59,6 @@ const (
 	testApplicationName = "My Application"
 )
 
-// notApplication is a sentinel type used to test invalid managed
-// resource handling.
-type notApplication struct {
-	resource.Managed
-}
-
 // mockGate is a minimal implementation of the feature gate used by SetupGated.
 type mockGate struct {
 	registered bool
@@ -271,15 +265,11 @@ func TestConnect(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		mg      resource.Managed
+		mg      *v1alpha1.Application
 		objects []runtime.Object
 		pcRef   *xpv1.ProviderConfigReference
 		wantErr string
 	}{
-		"NotApplication": {
-			mg:      &notApplication{},
-			wantErr: errNotApplication,
-		},
 		"TrackUsageError": {
 			mg:      newApplicationResource("test-application"),
 			wantErr: errTrackPCUsage,
@@ -302,8 +292,8 @@ func TestConnect(t *testing.T) {
 
 			kubeClient := fakekube.NewClientBuilder().WithScheme(newScheme(t)).WithRuntimeObjects(tc.objects...).Build()
 
-			if app, ok := tc.mg.(*v1alpha1.Application); ok && tc.pcRef != nil {
-				app.SetProviderConfigReference(tc.pcRef)
+			if tc.pcRef != nil {
+				tc.mg.SetProviderConfigReference(tc.pcRef)
 			}
 
 			c := &connector{
@@ -363,15 +353,10 @@ func TestObserve(t *testing.T) {
 
 	cases := map[string]struct {
 		client *fake.MockApplicationsClient
-		mg     resource.Managed
+		mg     *v1alpha1.Application
 		want   managed.ExternalObservation
 		err    error
 	}{
-		"NotApplicationError": {
-			client: &fake.MockApplicationsClient{},
-			mg:     &notApplication{},
-			err:    errors.New(errNotApplication),
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fake.MockApplicationsClient{},
 			mg:     newApplication("", nil),
@@ -536,15 +521,10 @@ func TestCreate(t *testing.T) {
 
 	cases := map[string]struct {
 		client           *fake.MockApplicationsClient
-		mg               resource.Managed
+		mg               *v1alpha1.Application
 		err              error
 		wantExternalName string
 	}{
-		"NotApplicationError": {
-			client: &fake.MockApplicationsClient{},
-			mg:     &notApplication{},
-			err:    errors.New(errNotApplication),
-		},
 		"CreateAPIError": {
 			client: &fake.MockApplicationsClient{
 				CreateFn: func(_ *sonar.ApplicationsCreateOptions) (*sonar.ApplicationsCreate, *http.Response, error) {
@@ -580,8 +560,8 @@ func TestCreate(t *testing.T) {
 				t.Errorf("Create() error -want +got:\n%s", diff)
 			}
 
-			if app, ok := tc.mg.(*v1alpha1.Application); ok && tc.wantExternalName != "" {
-				if got := meta.GetExternalName(app); got != tc.wantExternalName {
+			if tc.wantExternalName != "" {
+				if got := meta.GetExternalName(tc.mg); got != tc.wantExternalName {
 					t.Errorf("Create() external name = %q, want %q", got, tc.wantExternalName)
 				}
 			}
@@ -659,15 +639,11 @@ func TestUpdate(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		mg        resource.Managed
+		mg        *v1alpha1.Application
 		failOn    string
 		wantCalls []string
 		err       error
 	}{
-		"NotApplicationError": {
-			mg:  &notApplication{},
-			err: errors.New(errNotApplication),
-		},
 		"ExternalNameNotSet": {
 			mg:  newApplication("", nil),
 			err: errors.Errorf(errExternalNameNotSet, "test-application"),
@@ -765,14 +741,9 @@ func TestDelete(t *testing.T) {
 
 	cases := map[string]struct {
 		client *fake.MockApplicationsClient
-		mg     resource.Managed
+		mg     *v1alpha1.Application
 		err    error
 	}{
-		"NotApplicationError": {
-			client: &fake.MockApplicationsClient{},
-			mg:     &notApplication{},
-			err:    errors.New(errNotApplication),
-		},
 		"EmptyExternalNameIsNoOp": {
 			client: &fake.MockApplicationsClient{},
 			mg:     newApplication("", nil),

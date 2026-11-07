@@ -57,11 +57,6 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-// notNewCodePeriod is a type for testing non-NewCodePeriod resources.
-type notNewCodePeriod struct {
-	resource.Managed
-}
-
 // mockHTTPResponse creates a minimal mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
 	return &http.Response{
@@ -89,7 +84,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.NewCodePeriod
 	}
 
 	type want struct {
@@ -103,17 +98,6 @@ func TestObserve(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotNewCodePeriodError": {
-			client: &fake.MockNewCodePeriodsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notNewCodePeriod{},
-			},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.New(errNotNewCodePeriod),
-			},
-		},
 		"DeletingReturnsNotExists": {
 			client: &fake.MockNewCodePeriodsClient{},
 			args: args{
@@ -295,10 +279,7 @@ func TestObserve(t *testing.T) {
 			}
 
 			if tc.want.atProvider != nil {
-				ncp, ok := tc.args.mg.(*v1alpha1.NewCodePeriod)
-				if !ok {
-					t.Fatal("Observe() expected a NewCodePeriod managed resource")
-				}
+				ncp := tc.args.mg
 
 				if diff := cmp.Diff(*tc.want.atProvider, ncp.Status.AtProvider); diff != "" {
 					t.Errorf("Observe() AtProvider mismatch (-want +got):\n%s", diff)
@@ -314,7 +295,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.NewCodePeriod
 	}
 
 	type want struct {
@@ -327,17 +308,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotNewCodePeriodError": {
-			client: &fake.MockNewCodePeriodsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notNewCodePeriod{},
-			},
-			want: want{
-				o:   managed.ExternalCreation{},
-				err: errors.New(errNotNewCodePeriod),
-			},
-		},
 		"SetFails": {
 			client: &fake.MockNewCodePeriodsClient{
 				SetFn: func(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
@@ -426,7 +396,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.NewCodePeriod
 	}
 
 	type want struct {
@@ -439,17 +409,6 @@ func TestUpdate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotNewCodePeriodError": {
-			client: &fake.MockNewCodePeriodsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notNewCodePeriod{},
-			},
-			want: want{
-				o:   managed.ExternalUpdate{},
-				err: errors.New(errNotNewCodePeriod),
-			},
-		},
 		"SetFails": {
 			client: &fake.MockNewCodePeriodsClient{
 				SetFn: func(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
@@ -538,7 +497,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.NewCodePeriod
 	}
 
 	type want struct {
@@ -551,17 +510,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotNewCodePeriodError": {
-			client: &fake.MockNewCodePeriodsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notNewCodePeriod{},
-			},
-			want: want{
-				o:   managed.ExternalDelete{},
-				err: errors.New(errNotNewCodePeriod),
-			},
-		},
 		"UnsetFails": {
 			client: &fake.MockNewCodePeriodsClient{
 				UnsetFn: func(opt *sonar.NewCodePeriodsUnsetOptions) (*http.Response, error) {
@@ -711,23 +659,6 @@ func newNewCodePeriodResource(name string) *v1alpha1.NewCodePeriod {
 				Value: new("30"),
 			},
 		},
-	}
-}
-
-// TestConnectTypeAssertion verifies Connect returns an error for
-// non-NewCodePeriod types.
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-
-	_, err := c.Connect(context.Background(), &notNewCodePeriod{})
-	if err == nil {
-		t.Fatal("Connect() expected error for non-NewCodePeriod type, got nil")
-	}
-
-	if !strings.Contains(err.Error(), errNotNewCodePeriod) {
-		t.Fatalf("Connect() error = %q, want to contain %q", err.Error(), errNotNewCodePeriod)
 	}
 }
 

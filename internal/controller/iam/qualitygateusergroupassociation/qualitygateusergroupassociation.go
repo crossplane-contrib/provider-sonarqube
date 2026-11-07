@@ -43,9 +43,6 @@ import (
 )
 
 const (
-	// errNotQualityGateUsergroupAssociation indicates the managed resource
-	// is not a QualityGateUsergroupAssociation custom resource.
-	errNotQualityGateUsergroupAssociation = "managed resource is not a QualityGateUsergroupAssociation custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -85,7 +82,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.QualityGateUsergroupAssociationGroupKind)
 
 	options := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.QualityGateUsergroupAssociation](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: iam.NewQualityGateUsergroupAssociationClient,
@@ -119,23 +116,13 @@ type connector struct {
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
 // retrieving credentials, and constructing a SonarQube Quality Gates
 // client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	association, isValid := managedResource.(*v1alpha1.QualityGateUsergroupAssociation)
-	if !isValid {
-		return nil, errors.New(errNotQualityGateUsergroupAssociation)
-	}
-
+func (c *connector) Connect(ctx context.Context, association *v1alpha1.QualityGateUsergroupAssociation) (managed.TypedExternalClient[*v1alpha1.QualityGateUsergroupAssociation], error) {
 	err := c.usage.Track(ctx, association)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, association)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -157,12 +144,7 @@ type external struct {
 
 // Observe checks whether the external association exists and is up to
 // date.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	association, ok := mg.(*v1alpha1.QualityGateUsergroupAssociation)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotQualityGateUsergroupAssociation)
-	}
-
+func (c *external) Observe(ctx context.Context, association *v1alpha1.QualityGateUsergroupAssociation) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(association)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil
@@ -201,12 +183,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 // Create grants the group or user edit rights on the Quality Gate, then
 // sets the external name.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	association, ok := mg.(*v1alpha1.QualityGateUsergroupAssociation)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotQualityGateUsergroupAssociation)
-	}
-
+func (c *external) Create(ctx context.Context, association *v1alpha1.QualityGateUsergroupAssociation) (managed.ExternalCreation, error) {
 	association.SetConditions(xpv1.Creating())
 
 	spec := association.Spec.ForProvider
@@ -225,12 +202,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 // Every field of QualityGateUsergroupAssociation is immutable, so this only
 // triggers if the observed association drifts from the spec; granting the
 // association again converges it.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	association, ok := mg.(*v1alpha1.QualityGateUsergroupAssociation)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotQualityGateUsergroupAssociation)
-	}
-
+func (c *external) Update(ctx context.Context, association *v1alpha1.QualityGateUsergroupAssociation) (managed.ExternalUpdate, error) {
 	err := c.addAssociation(ctx, association.Spec.ForProvider)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateQualityGateUsergroupAssociation)
@@ -240,12 +212,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Delete revokes the group or user edit rights on the Quality Gate.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	association, ok := mg.(*v1alpha1.QualityGateUsergroupAssociation)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotQualityGateUsergroupAssociation)
-	}
-
+func (c *external) Delete(ctx context.Context, association *v1alpha1.QualityGateUsergroupAssociation) (managed.ExternalDelete, error) {
 	association.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(association)

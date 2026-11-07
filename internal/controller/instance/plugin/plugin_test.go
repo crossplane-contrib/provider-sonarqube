@@ -57,11 +57,6 @@ const (
 	testPluginKey = "findbugs"
 )
 
-// notPlugin is a sentinel type used to test invalid managed resource handling.
-type notPlugin struct {
-	resource.Managed
-}
-
 // mockGate is a minimal implementation of the feature gate used by SetupGated.
 type mockGate struct {
 	registered bool
@@ -127,7 +122,7 @@ var errComparer = cmp.Comparer(func(x, y error) bool {
 // observeArgs holds the inputs for an Observe table-driven test case.
 type observeArgs struct {
 	ctx context.Context
-	mg  resource.Managed
+	mg  *v1alpha1.Plugin
 }
 
 // observeWant holds the expected outputs for an Observe test case.
@@ -168,7 +163,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Plugin
 	}
 
 	type want struct {
@@ -182,14 +177,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPluginError": {
-			client: &fake.MockPluginsClient{},
-			args:   args{ctx: context.Background(), mg: &notPlugin{}},
-			want: want{
-				o:   managed.ExternalCreation{},
-				err: errors.New(errNotPlugin),
-			},
-		},
 		"InstallAPIError": {
 			client: &fake.MockPluginsClient{
 				InstallFn: func(_ *sonar.PluginsInstallOptions) (*http.Response, error) {
@@ -233,10 +220,9 @@ func TestCreate(t *testing.T) {
 			}
 
 			if tc.want.externalName != "" {
-				if p, ok := tc.args.mg.(*v1alpha1.Plugin); ok {
-					if got := meta.GetExternalName(p); got != tc.want.externalName {
-						t.Errorf("Create() external name = %q, want %q", got, tc.want.externalName)
-					}
+				p := tc.args.mg
+				if got := meta.GetExternalName(p); got != tc.want.externalName {
+					t.Errorf("Create() external name = %q, want %q", got, tc.want.externalName)
 				}
 			}
 		})
@@ -273,7 +259,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Plugin
 	}
 
 	type want struct {
@@ -290,11 +276,6 @@ func TestUpdate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPluginError": {
-			client: &fake.MockPluginsClient{},
-			args:   args{ctx: context.Background(), mg: &notPlugin{}},
-			want:   want{o: managed.ExternalUpdate{}, err: errors.New(errNotPlugin)},
-		},
 		"EmptyExternalNameReturnsError": {
 			client: &fake.MockPluginsClient{},
 			args:   args{ctx: context.Background(), mg: newPlugin(testPluginKey, "")},
@@ -409,7 +390,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Plugin
 	}
 
 	type want struct {
@@ -422,11 +403,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotPluginError": {
-			client: &fake.MockPluginsClient{},
-			args:   args{ctx: context.Background(), mg: &notPlugin{}},
-			want:   want{o: managed.ExternalDelete{}, err: errors.New(errNotPlugin)},
-		},
 		"EmptyExternalNameIsNoOp": {
 			client: &fake.MockPluginsClient{},
 			args:   args{ctx: context.Background(), mg: newPlugin(testPluginKey, "")},
@@ -607,23 +583,6 @@ func newPluginResource(name string) *v1alpha1.Plugin {
 			ManagedResourceSpec: xpv1.ManagedResourceSpec{},
 			ForProvider:         v1alpha1.PluginParameters{Key: testPluginKey},
 		},
-	}
-}
-
-// TestConnectTypeAssertion verifies Connect returns an error for
-// non-Plugin types.
-func TestConnectTypeAssertion(t *testing.T) {
-	t.Parallel()
-
-	c := &connector{}
-
-	_, err := c.Connect(context.Background(), &notPlugin{})
-	if err == nil {
-		t.Fatal("Connect() expected error for non-Plugin type, got nil")
-	}
-
-	if !strings.Contains(err.Error(), errNotPlugin) {
-		t.Fatalf("Connect() error = %q, want to contain %q", err.Error(), errNotPlugin)
 	}
 }
 

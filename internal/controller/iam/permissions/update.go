@@ -24,7 +24,6 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/pkg/errors"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
@@ -33,12 +32,7 @@ import (
 )
 
 // Update reconciles the delta between the desired and observed permissions.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	permissions, ok := mg.(*v1alpha1.Permissions)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotPermissions)
-	}
-
+func (c *external) Update(ctx context.Context, permissions *v1alpha1.Permissions) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(permissions)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf(errExternalNameNotSet, permissions.Name)

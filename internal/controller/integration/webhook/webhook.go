@@ -43,8 +43,6 @@ import (
 )
 
 const (
-	// errNotWebhook indicates managed resource is not a Webhook.
-	errNotWebhook = "managed resource is not a Webhook custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -86,7 +84,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.WebhookGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Webhook](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: integration.NewWebhooksClient,
@@ -121,23 +119,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	webhook, isValid := managedResource.(*v1alpha1.Webhook)
-	if !isValid {
-		return nil, errors.New(errNotWebhook)
-	}
-
+func (c *connector) Connect(ctx context.Context, webhook *v1alpha1.Webhook) (managed.TypedExternalClient[*v1alpha1.Webhook], error) {
 	err := c.usage.Track(ctx, webhook)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, webhook)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -155,12 +143,7 @@ type external struct {
 
 // Observe checks whether the Webhook exists in SonarQube and whether
 // it is up to date.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	webhookCR, ok := mg.(*v1alpha1.Webhook)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotWebhook)
-	}
-
+func (c *external) Observe(ctx context.Context, webhookCR *v1alpha1.Webhook) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(webhookCR)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil
@@ -212,12 +195,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 // Create creates the Webhook in SonarQube and sets the external name
 // to the key assigned by the API.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	webhookCR, ok := mg.(*v1alpha1.Webhook)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotWebhook)
-	}
-
+func (c *external) Create(ctx context.Context, webhookCR *v1alpha1.Webhook) (managed.ExternalCreation, error) {
 	secret, err := c.readSecret(ctx, webhookCR)
 	if err != nil {
 		return managed.ExternalCreation{}, err
@@ -244,12 +222,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Update updates the Webhook in SonarQube to match the desired state.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	webhookCR, ok := mg.(*v1alpha1.Webhook)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotWebhook)
-	}
-
+func (c *external) Update(ctx context.Context, webhookCR *v1alpha1.Webhook) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(webhookCR)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf(errExternalNameNotSet, webhookCR.Name)
@@ -273,12 +246,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Delete removes the Webhook from SonarQube.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	webhookCR, ok := mg.(*v1alpha1.Webhook)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotWebhook)
-	}
-
+func (c *external) Delete(ctx context.Context, webhookCR *v1alpha1.Webhook) (managed.ExternalDelete, error) {
 	webhookCR.Status.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(webhookCR)

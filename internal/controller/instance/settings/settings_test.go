@@ -24,7 +24,6 @@ import (
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,11 +48,6 @@ const (
 //
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
-
-// notSettings is a type for testing non-Settings resources.
-type notSettings struct {
-	resource.Managed
-}
 
 // mockHTTPResponse creates a minimal mock HTTP response for testing.
 func mockHTTPResponse() *http.Response {
@@ -84,7 +78,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Settings
 	}
 
 	type want struct {
@@ -97,17 +91,6 @@ func TestObserve(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotSettingsError": {
-			client: &fake.MockSettingsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notSettings{},
-			},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.New(errNotSettings),
-			},
-		},
 		"DeletingReturnsNotExists": {
 			client: &fake.MockSettingsClient{},
 			args: args{
@@ -394,14 +377,12 @@ func TestObserve(t *testing.T) {
 }
 
 // TestCreate tests the Create method.
-//
-//nolint:maintidx // Test function complexity is acceptable for comprehensive table-driven tests
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Settings
 	}
 
 	type want struct {
@@ -414,17 +395,6 @@ func TestCreate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotSettingsError": {
-			client: &fake.MockSettingsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notSettings{},
-			},
-			want: want{
-				o:   managed.ExternalCreation{},
-				err: errors.New(errNotSettings),
-			},
-		},
 		"SetFailsForSingleSetting": {
 			client: &fake.MockSettingsClient{
 				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
@@ -654,7 +624,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Settings
 	}
 
 	type want struct {
@@ -667,17 +637,6 @@ func TestUpdate(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotSettingsError": {
-			client: &fake.MockSettingsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notSettings{},
-			},
-			want: want{
-				o:   managed.ExternalUpdate{},
-				err: errors.New(errNotSettings),
-			},
-		},
 		"UpdateOutOfDateSetting": {
 			client: &fake.MockSettingsClient{
 				SetFn: func(opt *sonar.SettingsSetOptions) (*http.Response, error) {
@@ -1011,7 +970,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Settings
 	}
 
 	type want struct {
@@ -1024,17 +983,6 @@ func TestDelete(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NotSettingsError": {
-			client: &fake.MockSettingsClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notSettings{},
-			},
-			want: want{
-				o:   managed.ExternalDelete{},
-				err: errors.New(errNotSettings),
-			},
-		},
 		"SuccessfulDelete": {
 			client: &fake.MockSettingsClient{
 				ResetFn: func(opt *sonar.SettingsResetOptions) (*http.Response, error) {

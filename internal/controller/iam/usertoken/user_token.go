@@ -37,8 +37,6 @@ import (
 )
 
 const (
-	// errNotUserToken indicates the managed resource is not a UserToken.
-	errNotUserToken = "managed resource is not a UserToken custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -76,7 +74,7 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.UserTokenGroupKind)
 
 	options := helpers.ReconcilerOptions(mgr, name, opts,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.UserToken](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: iam.NewUserTokensClient,
@@ -107,23 +105,13 @@ type connector struct {
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
 // retrieving credentials, and constructing a SonarQube user tokens client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	usertoken, isUserToken := managedResource.(*v1alpha1.UserToken)
-	if !isUserToken {
-		return nil, errors.New(errNotUserToken)
-	}
-
+func (c *connector) Connect(ctx context.Context, usertoken *v1alpha1.UserToken) (managed.TypedExternalClient[*v1alpha1.UserToken], error) {
 	err := c.usage.Track(ctx, usertoken)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isModernManaged := managedResource.(resource.ModernManaged)
-	if !isModernManaged {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, usertoken)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -138,12 +126,7 @@ type external struct {
 
 // Observe checks whether the token exists in SonarQube and populates
 // status.atProvider.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	usertoken, ok := mg.(*v1alpha1.UserToken)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotUserToken)
-	}
-
+func (c *external) Observe(ctx context.Context, usertoken *v1alpha1.UserToken) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(usertoken)
 	if externalName == "" {
 		return managed.ExternalObservation{ResourceExists: false}, nil
@@ -181,12 +164,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 // Create generates a new token in SonarQube and stores the token value in
 // the connection secret.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	usertoken, ok := mg.(*v1alpha1.UserToken)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotUserToken)
-	}
-
+func (c *external) Create(ctx context.Context, usertoken *v1alpha1.UserToken) (managed.ExternalCreation, error) {
 	usertoken.Status.SetConditions(xpv1.Creating())
 
 	generated, resp, err := c.client.Generate(ctx, iam.GenerateUserTokenCreateOptions(&usertoken.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
@@ -209,12 +187,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 // expired or proactive rotation is due. It revokes the old token and
 // immediately generates a replacement, returning the new value in
 // ConnectionDetails so the secret is refreshed atomically in one reconcile.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	usertoken, ok := mg.(*v1alpha1.UserToken)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotUserToken)
-	}
-
+func (c *external) Update(ctx context.Context, usertoken *v1alpha1.UserToken) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(usertoken)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, errors.New("cannot renew UserToken without external name")
@@ -244,12 +217,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Delete revokes the token in SonarQube.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	usertoken, ok := mg.(*v1alpha1.UserToken)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotUserToken)
-	}
-
+func (c *external) Delete(ctx context.Context, usertoken *v1alpha1.UserToken) (managed.ExternalDelete, error) {
 	usertoken.Status.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(usertoken)

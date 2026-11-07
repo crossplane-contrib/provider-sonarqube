@@ -38,15 +38,6 @@ import (
 func TestUpdate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("invalid managed resource", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := (&external{usersClient: &sonarfake.MockUsersClient{}}).Update(context.Background(), &notUser{})
-		if err == nil || !strings.Contains(err.Error(), errNotUser) {
-			t.Fatalf("Update() error = %v, want %q", err, errNotUser)
-		}
-	})
-
 	t.Run("missing external name", func(t *testing.T) {
 		t.Parallel()
 

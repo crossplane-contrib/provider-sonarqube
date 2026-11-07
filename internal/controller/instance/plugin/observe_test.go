@@ -38,11 +38,6 @@ func TestObserve(t *testing.T) {
 		args   observeArgs
 		want   observeWant
 	}{
-		"NotPluginError": {
-			client: &fake.MockPluginsClient{},
-			args:   observeArgs{ctx: context.Background(), mg: &notPlugin{}},
-			want:   observeWant{o: managed.ExternalObservation{}, err: errors.New(errNotPlugin)},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			client: &fake.MockPluginsClient{},
 			args:   observeArgs{ctx: context.Background(), mg: newPlugin(testPluginKey, "")},

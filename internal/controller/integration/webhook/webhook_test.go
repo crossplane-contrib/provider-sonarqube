@@ -56,9 +56,6 @@ const (
 	testSecretValue = "supersecrethmacvalue123"
 )
 
-// notAWebhook is a test type that is not a Webhook.
-type notAWebhook struct{ resource.Managed }
-
 // mockGate is a mock implementation of the feature gate interface.
 type mockGate struct {
 	registered bool
@@ -167,7 +164,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Webhook
 	}
 
 	type want struct {
@@ -181,12 +178,6 @@ func TestObserve(t *testing.T) {
 		args          args
 		want          want
 	}{
-		"NotAWebhook": {
-			objects:       []runtime.Object{},
-			webhookClient: &fake.MockWebhooksClient{},
-			args:          args{ctx: context.Background(), mg: &notAWebhook{}},
-			want:          want{observation: managed.ExternalObservation{}, errSubstr: errNotWebhook},
-		},
 		"MissingExternalNameReturnsNotExists": {
 			objects:       []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{},
@@ -276,7 +267,7 @@ func TestObserve(t *testing.T) {
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.Webhook {
 				wh := newTestWebhook(testExternalName, nil)
 				wh.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "missing-conn-secret"})
 
@@ -298,7 +289,7 @@ func TestObserve(t *testing.T) {
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.Webhook {
 				wh := newTestWebhook(testExternalName, webhookSecretRef("hook-secret", "value"))
 				wh.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "conn-secret"})
 
@@ -320,7 +311,7 @@ func TestObserve(t *testing.T) {
 					}}, mockHTTPResponse(http.StatusOK), nil
 				},
 			},
-			args: args{ctx: context.Background(), mg: func() resource.Managed {
+			args: args{ctx: context.Background(), mg: func() *v1alpha1.Webhook {
 				wh := newTestWebhook(testExternalName, webhookSecretRef("hook-secret", "value"))
 				wh.SetWriteConnectionSecretToReference(&xpv1.LocalSecretReference{Name: "conn-secret"})
 
@@ -364,7 +355,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Webhook
 	}
 
 	type want struct {
@@ -377,12 +368,6 @@ func TestCreate(t *testing.T) {
 		args          args
 		want          want
 	}{
-		"NotAWebhook": {
-			objects:       []runtime.Object{},
-			webhookClient: &fake.MockWebhooksClient{},
-			args:          args{ctx: context.Background(), mg: &notAWebhook{}},
-			want:          want{errSubstr: errNotWebhook},
-		},
 		"MissingSecretReturnsError": {
 			objects:       []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{},
@@ -455,7 +440,7 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Webhook
 	}
 
 	type want struct {
@@ -468,12 +453,6 @@ func TestUpdate(t *testing.T) {
 		args          args
 		want          want
 	}{
-		"NotAWebhook": {
-			objects:       []runtime.Object{},
-			webhookClient: &fake.MockWebhooksClient{},
-			args:          args{ctx: context.Background(), mg: &notAWebhook{}},
-			want:          want{errSubstr: errNotWebhook},
-		},
 		"MissingExternalNameReturnsError": {
 			objects:       []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{},
@@ -529,7 +508,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.Webhook
 	}
 
 	type want struct {
@@ -542,12 +521,6 @@ func TestDelete(t *testing.T) {
 		args          args
 		want          want
 	}{
-		"NotAWebhook": {
-			objects:       []runtime.Object{},
-			webhookClient: &fake.MockWebhooksClient{},
-			args:          args{ctx: context.Background(), mg: &notAWebhook{}},
-			want:          want{errSubstr: errNotWebhook},
-		},
 		"MissingExternalNameIsNoop": {
 			objects:       []runtime.Object{},
 			webhookClient: &fake.MockWebhooksClient{},
@@ -606,15 +579,6 @@ func TestDisconnect(t *testing.T) {
 // TestConnect tests the connector's Connect method.
 func TestConnect(t *testing.T) {
 	t.Parallel()
-
-	t.Run("NotAWebhook", func(t *testing.T) {
-		t.Parallel()
-
-		c := &connector{}
-		_, err := c.Connect(context.Background(), &notAWebhook{})
-
-		checkError(t, "Connect", errNotWebhook, err)
-	})
 
 	t.Run("TrackUsageError", func(t *testing.T) {
 		t.Parallel()

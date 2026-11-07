@@ -42,8 +42,6 @@ import (
 )
 
 const (
-	// errNotALMGitLab indicates managed resource is not ALMGitLab.
-	errNotALMGitLab = "managed resource is not a ALMGitLab custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -74,7 +72,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.ALMGitLabGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.ALMGitLab](&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
@@ -110,24 +108,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	almgitlab, isValid := managedResource.(*v1alpha1.ALMGitLab)
-	if !isValid {
-		return nil, errors.New(errNotALMGitLab)
-	}
-
+func (c *connector) Connect(ctx context.Context, almgitlab *v1alpha1.ALMGitLab) (managed.TypedExternalClient[*v1alpha1.ALMGitLab], error) {
 	err := c.usage.Track(ctx, almgitlab)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, almgitlab)
 	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -144,7 +131,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 }
 
 // external is used to observe and manipulate the external resource (ALMGitLab)
-// in SonarQube API. It implements the managed.ExternalClient interface.
+// in SonarQube API. It implements the managed.TypedExternalClient interface.
 type external struct {
 	// kubeClient is the Kubernetes API client that can be used to get and update the managed resource. This is expected to be initialized by the connector when the external client is created.
 	kubeClient client.Client
@@ -158,12 +145,7 @@ type external struct {
 // SonarQube API, and returns an ExternalObservation.
 // It is used to determine if the resource exists,
 // is up to date, and late initialize the spec if needed.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotALMGitLab)
-	}
-
+func (c *external) Observe(ctx context.Context, almGitlab *v1alpha1.ALMGitLab) (managed.ExternalObservation, error) {
 	// Use external name as the identifier to get the resource
 	externalName := meta.GetExternalName(almGitlab)
 	if externalName == "" {
@@ -224,12 +206,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 // stored in a secret.
 // It also sets the external name of the managed resource to the identifier
 // of the created external resource if it is not already set.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotALMGitLab)
-	}
-
+func (c *external) Create(ctx context.Context, almGitlab *v1alpha1.ALMGitLab) (managed.ExternalCreation, error) {
 	pat, err := common.GetTokenValueFromLocalSecret(ctx, c.kubeClient, almGitlab, almGitlab.Spec.ForProvider.PersonalAccessTokenSecretRef)
 	switch {
 	case err != nil:
@@ -265,12 +242,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 // the desired state of the managed resource.
 // It returns an ExternalUpdate which may include connection details to be
 // stored in a secret.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotALMGitLab)
-	}
-
+func (c *external) Update(ctx context.Context, almGitlab *v1alpha1.ALMGitLab) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(almGitlab)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf(errExternalNameNotSet, almGitlab.Name)
@@ -315,12 +287,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 // Delete deletes the ALMGitLab corresponding external resource using the
 // SonarQube API. It returns an ExternalDelete which may include
 // connection details to be stored in a secret.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	almGitlab, ok := mg.(*v1alpha1.ALMGitLab)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotALMGitLab)
-	}
-
+func (c *external) Delete(ctx context.Context, almGitlab *v1alpha1.ALMGitLab) (managed.ExternalDelete, error) {
 	almGitlab.Status.SetConditions(xpv1.Deleting())
 
 	// Use external name as the identifier to delete the resource

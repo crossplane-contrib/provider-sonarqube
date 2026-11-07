@@ -24,7 +24,6 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	pkgerrors "github.com/pkg/errors"
 
@@ -37,12 +36,7 @@ import (
 // SonarQube API, based on the desired state of the managed resource.
 // It returns an ExternalUpdate which may include connection details
 // to be stored in a secret.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	permissionsTemplate, ok := mg.(*v1alpha1.PermissionsTemplate)
-	if !ok {
-		return managed.ExternalUpdate{}, pkgerrors.New(errNotPermissionsTemplate)
-	}
-
+func (c *external) Update(ctx context.Context, permissionsTemplate *v1alpha1.PermissionsTemplate) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(permissionsTemplate)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for PermissionsTemplate %s", permissionsTemplate.Name)

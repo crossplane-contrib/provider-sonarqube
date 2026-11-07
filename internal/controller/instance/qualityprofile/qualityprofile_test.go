@@ -24,7 +24,6 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,11 +40,6 @@ import (
 //
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
-
-// notQualityProfile is a type for testing non-QualityProfile resources.
-type notQualityProfile struct {
-	resource.Managed
-}
 
 // errComparer compares errors by their message.
 func errComparer(a, b error) bool {
@@ -74,7 +68,7 @@ func TestObserve(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityProfile
 	}
 
 	type want struct {
@@ -88,18 +82,6 @@ func TestObserve(t *testing.T) {
 		args                  args
 		want                  want
 	}{
-		"NotQualityProfileError": {
-			qualityProfilesClient: &fake.MockQualityProfilesClient{},
-			rulesClient:           &fake.MockRulesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notQualityProfile{},
-			},
-			want: want{
-				o:   managed.ExternalObservation{},
-				err: errors.New(errNotQualityProfile),
-			},
-		},
 		"EmptyExternalNameReturnsNotExists": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{},
 			rulesClient:           &fake.MockRulesClient{},
@@ -339,7 +321,7 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityProfile
 	}
 
 	type want struct {
@@ -352,17 +334,6 @@ func TestCreate(t *testing.T) {
 		args                  args
 		want                  want
 	}{
-		"NotQualityProfileError": {
-			qualityProfilesClient: &fake.MockQualityProfilesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notQualityProfile{},
-			},
-			want: want{
-				o:   managed.ExternalCreation{},
-				err: errors.New(errNotQualityProfile),
-			},
-		},
 		"SuccessfulCreate": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				CreateFn: func(opt *sonar.QualityprofilesCreateOptions) (*sonar.QualityprofilesCreate, *http.Response, error) {
@@ -483,7 +454,7 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		mg  resource.Managed
+		mg  *v1alpha1.QualityProfile
 	}
 
 	type want struct {
@@ -496,17 +467,6 @@ func TestDelete(t *testing.T) {
 		args                  args
 		want                  want
 	}{
-		"NotQualityProfileError": {
-			qualityProfilesClient: &fake.MockQualityProfilesClient{},
-			args: args{
-				ctx: context.Background(),
-				mg:  &notQualityProfile{},
-			},
-			want: want{
-				o:   managed.ExternalDelete{},
-				err: errors.New(errNotQualityProfile),
-			},
-		},
 		"SuccessfulDelete": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				DeleteFn: func(opt *sonar.QualityprofilesDeleteOptions) (*http.Response, error) {

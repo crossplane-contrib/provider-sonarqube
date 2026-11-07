@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/pkg/errors"
@@ -33,12 +32,7 @@ import (
 
 // Observe observes the License corresponding external resource using the
 // SonarQube API, and returns an ExternalObservation.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	license, ok := mg.(*v1alpha1.License)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotLicense)
-	}
-
+func (c *external) Observe(ctx context.Context, license *v1alpha1.License) (managed.ExternalObservation, error) {
 	licenseGet, resp, err := c.client.Get(ctx) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 

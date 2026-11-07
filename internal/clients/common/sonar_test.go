@@ -347,22 +347,6 @@ func TestDetermineAuthType(t *testing.T) {
 	}
 }
 
-// TestGetConfigNonModernManaged tests getting config from non-modern managed.
-func TestGetConfigNonModernManaged(t *testing.T) {
-	t.Parallel()
-
-	kubeClient := newSonarTestClient()
-
-	_, err := GetConfig(context.Background(), kubeClient, &fake.Managed{})
-	if err == nil {
-		t.Errorf("GetConfig() expected error for non-ModernManaged, got nil")
-	}
-
-	if !strings.Contains(err.Error(), "unknown managed resource type") {
-		t.Errorf("GetConfig() error = %v, want error containing 'unknown managed resource type'", err)
-	}
-}
-
 // getConfigTestCase holds test case data for config retrieval tests.
 type getConfigTestCase struct {
 	managed     *fake.ModernManaged
@@ -444,46 +428,6 @@ func TestGetConfigModernManagedRefErrors(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "cannot get referenced ClusterProviderConfig",
-		},
-		"TrackingFailsReturnsError": {
-			managed: func() *fake.ModernManaged {
-				m := &fake.ModernManaged{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-resource",
-						Namespace: "default",
-					},
-				}
-				m.SetProviderConfigReference(&xpv1.ProviderConfigReference{Name: "my-pc", Kind: "ProviderConfig"})
-
-				return m
-			}(),
-			setupClient: func() client.Client {
-				return newSonarTestClient(
-					&v1alpha1.ProviderConfig{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "my-pc",
-							Namespace: "default",
-						},
-						Spec: v1alpha1.ProviderConfigSpec{
-							BaseURL: "http://localhost:9000",
-							Token: &v1alpha1.ProviderCredentials{
-								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
-									SecretRef: &xpv1.SecretKeySelector{
-										SecretReference: xpv1.SecretReference{
-											Name:      "my-secret",
-											Namespace: "default",
-										},
-										Key: "token",
-									},
-								},
-								Source: xpv1.CredentialsSourceSecret,
-							},
-						},
-					},
-				)
-			},
-			wantErr: true,
-			errMsg:  "cannot track ProviderConfig usage",
 		},
 	}
 

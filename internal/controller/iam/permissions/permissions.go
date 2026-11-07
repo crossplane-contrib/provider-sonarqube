@@ -42,8 +42,6 @@ import (
 )
 
 const (
-	// errNotPermissions indicates managed resource is not a Permissions resource.
-	errNotPermissions = "managed resource is not a Permissions custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -90,7 +88,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.PermissionsGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.Permissions](&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: iam.NewPermissionsClient,
@@ -123,23 +121,13 @@ type connector struct {
 
 // Connect produces an ExternalClient by resolving the ProviderConfig
 // credentials.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	permissions, isValid := managedResource.(*v1alpha1.Permissions)
-	if !isValid {
-		return nil, errors.New(errNotPermissions)
-	}
-
+func (c *connector) Connect(ctx context.Context, permissions *v1alpha1.Permissions) (managed.TypedExternalClient[*v1alpha1.Permissions], error) {
 	err := c.usage.Track(ctx, permissions)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, permissions)
 	if err != nil || config == nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -161,12 +149,7 @@ type external struct {
 
 // Create adds all desired permissions to the group or user, then sets the
 // external name.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	permissions, ok := mg.(*v1alpha1.Permissions)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotPermissions)
-	}
-
+func (c *external) Create(ctx context.Context, permissions *v1alpha1.Permissions) (managed.ExternalCreation, error) {
 	permissions.SetConditions(xpv1.Creating())
 
 	err := c.applyPermissions(ctx, permissions.Spec.ForProvider, permissions.Spec.ForProvider.Permissions, nil)
@@ -180,12 +163,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 // Delete removes all observed permissions from the group or user.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	permissions, ok := mg.(*v1alpha1.Permissions)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotPermissions)
-	}
-
+func (c *external) Delete(ctx context.Context, permissions *v1alpha1.Permissions) (managed.ExternalDelete, error) {
 	permissions.SetConditions(xpv1.Deleting())
 
 	externalName := meta.GetExternalName(permissions)

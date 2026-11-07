@@ -43,9 +43,6 @@ import (
 )
 
 const (
-	// errNotALMBitbucketCloud indicates the managed resource is not
-	// ALMBitbucketCloud.
-	errNotALMBitbucketCloud = "managed resource is not a ALMBitbucketCloud custom resource"
 	// errTrackPCUsage indicates ProviderConfig usage tracking failed.
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	// errGetPC indicates ProviderConfig retrieval failed.
@@ -76,7 +73,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.ALMBitbucketCloudGroupKind)
 
 	opts := helpers.ReconcilerOptions(mgr, name, options,
-		managed.WithExternalConnector(&connector{
+		managed.WithTypedExternalConnector[*v1alpha1.ALMBitbucketCloud](&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 		}),
@@ -112,24 +109,13 @@ type connector struct {
 // 2. Getting the managed resource's ProviderConfig.
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
-func (c *connector) Connect(ctx context.Context, managedResource resource.Managed) (managed.ExternalClient, error) {
-	almBitbucketCloud, isValid := managedResource.(*v1alpha1.ALMBitbucketCloud)
-	if !isValid {
-		return nil, errors.New(errNotALMBitbucketCloud)
-	}
-
+func (c *connector) Connect(ctx context.Context, almBitbucketCloud *v1alpha1.ALMBitbucketCloud) (managed.TypedExternalClient[*v1alpha1.ALMBitbucketCloud], error) {
 	err := c.usage.Track(ctx, almBitbucketCloud)
 	if err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	// Switch to ModernManaged resource to get ProviderConfigRef
-	modernManaged, isValid := managedResource.(resource.ModernManaged)
-	if !isValid {
-		return nil, errors.New("managed resource is not a ModernManaged")
-	}
-
-	config, err := common.GetConfig(ctx, c.kube, modernManaged)
+	config, err := common.GetConfig(ctx, c.kube, almBitbucketCloud)
 	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -147,7 +133,7 @@ func (c *connector) Connect(ctx context.Context, managedResource resource.Manage
 
 // external is used to observe and manipulate the external
 // ALMBitbucketCloud resource in the SonarQube API. It implements
-// the managed.ExternalClient interface.
+// the managed.TypedExternalClient interface.
 type external struct {
 	// kubeClient is the Kubernetes API client that can be used to get and update the managed resource. This is expected to be initialized by the connector when the external client is created.
 	kubeClient client.Client
@@ -161,12 +147,7 @@ type external struct {
 // using the SonarQube API, and returns an ExternalObservation.
 // It is used to determine if the resource exists,
 // is up to date, and late initialize the spec if needed.
-func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	almBitbucketCloud, ok := mg.(*v1alpha1.ALMBitbucketCloud)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotALMBitbucketCloud)
-	}
-
+func (c *external) Observe(ctx context.Context, almBitbucketCloud *v1alpha1.ALMBitbucketCloud) (managed.ExternalObservation, error) {
 	// Use the external name as the identifier to get the resource
 	externalName := meta.GetExternalName(almBitbucketCloud)
 	if externalName == "" {
@@ -221,12 +202,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 // stored in a secret.
 // It also sets the external name of the managed resource to the identifier of
 // the created external resource if it is not already set.
-func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	almBitbucketCloud, ok := mg.(*v1alpha1.ALMBitbucketCloud)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotALMBitbucketCloud)
-	}
-
+func (c *external) Create(ctx context.Context, almBitbucketCloud *v1alpha1.ALMBitbucketCloud) (managed.ExternalCreation, error) {
 	clientSecret, err := c.getRequiredClientSecret(ctx, almBitbucketCloud)
 	if err != nil {
 		return managed.ExternalCreation{}, err
@@ -252,12 +228,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 // Update updates the ALMBitbucketCloud corresponding external resource to
 // reflect the desired state of the managed resource.
-func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	almBitbucketCloud, ok := mg.(*v1alpha1.ALMBitbucketCloud)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotALMBitbucketCloud)
-	}
-
+func (c *external) Update(ctx context.Context, almBitbucketCloud *v1alpha1.ALMBitbucketCloud) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(almBitbucketCloud)
 	if externalName == "" {
 		return managed.ExternalUpdate{}, fmt.Errorf(errExternalNameNotSet, almBitbucketCloud.Name)
@@ -297,12 +268,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 // Delete deletes the ALMBitbucketCloud corresponding external resource using
 // the SonarQube API. It returns an ExternalDelete that may include connection
 // details to be stored in a secret.
-func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	almBitbucketCloud, ok := mg.(*v1alpha1.ALMBitbucketCloud)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotALMBitbucketCloud)
-	}
-
+func (c *external) Delete(ctx context.Context, almBitbucketCloud *v1alpha1.ALMBitbucketCloud) (managed.ExternalDelete, error) {
 	almBitbucketCloud.Status.SetConditions(xpv1.Deleting())
 
 	// Use the external name as the identifier to delete the resource

@@ -236,18 +236,12 @@ func sharedHTTPClient(insecureSkipVerify bool) *http.Client {
 
 // GetConfig constructs a Config that can be used to authenticate to SonarQube's
 // API by the SonarQube Go client.
-func GetConfig(ctx context.Context, kubeClient client.Client, managedResource resource.Managed) (*Config, error) {
-	switch managedResourceCast := managedResource.(type) {
-	case resource.ModernManaged:
-		switch {
-		case managedResourceCast.GetProviderConfigReference() != nil:
-			return UseProviderConfig(ctx, kubeClient, managedResourceCast)
-		default:
-			return nil, errors.New("providerConfigRef is not given")
-		}
-	default:
-		return nil, errors.New("unknown managed resource type")
+func GetConfig(ctx context.Context, kubeClient client.Client, managedResource resource.ModernManaged) (*Config, error) {
+	if managedResource.GetProviderConfigReference() == nil {
+		return nil, errors.New("providerConfigRef is not given")
 	}
+
+	return UseProviderConfig(ctx, kubeClient, managedResource)
 }
 
 // UseProviderConfig uses the given ProviderConfig reference to construct a
@@ -284,14 +278,9 @@ func UseProviderConfig(ctx context.Context, kubeClient client.Client, managedRes
 // secretNamespace is the namespace every credential secret must live in; nil
 // means the spec is cluster-scoped and secrets may live anywhere. A non-nil
 // empty namespace is not treated as unrestricted, so the check fails closed.
+// It does not track ProviderConfig usage: callers do that before building
+// the Config.
 func buildConfigFromSpec(ctx context.Context, kubeClient client.Client, managedResource resource.ModernManaged, spec v1alpha1.ProviderConfigSpec, secretNamespace *string) (*Config, error) {
-	t := resource.NewProviderConfigUsageTracker(kubeClient, &v1alpha1.ProviderConfigUsage{})
-
-	err := t.Track(ctx, managedResource)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot track ProviderConfig usage")
-	}
-
 	config := &Config{
 		BaseURL:            spec.BaseURL,
 		InsecureSkipVerify: ptr.Deref(spec.InsecureSkipVerify, false),
