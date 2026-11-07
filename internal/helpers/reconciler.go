@@ -17,6 +17,8 @@ limitations under the License.
 package helpers
 
 import (
+	"math"
+	"math/rand/v2"
 	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
@@ -28,6 +30,14 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+// MaxPollJitterPercentage is the highest accepted Options.PollJitterPercentage.
+// It keeps the poll interval well above zero, as a zero requeue delay would
+// stop polling the resource altogether.
+const MaxPollJitterPercentage = 50
+
+// percent is the divisor of a percentage.
+const percent = 100.0
+
 // Options are the crossplane-runtime controller options, extended with the
 // settings of this provider.
 type Options struct {
@@ -38,6 +48,13 @@ type Options struct {
 	// raised to it, which keeps the annotation from letting one resource use
 	// the reconcile budget shared by all tenants.
 	MinPollInterval time.Duration
+
+	// PollJitterPercentage spreads each poll by up to this percentage of its
+	// interval, in both directions, so that resources created or restarted
+	// together do not keep polling SonarQube together. An interval close to
+	// MinPollInterval is only spread as far down as that minimum. Zero disables
+	// it.
+	PollJitterPercentage int
 }
 
 // ValidateMinPollInterval returns an error if minimum is negative. A negative
@@ -45,6 +62,16 @@ type Options struct {
 func ValidateMinPollInterval(minimum time.Duration) error {
 	if minimum < 0 {
 		return errors.Errorf("minimum poll interval must not be negative, got %s", minimum)
+	}
+
+	return nil
+}
+
+// ValidatePollJitterPercentage returns an error if percentage is negative or
+// above MaxPollJitterPercentage.
+func ValidatePollJitterPercentage(percentage int) error {
+	if percentage < 0 || percentage > MaxPollJitterPercentage {
+		return errors.Errorf("poll jitter percentage must be between 0 and %d, got %d", MaxPollJitterPercentage, percentage)
 	}
 
 	return nil
@@ -72,6 +99,10 @@ func ReconcilerOptions(mgr ctrl.Manager, name string, opts Options, specific ...
 		options = append(options, managed.WithMetricRecorder(opts.MetricOptions.MRMetrics))
 	}
 
+	if opts.PollJitterPercentage > 0 {
+		options = append(options, managed.WithPollIntervalHook(pollJitterHook(opts.PollJitterPercentage, opts.MinPollInterval)))
+	}
+
 	return append(options, specific...)
 }
 
@@ -92,4 +123,27 @@ func AddMRStateRecorder(mgr ctrl.Manager, opts Options, list resource.ManagedLis
 	}
 
 	return nil
+}
+
+// pollJitterHook returns a hook spreading the poll interval by a percentage of
+// its value, which unlike the fixed jitter of managed.WithPollJitterHook scales
+// with the per-resource intervals set through crossplane.io/poll-interval.
+// Jitter never takes an interval that respects minPollInterval below it: the
+// range is cut at the minimum rather than the result, so that intervals close
+// to it do not all land on the same value. The upper bound saturates, because
+// the annotation accepts intervals close to the largest duration.
+func pollJitterHook(percentage int, minPollInterval time.Duration) managed.PollIntervalHook {
+	fraction := float64(percentage) / percent
+
+	return func(_ resource.Managed, pollInterval time.Duration) time.Duration {
+		spread := time.Duration(float64(pollInterval) * fraction)
+		if spread <= 0 {
+			return pollInterval
+		}
+
+		lowest := max(pollInterval-spread, min(pollInterval, minPollInterval))
+		highest := pollInterval + min(spread, math.MaxInt64-pollInterval)
+
+		return lowest + rand.N(highest-lowest+1) //nolint:gosec // No need for secure randomness.
+	}
 }
