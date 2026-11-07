@@ -115,7 +115,7 @@ func (c *connector) Connect(ctx context.Context, settings *v1alpha1.Settings) (m
 	return &external{settingsClient: svc}, nil
 }
 
-// external implements the managed.ExternalClient interface for Settings
+// external implements the managed.TypedExternalClient interface for Settings
 // resources.
 type external struct {
 	// settingsClient is used to interact with SonarQube Settings API

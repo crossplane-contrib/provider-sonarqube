@@ -115,7 +115,8 @@ func (c *connector) Connect(ctx context.Context, rule *v1alpha1.Rule) (managed.T
 	return &external{rulesClient: svc}, nil
 }
 
-// external implements the managed.ExternalClient interface for Rule resources.
+// external implements the managed.TypedExternalClient interface for Rule
+// resources.
 type external struct {
 	// rulesClient is used to interact with SonarQube Rules API
 	rulesClient instance.RulesClient

@@ -366,9 +366,8 @@ func TestCreate(t *testing.T) {
 				t.Errorf("Create() mismatch (-want +got):\n%s", diff)
 			}
 
-			group := tc.args.mg
 			if name == "SuccessfulCreate" {
-				if gotName := meta.GetExternalName(group); gotName != "group-1" {
+				if gotName := meta.GetExternalName(tc.args.mg); gotName != "group-1" {
 					t.Fatalf("Create() external name = %q, want %q", gotName, "group-1")
 				}
 			}

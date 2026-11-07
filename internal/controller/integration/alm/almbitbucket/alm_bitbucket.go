@@ -132,7 +132,7 @@ func (c *connector) Connect(ctx context.Context, almBitbucket *v1alpha1.ALMBitbu
 
 // external is used to observe and manipulate the external ALMBitbucket
 // resource in the SonarQube API. It implements the
-// managed.ExternalClient interface.
+// managed.TypedExternalClient interface.
 type external struct {
 	// kubeClient is the Kubernetes API client that can be used to get and update the managed resource. This is expected to be initialized by the connector when the external client is created.
 	kubeClient client.Client

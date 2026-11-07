@@ -292,8 +292,8 @@ func TestConnect(t *testing.T) {
 
 			kubeClient := fakekube.NewClientBuilder().WithScheme(newScheme(t)).WithRuntimeObjects(tc.objects...).Build()
 
-			if app := tc.mg; tc.pcRef != nil {
-				app.SetProviderConfigReference(tc.pcRef)
+			if tc.pcRef != nil {
+				tc.mg.SetProviderConfigReference(tc.pcRef)
 			}
 
 			c := &connector{
@@ -560,8 +560,8 @@ func TestCreate(t *testing.T) {
 				t.Errorf("Create() error -want +got:\n%s", diff)
 			}
 
-			if app := tc.mg; tc.wantExternalName != "" {
-				if got := meta.GetExternalName(app); got != tc.wantExternalName {
+			if tc.wantExternalName != "" {
+				if got := meta.GetExternalName(tc.mg); got != tc.wantExternalName {
 					t.Errorf("Create() external name = %q, want %q", got, tc.wantExternalName)
 				}
 			}

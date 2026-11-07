@@ -402,9 +402,8 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Create() mismatch (-want +got):\n%s", diff)
 			}
 
-			alm := tc.args.mg
 			if name == "SuccessfulCreate" {
-				if gotExternalName := meta.GetExternalName(alm); gotExternalName != "gitlab-main" {
+				if gotExternalName := meta.GetExternalName(tc.args.mg); gotExternalName != "gitlab-main" {
 					t.Fatalf("Create() external name = %q, want %q", gotExternalName, "gitlab-main")
 				}
 			}
@@ -535,8 +534,7 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 			builder := fakekube.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(tc.objects...)
 
 			if tc.registerMG {
-				alm := tc.args.mg
-				builder = builder.WithRuntimeObjects(alm)
+				builder = builder.WithRuntimeObjects(tc.args.mg)
 			}
 
 			kubeClient := builder.Build()
@@ -557,7 +555,9 @@ func TestUpdate(t *testing.T) { //nolint:gocognit // table-driven test covers al
 				t.Fatalf("Update() mismatch (-want +got):\n%s", diff)
 			}
 
-			if alm := tc.args.mg; name == "SuccessfulUpdateWithKeyChange" {
+			if name == "SuccessfulUpdateWithKeyChange" {
+				alm := tc.args.mg
+
 				if gotExternalName := meta.GetExternalName(alm); gotExternalName != testRenamedGitLabKey {
 					t.Fatalf("Update() external name = %q, want %q", gotExternalName, testRenamedGitLabKey)
 				}
@@ -655,8 +655,7 @@ func TestDelete(t *testing.T) {
 				t.Fatalf("Delete() mismatch (-want +got):\n%s", diff)
 			}
 
-			alm := tc.args.mg
-			if cond := alm.GetCondition(xpv1.TypeReady); cond.Reason != xpv1.ReasonDeleting {
+			if cond := tc.args.mg.GetCondition(xpv1.TypeReady); cond.Reason != xpv1.ReasonDeleting {
 				t.Fatalf("Delete() expected deleting condition, got %s", cond.Reason)
 			}
 		})

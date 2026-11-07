@@ -112,8 +112,8 @@ func (c *connector) Connect(ctx context.Context, newCodePeriod *v1alpha1.NewCode
 	return &external{newCodePeriodsClient: svc}, nil
 }
 
-// external implements the managed.ExternalClient interface for NewCodePeriod
-// resources.
+// external implements the managed.TypedExternalClient interface for
+// NewCodePeriod resources.
 type external struct {
 	// newCodePeriodsClient is used to interact with SonarQube New Code Periods API
 	newCodePeriodsClient instance.NewCodePeriodsClient

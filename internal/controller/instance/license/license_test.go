@@ -238,8 +238,8 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Create() mismatch (-want +got):\n%s", diff)
 			}
 
-			if l := tc.args.mg; name == "Success" {
-				if gotExternalName := meta.GetExternalName(l); gotExternalName != externalLicenseName {
+			if name == "Success" {
+				if gotExternalName := meta.GetExternalName(tc.args.mg); gotExternalName != externalLicenseName {
 					t.Fatalf("Create() external name = %q, want %q", gotExternalName, externalLicenseName)
 				}
 			}
