@@ -38,6 +38,10 @@ import (
 // stop polling the resource altogether.
 const MaxPollJitterPercentage = 50
 
+// DefaultCreationGracePeriod is the default Options.CreationGracePeriod, the
+// one crossplane-runtime applies when none is configured.
+const DefaultCreationGracePeriod = 30 * time.Second
+
 // percent is the divisor of a percentage.
 const percent = 100.0
 
@@ -58,6 +62,13 @@ type Options struct {
 	// MinPollInterval is only spread as far down as that minimum. Zero disables
 	// it.
 	PollJitterPercentage int
+
+	// CreationGracePeriod is how long after a successful create an Observe
+	// reporting that the resource does not exist is not trusted, for
+	// eventually consistent external APIs. crossplane-runtime also applies it
+	// while deleting, so a resource deleted within this period keeps its
+	// finalizer until the period ends. Zero disables it.
+	CreationGracePeriod time.Duration
 }
 
 // ValidateMinPollInterval returns an error if minimum is negative. A negative
@@ -65,6 +76,15 @@ type Options struct {
 func ValidateMinPollInterval(minimum time.Duration) error {
 	if minimum < 0 {
 		return errors.Errorf("minimum poll interval must not be negative, got %s", minimum)
+	}
+
+	return nil
+}
+
+// ValidateCreationGracePeriod returns an error if period is negative.
+func ValidateCreationGracePeriod(period time.Duration) error {
+	if period < 0 {
+		return errors.Errorf("creation grace period must not be negative, got %s", period)
 	}
 
 	return nil
@@ -87,6 +107,7 @@ func ReconcilerOptions(mgr ctrl.Manager, name string, opts Options, specific ...
 		managed.WithLogger(opts.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(opts.PollInterval),
 		managed.WithMinPollInterval(opts.MinPollInterval),
+		managed.WithCreationGracePeriod(opts.CreationGracePeriod),
 		managed.WithRecorder(NewEventRecorder(mgr, name, opts.EventFilterFunctions...)),
 	}
 
