@@ -114,8 +114,15 @@ export OBSERVE_CACHE_TTL
 ENABLE_SECRET_CACHE="${ENABLE_SECRET_CACHE:-true}"
 export ENABLE_SECRET_CACHE
 
+# The tests delete their resources seconds after creating them. Within the
+# creation grace period (30s by default), the provider does not trust
+# SonarQube reporting a resource gone, so each deletion would wait out the
+# rest of those 30s. A short period still covers a brief lag in SonarQube's
+# search indexes without making every test wait.
+E2E_CREATION_GRACE_PERIOD="${E2E_CREATION_GRACE_PERIOD:-5s}"
+
 # Extra provider flags, space separated, e.g. E2E_PROVIDER_ARGS="--poll=10s".
-provider_args='"--debug"'
+provider_args="\"--debug\", \"--creation-grace-period=${E2E_CREATION_GRACE_PERIOD}\""
 for arg in ${E2E_PROVIDER_ARGS:-}; do
     provider_args="${provider_args}, \"${arg}\""
 done
