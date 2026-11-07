@@ -101,6 +101,14 @@ make -C "${projectdir}" controlplane.up
 ENABLE_OBSERVE_CACHE="${ENABLE_OBSERVE_CACHE:-true}"
 export ENABLE_OBSERVE_CACHE
 
+# A cache entry hides changes made in SonarQube outside the provider until it
+# expires. The drift tests make such a change and then touch an annotation to
+# force a reconcile; with the provider's 20s default, that reconcile reads the
+# stale entry, sees no drift, and the fix waits for the next poll (1m). Keep
+# entries short-lived so the cache paths still run but cannot mask drift.
+OBSERVE_CACHE_TTL="${OBSERVE_CACHE_TTL:-1s}"
+export OBSERVE_CACHE_TTL
+
 # Match the provider default; override to exercise direct Secret reads.
 ENABLE_SECRET_CACHE="${ENABLE_SECRET_CACHE:-true}"
 export ENABLE_SECRET_CACHE
@@ -133,11 +141,13 @@ spec:
               env:
                 - name: ENABLE_OBSERVE_CACHE
                   value: "${ENABLE_OBSERVE_CACHE}"
+                - name: OBSERVE_CACHE_TTL
+                  value: "${OBSERVE_CACHE_TTL}"
                 - name: ENABLE_SECRET_CACHE
                   value: "${ENABLE_SECRET_CACHE}"
 EOF
 
-echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${ENABLE_OBSERVE_CACHE}, ENABLE_SECRET_CACHE=${ENABLE_SECRET_CACHE}, args=[${provider_args}])"
+echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${ENABLE_OBSERVE_CACHE}, OBSERVE_CACHE_TTL=${OBSERVE_CACHE_TTL}, ENABLE_SECRET_CACHE=${ENABLE_SECRET_CACHE}, args=[${provider_args}])"
 # local.xpkg.deploy.provider.<name> patches Crossplane with a dev sidecar,
 # extracts each xpkg into the cache under the cache key Crossplane >=2.2
 # expects (xpkg.crossplane.internal/dev/<name>@<digest>), kubectl-cps the
