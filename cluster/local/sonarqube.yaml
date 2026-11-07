@@ -36,7 +36,8 @@ spec:
     spec:
       containers:
         - name: sonarqube
-          image: docker.io/library/sonarqube:community
+          # renovate: datasource=docker depName=sonarqube versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:\.(?<build>\d+))?-community$
+          image: docker.io/library/sonarqube:26.11.0.134175-community@sha256:1ce197471f5f2bac347694a336862fd2c23e9f57c6edb46acebbfbe70f2c7d9c
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9000

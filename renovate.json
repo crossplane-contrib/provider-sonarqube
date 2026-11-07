@@ -49,6 +49,16 @@
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?(?: registryUrl=(?<registryUrl>\\S+))?\\s+[A-Z0-9_]+\\s*[?:]*[=:]\\s*\"?(?<currentValue>[^@\"\\s]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\"?\\s"
       ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update the SonarQube images of the e2e manifests annotated with a `# renovate:` comment",
+      "managerFilePatterns": [
+        "/^cluster/local/sonarqube[^/]*\\.yaml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) versioning=(?<versioning>\\S+)\\s+image: \\S+:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)\\s"
+      ]
     }
   ],
   "postUpdateOptions": [
