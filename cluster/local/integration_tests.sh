@@ -69,10 +69,18 @@ kind_load_image() {
 }
 
 echo_step "loading SonarQube images into kind cluster"
-docker pull docker.io/library/sonarqube:community
-docker pull docker.io/library/sonarqube:enterprise
-kind_load_image docker.io/library/sonarqube:community
-kind_load_image docker.io/library/sonarqube:enterprise
+# The images are pinned (tag and digest) in the manifests, which Renovate keeps
+# up to date; read them from there so the pin lives in a single place.
+manifest_image() {
+    sed -n 's/^[[:space:]]*image:[[:space:]]*\(docker\.io\/library\/sonarqube:[^[:space:]]*\)$/\1/p' "$1" | head -n1
+}
+SONARQUBE_COMMUNITY_IMAGE="$(manifest_image "${projectdir}/cluster/local/sonarqube.yaml")"
+SONARQUBE_ENTERPRISE_IMAGE="$(manifest_image "${projectdir}/cluster/local/sonarqube-enterprise.yaml")"
+[ -n "${SONARQUBE_COMMUNITY_IMAGE}" ] && [ -n "${SONARQUBE_ENTERPRISE_IMAGE}" ] || echo_error "could not read the SonarQube images from cluster/local/*.yaml"
+for image in "${SONARQUBE_COMMUNITY_IMAGE}" "${SONARQUBE_ENTERPRISE_IMAGE}"; do
+    docker pull "${image}"
+    kind_load_image "${image}"
+done
 
 # The e2e suite runs the provider with the alpha observe cache enabled by
 # default, so that cached decorators (e.g. Plugin) are exercised against a
