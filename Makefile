@@ -97,9 +97,13 @@ test-integration: $(KIND) $(KUBECTL) $(CROSSPLANE_CLI) $(HELM)
 # Expects SONARQUBE_URL and SONARQUBE_TOKEN to be exported by the caller;
 # cluster/local/integration_tests.sh sets these up around its invocation.
 E2E_TEST_TIMEOUT ?= 30m
+# The e2e tests spend almost all their time waiting on the provider and
+# SonarQube, so run more of them at once than go test's GOMAXPROCS default
+# (4 on a standard CI runner) would allow.
+E2E_TEST_PARALLEL ?= 16
 e2e.test:
 	@$(INFO) running e2e Go suite with build tag e2e
-	@go test -tags=e2e -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
+	@go test -tags=e2e -v -parallel=$(E2E_TEST_PARALLEL) -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
 	@$(OK) e2e Go suite passed
 
 # Run the Go e2e suite against an Enterprise Edition SonarQube instance.
@@ -110,7 +114,7 @@ e2e.test:
 # when it is unset, since a valid Enterprise license is a paid artifact.
 e2e.test.enterprise:
 	@$(INFO) running enterprise e2e Go suite with build tags e2e,enterprise
-	@go test -tags=e2e,enterprise -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
+	@go test -tags=e2e,enterprise -v -parallel=$(E2E_TEST_PARALLEL) -timeout=$(E2E_TEST_TIMEOUT) ./internal/test/e2e/... || $(FAIL)
 	@$(OK) enterprise e2e Go suite passed
 
 # Update the submodules, such as the common build scripts.

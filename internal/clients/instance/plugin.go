@@ -33,6 +33,9 @@ import (
 
 // PluginsClient handles SonarQube Plugin API operations.
 type PluginsClient interface {
+	// CancelAll cancels every pending plugin operation (install, update and
+	// removal) of the SonarQube instance.
+	CancelAll(ctx context.Context) (*http.Response, error)
 	// Install installs a plugin by key.
 	Install(ctx context.Context, opt *sonar.PluginsInstallOptions) (resp *http.Response, err error)
 	// Installed returns the list of all installed plugins.
@@ -125,6 +128,14 @@ func (c *cachedPluginsClient) Install(ctx context.Context, opt *sonar.PluginsIns
 	defer c.invalidate()
 
 	return c.PluginsClient.Install(ctx, opt)
+}
+
+// CancelAll cancels every pending plugin operation, then invalidates the
+// cached lists.
+func (c *cachedPluginsClient) CancelAll(ctx context.Context) (*http.Response, error) {
+	defer c.invalidate()
+
+	return c.PluginsClient.CancelAll(ctx)
 }
 
 // Uninstall uninstalls a plugin, then invalidates the cached lists.
@@ -234,6 +245,18 @@ func GeneratePluginObservationFromPending(pending *sonar.PluginPending) v1alpha1
 		Pending:             true,
 		Version:             pending.Version,
 	}
+}
+
+// IsOnlyPendingInstall reports whether the installation of the plugin with
+// the given key is the only pending plugin operation, so that cancelling
+// every pending operation cancels nothing else.
+func IsOnlyPendingInstall(pending *sonar.PluginsPending, key string) bool {
+	if pending == nil {
+		return false
+	}
+
+	return len(pending.Installing) == 1 && pending.Installing[0].Key == key &&
+		len(pending.Updating) == 0 && len(pending.Removing) == 0
 }
 
 // IsPluginPendingUpdate returns true if the plugin is in the

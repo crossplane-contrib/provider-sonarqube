@@ -62,7 +62,7 @@ func (recorderManager) GetEventRecorderFor(string) record.EventRecorder {
 func TestReconcilerOptions(t *testing.T) {
 	t.Parallel()
 
-	const commonOptions = 4
+	const commonOptions = 5
 
 	tests := map[string]struct {
 		features []feature.Flag
@@ -222,6 +222,17 @@ func TestAddMRStateRecorder(t *testing.T) {
 func newTestReconciler(t *testing.T, opts Options, group *v1alpha1.Group) *managed.Reconciler {
 	t.Helper()
 
+	reconciler, _ := newObservingTestReconciler(t, opts, group, managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true})
+
+	return reconciler
+}
+
+// newObservingTestReconciler is newTestReconciler with an external client
+// whose Observe reports observation, and that also returns the fake client
+// holding group.
+func newObservingTestReconciler(t *testing.T, opts Options, group *v1alpha1.Group, observation managed.ExternalObservation) (*managed.Reconciler, client.Client) {
+	t.Helper()
+
 	scheme := runtime.NewScheme()
 
 	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
@@ -235,14 +246,14 @@ func newTestReconciler(t *testing.T, opts Options, group *v1alpha1.Group) *manag
 	connector := managed.ExternalConnectorFn(func(context.Context, resource.Managed) (managed.ExternalClient, error) {
 		return &managed.ExternalClientFns{
 			ObserveFn: func(context.Context, resource.Managed) (managed.ExternalObservation, error) {
-				return managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true}, nil
+				return observation, nil
 			},
 			DisconnectFn: func(context.Context) error { return nil },
 		}, nil
 	})
 
 	return managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.GroupGroupVersionKind),
-		ReconcilerOptions(mgr, "test", opts, managed.WithExternalConnector(connector))...)
+		ReconcilerOptions(mgr, "test", opts, managed.WithExternalConnector(connector))...), kube
 }
 
 // TestReconcilerOptionsPollInterval checks the requeue delay of a real
@@ -345,6 +356,99 @@ func TestValidateMinPollInterval(t *testing.T) {
 			err := ValidateMinPollInterval(test.minimum)
 			if (err != nil) != test.wantErr {
 				t.Errorf("ValidateMinPollInterval() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+// TestValidateCreationGracePeriod checks that only a negative period is
+// rejected.
+func TestValidateCreationGracePeriod(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		period  time.Duration
+		wantErr bool
+	}{
+		"Default":  {period: DefaultCreationGracePeriod},
+		"Zero":     {},
+		"Negative": {period: -time.Second, wantErr: true},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := ValidateCreationGracePeriod(test.period)
+			if (err != nil) != test.wantErr {
+				t.Errorf("ValidateCreationGracePeriod() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+// TestReconcilerOptionsCreationGracePeriod deletes a resource right after its
+// create succeeded, while SonarQube already reports it gone: the finalizer is
+// only released once the creation grace period is over.
+func TestReconcilerOptionsCreationGracePeriod(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		period        time.Duration
+		wantRequeue   bool
+		wantFinalizer bool
+	}{
+		"WithinThePeriodTheFinalizerIsKept": {
+			period:        DefaultCreationGracePeriod,
+			wantRequeue:   true,
+			wantFinalizer: true,
+		},
+		"ZeroReleasesTheFinalizer": {},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			deletedAt := metav1.Now()
+			group := &v1alpha1.Group{ObjectMeta: metav1.ObjectMeta{
+				Name:              "group",
+				Namespace:         "team",
+				DeletionTimestamp: &deletedAt,
+				Finalizers:        []string{managed.FinalizerName},
+			}}
+			meta.SetExternalCreateSucceeded(group, time.Now())
+
+			opts := Options{
+				Options: controller.Options{
+					Logger:       logging.NewNopLogger(),
+					Features:     &feature.Flags{},
+					PollInterval: time.Minute,
+				},
+				CreationGracePeriod: test.period,
+			}
+
+			reconciler, kube := newObservingTestReconciler(t, opts, group, managed.ExternalObservation{ResourceExists: false})
+			request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "group", Namespace: "team"}}
+
+			got, err := reconciler.Reconcile(t.Context(), request)
+			if err != nil {
+				t.Fatalf("Reconcile() unexpected error: %v", err)
+			}
+
+			if got.Requeue != test.wantRequeue { //nolint:staticcheck // crossplane-runtime still requeues through Result.Requeue.
+				t.Errorf("Reconcile() Requeue = %v, want %v", got.Requeue, test.wantRequeue) //nolint:staticcheck // see above.
+			}
+
+			current := &v1alpha1.Group{}
+
+			err = kube.Get(t.Context(), request.NamespacedName, current)
+			if client.IgnoreNotFound(err) != nil {
+				t.Fatalf("Get() unexpected error: %v", err)
+			}
+
+			if gotFinalizer := err == nil && slices.Contains(current.GetFinalizers(), managed.FinalizerName); gotFinalizer != test.wantFinalizer {
+				t.Errorf("finalizer kept = %v, want %v", gotFinalizer, test.wantFinalizer)
 			}
 		})
 	}

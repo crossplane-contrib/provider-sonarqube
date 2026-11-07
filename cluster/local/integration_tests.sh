@@ -46,41 +46,55 @@ fi
 # of the same name, so create it here to run on the pinned Kubernetes version.
 echo_step "creating kind cluster on kindest/node:${KIND_NODE_IMAGE_TAG:?run through make test-integration}"
 if ! "${KIND}" get kubeconfig --name="${KIND_CLUSTER_NAME}" >/dev/null 2>&1; then
-    "${KIND}" create cluster --name="${KIND_CLUSTER_NAME}" --image="kindest/node:${KIND_NODE_IMAGE_TAG}"
+    "${KIND}" create cluster --name="${KIND_CLUSTER_NAME}" --image="kindest/node:${KIND_NODE_IMAGE_TAG}" \
+        --config="${projectdir}/cluster/local/kind.yaml"
+fi
+
+sonarqube_manifests=(
+    "${projectdir}/cluster/local/sonarqube.yaml"
+    "${projectdir}/cluster/local/sonarqube-enterprise.yaml"
+)
+
+# By default the kind node pulls the SonarQube images itself (the manifests
+# use imagePullPolicy: IfNotPresent). Pre-loading them through the host
+# Docker daemon only pays off when the host cache outlives the cluster, as on
+# a dev machine: `kind load` re-exports and re-imports each ~1 GB image, which
+# costs minutes on an ephemeral CI runner. Set E2E_PRELOAD_IMAGES=true to
+# reuse the host cache.
+if [ "${E2E_PRELOAD_IMAGES:-false}" = "true" ]; then
+    # kind_load_image loads a pulled image into the kind cluster. Docker hosts
+    # using the containerd image store keep the multi-arch index but only the
+    # host platform's layers, which makes `kind load docker-image` fail with
+    # "content digest ... not found"; fall back to a single-platform archive.
+    kind_load_image() {
+        local image=$1 archive
+        if "${KIND}" load docker-image "${image}" --name="${KIND_CLUSTER_NAME}"; then
+            return 0
+        fi
+        echo "kind load docker-image failed for ${image}, retrying with a single-platform archive"
+        archive="$(mktemp)"
+        docker save --platform "$(docker version --format '{{.Server.Os}}/{{.Server.Arch}}')" -o "${archive}" "${image}"
+        "${KIND}" load image-archive "${archive}" --name="${KIND_CLUSTER_NAME}"
+        rm -f "${archive}"
+    }
+
+    # The images are pinned (tag and digest) in the manifests, which Renovate
+    # keeps up to date; read them from there so the pin lives in a single place.
+    manifest_image() {
+        sed -n 's/^[[:space:]]*image:[[:space:]]*\(docker\.io\/library\/sonarqube:[^[:space:]]*\)$/\1/p' "$1" | head -n1
+    }
+
+    echo_step "pre-loading SonarQube images from the host Docker cache"
+    for manifest in "${sonarqube_manifests[@]}"; do
+        image="$(manifest_image "${manifest}")"
+        [ -n "${image}" ] || echo_error "could not read the SonarQube image from ${manifest}"
+        docker pull "${image}"
+        kind_load_image "${image}"
+    done
 fi
 
 echo_step "installing crossplane"
 make -C "${projectdir}" controlplane.up
-
-# kind_load_image loads a pulled image into the kind cluster. Docker hosts
-# using the containerd image store keep the multi-arch index but only the
-# host platform's layers, which makes `kind load docker-image` fail with
-# "content digest ... not found"; fall back to a single-platform archive.
-kind_load_image() {
-    local image=$1 archive
-    if "${KIND}" load docker-image "${image}" --name="${KIND_CLUSTER_NAME}"; then
-        return 0
-    fi
-    echo "kind load docker-image failed for ${image}, retrying with a single-platform archive"
-    archive="$(mktemp)"
-    docker save --platform "$(docker version --format '{{.Server.Os}}/{{.Server.Arch}}')" -o "${archive}" "${image}"
-    "${KIND}" load image-archive "${archive}" --name="${KIND_CLUSTER_NAME}"
-    rm -f "${archive}"
-}
-
-echo_step "loading SonarQube images into kind cluster"
-# The images are pinned (tag and digest) in the manifests, which Renovate keeps
-# up to date; read them from there so the pin lives in a single place.
-manifest_image() {
-    sed -n 's/^[[:space:]]*image:[[:space:]]*\(docker\.io\/library\/sonarqube:[^[:space:]]*\)$/\1/p' "$1" | head -n1
-}
-SONARQUBE_COMMUNITY_IMAGE="$(manifest_image "${projectdir}/cluster/local/sonarqube.yaml")"
-SONARQUBE_ENTERPRISE_IMAGE="$(manifest_image "${projectdir}/cluster/local/sonarqube-enterprise.yaml")"
-[ -n "${SONARQUBE_COMMUNITY_IMAGE}" ] && [ -n "${SONARQUBE_ENTERPRISE_IMAGE}" ] || echo_error "could not read the SonarQube images from cluster/local/*.yaml"
-for image in "${SONARQUBE_COMMUNITY_IMAGE}" "${SONARQUBE_ENTERPRISE_IMAGE}"; do
-    docker pull "${image}"
-    kind_load_image "${image}"
-done
 
 # The e2e suite runs the provider with the alpha observe cache enabled by
 # default, so that cached decorators (e.g. Plugin) are exercised against a
@@ -88,9 +102,38 @@ done
 ENABLE_OBSERVE_CACHE="${ENABLE_OBSERVE_CACHE:-true}"
 export ENABLE_OBSERVE_CACHE
 
+# A cache entry hides changes made in SonarQube outside the provider until it
+# expires. The drift tests make such a change and then touch an annotation to
+# force a reconcile; with the provider's 20s default, that reconcile reads the
+# stale entry, sees no drift, and the fix waits for the next poll (1m). Keep
+# entries short-lived so the cache paths still run but cannot mask drift.
+OBSERVE_CACHE_TTL="${OBSERVE_CACHE_TTL:-1s}"
+export OBSERVE_CACHE_TTL
+
 # Match the provider default; override to exercise direct Secret reads.
 ENABLE_SECRET_CACHE="${ENABLE_SECRET_CACHE:-true}"
 export ENABLE_SECRET_CACHE
+
+# The tests delete their resources seconds after creating them. Within the
+# creation grace period (30s by default), the provider does not trust
+# SonarQube reporting a resource gone, so each deletion would wait out the
+# rest of those 30s. A short period still covers a brief lag in SonarQube's
+# search indexes without making every test wait.
+E2E_CREATION_GRACE_PERIOD="${E2E_CREATION_GRACE_PERIOD:-5s}"
+
+# Extra provider flags, space separated, e.g. E2E_PROVIDER_ARGS="--poll=10s".
+# The script's own settings (debug logging, creation grace period) go through
+# the provider's environment variables instead of flags: kingpin rejects a
+# repeated flag, while a flag passed here simply overrides its variable.
+# read -a splits on spaces without glob-expanding the words.
+read -r -a extra_provider_args <<<"${E2E_PROVIDER_ARGS:-}"
+provider_args=""
+for arg in "${extra_provider_args[@]}"; do
+    # Escape for a double-quoted YAML scalar.
+    arg="${arg//\\/\\\\}"
+    arg="${arg//\"/\\\"}"
+    provider_args="${provider_args:+${provider_args}, }\"${arg}\""
+done
 
 # local.xpkg.deploy.provider.<name> uses DRC_FILE as the provider's
 # DeploymentRuntimeConfig when it exists; it overrides the name and image.
@@ -110,15 +153,21 @@ spec:
         spec:
           containers:
             - name: package-runtime
-              args: ["--debug"]
+              args: [${provider_args}]
               env:
+                - name: CROSSPLANE_SONARQUBE_PROVIDER_DEBUG
+                  value: "true"
+                - name: CROSSPLANE_SONARQUBE_PROVIDER_CREATION_GRACE_PERIOD
+                  value: "${E2E_CREATION_GRACE_PERIOD}"
                 - name: ENABLE_OBSERVE_CACHE
                   value: "${ENABLE_OBSERVE_CACHE}"
+                - name: OBSERVE_CACHE_TTL
+                  value: "${OBSERVE_CACHE_TTL}"
                 - name: ENABLE_SECRET_CACHE
                   value: "${ENABLE_SECRET_CACHE}"
 EOF
 
-echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${ENABLE_OBSERVE_CACHE}, ENABLE_SECRET_CACHE=${ENABLE_SECRET_CACHE})"
+echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${ENABLE_OBSERVE_CACHE}, OBSERVE_CACHE_TTL=${OBSERVE_CACHE_TTL}, ENABLE_SECRET_CACHE=${ENABLE_SECRET_CACHE}, CREATION_GRACE_PERIOD=${E2E_CREATION_GRACE_PERIOD}, args=[${provider_args}])"
 # local.xpkg.deploy.provider.<name> patches Crossplane with a dev sidecar,
 # extracts each xpkg into the cache under the cache key Crossplane >=2.2
 # expects (xpkg.crossplane.internal/dev/<name>@<digest>), kubectl-cps the
@@ -126,6 +175,20 @@ echo_step "deploying ${PACKAGE_NAME} provider package (ENABLE_OBSERVE_CACHE=${EN
 # creates a Provider + DeploymentRuntimeConfig wired to the local image.
 # See build/makelib/local.xpkg.mk.
 make -C "${projectdir}" "local.xpkg.deploy.provider.${PACKAGE_NAME}"
+
+# Start both SonarQube instances now, so their image pulls and slow first boot
+# overlap with the provider establishing instead of running after it, and
+# with each other instead of one after the other. Not any earlier: the
+# Crossplane pod and its dev sidecar pull their own images while
+# local.xpkg.deploy.provider waits on them, and the kind node then also
+# pulling several GB of SonarQube images makes those waits time out.
+# sonarqube_setup.sh re-applies the same manifests (idempotently) and waits
+# for readiness later, once the provider CRDs its ClusterProviderConfig
+# needs are established.
+echo_step "starting SonarQube instances (community + enterprise) in the background"
+for manifest in "${sonarqube_manifests[@]}"; do
+    "${KUBECTL}" apply -f "${manifest}"
+done
 
 # Crossplane's ProviderRevision establish reconciler has a known flake with
 # packages this size (~20 CRDs): on a fresh install it sometimes establishes

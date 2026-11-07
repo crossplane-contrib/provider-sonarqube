@@ -27,6 +27,8 @@ import (
 
 // MockPluginsClient is a mock implementation of the PluginsClient interface.
 type MockPluginsClient struct {
+	// CancelAllFn backs the CancelAll method.
+	CancelAllFn func() (resp *http.Response, err error)
 	// InstallFn backs the Install method.
 	InstallFn func(opt *sonar.PluginsInstallOptions) (resp *http.Response, err error)
 	// InstalledFn backs the Installed method.
@@ -75,6 +77,15 @@ func (m *MockPluginsClient) Pending(_ context.Context) (v *sonar.PluginsPending,
 func (m *MockPluginsClient) Uninstall(_ context.Context, opt *sonar.PluginsUninstallOptions) (resp *http.Response, err error) {
 	if m.UninstallFn != nil {
 		return m.UninstallFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
+// CancelAll implements PluginsClient.CancelAll.
+func (m *MockPluginsClient) CancelAll(_ context.Context) (resp *http.Response, err error) {
+	if m.CancelAllFn != nil {
+		return m.CancelAllFn()
 	}
 
 	return nil, errNotImplemented

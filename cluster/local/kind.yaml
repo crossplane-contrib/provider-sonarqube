@@ -1,0 +1,11 @@
+# kind cluster used by cluster/local/integration_tests.sh.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+kubeadmConfigPatches:
+  # The kubelet pulls one image at a time by default. The e2e starts both
+  # SonarQube instances together, and each image is over 1 GB, so pulling
+  # them one after the other delays the second instance's boot by a whole
+  # download.
+  - |
+    kind: KubeletConfiguration
+    serializeImagePulls: false
