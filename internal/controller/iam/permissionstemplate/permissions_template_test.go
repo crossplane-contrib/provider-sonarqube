@@ -33,6 +33,7 @@ import (
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 // notPermissionsTemplate is a type for testing non-PermissionsTemplate
@@ -94,7 +95,7 @@ func TestSetupGatedRegistersPermissionsTemplateGVK(t *testing.T) {
 	t.Parallel()
 
 	gate := &mockGate{}
-	opts := controller.DefaultOptions()
+	opts := helpers.Options{Options: controller.DefaultOptions()}
 	opts.Gate = gate
 
 	err := SetupGated(nil, opts)

@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
@@ -67,7 +66,7 @@ const (
 
 // SetupGated adds a controller that reconciles License resources,
 // registered behind a gate so it only runs when the gate is opened.
-func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
+func SetupGated(mgr ctrl.Manager, opts helpers.Options) error {
 	name := managed.ControllerName(v1alpha1.LicenseGroupKind)
 
 	opts.Gate.Register(func() {
@@ -81,7 +80,7 @@ func SetupGated(mgr ctrl.Manager, opts controller.Options) error {
 }
 
 // Setup adds a controller that reconciles License resources.
-func Setup(mgr ctrl.Manager, opts controller.Options, name string) error {
+func Setup(mgr ctrl.Manager, opts helpers.Options, name string) error {
 	options := helpers.ReconcilerOptions(mgr, name, opts,
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),

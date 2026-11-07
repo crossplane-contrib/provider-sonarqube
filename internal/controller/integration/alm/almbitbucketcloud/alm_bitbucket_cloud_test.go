@@ -41,6 +41,7 @@ import (
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/integration/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-sonarqube/apis/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
+	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
 // Unlike many Kubernetes projects Crossplane does not use third party testing
@@ -942,7 +943,7 @@ func TestSetupGatedRegistersALMBitbucketCloudGVK(t *testing.T) {
 	t.Parallel()
 
 	g := &mockGate{}
-	o := controller.DefaultOptions()
+	o := helpers.Options{Options: controller.DefaultOptions()}
 	o.Gate = g
 
 	err := SetupGated(nil, o)
@@ -973,7 +974,7 @@ func TestSetupGatedCallbackPanicsWhenSetupFails(t *testing.T) {
 	t.Parallel()
 
 	g := &mockGate{}
-	o := controller.DefaultOptions()
+	o := helpers.Options{Options: controller.DefaultOptions()}
 	o.Gate = g
 
 	err := SetupGated(nil, o)

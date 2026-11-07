@@ -17,19 +17,29 @@ limitations under the License.
 package helpers
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	resourcefake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	clientfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crossplane/provider-sonarqube/apis/iam/v1alpha1"
 )
@@ -50,7 +60,7 @@ func (recorderManager) GetEventRecorderFor(string) record.EventRecorder {
 func TestReconcilerOptions(t *testing.T) {
 	t.Parallel()
 
-	const commonOptions = 3
+	const commonOptions = 4
 
 	tests := map[string]struct {
 		features []feature.Flag
@@ -89,12 +99,12 @@ func TestReconcilerOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := controller.Options{
+			opts := Options{Options: controller.Options{
 				Logger:           logging.NewNopLogger(),
 				Features:         &feature.Flags{},
 				MetricOptions:    test.metrics,
 				ChangeLogOptions: &controller.ChangeLogOptions{},
-			}
+			}}
 			for _, flag := range test.features {
 				opts.Features.Enable(flag)
 			}
@@ -177,7 +187,7 @@ func TestAddMRStateRecorder(t *testing.T) {
 			t.Parallel()
 
 			mgr := &runnableManager{err: test.addErr}
-			opts := controller.Options{Logger: logging.NewNopLogger(), MetricOptions: test.metrics}
+			opts := Options{Options: controller.Options{Logger: logging.NewNopLogger(), MetricOptions: test.metrics}}
 
 			err := AddMRStateRecorder(mgr, opts, &v1alpha1.GroupList{})
 			if !errors.Is(err, test.wantErr) {
@@ -192,6 +202,139 @@ func TestAddMRStateRecorder(t *testing.T) {
 				if _, isRecorder := runnable.(*statemetrics.MRStateRecorder); !isRecorder {
 					t.Errorf("AddMRStateRecorder() added a %T, want a *statemetrics.MRStateRecorder", runnable)
 				}
+			}
+		})
+	}
+}
+
+// newTestReconciler returns a reconciler for a Group that is up to date with
+// SonarQube, using the options of ReconcilerOptions.
+func newTestReconciler(t *testing.T, opts Options, group *v1alpha1.Group) *managed.Reconciler {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+
+	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("AddToScheme() unexpected error: %v", err)
+	}
+
+	kube := clientfake.NewClientBuilder().WithScheme(scheme).WithObjects(group).WithStatusSubresource(group).Build()
+	mgr := recorderManager{Manager: &resourcefake.Manager{Client: kube, Scheme: scheme}}
+
+	connector := managed.ExternalConnectorFn(func(context.Context, resource.Managed) (managed.ExternalClient, error) {
+		return &managed.ExternalClientFns{
+			ObserveFn: func(context.Context, resource.Managed) (managed.ExternalObservation, error) {
+				return managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true}, nil
+			},
+			DisconnectFn: func(context.Context) error { return nil },
+		}, nil
+	})
+
+	return managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.GroupGroupVersionKind),
+		ReconcilerOptions(mgr, "test", opts, managed.WithExternalConnector(connector))...)
+}
+
+// TestReconcilerOptionsPollInterval checks the requeue delay of a real
+// reconcile for each value of the crossplane.io/poll-interval annotation.
+func TestReconcilerOptionsPollInterval(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pollInterval    = time.Minute
+		minPollInterval = 30 * time.Second
+	)
+
+	tests := map[string]struct {
+		annotation string
+		noMinimum  bool
+		want       time.Duration
+	}{
+		"NoAnnotationUsesThePollInterval": {
+			want: pollInterval,
+		},
+		"InvalidAnnotationUsesThePollInterval": {
+			annotation: "-1s",
+			want:       pollInterval,
+		},
+		"AnnotationAboveTheMinimumIsHonoured": {
+			annotation: "2h",
+			want:       2 * time.Hour,
+		},
+		"AnnotationBelowThePollIntervalIsHonoured": {
+			annotation: "45s",
+			want:       45 * time.Second,
+		},
+		"AnnotationBelowTheMinimumIsRaised": {
+			annotation: "1ms",
+			want:       minPollInterval,
+		},
+		"AnnotationAtTheMinimumIsHonoured": {
+			annotation: "30s",
+			want:       minPollInterval,
+		},
+		"ZeroMinimumRemovesTheLimit": {
+			annotation: "1ms",
+			noMinimum:  true,
+			want:       time.Millisecond,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			group := &v1alpha1.Group{ObjectMeta: metav1.ObjectMeta{Name: "group", Namespace: "team"}}
+			if test.annotation != "" {
+				meta.AddAnnotations(group, map[string]string{meta.AnnotationKeyPollInterval: test.annotation})
+			}
+
+			opts := Options{
+				Options: controller.Options{
+					Logger:       logging.NewNopLogger(),
+					Features:     &feature.Flags{},
+					PollInterval: pollInterval,
+				},
+				MinPollInterval: minPollInterval,
+			}
+			if test.noMinimum {
+				opts.MinPollInterval = 0
+			}
+
+			request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "group", Namespace: "team"}}
+
+			got, err := newTestReconciler(t, opts, group).Reconcile(t.Context(), request)
+			if err != nil {
+				t.Fatalf("Reconcile() unexpected error: %v", err)
+			}
+
+			if got.RequeueAfter != test.want {
+				t.Errorf("Reconcile() RequeueAfter = %v, want %v", got.RequeueAfter, test.want)
+			}
+		})
+	}
+}
+
+// TestValidateMinPollInterval checks that only a negative minimum is rejected.
+func TestValidateMinPollInterval(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		minimum time.Duration
+		wantErr bool
+	}{
+		"Positive": {minimum: time.Second},
+		"Zero":     {},
+		"Negative": {minimum: -time.Second, wantErr: true},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := ValidateMinPollInterval(test.minimum)
+			if (err != nil) != test.wantErr {
+				t.Errorf("ValidateMinPollInterval() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
