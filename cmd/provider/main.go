@@ -71,7 +71,7 @@ func main() {
 		syncInterval            = app.Flag("sync", "How often all resources will be double-checked for drift from the desired state.").Short('s').Default("1h").Duration()
 		pollInterval            = app.Flag("poll", "How often individual resources will be checked for drift from the desired state").Default("1m").Duration()
 		minPollInterval         = app.Flag("min-poll-interval", "Shortest poll interval a resource may request with the crossplane.io/poll-interval annotation. Shorter requests are raised to this value. Must not be negative, 0 removes the limit.").Default("30s").Duration()
-		pollJitterPercentage    = app.Flag("poll-jitter-percentage", "Spread each poll by up to this percentage of its interval, in both directions. 0 disables it, and it cannot exceed "+strconv.Itoa(helpers.MaxPollJitterPercentage)+".").Default("10").Int()
+		pollJitterPercentage    = app.Flag("poll-jitter-percentage", "Spread each poll by up to this percentage of its interval, in both directions but never below --min-poll-interval. 0 disables it, and it cannot exceed "+strconv.Itoa(helpers.MaxPollJitterPercentage)+".").Default("10").Int()
 		pollStateMetricInterval = app.Flag("poll-state-metric", "State metric recording interval").Default("5s").Duration()
 
 		maxReconcileRate = app.Flag("max-reconcile-rate", "The global maximum rate per second at which resources may checked for drift from the desired state.").Default("10").Int()
@@ -107,9 +107,7 @@ func main() {
 	kingpin.FatalIfError(common.ConfigureHTTPClients(*responseHeaderTimeout), "Invalid SonarQube response header timeout")
 	kingpin.FatalIfError(helpers.ValidateMinPollInterval(*minPollInterval), "Invalid minimum poll interval")
 
-	if *pollJitterPercentage < 0 || *pollJitterPercentage > helpers.MaxPollJitterPercentage {
-		kingpin.Fatalf("--poll-jitter-percentage must be between 0 and %d", helpers.MaxPollJitterPercentage)
-	}
+	kingpin.FatalIfError(helpers.ValidatePollJitterPercentage(*pollJitterPercentage), "Invalid poll jitter percentage")
 
 	if *enableObserveCache {
 		// The cache retains SonarQube responses on top of the provider's own

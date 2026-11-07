@@ -19,6 +19,7 @@ package helpers
 import (
 	"context"
 	"errors"
+	"math"
 	"slices"
 	"testing"
 	"time"
@@ -348,11 +349,42 @@ func TestValidateMinPollInterval(t *testing.T) {
 	}
 }
 
-// TestPollJitterHook checks the bounds of the jittered interval.
+// TestValidatePollJitterPercentage checks the accepted range of the percentage.
+func TestValidatePollJitterPercentage(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		percentage int
+		wantErr    bool
+	}{
+		"Zero":         {},
+		"Default":      {percentage: 10},
+		"Maximum":      {percentage: MaxPollJitterPercentage},
+		"Negative":     {percentage: -1, wantErr: true},
+		"AboveMaximum": {percentage: MaxPollJitterPercentage + 1, wantErr: true},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := ValidatePollJitterPercentage(test.percentage)
+			if (err != nil) != test.wantErr {
+				t.Errorf("ValidatePollJitterPercentage() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+// TestPollJitterHook checks the bounds of the jittered interval, and that
+// samples do not pile up on a single value, the minimum in particular.
 func TestPollJitterHook(t *testing.T) {
 	t.Parallel()
 
-	const samples = 2000
+	const (
+		samples     = 2000
+		minDistinct = samples * 9 / 10
+	)
 
 	tests := map[string]struct {
 		percentage      int
@@ -393,6 +425,13 @@ func TestPollJitterHook(t *testing.T) {
 			wantMin:      30 * time.Second,
 			wantMax:      90 * time.Second,
 		},
+		"SaturatesInsteadOfOverflowing": {
+			percentage:      10,
+			minPollInterval: 30 * time.Second,
+			pollInterval:    math.MaxInt64 - time.Hour,
+			wantMin:         math.MaxInt64 / 2,
+			wantMax:         math.MaxInt64,
+		},
 	}
 
 	for name, test := range tests {
@@ -411,35 +450,90 @@ func TestPollJitterHook(t *testing.T) {
 				seen[got] = struct{}{}
 			}
 
-			if len(seen) < 2 {
-				t.Errorf("hook() always returned the same interval: %v", seen)
+			if len(seen) < minDistinct {
+				t.Errorf("hook() returned %d distinct intervals out of %d samples, want at least %d", len(seen), samples, minDistinct)
 			}
 		})
 	}
 }
 
+// TestPollJitterHookKeepsUnspreadableIntervals checks that intervals with
+// nothing to spread are returned as they are.
+func TestPollJitterHookKeepsUnspreadableIntervals(t *testing.T) {
+	t.Parallel()
+
+	hook := pollJitterHook(10, 30*time.Second)
+
+	for _, pollInterval := range []time.Duration{-time.Minute, 0, time.Nanosecond} {
+		if got := hook(nil, pollInterval); got != pollInterval {
+			t.Errorf("hook(%v) = %v, want it unchanged", pollInterval, got)
+		}
+	}
+}
+
 // TestReconcilerOptionsApplyPollJitter checks the requeue delay of a real
-// reconcile when jitter is enabled.
+// reconcile when jitter is enabled: an exact interval means the hook is not
+// wired, and a minimum that is not passed on lets jitter go below it.
 func TestReconcilerOptionsApplyPollJitter(t *testing.T) {
 	t.Parallel()
 
-	group := &v1alpha1.Group{ObjectMeta: metav1.ObjectMeta{Name: "group", Namespace: "team"}}
-	opts := Options{
-		Options: controller.Options{
-			Logger:       logging.NewNopLogger(),
-			Features:     &feature.Flags{},
-			PollInterval: time.Minute,
+	tests := map[string]struct {
+		annotation string
+		exact      time.Duration
+		wantMin    time.Duration
+		wantMax    time.Duration
+	}{
+		"SpreadsThePollInterval": {
+			exact:   time.Minute,
+			wantMin: 54 * time.Second,
+			wantMax: 66 * time.Second,
 		},
-		PollJitterPercentage: 10,
+		"SpreadsTheAnnotation": {
+			annotation: "1h",
+			exact:      time.Hour,
+			wantMin:    54 * time.Minute,
+			wantMax:    66 * time.Minute,
+		},
+		"StaysAboveTheMinimum": {
+			annotation: "1s",
+			exact:      30 * time.Second,
+			wantMin:    30 * time.Second,
+			wantMax:    33 * time.Second,
+		},
 	}
-	request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "group", Namespace: "team"}}
 
-	got, err := newTestReconciler(t, opts, group).Reconcile(t.Context(), request)
-	if err != nil {
-		t.Fatalf("Reconcile() unexpected error: %v", err)
-	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	if got.RequeueAfter < 54*time.Second || got.RequeueAfter > 66*time.Second {
-		t.Errorf("Reconcile() RequeueAfter = %v, want between 54s and 66s", got.RequeueAfter)
+			group := &v1alpha1.Group{ObjectMeta: metav1.ObjectMeta{Name: "group", Namespace: "team"}}
+			if test.annotation != "" {
+				meta.AddAnnotations(group, map[string]string{meta.AnnotationKeyPollInterval: test.annotation})
+			}
+
+			opts := Options{
+				Options: controller.Options{
+					Logger:       logging.NewNopLogger(),
+					Features:     &feature.Flags{},
+					PollInterval: time.Minute,
+				},
+				MinPollInterval:      30 * time.Second,
+				PollJitterPercentage: 10,
+			}
+			request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "group", Namespace: "team"}}
+
+			got, err := newTestReconciler(t, opts, group).Reconcile(t.Context(), request)
+			if err != nil {
+				t.Fatalf("Reconcile() unexpected error: %v", err)
+			}
+
+			if got.RequeueAfter < test.wantMin || got.RequeueAfter > test.wantMax {
+				t.Errorf("Reconcile() RequeueAfter = %v, want between %v and %v", got.RequeueAfter, test.wantMin, test.wantMax)
+			}
+
+			if got.RequeueAfter == test.exact {
+				t.Errorf("Reconcile() RequeueAfter = %v, want it spread", got.RequeueAfter)
+			}
+		})
 	}
 }

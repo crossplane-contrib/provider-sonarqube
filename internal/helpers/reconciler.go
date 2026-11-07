@@ -17,6 +17,7 @@ limitations under the License.
 package helpers
 
 import (
+	"math"
 	"math/rand/v2"
 	"time"
 
@@ -50,7 +51,9 @@ type Options struct {
 
 	// PollJitterPercentage spreads each poll by up to this percentage of its
 	// interval, in both directions, so that resources created or restarted
-	// together do not keep polling SonarQube together. Zero disables it.
+	// together do not keep polling SonarQube together. An interval close to
+	// MinPollInterval is only spread as far down as that minimum. Zero disables
+	// it.
 	PollJitterPercentage int
 }
 
@@ -59,6 +62,16 @@ type Options struct {
 func ValidateMinPollInterval(minimum time.Duration) error {
 	if minimum < 0 {
 		return errors.Errorf("minimum poll interval must not be negative, got %s", minimum)
+	}
+
+	return nil
+}
+
+// ValidatePollJitterPercentage returns an error if percentage is negative or
+// above MaxPollJitterPercentage.
+func ValidatePollJitterPercentage(percentage int) error {
+	if percentage < 0 || percentage > MaxPollJitterPercentage {
+		return errors.Errorf("poll jitter percentage must be between 0 and %d, got %d", MaxPollJitterPercentage, percentage)
 	}
 
 	return nil
@@ -115,12 +128,22 @@ func AddMRStateRecorder(mgr ctrl.Manager, opts Options, list resource.ManagedLis
 // pollJitterHook returns a hook spreading the poll interval by a percentage of
 // its value, which unlike the fixed jitter of managed.WithPollJitterHook scales
 // with the per-resource intervals set through crossplane.io/poll-interval.
-// Jitter never takes an interval that respects minPollInterval below it.
+// Jitter never takes an interval that respects minPollInterval below it: the
+// range is cut at the minimum rather than the result, so that intervals close
+// to it do not all land on the same value. The upper bound saturates, because
+// the annotation accepts intervals close to the largest duration.
 func pollJitterHook(percentage int, minPollInterval time.Duration) managed.PollIntervalHook {
-	return func(_ resource.Managed, pollInterval time.Duration) time.Duration {
-		spread := float64(pollInterval) * float64(percentage) / percent
-		jittered := pollInterval + time.Duration((rand.Float64()*2-1)*spread) //nolint:gosec // No need for secure randomness.
+	fraction := float64(percentage) / percent
 
-		return max(jittered, min(pollInterval, minPollInterval))
+	return func(_ resource.Managed, pollInterval time.Duration) time.Duration {
+		spread := time.Duration(float64(pollInterval) * fraction)
+		if spread <= 0 {
+			return pollInterval
+		}
+
+		lowest := max(pollInterval-spread, min(pollInterval, minPollInterval))
+		highest := pollInterval + min(spread, math.MaxInt64-pollInterval)
+
+		return lowest + rand.N(highest-lowest+1) //nolint:gosec // No need for secure randomness.
 	}
 }
