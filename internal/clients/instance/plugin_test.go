@@ -515,6 +515,59 @@ func TestIsPluginPendingRemoval(t *testing.T) {
 	}
 }
 
+// TestIsOnlyPendingInstall tests detecting that a plugin's installation is
+// the only pending plugin operation.
+func TestIsOnlyPendingInstall(t *testing.T) {
+	t.Parallel()
+
+	findbugs := []sonar.PluginPending{{Key: "findbugs"}}
+
+	cases := map[string]struct {
+		pending *sonar.PluginsPending
+		want    bool
+	}{
+		"NilPendingReturnsFalse": {
+			pending: nil,
+			want:    false,
+		},
+		"NothingPendingReturnsFalse": {
+			pending: &sonar.PluginsPending{},
+			want:    false,
+		},
+		"OnlyThisInstallReturnsTrue": {
+			pending: &sonar.PluginsPending{Installing: findbugs},
+			want:    true,
+		},
+		"OnlyAnotherInstallReturnsFalse": {
+			pending: &sonar.PluginsPending{Installing: []sonar.PluginPending{{Key: "checkstyle"}}},
+			want:    false,
+		},
+		"AnotherInstallReturnsFalse": {
+			pending: &sonar.PluginsPending{Installing: []sonar.PluginPending{{Key: "findbugs"}, {Key: "checkstyle"}}},
+			want:    false,
+		},
+		"PendingRemovalReturnsFalse": {
+			pending: &sonar.PluginsPending{Installing: findbugs, Removing: []sonar.PluginPending{{Key: "checkstyle"}}},
+			want:    false,
+		},
+		"PendingUpdateReturnsFalse": {
+			pending: &sonar.PluginsPending{Installing: findbugs, Updating: []sonar.PluginPendingUpdate{{Key: "checkstyle"}}},
+			want:    false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsOnlyPendingInstall(tc.pending, "findbugs")
+			if got != tc.want {
+				t.Errorf("IsOnlyPendingInstall() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 // TestIsPluginPendingUpdate tests detecting plugins queued for update.
 func TestIsPluginPendingUpdate(t *testing.T) {
 	t.Parallel()

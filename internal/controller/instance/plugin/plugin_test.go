@@ -428,6 +428,46 @@ func TestDelete(t *testing.T) {
 			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
 			want: want{o: managed.ExternalDelete{}, err: nil},
 		},
+		"PendingInstallIsCancelled": {
+			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{
+						Installing: []sonar.PluginPending{{Key: testPluginKey}},
+					}, mockHTTPOK(), nil
+				},
+				CancelAllFn: func() (*http.Response, error) {
+					return mockHTTPOK(), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{o: managed.ExternalDelete{}, err: nil},
+		},
+		"PendingInstallCancelAPIError": {
+			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{
+						Installing: []sonar.PluginPending{{Key: testPluginKey}},
+					}, mockHTTPOK(), nil
+				},
+				CancelAllFn: func() (*http.Response, error) {
+					return nil, errBoom
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{o: managed.ExternalDelete{}, err: errors.Wrap(errBoom, errCancelPluginInstall)},
+		},
+		"PendingInstallAlongsideOtherOperationsIsNotCancelled": {
+			client: &fake.MockPluginsClient{
+				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {
+					return &sonar.PluginsPending{
+						Installing: []sonar.PluginPending{{Key: testPluginKey}},
+						Removing:   []sonar.PluginPending{{Key: "other"}},
+					}, mockHTTPOK(), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPlugin(testPluginKey, testPluginKey)},
+			want: want{o: managed.ExternalDelete{}, err: errors.Errorf(errPluginInstallNotCancellable, testPluginKey)},
+		},
 		"UninstallAPIError": {
 			client: &fake.MockPluginsClient{
 				PendingFn: func() (*sonar.PluginsPending, *http.Response, error) {

@@ -46,6 +46,17 @@ func okResponse() *http.Response {
 	return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}
 }
 
+// CancelAll counts the call and returns writeErr.
+func (c *countingPluginsClient) CancelAll(context.Context) (*http.Response, error) {
+	c.calls["CancelAll"]++
+
+	if c.writeErr != nil {
+		return nil, c.writeErr
+	}
+
+	return okResponse(), nil
+}
+
 // Install counts the call and returns writeErr.
 func (c *countingPluginsClient) Install(context.Context, *sonar.PluginsInstallOptions) (*http.Response, error) {
 	c.calls["Install"]++
@@ -192,6 +203,9 @@ func TestCachedPluginsClientWritesInvalidate(t *testing.T) {
 	t.Parallel()
 
 	writes := map[string]func(PluginsClient) (*http.Response, error){
+		"CancelAll": func(client PluginsClient) (*http.Response, error) {
+			return client.CancelAll(context.Background())
+		},
 		"Install": func(client PluginsClient) (*http.Response, error) {
 			return client.Install(context.Background(), &sonar.PluginsInstallOptions{Key: "findbugs"})
 		},

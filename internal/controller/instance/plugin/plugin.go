@@ -49,6 +49,12 @@ const (
 	errInstallPlugin = "cannot install SonarQube Plugin"
 	// errUninstallPlugin indicates plugin removal from SonarQube failed.
 	errUninstallPlugin = "cannot uninstall SonarQube Plugin"
+	// errCancelPluginInstall indicates cancelling a pending installation
+	// failed.
+	errCancelPluginInstall = "cannot cancel the pending installation of SonarQube Plugin"
+	// errPluginInstallNotCancellable is returned when deleting a plugin whose
+	// installation is pending alongside other plugin operations.
+	errPluginInstallNotCancellable = "the installation of SonarQube Plugin %s is pending a SonarQube restart alongside other plugin operations, and SonarQube can only cancel them all together: restart SonarQube or resolve the other pending operations"
 )
 
 // SetupGated adds a controller that reconciles Plugin managed resources
@@ -175,7 +181,10 @@ func (c *external) Update(ctx context.Context, plugin *v1alpha1.Plugin) (managed
 
 // Delete uninstalls the plugin from SonarQube. If the removal is already
 // queued (pending a restart), the Uninstall call is skipped to avoid
-// re-queuing the same operation.
+// re-queuing the same operation. A plugin whose installation is still
+// pending is not installed yet, so it cannot be uninstalled: its installation
+// is cancelled instead. SonarQube can only cancel every pending operation at
+// once, so this is only done when no other plugin operation is pending.
 func (c *external) Delete(ctx context.Context, managedPlugin *v1alpha1.Plugin) (managed.ExternalDelete, error) {
 	managedPlugin.Status.SetConditions(xpv1.Deleting())
 
@@ -195,6 +204,10 @@ func (c *external) Delete(ctx context.Context, managedPlugin *v1alpha1.Plugin) (
 		return managed.ExternalDelete{}, nil
 	}
 
+	if instance.FindPendingInstallPlugin(pendingList, externalName) != nil {
+		return managed.ExternalDelete{}, c.cancelPendingInstall(ctx, pendingList, externalName)
+	}
+
 	resp, err := c.client.Uninstall(ctx, &sonar.PluginsUninstallOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
@@ -208,4 +221,17 @@ func (c *external) Delete(ctx context.Context, managedPlugin *v1alpha1.Plugin) (
 // Disconnect is a no-op because the SonarQube client is stateless.
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
+}
+
+// cancelPendingInstall cancels the pending installation of the plugin with
+// the given key, provided it is the only pending plugin operation.
+func (c *external) cancelPendingInstall(ctx context.Context, pendingList *sonar.PluginsPending, key string) error {
+	if !instance.IsOnlyPendingInstall(pendingList, key) {
+		return errors.Errorf(errPluginInstallNotCancellable, key)
+	}
+
+	resp, err := c.client.CancelAll(ctx) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
+
+	return errors.Wrap(err, errCancelPluginInstall)
 }
