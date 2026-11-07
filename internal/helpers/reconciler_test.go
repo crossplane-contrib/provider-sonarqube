@@ -558,9 +558,9 @@ func newGateClient(t *testing.T, gate *instancev1alpha1.QualityGate) client.Clie
 	return clientfake.NewClientBuilder().WithScheme(scheme).WithObjects(gate).WithStatusSubresource(gate).Build()
 }
 
-// TestNewSpecExternalNameInitializer checks the external name left on a
+// TestSpecExternalNameInitializer checks the external name left on a
 // managed resource by the initializer.
-func TestNewSpecExternalNameInitializer(t *testing.T) {
+func TestSpecExternalNameInitializer(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
@@ -586,7 +586,7 @@ func TestNewSpecExternalNameInitializer(t *testing.T) {
 
 			kube := newGateClient(t, gate)
 
-			err := NewSpecExternalNameInitializer(kube, gateName).Initialize(t.Context(), gate)
+			err := newSpecExternalNameInitializer(kube, gateName).Initialize(t.Context(), gate)
 			if err != nil {
 				t.Fatalf("Initialize() unexpected error: %v", err)
 			}
@@ -605,12 +605,12 @@ func TestNewSpecExternalNameInitializer(t *testing.T) {
 	}
 }
 
-// TestNewSpecExternalNameInitializerRejectsOtherKinds checks that a resource of
+// TestSpecExternalNameInitializerRejectsOtherKinds checks that a resource of
 // another kind is reported rather than given a wrong external name.
-func TestNewSpecExternalNameInitializerRejectsOtherKinds(t *testing.T) {
+func TestSpecExternalNameInitializerRejectsOtherKinds(t *testing.T) {
 	t.Parallel()
 
-	initializer := NewSpecExternalNameInitializer(nil, gateName)
+	initializer := newSpecExternalNameInitializer(nil, gateName)
 
 	err := initializer.Initialize(t.Context(), &instancev1alpha1.Project{})
 	if err == nil {
@@ -655,8 +655,7 @@ func TestDeterministicExternalNameRecoversInterruptedCreate(t *testing.T) {
 	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(instancev1alpha1.QualityGateGroupVersionKind),
 		ReconcilerOptions(mgr, "test", opts,
 			managed.WithExternalConnector(connector),
-			managed.WithDeterministicExternalName(true),
-			managed.WithInitializers(NewSpecExternalNameInitializer(kube, gateName)),
+			WithSpecExternalName(kube, gateName),
 		)...)
 
 	request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "gate", Namespace: "team"}}
@@ -672,5 +671,59 @@ func TestDeterministicExternalNameRecoversInterruptedCreate(t *testing.T) {
 
 	if created != "" {
 		t.Errorf("Create() was called again with external name %q", created)
+	}
+}
+
+// TestExternalNameSetByObservePersistedBeforeCreate pins the reconciler
+// behaviour that the kinds with a name built from resolved references rely on:
+// an external name set by Observe reaches the API server with the pending
+// annotation, before Create runs, so it survives an interrupted Create.
+func TestExternalNameSetByObservePersistedBeforeCreate(t *testing.T) {
+	t.Parallel()
+
+	gate := &instancev1alpha1.QualityGate{ObjectMeta: metav1.ObjectMeta{Name: "gate", Namespace: "team"}}
+
+	kube := newGateClient(t, gate)
+
+	var persisted string
+
+	connector := managed.ExternalConnectorFn(func(context.Context, resource.Managed) (managed.ExternalClient, error) {
+		return &managed.ExternalClientFns{
+			ObserveFn: func(_ context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
+				meta.SetExternalName(mg, "group:devs")
+
+				return managed.ExternalObservation{}, nil
+			},
+			CreateFn: func(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
+				stored := &instancev1alpha1.QualityGate{}
+
+				err := kube.Get(ctx, client.ObjectKeyFromObject(mg), stored)
+				if err != nil {
+					return managed.ExternalCreation{}, err
+				}
+
+				persisted = meta.GetExternalName(stored)
+
+				return managed.ExternalCreation{}, nil
+			},
+			DisconnectFn: func(context.Context) error { return nil },
+		}, nil
+	})
+
+	mgr := recorderManager{Manager: &resourcefake.Manager{Client: kube, Scheme: kube.Scheme()}}
+	opts := Options{Options: controller.Options{Logger: logging.NewNopLogger(), Features: &feature.Flags{}, PollInterval: time.Minute}}
+
+	reconciler := managed.NewReconciler(mgr, resource.ManagedKind(instancev1alpha1.QualityGateGroupVersionKind),
+		ReconcilerOptions(mgr, "test", opts, managed.WithExternalConnector(connector))...)
+
+	request := reconcile.Request{NamespacedName: types.NamespacedName{Name: "gate", Namespace: "team"}}
+
+	_, err := reconciler.Reconcile(t.Context(), request)
+	if err != nil {
+		t.Fatalf("Reconcile() unexpected error: %v", err)
+	}
+
+	if persisted != "group:devs" {
+		t.Errorf("external name persisted before Create = %q, want %q", persisted, "group:devs")
 	}
 }

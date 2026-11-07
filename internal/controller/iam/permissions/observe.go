@@ -43,12 +43,10 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	// parseExternalName returns "" for subjectType on any error (invalid
-	// format or unknown type). Crossplane defaults the external name to
-	// metadata.name before Create runs, so an unparseable name means the
-	// resource does not exist yet - trigger Create to set the proper name.
 	subjectType, subject, projectKey, _ := parseExternalName(externalName)
 	if subjectType == "" {
+		meta.SetExternalName(permissions, buildExternalName(&permissions.Spec.ForProvider))
+
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 

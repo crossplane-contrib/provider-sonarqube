@@ -387,7 +387,7 @@ func TestIsProjectUpToDate(t *testing.T) {
 			},
 			want: true,
 		},
-		"NameMismatch": {
+		"NameMismatchIgnoredBecauseImmutable": {
 			spec: &v1alpha1.ProjectParameters{
 				Name: "proj-new",
 				Key:  "key",
@@ -396,7 +396,7 @@ func TestIsProjectUpToDate(t *testing.T) {
 				Name: "proj",
 				Key:  "key",
 			},
-			want: false,
+			want: true,
 		},
 		"KeyMismatch": {
 			spec: &v1alpha1.ProjectParameters{

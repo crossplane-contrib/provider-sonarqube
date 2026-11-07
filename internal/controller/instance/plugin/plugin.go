@@ -76,10 +76,9 @@ func Setup(mgr ctrl.Manager, opts helpers.Options) error {
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewPluginsClient,
 		}),
-		managed.WithDeterministicExternalName(true),
-		managed.WithInitializers(helpers.NewSpecExternalNameInitializer(mgr.GetClient(), func(mg *v1alpha1.Plugin) string {
+		helpers.WithSpecExternalName(mgr.GetClient(), func(mg *v1alpha1.Plugin) string {
 			return mg.Spec.ForProvider.Key
-		})),
+		}),
 	)
 
 	err := helpers.AddMRStateRecorder(mgr, opts, &v1alpha1.PluginList{})

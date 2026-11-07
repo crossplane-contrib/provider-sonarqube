@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/google/go-cmp/cmp"
@@ -381,5 +382,30 @@ func TestComputePermissionsDiff(t *testing.T) {
 				t.Fatalf("computePermissionsDiff() remove mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+// TestObserveRecordsTheExternalNameBeforeCreate checks that an external name
+// still at its metadata.name default is replaced by the real one, which the
+// reconciler persists before Create runs. An interrupted Create then stays
+// observable, so that its grants are revoked if the resource is deleted.
+func TestObserveRecordsTheExternalNameBeforeCreate(t *testing.T) {
+	t.Parallel()
+
+	permissions := newTestGroupPermissionsWithProject("test-permissions", "devs", "my-project", []string{"scan"})
+
+	e := &external{client: &fake.MockPermissionsClient{}}
+
+	observation, err := e.Observe(context.Background(), permissions)
+	if err != nil {
+		t.Fatalf("Observe() unexpected error: %v", err)
+	}
+
+	if observation.ResourceExists {
+		t.Error("Observe() ResourceExists = true, want false")
+	}
+
+	if got, want := meta.GetExternalName(permissions), "group:devs:my-project"; got != want {
+		t.Errorf("external name = %q, want %q", got, want)
 	}
 }

@@ -151,17 +151,20 @@ func pollJitterHook(percentage int, minPollInterval time.Duration) managed.PollI
 	}
 }
 
-// NewSpecExternalNameInitializer returns an initializer that sets the external
-// name of a managed resource from its spec, instead of the default
-// metadata.name. It is meant for the kinds whose SonarQube identifier is chosen
-// by the spec: Observe then looks for the right resource before Create runs,
-// which is what makes managed.WithDeterministicExternalName safe. Without it, a
-// Create interrupted before its result was recorded would be sent again for a
-// resource Observe cannot find.
-//
+// WithSpecExternalName is the reconciler option for the kinds whose SonarQube
+// identifier is chosen by the spec.
 // Initializers run before references are resolved, so externalName must only
 // read fields that are set directly in the spec.
-func NewSpecExternalNameInitializer[T resource.Managed](kube client.Client, externalName func(T) string) managed.Initializer {
+func WithSpecExternalName[T resource.Managed](kube client.Client, externalName func(T) string) managed.ReconcilerOption {
+	return func(reconciler *managed.Reconciler) {
+		managed.WithDeterministicExternalName(true)(reconciler)
+		managed.WithInitializers(newSpecExternalNameInitializer(kube, externalName))(reconciler)
+	}
+}
+
+// newSpecExternalNameInitializer returns an initializer that sets the external
+// name of a managed resource from its spec, unless it already has one.
+func newSpecExternalNameInitializer[T resource.Managed](kube client.Client, externalName func(T) string) managed.Initializer {
 	return managed.InitializerFn(func(ctx context.Context, managedResource resource.Managed) error {
 		if meta.GetExternalName(managedResource) != "" {
 			return nil
