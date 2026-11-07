@@ -182,7 +182,9 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-26.04
     needs: [detect-noop, lint, unit-tests]
-    if: needs.detect-noop.outputs.noop != 'true'
+    # Required check on pull requests; not re-run on pushes (main, release
+    # branches, tags). Still runnable manually via workflow_dispatch.
+    if: needs.detect-noop.outputs.noop != 'true' && github.event_name != 'push'
     timeout-minutes: 30
     environment: pr-validation
 
