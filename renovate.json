@@ -29,7 +29,8 @@
   "minimumReleaseAge": "7 days",
   "minimumReleaseAgeBehaviour": "timestamp-optional",
   "lockFileMaintenance": {
-    "enabled": true
+    "enabled": true,
+    "automerge": true
   },
   "updateInternalDeps": true,
   "cloneSubmodules": true,
@@ -63,5 +64,6 @@
   ],
   "postUpdateOptions": [
     "gomodTidy"
-  ]
+  ],
+  "automerge": true
 }
