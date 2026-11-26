@@ -194,7 +194,10 @@ func IsQualityProfileUpToDate(spec *v1alpha1.QualityProfileParameters, observati
 		return false
 	}
 
-	if !helpers.IsComparablePtrEqualComparable(spec.Default, observation.IsDefault) {
+	// Only enforce default: true. SonarQube cannot unset a default profile
+	// (another profile has to be made default instead), so default: false on
+	// the current default profile is ignored rather than reported as drift.
+	if spec.Default != nil && *spec.Default && !observation.IsDefault {
 		return false
 	}
 

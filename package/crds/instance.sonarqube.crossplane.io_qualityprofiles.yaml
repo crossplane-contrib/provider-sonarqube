@@ -61,8 +61,11 @@ spec:
                   of a QualityProfile.
                 properties:
                   default:
-                    description: Default indicates whether this Quality Profile is
-                      the default one.
+                    description: |-
+                      Default indicates whether this Quality Profile is the default one.
+                      Setting it to false has no effect on a profile that is already the
+                      default: SonarQube cannot unset a default, so make another profile of
+                      the same language the default instead.
                     type: boolean
                   language:
                     description: Language defines the programming language of the

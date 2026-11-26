@@ -165,6 +165,11 @@ func (qualityProfile *QualityProfile) resolveParent(ctx context.Context, resolve
 		return errors.Wrap(err, "spec.forProvider.parent")
 	}
 
+	// A selector may match the profile itself, which cannot be its own parent.
+	if response.ResolvedReference != nil && response.ResolvedReference.Name == qualityProfile.GetName() {
+		return errors.New("spec.forProvider.parent: a QualityProfile cannot inherit from itself")
+	}
+
 	params.Parent = reference.ToPtrValue(response.ResolvedValue)
 	params.ParentRef = response.ResolvedReference
 

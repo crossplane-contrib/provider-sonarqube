@@ -198,6 +198,33 @@ func TestIsQualityProfileUpToDate(t *testing.T) {
 			associations: map[string]QualityProfileRuleAssociation{},
 			want:         false,
 		},
+		"DefaultFalseOnServerDefaultIsIgnored": {
+			spec: &v1alpha1.QualityProfileParameters{
+				Name:     "my-profile",
+				Language: "java",
+				Default:  new(false),
+			},
+			observation: &v1alpha1.QualityProfileObservation{
+				Name:      "my-profile",
+				Language:  "java",
+				IsDefault: true,
+			},
+			associations: map[string]QualityProfileRuleAssociation{},
+			want:         true,
+		},
+		"DefaultUnsetOnServerDefaultIsIgnored": {
+			spec: &v1alpha1.QualityProfileParameters{
+				Name:     "my-profile",
+				Language: "java",
+			},
+			observation: &v1alpha1.QualityProfileObservation{
+				Name:      "my-profile",
+				Language:  "java",
+				IsDefault: true,
+			},
+			associations: map[string]QualityProfileRuleAssociation{},
+			want:         true,
+		},
 		"AllUpToDate": {
 			spec: &v1alpha1.QualityProfileParameters{
 				Name:     "my-profile",

@@ -158,8 +158,13 @@ func (c *external) Observe(ctx context.Context, profile *v1alpha1.QualityProfile
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
-		// If the quality profile is not found, treat as resource doesn't exist
-		return managed.ExternalObservation{ResourceExists: false}, nil
+		// Only a missing quality profile means the resource doesn't exist:
+		// any other failure must not be mistaken for a deletion.
+		if common.IsResponseNotFound(resp) {
+			return managed.ExternalObservation{ResourceExists: false}, nil
+		}
+
+		return managed.ExternalObservation{}, errors.Wrap(err, errShowQualityProfile)
 	}
 
 	// Retrieve Quality Profile Rules (paginated)
@@ -235,6 +240,17 @@ func (c *external) Update(ctx context.Context, profile *v1alpha1.QualityProfile)
 		return managed.ExternalUpdate{}, fmt.Errorf("external name is not set for Quality Profile %s", profile.Name)
 	}
 
+	// Set Quality Profile name if it has changed. The rename comes first, as
+	// the calls below identify the profile by its desired name.
+	if profile.Spec.ForProvider.Name != profile.Status.AtProvider.Name {
+		updateResp, err := c.qualityProfilesClient.Rename(ctx, instance.GenerateRenameQualityProfileOption(externalName, profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+		defer helpers.CloseBody(updateResp)
+
+		if err != nil {
+			return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateQualityProfile)
+		}
+	}
+
 	// Set Quality Profile as default if specified in the spec (idempotent)
 	if ptr.Deref(profile.Spec.ForProvider.Default, false) {
 		updateSetDefaultResp, err := c.qualityProfilesClient.SetDefault(ctx, instance.GenerateQualityprofilesSetDefaultOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
@@ -242,16 +258,6 @@ func (c *external) Update(ctx context.Context, profile *v1alpha1.QualityProfile)
 
 		if err != nil {
 			return managed.ExternalUpdate{}, errors.Wrap(err, errDefaultQualityProfile)
-		}
-	}
-
-	// Set Quality Profile name if it has changed
-	if profile.Spec.ForProvider.Name != profile.Status.AtProvider.Name {
-		updateResp, err := c.qualityProfilesClient.Rename(ctx, instance.GenerateRenameQualityProfileOption(externalName, profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
-		defer helpers.CloseBody(updateResp)
-
-		if err != nil {
-			return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateQualityProfile)
 		}
 	}
 
@@ -283,7 +289,14 @@ func (c *external) Delete(ctx context.Context, profile *v1alpha1.QualityProfile)
 		return managed.ExternalDelete{}, nil
 	}
 
-	destroyResp, err := c.qualityProfilesClient.Delete(ctx, instance.GenerateDeleteQualityProfileOption(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	// The deletion API identifies the profile by name: use the observed one,
+	// as the desired name may not have been applied yet.
+	params := profile.Spec.ForProvider
+	if profile.Status.AtProvider.Name != "" {
+		params.Name = profile.Status.AtProvider.Name
+	}
+
+	destroyResp, err := c.qualityProfilesClient.Delete(ctx, instance.GenerateDeleteQualityProfileOption(params)) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(destroyResp)
 
 	if err != nil {

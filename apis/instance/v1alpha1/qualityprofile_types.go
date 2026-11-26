@@ -37,6 +37,9 @@ type QualityProfileParameters struct {
 	// +kubebuilder:validation:Required
 	Language string `json:"language"`
 	// Default indicates whether this Quality Profile is the default one.
+	// Setting it to false has no effect on a profile that is already the
+	// default: SonarQube cannot unset a default, so make another profile of
+	// the same language the default instead.
 	// +kubebuilder:validation:Optional
 	Default *bool `json:"default,omitempty"`
 	// Parent is the name of the Quality Profile, of the same language, that

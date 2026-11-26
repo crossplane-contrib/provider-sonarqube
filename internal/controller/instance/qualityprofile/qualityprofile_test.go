@@ -63,7 +63,7 @@ func mockHTTPResponse() *http.Response {
 }
 
 // TestObserve tests the Observe method.
-func TestObserve(t *testing.T) {
+func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test covering many cases
 	t.Parallel()
 
 	type args struct {
@@ -99,10 +99,36 @@ func TestObserve(t *testing.T) {
 				err: nil,
 			},
 		},
-		"ShowFailsReturnsNotExists": {
+		"ShowFailsReturnsError": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				ShowFn: func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return nil, nil, errors.New("api error")
+				},
+			},
+			rulesClient: &fake.MockRulesClient{},
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.QualityProfile {
+					qp := &v1alpha1.QualityProfile{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        "test-profile",
+							Annotations: map[string]string{},
+						},
+					}
+					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
+					return qp
+				}(),
+			},
+			want: want{
+				o:   managed.ExternalObservation{},
+				err: errors.Wrap(errors.New("api error"), errShowQualityProfile),
+			},
+		},
+		"ShowNotFoundReturnsNotExists": {
+			qualityProfilesClient: &fake.MockQualityProfilesClient{
+				ShowFn: func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
+					return nil, &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, errors.New("not found")
 				},
 			},
 			rulesClient: &fake.MockRulesClient{},
