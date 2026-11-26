@@ -61,6 +61,111 @@ spec:
                 description: PortfolioParameters are the configurable fields of a
                   Portfolio.
                 properties:
+                  applications:
+                    description: |-
+                      Applications is the exhaustive list of applications added to the portfolio.
+                      Any application of the portfolio that is not in this list is removed from it.
+                      When unset, the applications of the portfolio are not managed.
+                    items:
+                      description: |-
+                        PortfolioApplicationParameters select an application, and optionally its
+                        branches, in a portfolio.
+                      properties:
+                        branches:
+                          description: |-
+                            Branches is the exhaustive list of the application branches selected in the portfolio.
+                            When empty, the selected branches are not managed: SonarQube selects the application main
+                            branch when the application is added. List the main branch explicitly to select it
+                            alongside other branches.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: set
+                        key:
+                          description: Key is the application key.
+                          minLength: 1
+                          type: string
+                        keyRef:
+                          description: KeyRef is a reference to an Application used
+                            to set Key.
+                          properties:
+                            name:
+                              description: Name of the referenced object.
+                              type: string
+                            policy:
+                              description: Policies for referencing.
+                              properties:
+                                resolution:
+                                  default: Required
+                                  description: |-
+                                    Resolution specifies whether resolution of this reference is required.
+                                    The default is 'Required', which means the reconcile will fail if the
+                                    reference cannot be resolved. 'Optional' means this reference will be
+                                    a no-op if it cannot be resolved.
+                                  enum:
+                                  - Required
+                                  - Optional
+                                  type: string
+                                resolve:
+                                  description: |-
+                                    Resolve specifies when this reference should be resolved. The default
+                                    is 'IfNotPresent', which will attempt to resolve the reference only when
+                                    the corresponding field is not present. Use 'Always' to resolve the
+                                    reference on every reconcile.
+                                  enum:
+                                  - Always
+                                  - IfNotPresent
+                                  type: string
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        keySelector:
+                          description: KeySelector selects a reference to an Application
+                            used to set Key.
+                          properties:
+                            matchControllerRef:
+                              description: |-
+                                MatchControllerRef ensures an object with the same controller reference
+                                as the selecting object is selected.
+                              type: boolean
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              description: MatchLabels ensures an object with matching
+                                labels is selected.
+                              type: object
+                            policy:
+                              description: Policies for selection.
+                              properties:
+                                resolution:
+                                  default: Required
+                                  description: |-
+                                    Resolution specifies whether resolution of this reference is required.
+                                    The default is 'Required', which means the reconcile will fail if the
+                                    reference cannot be resolved. 'Optional' means this reference will be
+                                    a no-op if it cannot be resolved.
+                                  enum:
+                                  - Required
+                                  - Optional
+                                  type: string
+                                resolve:
+                                  description: |-
+                                    Resolve specifies when this reference should be resolved. The default
+                                    is 'IfNotPresent', which will attempt to resolve the reference only when
+                                    the corresponding field is not present. Use 'Always' to resolve the
+                                    reference on every reconcile.
+                                  enum:
+                                  - Always
+                                  - IfNotPresent
+                                  type: string
+                              type: object
+                          type: object
+                      type: object
+                      x-kubernetes-validations:
+                      - message: one of key, keyRef or keySelector must be set
+                        rule: has(self.key) || has(self.keyRef) || has(self.keySelector)
+                    type: array
                   branch:
                     description: Branch is the branch used in matched projects when
                       SelectionMode is REGEXP, REMAINING, or TAGS.
@@ -79,6 +184,195 @@ spec:
                     description: Name is the portfolio display name.
                     minLength: 1
                     type: string
+                  parent:
+                    description: |-
+                      Parent is the key of the parent portfolio, making this portfolio a sub-portfolio of it.
+                      The parent can be changed to move the sub-portfolio to another portfolio, but it cannot be
+                      unset once set: a sub-portfolio cannot be turned into a root portfolio.
+                    minLength: 1
+                    type: string
+                  parentRef:
+                    description: ParentRef is a reference to a Portfolio used to set
+                      Parent.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  parentSelector:
+                    description: ParentSelector selects a reference to a Portfolio
+                      used to set Parent.
+                    properties:
+                      matchControllerRef:
+                        description: |-
+                          MatchControllerRef ensures an object with the same controller reference
+                          as the selecting object is selected.
+                        type: boolean
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels ensures an object with matching labels
+                          is selected.
+                        type: object
+                      policy:
+                        description: Policies for selection.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    type: object
+                  projects:
+                    description: |-
+                      Projects is the exhaustive list of projects manually selected in the portfolio.
+                      Any selected project that is not in this list is removed from the portfolio.
+                      When unset, the selected projects are not managed.
+                      Only allowed when SelectionMode is MANUAL.
+                    items:
+                      description: |-
+                        PortfolioProjectParameters select a project, and optionally its branches,
+                        in a portfolio.
+                      properties:
+                        branches:
+                          description: |-
+                            Branches is the exhaustive list of the project branches selected in the portfolio.
+                            When empty, the selected branches are not managed: SonarQube selects the project main
+                            branch when the project is added. List the main branch explicitly to select it alongside
+                            other branches.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: set
+                        key:
+                          description: Key is the project key.
+                          minLength: 1
+                          type: string
+                        keyRef:
+                          description: KeyRef is a reference to a Project used to
+                            set Key.
+                          properties:
+                            name:
+                              description: Name of the referenced object.
+                              type: string
+                            policy:
+                              description: Policies for referencing.
+                              properties:
+                                resolution:
+                                  default: Required
+                                  description: |-
+                                    Resolution specifies whether resolution of this reference is required.
+                                    The default is 'Required', which means the reconcile will fail if the
+                                    reference cannot be resolved. 'Optional' means this reference will be
+                                    a no-op if it cannot be resolved.
+                                  enum:
+                                  - Required
+                                  - Optional
+                                  type: string
+                                resolve:
+                                  description: |-
+                                    Resolve specifies when this reference should be resolved. The default
+                                    is 'IfNotPresent', which will attempt to resolve the reference only when
+                                    the corresponding field is not present. Use 'Always' to resolve the
+                                    reference on every reconcile.
+                                  enum:
+                                  - Always
+                                  - IfNotPresent
+                                  type: string
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        keySelector:
+                          description: KeySelector selects a reference to a Project
+                            used to set Key.
+                          properties:
+                            matchControllerRef:
+                              description: |-
+                                MatchControllerRef ensures an object with the same controller reference
+                                as the selecting object is selected.
+                              type: boolean
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              description: MatchLabels ensures an object with matching
+                                labels is selected.
+                              type: object
+                            policy:
+                              description: Policies for selection.
+                              properties:
+                                resolution:
+                                  default: Required
+                                  description: |-
+                                    Resolution specifies whether resolution of this reference is required.
+                                    The default is 'Required', which means the reconcile will fail if the
+                                    reference cannot be resolved. 'Optional' means this reference will be
+                                    a no-op if it cannot be resolved.
+                                  enum:
+                                  - Required
+                                  - Optional
+                                  type: string
+                                resolve:
+                                  description: |-
+                                    Resolve specifies when this reference should be resolved. The default
+                                    is 'IfNotPresent', which will attempt to resolve the reference only when
+                                    the corresponding field is not present. Use 'Always' to resolve the
+                                    reference on every reconcile.
+                                  enum:
+                                  - Always
+                                  - IfNotPresent
+                                  type: string
+                              type: object
+                          type: object
+                      type: object
+                      x-kubernetes-validations:
+                      - message: one of key, keyRef or keySelector must be set
+                        rule: has(self.key) || has(self.keyRef) || has(self.keySelector)
+                    type: array
                   regexp:
                     description: Regexp is the regular expression used for project
                       key matching when SelectionMode is REGEXP.
@@ -94,14 +388,106 @@ spec:
                     - REMAINING
                     - TAGS
                     type: string
+                  subPortfolioRefs:
+                    description: SubPortfolioRefs are references to Portfolios used
+                      to populate SubPortfolios.
+                    items:
+                      description: A Reference to a named object.
+                      properties:
+                        name:
+                          description: Name of the referenced object.
+                          type: string
+                        policy:
+                          description: Policies for referencing.
+                          properties:
+                            resolution:
+                              default: Required
+                              description: |-
+                                Resolution specifies whether resolution of this reference is required.
+                                The default is 'Required', which means the reconcile will fail if the
+                                reference cannot be resolved. 'Optional' means this reference will be
+                                a no-op if it cannot be resolved.
+                              enum:
+                              - Required
+                              - Optional
+                              type: string
+                            resolve:
+                              description: |-
+                                Resolve specifies when this reference should be resolved. The default
+                                is 'IfNotPresent', which will attempt to resolve the reference only when
+                                the corresponding field is not present. Use 'Always' to resolve the
+                                reference on every reconcile.
+                              enum:
+                              - Always
+                              - IfNotPresent
+                              type: string
+                          type: object
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  subPortfolioSelector:
+                    description: SubPortfolioSelector selects references to Portfolios
+                      used to populate SubPortfolios.
+                    properties:
+                      matchControllerRef:
+                        description: |-
+                          MatchControllerRef ensures an object with the same controller reference
+                          as the selecting object is selected.
+                        type: boolean
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels ensures an object with matching labels
+                          is selected.
+                        type: object
+                      policy:
+                        description: Policies for selection.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    type: object
+                  subPortfolios:
+                    description: |-
+                      SubPortfolios is the exhaustive list of keys of the existing portfolios referenced in this
+                      portfolio. Any referenced portfolio that is not in this list is removed from the portfolio.
+                      When unset, and no SubPortfolioRefs or SubPortfolioSelector is set, the referenced
+                      portfolios are not managed.
+                      Sub-portfolios created under this portfolio are managed through the parent of their own
+                      Portfolio resource and are not affected by this list.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
                   tags:
                     description: Tags is a comma-separated list of project tags when
                       SelectionMode is TAGS.
                     type: string
                   visibility:
                     default: public
-                    description: Visibility is the portfolio visibility. Immutable
-                      after creation.
+                    description: |-
+                      Visibility is the portfolio visibility. Immutable after creation.
+                      Only applies to root portfolios: sub-portfolios inherit the visibility of their root portfolio.
                     enum:
                     - public
                     - private
@@ -113,6 +499,12 @@ spec:
                 - key
                 - name
                 type: object
+                x-kubernetes-validations:
+                - message: parent cannot be unset once set
+                  rule: '!has(oldSelf.parent) || has(self.parent)'
+                - message: projects can only be set when selectionMode is MANUAL
+                  rule: '!has(self.projects) || size(self.projects) == 0 || (has(self.selectionMode)
+                    && self.selectionMode == ''MANUAL'')'
               managementPolicies:
                 default:
                 - '*'
@@ -177,15 +569,68 @@ spec:
               atProvider:
                 description: PortfolioObservation are the observable fields of a Portfolio.
                 properties:
+                  applications:
+                    description: Applications are the applications added to the portfolio.
+                    items:
+                      description: |-
+                        PortfolioMemberObservation is the observed state of a project or an
+                        application selected in a portfolio.
+                      properties:
+                        branches:
+                          description: Branches are the explicitly selected branches,
+                            if any.
+                          items:
+                            type: string
+                          type: array
+                        key:
+                          description: Key is the project or application key.
+                          type: string
+                      required:
+                      - key
+                      type: object
+                    type: array
                   description:
                     description: Description is the portfolio description.
                     type: string
                   key:
                     description: Key is the portfolio key as stored in SonarQube.
                     type: string
+                  localSubPortfolios:
+                    description: LocalSubPortfolios are the keys of the sub-portfolios
+                      created under the portfolio.
+                    items:
+                      type: string
+                    type: array
                   name:
                     description: Name is the portfolio name.
                     type: string
+                  parent:
+                    description: |-
+                      Parent is the key of the parent portfolio, when the portfolio is a sub-portfolio of the
+                      desired parent. SonarQube does not return the parent of a portfolio, so it is observed by
+                      looking up the sub-portfolios of the desired parent only.
+                    type: string
+                  projects:
+                    description: Projects are the projects manually selected in the
+                      portfolio.
+                    items:
+                      description: |-
+                        PortfolioMemberObservation is the observed state of a project or an
+                        application selected in a portfolio.
+                      properties:
+                        branches:
+                          description: Branches are the explicitly selected branches,
+                            if any.
+                          items:
+                            type: string
+                          type: array
+                        key:
+                          description: Key is the project or application key.
+                          type: string
+                      required:
+                      - key
+                      type: object
+                    type: array
                   qualifier:
                     description: Qualifier is the component qualifier (VW for root
                       portfolio, SVW for sub-portfolio).
@@ -193,6 +638,12 @@ spec:
                   selectionMode:
                     description: SelectionMode is the current project selection mode.
                     type: string
+                  subPortfolios:
+                    description: SubPortfolios are the keys of the portfolios referenced
+                      in the portfolio.
+                    items:
+                      type: string
+                    type: array
                   visibility:
                     description: Visibility is the portfolio visibility.
                     type: string

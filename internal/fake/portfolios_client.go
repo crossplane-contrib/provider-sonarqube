@@ -54,6 +54,7 @@ type MockPortfoliosClient struct {
 	SetRemainingProjectsModeFn func(opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error)
 	SetTagsModeFn              func(opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error)
 	ShowFn                     func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error)
+	ShowDetailsFn              func(opt *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error)
 	SubPortfoliosFn            func(opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error)
 	UpdateFn                   func(opt *sonar.ViewsUpdateOptions) (*http.Response, error)
 }
@@ -291,6 +292,15 @@ func (m *MockPortfoliosClient) SetTagsMode(_ context.Context, opt *sonar.ViewsSe
 func (m *MockPortfoliosClient) Show(_ context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 	if m.ShowFn != nil {
 		return m.ShowFn(opt)
+	}
+
+	return nil, nil, errNotImplemented
+}
+
+// ShowDetails implements PortfoliosClient.ShowDetails.
+func (m *MockPortfoliosClient) ShowDetails(_ context.Context, opt *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
+	if m.ShowDetailsFn != nil {
+		return m.ShowDetailsFn(opt)
 	}
 
 	return nil, nil, errNotImplemented
