@@ -1,0 +1,21 @@
+# Only one InstanceConfiguration should target a given SonarQube instance.
+# Every field is optional: only the fields that are set are reconciled, the
+# others keep their current value in SonarQube. Deleting the resource leaves
+# all values in place.
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: InstanceConfiguration
+metadata:
+  name: example-instance-configuration
+  namespace: default
+spec:
+  forProvider:
+    # Community Edition and above.
+    cleanCodePolicyMode: MQR
+    defaultProjectVisibility: private
+    # Enterprise Edition and above. Leave these out on Community Edition.
+    computeEngineWorkerCount: 2
+    scimEnabled: false
+    scaEnabled: false
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
