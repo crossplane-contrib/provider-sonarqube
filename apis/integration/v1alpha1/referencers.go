@@ -51,3 +51,30 @@ func (webhook *Webhook) ResolveReferences(ctx context.Context, readerClient clie
 
 	return nil
 }
+
+// ResolveReferences resolves references to other managed resources for
+// AICodeFixConfiguration. References and selectors resolve in the
+// AICodeFixConfiguration's own namespace.
+func (configuration *AICodeFixConfiguration) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	resolver := reference.NewAPIResolver(readerClient, configuration)
+
+	response, err := resolver.ResolveMultiple(ctx, reference.MultiResolutionRequest{
+		CurrentValues: configuration.Spec.ForProvider.EnabledProjectKeys,
+		Extract:       reference.ExternalName(),
+		Namespace:     configuration.GetNamespace(),
+		References:    configuration.Spec.ForProvider.EnabledProjectKeyRefs,
+		Selector:      configuration.Spec.ForProvider.EnabledProjectKeySelector,
+		To: reference.To{
+			List:    &instancev1alpha1.ProjectList{},
+			Managed: &instancev1alpha1.Project{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.enabledProjectKeys")
+	}
+
+	configuration.Spec.ForProvider.EnabledProjectKeys = response.ResolvedValues
+	configuration.Spec.ForProvider.EnabledProjectKeyRefs = response.ResolvedReferences
+
+	return nil
+}

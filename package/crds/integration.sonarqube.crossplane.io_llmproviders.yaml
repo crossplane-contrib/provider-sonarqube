@@ -1,0 +1,434 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.23.0
+  name: llmproviders.integration.sonarqube.crossplane.io
+spec:
+  group: integration.sonarqube.crossplane.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - sonarqube
+    kind: LLMProvider
+    listKind: LLMProviderList
+    plural: llmproviders
+    singular: llmprovider
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .spec.forProvider.provider
+      name: PROVIDER
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          A LLMProvider is a managed resource that represents a SonarQube LLM
+          provider connection, used by AI features such as AI CodeFix, and the AI
+          capabilities it serves. Requires SonarQube Enterprise Edition or above;
+          the underlying API is marked internal by SonarQube.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              A LLMProviderSpec defines the desired state of a LLMProvider.
+
+              writeConnectionSecretToRef is required: SonarQube never returns secret
+              configuration values, so the provider compares the referenced secrets with
+              the values it last applied, saved in the connection secret, to detect
+              rotations.
+            properties:
+              forProvider:
+                description: |-
+                  LLMProviderParameters are the configurable fields of a LLMProvider.
+
+                  The configuration keys depend on the provider type; SonarQube lists them,
+                  and which ones are secret or required, in
+                  api/v2/llm-connectivity/llm-provider-definitions. The provider checks the
+                  spec against that definition before every create or update.
+                properties:
+                  configuration:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Configuration holds the non-secret configuration fields of the
+                      provider, keyed by field key (e.g. an endpoint URL or a region).
+                      Secret fields must be set in ConfigurationSecretRefs instead.
+                      Removing a key does not unset it in SonarQube.
+                    maxProperties: 64
+                    type: object
+                  configurationSecretRefs:
+                    additionalProperties:
+                      description: |-
+                        A LocalSecretKeySelector is a reference to a secret key
+                        in the same namespace with the referencing object.
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          description: Name of the secret.
+                          type: string
+                      required:
+                      - key
+                      - name
+                      type: object
+                    description: |-
+                      ConfigurationSecretRefs holds the configuration fields read from
+                      Kubernetes Secrets, keyed by field key (e.g. an API key). Every field
+                      the provider definition marks as secret must be set here. The secrets
+                      are read from the LLMProvider's namespace.
+                    maxProperties: 64
+                    type: object
+                  httpHeaders:
+                    description: |-
+                      HTTPHeaders are custom HTTP headers sent with every request to the
+                      provider. Only provider types with an HTTP headers configuration field
+                      (e.g. CUSTOM_PROXY) accept them.
+                    items:
+                      description: |-
+                        LLMProviderHTTPHeader is a custom HTTP header sent with every request
+                        SonarQube makes to the LLM provider. Only provider types whose definition
+                        has an HTTP headers field (e.g. CUSTOM_PROXY) accept headers.
+                      properties:
+                        name:
+                          description: Name is the HTTP header name.
+                          minLength: 1
+                          type: string
+                        value:
+                          description: |-
+                            Value is the plain-text header value. Exactly one of Value or
+                            ValueSecretRef must be set.
+                          type: string
+                        valueSecretRef:
+                          description: |-
+                            ValueSecretRef references the secret key holding the header value. The
+                            header is sent to SonarQube as a secret header, stored encrypted and
+                            masked in API responses. The secret is read from the LLMProvider's
+                            namespace. Exactly one of Value or ValueSecretRef must be set.
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              description: Name of the secret.
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      required:
+                      - name
+                      type: object
+                      x-kubernetes-validations:
+                      - message: exactly one of value or valueSecretRef must be set
+                        rule: has(self.value) != has(self.valueSecretRef)
+                    maxItems: 64
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                  label:
+                    description: Label is the display name of the provider in SonarQube.
+                    minLength: 1
+                    type: string
+                  modelMappings:
+                    description: |-
+                      ModelMappings selects this provider, and the models to use, for AI
+                      capabilities. SonarQube maps each capability to at most one provider,
+                      so a capability must not be listed by several LLMProviders.
+                      SonarQube cannot unmap a capability: removing it from this list leaves
+                      it mapped to this provider, and the provider cannot be deleted while a
+                      capability is mapped to it. Map the capability to another LLMProvider
+                      first.
+                    items:
+                      description: |-
+                        LLMProviderModelMapping selects the provider and models SonarQube uses for
+                        one AI capability.
+                      properties:
+                        aiCapability:
+                          description: AICapability is the AI capability served by
+                            this provider.
+                          enum:
+                          - AI_CODEFIX
+                          - HUNTER_AGENT
+                          - REMEDIATION_AGENT
+                          type: string
+                        modelIdentifier:
+                          description: |-
+                            ModelIdentifier is the identifier of the model used for the capability,
+                            as known by the provider (e.g. a deployment name for Azure OpenAI). The
+                            supported models are listed by api/v2/llm-connectivity/supported-models.
+                          maxLength: 255
+                          minLength: 1
+                          type: string
+                        secondaryModelIdentifier:
+                          description: |-
+                            SecondaryModelIdentifier is the identifier of the secondary model used
+                            for the capability. Required for HUNTER_AGENT, which needs both models.
+                          maxLength: 255
+                          minLength: 1
+                          type: string
+                      required:
+                      - aiCapability
+                      - modelIdentifier
+                      type: object
+                      x-kubernetes-validations:
+                      - message: secondaryModelIdentifier is required for HUNTER_AGENT
+                        rule: self.aiCapability != 'HUNTER_AGENT' || has(self.secondaryModelIdentifier)
+                    maxItems: 3
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - aiCapability
+                    x-kubernetes-list-type: map
+                  provider:
+                    description: Provider is the LLM provider type. Immutable after
+                      creation.
+                    enum:
+                    - AZURE_OPENAI
+                    - AWS_BEDROCK
+                    - AWS_BEDROCK_MANTLE
+                    - VERTEX_AI
+                    - CUSTOM_PROXY
+                    - OPENAI
+                    - ANTHROPIC
+                    type: string
+                    x-kubernetes-validations:
+                    - message: provider is immutable
+                      rule: self == oldSelf
+                required:
+                - label
+                - provider
+                type: object
+                x-kubernetes-validations:
+                - message: a key cannot be set in both configuration and configurationSecretRefs
+                  rule: '!has(self.configuration) || !has(self.configurationSecretRefs)
+                    || self.configuration.all(k, !(k in self.configurationSecretRefs))'
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  kind: ClusterProviderConfig
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  kind:
+                    description: Kind of the referenced object.
+                    type: string
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - forProvider
+            type: object
+            x-kubernetes-validations:
+            - message: writeConnectionSecretToRef with a non-empty name is required
+              rule: has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name)
+                > 0
+          status:
+            description: A LLMProviderStatus represents the observed state of a LLMProvider.
+            properties:
+              atProvider:
+                description: LLMProviderObservation are the observable fields of a
+                  LLMProvider.
+                properties:
+                  configuration:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Configuration holds the observed non-secret configuration fields.
+                      Secret fields are never reported.
+                    type: object
+                  httpHeaders:
+                    description: HTTPHeaders are the observed custom HTTP headers.
+                    items:
+                      description: |-
+                        LLMProviderHTTPHeaderObservation is an HTTP header as observed from the
+                        SonarQube API.
+                      properties:
+                        name:
+                          description: Name is the HTTP header name.
+                          type: string
+                        secret:
+                          description: Secret indicates whether SonarQube stores the
+                            value encrypted.
+                          type: boolean
+                        value:
+                          description: Value is the header value. Empty for secret
+                            headers.
+                          type: string
+                      type: object
+                    type: array
+                  id:
+                    description: |-
+                      ID is the identifier SonarQube assigned to the provider (used as
+                      external-name).
+                    type: string
+                  label:
+                    description: Label is the observed display name.
+                    type: string
+                  modelMappings:
+                    description: |-
+                      ModelMappings are the AI capabilities currently mapped to this
+                      provider.
+                    items:
+                      description: |-
+                        LLMProviderModelMappingObservation is a model mapping of the provider as
+                        observed from the SonarQube API.
+                      properties:
+                        aiCapability:
+                          description: AICapability is the AI capability mapped to
+                            this provider.
+                          type: string
+                        modelIdentifier:
+                          description: ModelIdentifier is the identifier of the model
+                            used for the capability.
+                          type: string
+                        secondaryModelIdentifier:
+                          description: SecondaryModelIdentifier is the identifier
+                            of the secondary model.
+                          type: string
+                      type: object
+                    type: array
+                  provider:
+                    description: Provider is the observed provider type.
+                    type: string
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              lastHandledReconcileAt:
+                description: |-
+                  LastHandledReconcileAt holds the value of the most recent
+                  reconcile-requested-at annotation token that the controller has
+                  processed. Users can compare this to the annotation to determine
+                  whether a reconcile request has been handled.
+                type: string
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

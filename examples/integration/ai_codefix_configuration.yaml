@@ -1,0 +1,17 @@
+# Manage at most one AICodeFixConfiguration per SonarQube instance.
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: AICodeFixConfiguration
+metadata:
+  namespace: default
+  name: example-ai-codefix
+spec:
+  forProvider:
+    enablement: ENABLED_FOR_SOME_PROJECTS
+    enabledProjectKeys:
+      - my-project
+    # Or resolve the keys from Project managed resources:
+    # enabledProjectKeyRefs:
+    #   - name: example-project
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
