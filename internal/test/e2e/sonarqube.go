@@ -429,6 +429,21 @@ func (f *Framework) FindApplicationByKey(ctx context.Context, key string) (*sona
 	return &res.Application, nil
 }
 
+// FetchDashboard returns the SonarQube custom dashboard with the given ID, or
+// (nil, nil) if no such dashboard exists. Custom dashboards are an Enterprise
+// Edition feature.
+func (f *Framework) FetchDashboard(ctx context.Context, id string) (*sonar.DashboardsDashboardResponse, error) {
+	res, resp, err := f.Sonar.V2.Dashboards.Get(ctx, id)
+	defer helpers.CloseBody(resp)
+	if common.IsResponseNotFound(resp) {
+		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // FetchLicense returns the license currently applied to the SonarQube
 // instance. SonarQube always returns 200 from this endpoint - even an
 // unlicensed Enterprise/Data Center instance reports a License with empty

@@ -1,0 +1,44 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Dashboard
+metadata:
+  name: example-project-dashboard
+  namespace: default
+spec:
+  forProvider:
+    # Display name of the dashboard. A dashboard is not created if the target
+    # already has one with this name.
+    name: Release readiness
+    # Description of the dashboard
+    description: Standard project dashboard managed by Crossplane
+    # Layout of the dashboard, as the JSON document SonarQube stores. The
+    # layout of a built-in dashboard (GET api/v2/dashboards/built-ins/{key})
+    # is a good starting point.
+    layout: |
+      {"widgets": []}
+    # Key of the project the dashboard belongs to (immutable)
+    projectKey: example-project-key
+    # The project can also be referenced through a Project managed resource
+    # projectKeyRef:
+    #   name: example-project
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Dashboard
+metadata:
+  name: example-portfolio-dashboard
+  namespace: default
+spec:
+  forProvider:
+    name: Portfolio overview
+    layout: |
+      {"widgets": []}
+    # Portfolio managed resource the dashboard belongs to. Use portfolioKey to
+    # target a portfolio by key instead.
+    portfolioKeyRef:
+      name: example-portfolio
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
