@@ -147,6 +147,31 @@ func TestDevOpsPermissionMappingBaseRole(t *testing.T) {
 	permissions := []string{"user", "codeviewer", "issueadmin"}
 	want := sonar.DopTranslationPermissions{User: true, CodeViewer: true, IssueAdmin: true}
 
+	// The mapping of a built-in role outlives the resource, so restore the
+	// permissions it had before the test. Registered before the resource is
+	// created, this cleanup runs after the resource's own.
+	original, err := f.FindDevOpsPermissionMapping(context.Background(), "gitlab", role)
+	if err != nil || original == nil {
+		t.Fatalf("fetching the original %q mapping = %+v: %v", role, original, err)
+	}
+	t.Cleanup(func() {
+		restore := original.Permissions
+		_, resp, err := f.Sonar.V2.DopTranslation.UpdateGitlabPermissionMapping(context.Background(), role, &sonar.DopTranslationPermissionMappingUpdateOptions{
+			Permissions: &sonar.DopTranslationPermissionsUpdate{
+				User:                 &restore.User,
+				CodeViewer:           &restore.CodeViewer,
+				IssueAdmin:           &restore.IssueAdmin,
+				SecurityHotspotAdmin: &restore.SecurityHotspotAdmin,
+				Admin:                &restore.Admin,
+				Scan:                 &restore.Scan,
+			},
+		})
+		defer helpers.CloseBody(resp)
+		if err != nil {
+			t.Logf("cleanup: restoring the %q mapping: %v", role, helpers.RedactURLError(err))
+		}
+	})
+
 	mapping := newE2EMapping(f, "e2e-mapping-base", iamv1alpha1.DevOpsPlatformGitLab, role, slices.Clone(permissions))
 
 	f.CreateAndWaitForReady(t, mapping, 2*time.Minute)

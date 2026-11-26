@@ -116,6 +116,8 @@ spec:
                     pattern: ^[^/]+$
                     type: string
                     x-kubernetes-validations:
+                    - message: Role cannot be a dot path segment.
+                      rule: self != '.' && self != '..'
                     - message: Role is immutable.
                       rule: self == oldSelf
                 required:

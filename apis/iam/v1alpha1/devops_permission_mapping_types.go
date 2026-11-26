@@ -55,6 +55,7 @@ type DevOpsPermissionMappingParameters struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^[^/]+$`
+	// +kubebuilder:validation:XValidation:rule="self != '.' && self != '..'",message="Role cannot be a dot path segment."
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Role is immutable."
 	Role string `json:"role"`
 

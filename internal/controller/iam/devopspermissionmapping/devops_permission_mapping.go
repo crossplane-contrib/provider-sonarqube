@@ -156,7 +156,13 @@ func (c *external) Observe(ctx context.Context, mapping *v1alpha1.DevOpsPermissi
 		return managed.ExternalObservation{}, errors.Wrap(err, errObserveMapping)
 	}
 
-	if !found || (observed.BaseRole && meta.WasDeleted(mapping)) {
+	if !found {
+		mapping.Status.AtProvider = v1alpha1.DevOpsPermissionMappingObservation{}
+
+		return managed.ExternalObservation{ResourceExists: false}, nil
+	}
+
+	if observed.BaseRole && meta.WasDeleted(mapping) {
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
