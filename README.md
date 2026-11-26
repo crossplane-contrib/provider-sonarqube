@@ -10,7 +10,8 @@ The provider currently covers the areas teams usually need to standardize first:
 
 * Instance resources such as projects, quality gates, quality profiles, rules, and settings
 * IAM resources such as groups and permissions templates
-* Integration resources such as GitLab ALM configuration
+* Integration resources such as GitLab ALM configuration, webhooks, and the Slack
+  integration (Enterprise Edition)
 
 ## Why This Provider
 
@@ -104,7 +105,7 @@ spec:
 
 Secret references on namespaced objects resolve only inside that object's
 namespace. Managed resource Secret references (user passwords, license keys,
-ALM credentials, webhook secrets) take only a `name` and `key`, and the Secret
+ALM credentials, webhook secrets, Slack app secrets) take only a `name` and `key`, and the Secret
 is always read from the managed resource's namespace. A `ProviderConfig`'s
 credentials must be in the `ProviderConfig`'s namespace; a reference to another
 namespace is rejected. Only the cluster-scoped `ClusterProviderConfig` can

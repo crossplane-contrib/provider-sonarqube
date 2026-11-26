@@ -321,6 +321,26 @@ func (f *Framework) FetchEmailConfiguration(ctx context.Context, id string) (*so
 	return res, nil
 }
 
+// FindSlackIntegrationByID returns the Slack integration configuration with
+// the given ID, or (nil, nil) if no such configuration exists. Use the
+// resource's external-name annotation, which holds the SonarQube-assigned
+// ID, as the lookup key. Slack integration is an Enterprise Edition feature.
+func (f *Framework) FindSlackIntegrationByID(ctx context.Context, id string) (*sonar.IntegrationsIntegrationConfiguration, error) {
+	res, resp, err := f.Sonar.V2.Integrations.ListIntegrationConfigurations(ctx, &sonar.IntegrationsListIntegrationConfigurationsOptions{
+		IntegrationType: sonar.IntegrationTypeSlack,
+	})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.IntegrationConfigurations {
+		if res.IntegrationConfigurations[i].Id == id {
+			return &res.IntegrationConfigurations[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional: no match is not an error condition for assertions
+}
+
 // FindALMAzureDefinitionByKey returns the Azure ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
 func (f *Framework) FindALMAzureDefinitionByKey(ctx context.Context, key string) (*sonar.AzureDefinition, error) {

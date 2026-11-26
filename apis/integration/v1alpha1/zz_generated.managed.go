@@ -248,6 +248,46 @@ func (mg *GitHubConfiguration) SetWriteConnectionSecretToReference(r *xpv2.Local
 	mg.Spec.WriteConnectionSecretToReference = r
 }
 
+// GetCondition of this SlackIntegration.
+func (mg *SlackIntegration) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
+	return mg.Status.GetCondition(ct)
+}
+
+// GetManagementPolicies of this SlackIntegration.
+func (mg *SlackIntegration) GetManagementPolicies() xpv2.ManagementPolicies {
+	return mg.Spec.ManagementPolicies
+}
+
+// GetProviderConfigReference of this SlackIntegration.
+func (mg *SlackIntegration) GetProviderConfigReference() *xpv2.ProviderConfigReference {
+	return mg.Spec.ProviderConfigReference
+}
+
+// GetWriteConnectionSecretToReference of this SlackIntegration.
+func (mg *SlackIntegration) GetWriteConnectionSecretToReference() *xpv2.LocalSecretReference {
+	return mg.Spec.WriteConnectionSecretToReference
+}
+
+// SetConditions of this SlackIntegration.
+func (mg *SlackIntegration) SetConditions(c ...xpv2.Condition) {
+	mg.Status.SetConditions(c...)
+}
+
+// SetManagementPolicies of this SlackIntegration.
+func (mg *SlackIntegration) SetManagementPolicies(r xpv2.ManagementPolicies) {
+	mg.Spec.ManagementPolicies = r
+}
+
+// SetProviderConfigReference of this SlackIntegration.
+func (mg *SlackIntegration) SetProviderConfigReference(r *xpv2.ProviderConfigReference) {
+	mg.Spec.ProviderConfigReference = r
+}
+
+// SetWriteConnectionSecretToReference of this SlackIntegration.
+func (mg *SlackIntegration) SetWriteConnectionSecretToReference(r *xpv2.LocalSecretReference) {
+	mg.Spec.WriteConnectionSecretToReference = r
+}
+
 // GetCondition of this Webhook.
 func (mg *Webhook) GetCondition(ct xpv2.ConditionType) xpv2.Condition {
 	return mg.Status.GetCondition(ct)
