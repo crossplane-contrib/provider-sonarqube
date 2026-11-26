@@ -106,8 +106,12 @@ func (c *connector) Connect(ctx context.Context, permissionstemplate *v1alpha1.P
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, permissionstemplate)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	svc := c.newServiceFn(*config)

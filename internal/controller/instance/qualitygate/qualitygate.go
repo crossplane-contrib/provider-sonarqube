@@ -122,8 +122,12 @@ func (c *connector) Connect(ctx context.Context, qualityGate *v1alpha1.QualityGa
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, qualityGate)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	svc := c.newServiceFn(*config)

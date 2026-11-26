@@ -20,12 +20,17 @@ package e2e
 
 import (
 	"context"
+	"errors"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
+
+// errEmptyResponse is returned by the fetch helpers when SonarQube answers
+// without error but with an empty body.
+var errEmptyResponse = errors.New("empty response from SonarQube")
 
 // FetchGroup returns the SonarQube group with the given ID, or (nil, nil)
 // if no such group exists. Use the resource's external-name annotation -
@@ -526,6 +531,9 @@ func (f *Framework) FetchCleanCodePolicyMode(ctx context.Context) (string, error
 	if err != nil {
 		return "", err
 	}
+	if res == nil {
+		return "", errEmptyResponse
+	}
 	return res.Mode, nil
 }
 
@@ -536,6 +544,9 @@ func (f *Framework) FetchComputeEngineWorkerCount(ctx context.Context) (*sonar.C
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return nil, err
+	}
+	if res == nil {
+		return nil, errEmptyResponse
 	}
 	return res, nil
 }
@@ -556,6 +567,9 @@ func (f *Framework) FetchSCIMEnabled(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if res == nil {
+		return false, errEmptyResponse
+	}
 	return res.Enabled, nil
 }
 
@@ -566,6 +580,9 @@ func (f *Framework) FetchSCAEnabled(ctx context.Context) (bool, error) {
 	defer helpers.CloseBody(resp)
 	if err != nil {
 		return false, err
+	}
+	if res == nil {
+		return false, errEmptyResponse
 	}
 	return res.Enablement, nil
 }

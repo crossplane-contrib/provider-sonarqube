@@ -123,8 +123,12 @@ func (c *connector) Connect(ctx context.Context, license *v1alpha1.License) (man
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, license)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	return &external{

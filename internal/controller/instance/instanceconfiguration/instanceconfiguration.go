@@ -112,8 +112,12 @@ func (c *connector) Connect(ctx context.Context, instanceConfiguration *v1alpha1
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, instanceConfiguration)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	return &external{clients: c.newClientsFn(*config), options: options}, nil
