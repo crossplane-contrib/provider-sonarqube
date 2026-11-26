@@ -9,7 +9,7 @@ tool github.com/crossplane/crossplane-tools/cmd/angryjet
 require (
 	github.com/KimMachineGun/automemlimit v1.0.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/boxboxjason/sonarqube-client-go/v2 v2.6.0
+	github.com/boxboxjason/sonarqube-client-go/v2 v2.7.0
 	github.com/crossplane/crossplane-runtime/v2 v2.4.3
 	github.com/crossplane/crossplane/apis/v2 v2.4.3
 	github.com/google/go-cmp v0.7.0
@@ -74,7 +74,7 @@ require (
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/spf13/pflag v1.1.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
