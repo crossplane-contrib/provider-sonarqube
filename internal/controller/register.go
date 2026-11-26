@@ -44,6 +44,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgithub"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almgitlab"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/githubconfiguration"
+	"github.com/crossplane/provider-sonarqube/internal/controller/integration/gitlabconfiguration"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/webhook"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
@@ -77,6 +78,7 @@ func SetupGated(mgr ctrl.Manager, opts helpers.Options) error {
 		almgitlab.SetupGated,
 		almgithub.SetupGated,
 		githubconfiguration.SetupGated,
+		gitlabconfiguration.SetupGated,
 		webhook.SetupGated,
 	} {
 		err := setup(mgr, opts)

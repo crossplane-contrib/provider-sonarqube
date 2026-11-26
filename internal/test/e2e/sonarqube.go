@@ -321,6 +321,22 @@ func (f *Framework) FetchEmailConfiguration(ctx context.Context, id string) (*so
 	return res, nil
 }
 
+// FetchGitLabConfiguration returns the GitLab authentication configuration
+// with the given ID, or (nil, nil) if no such configuration exists. Use the
+// resource's external-name annotation, which holds the SonarQube-assigned
+// ID, as the lookup key.
+func (f *Framework) FetchGitLabConfiguration(ctx context.Context, id string) (*sonar.DopTranslationGitlabConfiguration, error) {
+	res, resp, err := f.Sonar.V2.DopTranslation.GetGitlabConfiguration(ctx, id)
+	defer helpers.CloseBody(resp)
+	if common.IsResponseNotFound(resp) {
+		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // FindALMAzureDefinitionByKey returns the Azure ALM setting definition
 // whose key exactly matches key, or (nil, nil) if no such definition exists.
 func (f *Framework) FindALMAzureDefinitionByKey(ctx context.Context, key string) (*sonar.AzureDefinition, error) {
