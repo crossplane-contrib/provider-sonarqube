@@ -20,7 +20,6 @@ import (
 	"context"
 	"net/http"
 	"slices"
-	"strings"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/pkg/errors"
@@ -95,52 +94,26 @@ func (c *devOpsPermissionMappingsClient) Create(ctx context.Context, platform v1
 
 // Update changes the permissions of the mapping of a role.
 func (c *devOpsPermissionMappingsClient) Update(ctx context.Context, platform v1alpha1.DevOpsPlatform, role string, opt *sonar.DopTranslationPermissionMappingUpdateOptions) (*sonar.DopTranslationPermissionMapping, *http.Response, error) {
-	req, err := c.newRoleRequest(ctx, http.MethodPatch, platform, role, opt)
-	if err != nil {
-		return nil, nil, err
+	switch platform {
+	case v1alpha1.DevOpsPlatformGitHub:
+		return c.client.V2.DopTranslation.UpdateGithubPermissionMapping(ctx, role, opt)
+	case v1alpha1.DevOpsPlatformGitLab:
+		return c.client.V2.DopTranslation.UpdateGitlabPermissionMapping(ctx, role, opt)
+	default:
+		return nil, nil, unsupportedPlatformError(platform)
 	}
-
-	result := new(sonar.DopTranslationPermissionMapping)
-
-	resp, err := c.client.Do(req, result)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return result, resp, nil
 }
 
 // Delete deletes the permission mapping of a custom role.
 func (c *devOpsPermissionMappingsClient) Delete(ctx context.Context, platform v1alpha1.DevOpsPlatform, role string) (*http.Response, error) {
-	req, err := c.newRoleRequest(ctx, http.MethodDelete, platform, role, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.client.Do(req, nil)
-}
-
-// newRoleRequest builds a request on the mapping of one role.
-//
-// The SDK methods for these endpoints are not used: they escape the role
-// before the request URL escapes it again, so a custom role such as
-// "Security Reviewer" would never be found.
-func (c *devOpsPermissionMappingsClient) newRoleRequest(ctx context.Context, method string, platform v1alpha1.DevOpsPlatform, role string, body any) (*http.Request, error) {
-	if platform != v1alpha1.DevOpsPlatformGitHub && platform != v1alpha1.DevOpsPlatformGitLab {
+	switch platform {
+	case v1alpha1.DevOpsPlatformGitHub:
+		return c.client.V2.DopTranslation.DeleteGithubPermissionMapping(ctx, role)
+	case v1alpha1.DevOpsPlatformGitLab:
+		return c.client.V2.DopTranslation.DeleteGitlabPermissionMapping(ctx, role)
+	default:
 		return nil, unsupportedPlatformError(platform)
 	}
-
-	// A slash would change the path of the request.
-	if role == "" || strings.Contains(role, "/") {
-		return nil, errors.Errorf("invalid role name %q", role)
-	}
-
-	req, err := c.client.NewSonarQubeV2APIRequest(ctx, method, "dop-translation/"+string(platform)+"-permission-mappings/"+role, nil, body)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot create request")
-	}
-
-	return req, nil
 }
 
 // unsupportedPlatformError reports a platform without permission mappings.

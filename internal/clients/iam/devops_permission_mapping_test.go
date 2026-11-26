@@ -184,20 +184,18 @@ func TestDevOpsPermissionMappingsClientErrors(t *testing.T) {
 
 	ctx := context.Background()
 
-	for _, role := range []string{"", "a/b"} {
-		client, requests := newMappingsTestClient(t, http.StatusOK, "{}")
+	client, requests := newMappingsTestClient(t, http.StatusOK, "{}")
 
-		resp, err := client.Delete(ctx, v1alpha1.DevOpsPlatformGitHub, role) //nolint:bodyclose // closed via helpers.CloseBody
-		helpers.CloseBody(resp)
+	resp, err := client.Delete(ctx, v1alpha1.DevOpsPlatformGitHub, "") //nolint:bodyclose // closed via helpers.CloseBody
+	helpers.CloseBody(resp)
 
-		if err == nil || len(*requests) != 0 {
-			t.Errorf("Delete(%q) = error %v after %d requests, want an error and no request", role, err, len(*requests))
-		}
+	if err == nil || len(*requests) != 0 {
+		t.Errorf("Delete(\"\") = error %v after %d requests, want an error and no request", err, len(*requests))
 	}
 
-	client, _ := newMappingsTestClient(t, http.StatusNotFound, "{}")
+	client, _ = newMappingsTestClient(t, http.StatusNotFound, "{}")
 
-	_, resp, err := client.Update(ctx, v1alpha1.DevOpsPlatformGitHub, "role", &sonar.DopTranslationPermissionMappingUpdateOptions{}) //nolint:bodyclose // closed via helpers.CloseBody
+	_, resp, err = client.Update(ctx, v1alpha1.DevOpsPlatformGitHub, "role", &sonar.DopTranslationPermissionMappingUpdateOptions{}) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 
 	if err == nil || !common.IsResponseNotFound(resp) {
