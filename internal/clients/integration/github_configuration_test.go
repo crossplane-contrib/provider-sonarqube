@@ -208,14 +208,13 @@ func TestLateInitializeGitHubConfiguration(t *testing.T) {
 		LateInitializeGitHubConfiguration(spec, observation)
 
 		want := &v1alpha1.GitHubConfigurationParameters{
-			Enabled:                         new(true),
-			ApplicationID:                   githubAppID,
-			AllowedOrganizations:            []string{"org-b", "org-a"},
-			ProvisioningType:                v1alpha1.GitHubProvisioningTypeJIT,
-			SynchronizeGroups:               new(true),
-			AllowUsersToSignUp:              new(false),
-			ProjectVisibility:               new(true),
-			UserConsentRequiredAfterUpgrade: new(false),
+			Enabled:              new(true),
+			ApplicationID:        githubAppID,
+			AllowedOrganizations: []string{"org-b", "org-a"},
+			ProvisioningType:     v1alpha1.GitHubProvisioningTypeJIT,
+			SynchronizeGroups:    new(true),
+			AllowUsersToSignUp:   new(false),
+			ProjectVisibility:    new(true),
 		}
 		if diff := cmp.Diff(want, spec); diff != "" {
 			t.Fatalf("LateInitializeGitHubConfiguration() -want, +got:\n%s", diff)
@@ -291,11 +290,6 @@ func TestIsGitHubConfigurationLateInitialized(t *testing.T) {
 		"ProjectVisibilityInitialized": {
 			former:  &v1alpha1.GitHubConfigurationParameters{},
 			current: &v1alpha1.GitHubConfigurationParameters{ProjectVisibility: new(false)},
-			want:    true,
-		},
-		"UserConsentInitialized": {
-			former:  &v1alpha1.GitHubConfigurationParameters{},
-			current: &v1alpha1.GitHubConfigurationParameters{UserConsentRequiredAfterUpgrade: new(false)},
 			want:    true,
 		},
 		"ProvisioningTypeInitialized": {
@@ -402,11 +396,31 @@ func TestIsGitHubConfigurationUpToDate(t *testing.T) {
 			spec:        withSpec(func(s *v1alpha1.GitHubConfigurationParameters) { s.ProjectVisibility = new(false) }),
 			observation: testGitHubConfigurationObservation(), saved: testGitHubConfigurationCredentials(), want: false,
 		},
-		"UserConsentDiffers": {
+		"UserConsentRequired": {
+			spec: testGitHubConfigurationSpec(),
+			observation: func() *v1alpha1.GitHubConfigurationObservation {
+				o := testGitHubConfigurationObservation()
+				o.UserConsentRequiredAfterUpgrade = true
+
+				return o
+			}(),
+			saved: testGitHubConfigurationCredentials(), want: false,
+		},
+		"UserConsentRequiredNotGiven": {
+			spec: withSpec(func(s *v1alpha1.GitHubConfigurationParameters) { s.UserConsentRequiredAfterUpgrade = nil }),
+			observation: func() *v1alpha1.GitHubConfigurationObservation {
+				o := testGitHubConfigurationObservation()
+				o.UserConsentRequiredAfterUpgrade = true
+
+				return o
+			}(),
+			saved: testGitHubConfigurationCredentials(), want: true,
+		},
+		"UserConsentTrueCannotBeForced": {
 			spec: withSpec(func(s *v1alpha1.GitHubConfigurationParameters) {
 				s.UserConsentRequiredAfterUpgrade = new(true)
 			}),
-			observation: testGitHubConfigurationObservation(), saved: testGitHubConfigurationCredentials(), want: false,
+			observation: testGitHubConfigurationObservation(), saved: testGitHubConfigurationCredentials(), want: true,
 		},
 		"ClientIDChanged": {
 			spec: testGitHubConfigurationSpec(), observation: testGitHubConfigurationObservation(),
@@ -513,6 +527,20 @@ func TestGenerateGitHubConfigurationUpdateOptions(t *testing.T) {
 		"UnsetOptionalFieldsNotSent": {
 			spec: &v1alpha1.GitHubConfigurationParameters{
 				ApplicationID: githubAppID, ClientID: githubClientID, APIURL: githubConfigurationAPIURL, WebURL: githubConfigurationWebURL,
+			},
+			want: &sonar.DopTranslationGithubConfigurationUpdateOptions{
+				ClientId:      githubClientID,
+				ClientSecret:  clientSecret,
+				ApplicationId: githubAppID,
+				PrivateKey:    privateKey,
+				ApiUrl:        githubConfigurationAPIURL,
+				WebUrl:        githubConfigurationWebURL,
+			},
+		},
+		"UserConsentRequiredNotSent": {
+			spec: &v1alpha1.GitHubConfigurationParameters{
+				ApplicationID: githubAppID, ClientID: githubClientID, APIURL: githubConfigurationAPIURL, WebURL: githubConfigurationWebURL,
+				UserConsentRequiredAfterUpgrade: new(true),
 			},
 			want: &sonar.DopTranslationGithubConfigurationUpdateOptions{
 				ClientId:      githubClientID,

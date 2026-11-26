@@ -104,10 +104,12 @@ type GitHubConfigurationParameters struct {
 	// Late-initialized from SonarQube when unset.
 	// +kubebuilder:validation:Optional
 	ProjectVisibility *bool `json:"projectVisibility,omitempty"`
-	// UserConsentRequiredAfterUpgrade reports whether an administrator must
-	// consent again to the synchronization of permissions from GitHub,
-	// which SonarQube requires after some upgrades. Setting it to false
-	// gives that consent. Late-initialized from SonarQube when unset.
+	// UserConsentRequiredAfterUpgrade gives the consent to the
+	// synchronization of permissions from GitHub that SonarQube asks an
+	// administrator for again after some upgrades: setting it to false gives
+	// that consent, now and after every later upgrade. SonarQube only lets
+	// the flag be cleared, so true or unset leave it alone, and it is not
+	// late-initialized. status.atProvider reports the observed value.
 	// +kubebuilder:validation:Optional
 	UserConsentRequiredAfterUpgrade *bool `json:"userConsentRequiredAfterUpgrade,omitempty"`
 }

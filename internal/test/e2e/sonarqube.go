@@ -436,7 +436,7 @@ func (f *Framework) FetchGitHubConfiguration(ctx context.Context) (*sonar.DopTra
 	if err != nil {
 		return nil, err
 	}
-	if len(res.GithubConfigurations) == 0 {
+	if res == nil || len(res.GithubConfigurations) == 0 {
 		return nil, nil //nolint:nilnil // intentional: absence is the natural "not configured" sentinel
 	}
 	return &res.GithubConfigurations[0], nil

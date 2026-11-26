@@ -97,7 +97,10 @@ func LateInitializeGitHubConfiguration(spec *v1alpha1.GitHubConfigurationParamet
 	helpers.AssignIfNil(&spec.SynchronizeGroups, observation.SynchronizeGroups)
 	helpers.AssignIfNil(&spec.AllowUsersToSignUp, observation.AllowUsersToSignUp)
 	helpers.AssignIfNil(&spec.ProjectVisibility, observation.ProjectVisibility)
-	helpers.AssignIfNil(&spec.UserConsentRequiredAfterUpgrade, observation.UserConsentRequiredAfterUpgrade)
+	// UserConsentRequiredAfterUpgrade is not late-initialized: it is a state
+	// SonarQube sets after some upgrades, and copying it into the spec would
+	// either give the consent on the administrator's behalf after a later
+	// upgrade, or ask for a value SonarQube cannot be set back to.
 
 	if spec.ProvisioningType == "" {
 		spec.ProvisioningType = observation.ProvisioningType
@@ -119,7 +122,6 @@ func IsGitHubConfigurationLateInitialized(former, current *v1alpha1.GitHubConfig
 		!helpers.IsComparablePtrEqualComparablePtr(former.SynchronizeGroups, current.SynchronizeGroups) ||
 		!helpers.IsComparablePtrEqualComparablePtr(former.AllowUsersToSignUp, current.AllowUsersToSignUp) ||
 		!helpers.IsComparablePtrEqualComparablePtr(former.ProjectVisibility, current.ProjectVisibility) ||
-		!helpers.IsComparablePtrEqualComparablePtr(former.UserConsentRequiredAfterUpgrade, current.UserConsentRequiredAfterUpgrade) ||
 		former.ProvisioningType != current.ProvisioningType ||
 		(former.AllowedOrganizations == nil) != (current.AllowedOrganizations == nil)
 }
@@ -171,7 +173,25 @@ func areGitHubConfigurationTogglesUpToDate(spec *v1alpha1.GitHubConfigurationPar
 		helpers.IsComparablePtrEqualComparable(spec.SynchronizeGroups, observation.SynchronizeGroups) &&
 		helpers.IsComparablePtrEqualComparable(spec.AllowUsersToSignUp, observation.AllowUsersToSignUp) &&
 		helpers.IsComparablePtrEqualComparable(spec.ProjectVisibility, observation.ProjectVisibility) &&
-		helpers.IsComparablePtrEqualComparable(spec.UserConsentRequiredAfterUpgrade, observation.UserConsentRequiredAfterUpgrade)
+		(!isUserConsentGiven(spec) || !observation.UserConsentRequiredAfterUpgrade)
+}
+
+// isUserConsentGiven reports whether the spec gives the consent SonarQube
+// requires after some upgrades, by setting UserConsentRequiredAfterUpgrade
+// to false. SonarQube only lets the flag be cleared, so true and unset leave
+// it alone.
+func isUserConsentGiven(spec *v1alpha1.GitHubConfigurationParameters) bool {
+	return spec.UserConsentRequiredAfterUpgrade != nil && !*spec.UserConsentRequiredAfterUpgrade
+}
+
+// userConsentOption returns the UserConsentRequiredAfterUpgrade value to
+// send to SonarQube: false when the spec gives the consent, nil otherwise.
+func userConsentOption(spec *v1alpha1.GitHubConfigurationParameters) *bool {
+	if !isUserConsentGiven(spec) {
+		return nil
+	}
+
+	return new(false)
 }
 
 // isSameURL reports whether two URLs are equal, ignoring a trailing slash.
@@ -206,7 +226,7 @@ func GenerateGitHubConfigurationCreateOptions(spec *v1alpha1.GitHubConfiguration
 		ProvisioningType:                provisioningType,
 		AllowUsersToSignUp:              spec.AllowUsersToSignUp,
 		ProjectVisibility:               spec.ProjectVisibility,
-		UserConsentRequiredAfterUpgrade: spec.UserConsentRequiredAfterUpgrade,
+		UserConsentRequiredAfterUpgrade: userConsentOption(spec),
 	}
 }
 
@@ -231,7 +251,7 @@ func GenerateGitHubConfigurationUpdateOptions(spec *v1alpha1.GitHubConfiguration
 		ProvisioningType:                spec.ProvisioningType,
 		AllowUsersToSignUp:              spec.AllowUsersToSignUp,
 		ProjectVisibility:               spec.ProjectVisibility,
-		UserConsentRequiredAfterUpgrade: spec.UserConsentRequiredAfterUpgrade,
+		UserConsentRequiredAfterUpgrade: userConsentOption(spec),
 	}
 
 	if spec.AllowedOrganizations != nil {
