@@ -1,0 +1,34 @@
+# The configuration keys depend on the provider type: list them, with the
+# ones that are secret or required, with
+# GET api/v2/llm-connectivity/llm-provider-definitions.
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: example-llmprovider-openai
+type: Opaque
+stringData:
+  apiKey: sk-example
+
+---
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: LLMProvider
+metadata:
+  namespace: default
+  name: example-llmprovider
+spec:
+  forProvider:
+    provider: OPENAI
+    label: OpenAI
+    configurationSecretRefs:
+      apiKey:
+        name: example-llmprovider-openai
+        key: apiKey
+    modelMappings:
+      - aiCapability: AI_CODEFIX
+        modelIdentifier: gpt-4o
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+  writeConnectionSecretToRef:
+    name: example-llmprovider-connection

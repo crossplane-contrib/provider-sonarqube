@@ -559,3 +559,29 @@ func (f *Framework) QualityProfileUserSelected(ctx context.Context, language, qu
 	}
 	return false, nil
 }
+
+// FindLLMProviderByID returns the SonarQube LLM provider with the given ID,
+// or (nil, nil) if no such provider exists. LLM providers are an Enterprise
+// Edition feature.
+func (f *Framework) FindLLMProviderByID(ctx context.Context, id string) (*sonar.LlmConnectivityLlmProviderResponse, error) {
+	res, resp, err := f.Sonar.V2.LlmConnectivity.GetProvider(ctx, id)
+	defer helpers.CloseBody(resp)
+	if common.IsResponseNotFound(resp) {
+		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// FetchAICodeFixEnablement returns the instance-wide AI CodeFix enablement.
+// AI CodeFix is an Enterprise Edition feature.
+func (f *Framework) FetchAICodeFixEnablement(ctx context.Context) (*sonar.FixSuggestionsFeatureEnablement, error) {
+	res, resp, err := f.Sonar.V2.FixSuggestions.GetEnablement(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}

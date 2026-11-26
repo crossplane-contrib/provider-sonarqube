@@ -10,7 +10,8 @@ The provider currently covers the areas teams usually need to standardize first:
 
 * Instance resources such as projects, quality gates, quality profiles, rules, and settings
 * IAM resources such as groups and permissions templates
-* Integration resources such as GitLab ALM configuration
+* Integration resources such as GitLab ALM configuration, webhooks, and AI CodeFix
+  (LLM providers and enablement, Enterprise Edition)
 
 ## Why This Provider
 
@@ -104,7 +105,7 @@ spec:
 
 Secret references on namespaced objects resolve only inside that object's
 namespace. Managed resource Secret references (user passwords, license keys,
-ALM credentials, webhook secrets) take only a `name` and `key`, and the Secret
+ALM credentials, webhook secrets, LLM provider credentials) take only a `name` and `key`, and the Secret
 is always read from the managed resource's namespace. A `ProviderConfig`'s
 credentials must be in the `ProviderConfig`'s namespace; a reference to another
 namespace is rejected. Only the cluster-scoped `ClusterProviderConfig` can
@@ -170,6 +171,7 @@ Supported resources:
 | `PermissionsTemplate` | `permissions/search_templates` (indexed once per instance), `permissions/template_groups`, `permissions/template_users` (per template) | Supported |
 | `QualityGateUsergroupAssociation`, `QualityProfileUsergroupAssociation` | `qualitygates/search_groups`, `qualitygates/search_users`, `qualityprofiles/search_groups`, `qualityprofiles/search_users` (selected principals, per gate or profile) | Supported |
 | `Webhook`, `UserToken` | `webhooks/list` (per project), `user_tokens/search` (per login) | Supported |
+| `LLMProvider` | `v2/llm-connectivity/llm-provider-definitions`, `v2/llm-connectivity/llm-providers`, `v2/llm-connectivity/llm-provider-mappings`, shared by every LLMProvider | Supported |
 
 When the cache is enabled, the provider exposes the following metrics:
 
