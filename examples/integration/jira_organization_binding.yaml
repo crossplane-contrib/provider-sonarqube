@@ -1,0 +1,23 @@
+# Requires SonarQube Enterprise Edition or above.
+#
+# The binding cannot be created through the API: first connect SonarQube to Jira
+# Cloud from Administration > Configuration > General Settings > Integrations >
+# Jira, then import the binding by setting the external name to its id
+# (GET api/v2/jira/organization-bindings?sonarOrganizationUuid=00000000-0000-4000-0000-000000000000).
+# Without the external name, the resource reports an error giving this id.
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: JiraOrganizationBinding
+metadata:
+  namespace: default
+  name: example-jira-organization-binding
+  annotations:
+    crossplane.io/external-name: <jira-organization-binding-id>
+spec:
+  # Deleting the binding also deletes every Jira project binding and cannot be
+  # undone through the API: "Delete" is left out to keep it.
+  managementPolicies: ["Observe", "Create", "Update", "LateInitialize"]
+  forProvider:
+    isTokenShared: false
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

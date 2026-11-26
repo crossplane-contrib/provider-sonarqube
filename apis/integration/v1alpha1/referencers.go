@@ -51,3 +51,48 @@ func (webhook *Webhook) ResolveReferences(ctx context.Context, readerClient clie
 
 	return nil
 }
+
+// ResolveReferences resolves references to other managed resources for
+// JiraProjectBinding. References and selectors resolve in the
+// JiraProjectBinding's own namespace.
+func (binding *JiraProjectBinding) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	resolver := reference.NewAPIResolver(readerClient, binding)
+
+	projectResponse, err := resolver.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(binding.Spec.ForProvider.ProjectKey),
+		Extract:      reference.ExternalName(),
+		Namespace:    binding.GetNamespace(),
+		Reference:    binding.Spec.ForProvider.ProjectKeyRef,
+		Selector:     binding.Spec.ForProvider.ProjectKeySelector,
+		To: reference.To{
+			List:    &instancev1alpha1.ProjectList{},
+			Managed: &instancev1alpha1.Project{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.projectKey")
+	}
+
+	binding.Spec.ForProvider.ProjectKey = reference.ToPtrValue(projectResponse.ResolvedValue)
+	binding.Spec.ForProvider.ProjectKeyRef = projectResponse.ResolvedReference
+
+	organizationResponse, err := resolver.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(binding.Spec.ForProvider.JiraOrganizationBindingID),
+		Extract:      reference.ExternalName(),
+		Namespace:    binding.GetNamespace(),
+		Reference:    binding.Spec.ForProvider.JiraOrganizationBindingIDRef,
+		Selector:     binding.Spec.ForProvider.JiraOrganizationBindingIDSelector,
+		To: reference.To{
+			List:    &JiraOrganizationBindingList{},
+			Managed: &JiraOrganizationBinding{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.jiraOrganizationBindingId")
+	}
+
+	binding.Spec.ForProvider.JiraOrganizationBindingID = reference.ToPtrValue(organizationResponse.ResolvedValue)
+	binding.Spec.ForProvider.JiraOrganizationBindingIDRef = organizationResponse.ResolvedReference
+
+	return nil
+}

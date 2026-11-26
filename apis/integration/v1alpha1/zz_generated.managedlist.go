@@ -53,6 +53,24 @@ func (l *ALMGitLabList) GetItems() []resource.Managed {
 	return items
 }
 
+// GetItems of this JiraOrganizationBindingList.
+func (l *JiraOrganizationBindingList) GetItems() []resource.Managed {
+	items := make([]resource.Managed, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+	return items
+}
+
+// GetItems of this JiraProjectBindingList.
+func (l *JiraProjectBindingList) GetItems() []resource.Managed {
+	items := make([]resource.Managed, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+	return items
+}
+
 // GetItems of this WebhookList.
 func (l *WebhookList) GetItems() []resource.Managed {
 	items := make([]resource.Managed, len(l.Items))

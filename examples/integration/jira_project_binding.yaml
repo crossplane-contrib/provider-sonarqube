@@ -1,0 +1,17 @@
+# Requires SonarQube Enterprise Edition or above, connected to Jira Cloud (see
+# jira_organization_binding.yaml).
+apiVersion: integration.sonarqube.crossplane.io/v1alpha1
+kind: JiraProjectBinding
+metadata:
+  namespace: default
+  name: example-jira-project-binding
+spec:
+  forProvider:
+    projectKeyRef:
+      name: example-project
+    jiraOrganizationBindingIdRef:
+      name: example-jira-organization-binding
+    jiraProjectKey: ABC
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
