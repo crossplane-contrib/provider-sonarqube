@@ -216,6 +216,15 @@ spec:
                       type: string
                     type: array
                     x-kubernetes-list-type: set
+                  tags:
+                    description: |-
+                      Tags is the exhaustive list of tags of the application, compared regardless of order.
+                      Tags may only contain lowercase letters, digits and the characters "+", "-", "#" and ".".
+                      When unset, tags are not managed. An empty list removes every tag.
+                    items:
+                      pattern: ^[a-z0-9+#.-]+$
+                      type: string
+                    type: array
                   visibility:
                     default: public
                     description: Visibility is the application visibility. Immutable

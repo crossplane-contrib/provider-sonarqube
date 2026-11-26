@@ -126,6 +126,37 @@ func TestGenerateApplicationUpdateOptions(t *testing.T) {
 	}
 }
 
+// TestGenerateApplicationSetTagsOptions tests the
+// GenerateApplicationSetTagsOptions function.
+func TestGenerateApplicationSetTagsOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		tags []string
+		want *sonar.ApplicationsSetTagsOptions
+	}{
+		"Tags": {
+			tags: []string{"go", "team-a"},
+			want: &sonar.ApplicationsSetTagsOptions{Application: "app", Tags: []string{"go", "team-a"}},
+		},
+		"EmptyTagsSendAnEmptyParameter": {
+			tags: []string{},
+			want: &sonar.ApplicationsSetTagsOptions{Application: "app", Tags: []string{""}},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := GenerateApplicationSetTagsOptions("app", tc.tags)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GenerateApplicationSetTagsOptions() -want +got:\n%s", diff)
+			}
+		})
+	}
+}
+
 // TestGenerateApplicationBranchOptions tests the branch create and update
 // option generators, including deterministic project ordering.
 func TestGenerateApplicationBranchOptions(t *testing.T) {
@@ -311,6 +342,66 @@ func TestIsApplicationUpToDate(t *testing.T) {
 			spec: func() *v1alpha1.ApplicationParameters {
 				s := upToDateSpec()
 				s.Description = new("other")
+
+				return s
+			}(),
+			observation: observation,
+			want:        false,
+		},
+		"UnmanagedTags": {
+			spec: upToDateSpec(),
+			observation: func() *v1alpha1.ApplicationObservation {
+				o := observation.DeepCopy()
+				o.Tags = []string{"go"}
+
+				return o
+			}(),
+			want: true,
+		},
+		"ReorderedTags": {
+			spec: func() *v1alpha1.ApplicationParameters {
+				s := upToDateSpec()
+				s.Tags = &[]string{"team-a", "go", "go"}
+
+				return s
+			}(),
+			observation: func() *v1alpha1.ApplicationObservation {
+				o := observation.DeepCopy()
+				o.Tags = []string{"go", "team-a"}
+
+				return o
+			}(),
+			want: true,
+		},
+		"EmptyTagsMatchNoTags": {
+			spec: func() *v1alpha1.ApplicationParameters {
+				s := upToDateSpec()
+				s.Tags = &[]string{}
+
+				return s
+			}(),
+			observation: observation,
+			want:        true,
+		},
+		"EmptyTagsDiffer": {
+			spec: func() *v1alpha1.ApplicationParameters {
+				s := upToDateSpec()
+				s.Tags = &[]string{}
+
+				return s
+			}(),
+			observation: func() *v1alpha1.ApplicationObservation {
+				o := observation.DeepCopy()
+				o.Tags = []string{"go"}
+
+				return o
+			}(),
+			want: false,
+		},
+		"TagsDiffer": {
+			spec: func() *v1alpha1.ApplicationParameters {
+				s := upToDateSpec()
+				s.Tags = &[]string{"go"}
 
 				return s
 			}(),

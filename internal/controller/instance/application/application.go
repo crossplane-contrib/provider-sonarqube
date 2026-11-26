@@ -55,6 +55,8 @@ const (
 	errUpdateApplication = "cannot update SonarQube Application"
 	// errDeleteApplication indicates application deletion in SonarQube failed.
 	errDeleteApplication = "cannot delete SonarQube Application"
+	// errSetTags indicates setting the application tags failed.
+	errSetTags = "cannot set SonarQube Application tags"
 	// errAddProject indicates adding a project to the application failed.
 	errAddProject = "cannot add project %s to SonarQube Application"
 	// errRemoveProject indicates removing a project from the application failed.
@@ -142,7 +144,8 @@ type external struct {
 }
 
 // Observe checks if the Application exists in SonarQube and whether its
-// name, description, member projects and branches match the desired state.
+// name, description, tags, member projects and branches match the desired
+// state.
 func (c *external) Observe(ctx context.Context, application *v1alpha1.Application) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(application)
 	if externalName == "" {
@@ -197,8 +200,8 @@ func (c *external) Create(ctx context.Context, application *v1alpha1.Application
 	return managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{}}, nil
 }
 
-// Update reconciles the Application name, description, member projects and
-// branches in SonarQube.
+// Update reconciles the Application name, description, tags, member projects
+// and branches in SonarQube.
 func (c *external) Update(ctx context.Context, application *v1alpha1.Application) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(application)
 	if externalName == "" {
@@ -217,10 +220,15 @@ func (c *external) Update(ctx context.Context, application *v1alpha1.Application
 		}
 	}
 
+	err := c.updateTags(ctx, externalName, spec.Tags, observation.Tags)
+	if err != nil {
+		return managed.ExternalUpdate{}, err
+	}
+
 	// Projects are added before branches are reconciled, since branches can
 	// only reference member projects, and removed afterwards so that no
 	// desired branch still references a removed project.
-	err := c.addProjects(ctx, externalName, instance.ApplicationProjectsToAdd(spec.Projects, observation.Projects))
+	err = c.addProjects(ctx, externalName, instance.ApplicationProjectsToAdd(spec.Projects, observation.Projects))
 	if err != nil {
 		return managed.ExternalUpdate{}, err
 	}
@@ -285,6 +293,19 @@ func (c *external) observeBranchProjects(ctx context.Context, key string, branch
 	}
 
 	return branchProjects, nil
+}
+
+// updateTags replaces the application tags when they are managed and differ
+// from the desired state.
+func (c *external) updateTags(ctx context.Context, key string, spec *[]string, observation []string) error {
+	if instance.AreApplicationTagsUpToDate(spec, observation) {
+		return nil
+	}
+
+	resp, err := c.client.SetTags(ctx, instance.GenerateApplicationSetTagsOptions(key, *spec)) //nolint:bodyclose // closed via helpers.CloseBody
+	helpers.CloseBody(resp)
+
+	return errors.Wrap(err, errSetTags)
 }
 
 // addProjects adds the given projects to the application.

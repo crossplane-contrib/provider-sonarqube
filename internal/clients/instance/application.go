@@ -89,6 +89,22 @@ func GenerateApplicationUpdateOptions(key string, spec *v1alpha1.ApplicationPara
 	}
 }
 
+// GenerateApplicationSetTagsOptions generates the options for replacing the
+// tags of a SonarQube Application. An empty list of tags removes every tag.
+func GenerateApplicationSetTagsOptions(key string, tags []string) *sonar.ApplicationsSetTagsOptions {
+	// SonarQube clears the tags when the parameter is present but empty. The
+	// client rejects an empty list and would omit the parameter, so a single
+	// empty tag is sent instead.
+	if len(tags) == 0 {
+		tags = []string{""}
+	}
+
+	return &sonar.ApplicationsSetTagsOptions{
+		Application: key,
+		Tags:        tags,
+	}
+}
+
 // GenerateApplicationCreateBranchOptions generates the options for creating
 // an Application branch from the desired state.
 func GenerateApplicationCreateBranchOptions(key string, branch *v1alpha1.ApplicationBranchParameters) *sonar.ApplicationsCreateBranchOptions {
@@ -215,11 +231,22 @@ func IsApplicationUpToDate(spec *v1alpha1.ApplicationParameters, observation *v1
 		return false
 	}
 
+	if !AreApplicationTagsUpToDate(spec.Tags, observation.Tags) {
+		return false
+	}
+
 	if !helpers.AreStringSlicesEqualDeDuped(spec.Projects, observation.Projects) {
 		return false
 	}
 
 	return AreApplicationBranchesUpToDate(spec.Branches, observation.Branches)
+}
+
+// AreApplicationTagsUpToDate returns true when the tags are not managed, or
+// when the observed tags match the desired ones, ignoring order and
+// duplicates.
+func AreApplicationTagsUpToDate(spec *[]string, observation []string) bool {
+	return spec == nil || helpers.AreStringSlicesEqualDeDuped(*spec, observation)
 }
 
 // AreApplicationBranchesUpToDate returns true when every desired branch exists
