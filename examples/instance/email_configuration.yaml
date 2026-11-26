@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: example-email-configuration-credentials
+type: Opaque
+stringData:
+  password: example
+  # For OAuth authentication.
+  clientId: example
+  clientSecret: example
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: EmailConfiguration
+metadata:
+  namespace: default
+  name: example-email-configuration
+spec:
+  forProvider:
+    host: smtp.example.com
+    port: 587
+    securityProtocol: STARTTLS
+    fromAddress: sonarqube@example.com
+    fromName: SonarQube
+    subjectPrefix: "[SonarQube]"
+    authMethod: BASIC
+    username: sonarqube@example.com
+    basicPasswordSecretRef:
+      name: example-email-configuration-credentials
+      key: password
+    # For OAuth authentication (Microsoft Exchange), set authMethod to OAUTH
+    # and replace basicPasswordSecretRef with:
+    # oauthAuthenticationHost: https://login.microsoftonline.com
+    # oauthTenant: example-tenant
+    # oauthClientIdSecretRef:
+    #   name: example-email-configuration-credentials
+    #   key: clientId
+    # oauthClientSecretSecretRef:
+    #   name: example-email-configuration-credentials
+    #   key: clientSecret
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+  writeConnectionSecretToRef:
+    name: example-email-configuration-connection
