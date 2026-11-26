@@ -49,7 +49,7 @@ func (c *external) updateProjectConcurrently(ctx context.Context, project *v1alp
 	})
 
 	waitGr.Go(func() {
-		c.updateBranchNewCodePeriods(ctx, project, projectKey, errChan)
+		c.updateBranches(ctx, project, projectKey, errChan)
 	})
 
 	waitGr.Go(func() {
@@ -167,9 +167,9 @@ func (c *external) updateDefaultBranch(ctx context.Context, project *v1alpha1.Pr
 	}
 }
 
-// updateBranchNewCodePeriods updates the new code periods of branches that
-// differ from the desired state.
-func (c *external) updateBranchNewCodePeriods(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+// updateBranches updates the new code periods and the automatic deletion
+// protection of the existing branches that differ from the desired state.
+func (c *external) updateBranches(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
 	if instance.AreProjectBranchesUpToDate(project.Spec.ForProvider.Branches, project.Status.AtProvider.Branches) {
 		return
 	}
@@ -178,26 +178,52 @@ func (c *external) updateBranchNewCodePeriods(ctx context.Context, project *v1al
 	// comes from the spec, so its size is controlled by the tenant.
 	branchesGroup := helpers.NewRequestGroup()
 
-	for branchName, newCodePeriodSpec := range project.Spec.ForProvider.Branches {
+	for branchName, branchSpec := range project.Spec.ForProvider.Branches {
 		branchObservation, branchExists := project.Status.AtProvider.Branches[branchName]
-		if !branchExists || instance.IsNewCodePeriodUpToDate(newCodePeriodSpec, &branchObservation.NewCodePeriod) {
+		if !branchExists {
 			continue
 		}
 
-		branchesGroup.Go(func() error {
-			resp, err := c.projectNewCodePeriodsClient.Set(ctx, instance.GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName, newCodePeriodSpec)) //nolint:bodyclose // closed via helpers.CloseBody
-			helpers.CloseBody(resp)
+		if !instance.IsBranchNewCodePeriodUpToDate(branchSpec, &branchObservation) {
+			branchesGroup.Go(func() error {
+				c.updateBranchNewCodePeriod(ctx, projectKey, branchName, branchSpec, errChan)
 
-			if err != nil {
-				errChan <- errors.Wrapf(err, "cannot update new code period for branch %s", branchName)
-			}
+				return nil
+			})
+		}
 
-			return nil
-		})
+		if !instance.IsBranchPurgeProtectionUpToDate(branchSpec, &branchObservation) {
+			branchesGroup.Go(func() error {
+				c.updateBranchPurgeProtection(ctx, projectKey, branchName, *branchSpec.ExcludedFromPurge, errChan)
+
+				return nil
+			})
+		}
 	}
 
 	// Errors are reported through errChan.
 	_ = branchesGroup.Wait()
+}
+
+// updateBranchNewCodePeriod sets the new code period of a branch.
+func (c *external) updateBranchNewCodePeriod(ctx context.Context, projectKey, branchName string, branchSpec *v1alpha1.ProjectBranchParameters, errChan chan<- error) {
+	resp, err := c.projectNewCodePeriodsClient.Set(ctx, instance.GenerateBranchNewCodePeriodsSetOptions(projectKey, branchName, instance.GenerateBranchNewCodePeriodParameters(branchSpec))) //nolint:bodyclose // closed via helpers.CloseBody
+	helpers.CloseBody(resp)
+
+	if err != nil {
+		errChan <- errors.Wrapf(err, "cannot update new code period for branch %s", branchName)
+	}
+}
+
+// updateBranchPurgeProtection sets the automatic deletion protection of a
+// branch.
+func (c *external) updateBranchPurgeProtection(ctx context.Context, projectKey, branchName string, protected bool, errChan chan<- error) {
+	resp, err := c.projectBranchesClient.SetAutomaticDeletionProtection(ctx, instance.GenerateProjectBranchesSetAutomaticDeletionProtectionOptions(projectKey, branchName, protected)) //nolint:bodyclose // closed via helpers.CloseBody
+	helpers.CloseBody(resp)
+
+	if err != nil {
+		errChan <- errors.Wrapf(err, "cannot update automatic deletion protection for branch %s", branchName)
+	}
 }
 
 // updateProjectLinks updates the links of the project if they differ from the

@@ -88,3 +88,52 @@ func TestProjectCRUD(t *testing.T) {
 		t.Errorf("project visibility = %q, want %q", got.Visibility, visPublic)
 	}
 }
+
+// TestProjectBranchPurgeProtection creates a Project configuring the purge
+// protection of its main branch, which SonarQube does not allow removing, and
+// of a branch that does not exist yet, and verifies neither prevents the
+// Project from being reconciled. Community Build cannot analyze other
+// branches, so the protection of a non-main branch is covered by unit tests.
+func TestProjectBranchPurgeProtection(t *testing.T) {
+	t.Parallel()
+
+	f := e2e.New(t)
+	const (
+		crName  = "e2e-project-branch-purge"
+		projKey = "e2e-project-branch-purge"
+	)
+
+	project := &instancev1alpha1.Project{
+		ObjectMeta: metav1.ObjectMeta{Name: crName, Namespace: f.Namespace},
+		Spec: instancev1alpha1.ProjectSpec{
+			ManagedResourceSpec: xpv1.ManagedResourceSpec{
+				ProviderConfigReference: &xpv1.ProviderConfigReference{
+					Kind: "ClusterProviderConfig",
+					Name: f.ProviderConfigName,
+				},
+			},
+			ForProvider: instancev1alpha1.ProjectParameters{
+				Key:             projKey,
+				Name:            "E2E Project Branch Purge",
+				DefaultBranch:   ptr.To("main"),
+				QualityGateName: ptr.To("Sonar way"),
+				Branches: map[string]*instancev1alpha1.ProjectBranchParameters{
+					"main":        {ExcludedFromPurge: ptr.To(false)},
+					"release/1.0": {ExcludedFromPurge: ptr.To(true)},
+				},
+			},
+		},
+	}
+
+	f.CreateAndWaitForReady(t, project, 2*time.Minute)
+	e2e.AssertReady(t, project)
+	e2e.AssertSynced(t, project)
+
+	branch, ok := project.Status.AtProvider.Branches["main"]
+	if !ok {
+		t.Fatalf("main branch of project %q not observed", projKey)
+	}
+	if !branch.ExcludedFromPurge {
+		t.Errorf("main branch excludedFromPurge = false, want true")
+	}
+}

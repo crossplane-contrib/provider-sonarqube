@@ -647,6 +647,40 @@ func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test with man
 				},
 			},
 		},
+		// A change of excludedFromPurge alone, or a drift of it, must
+		// trigger an Update.
+		"ObserveBranchPurgeProtectionNotUpToDate": {
+			ext: func() *external {
+				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
+				b.ListFn = func(opt *sonar.ProjectBranchesListOptions) (*sonar.ProjectBranchesList, *http.Response, error) {
+					return &sonar.ProjectBranchesList{
+						Branches: []sonar.ProjectBranch{
+							{Name: "main", IsMain: true, ExcludedFromPurge: true},
+							{Name: "release"},
+						},
+					}, mockHTTPResponse(), nil
+				}
+
+				return newTestExternalClient(p, l, b, n, q, qp, tg, alm)
+			}(),
+			args: args{
+				ctx: context.Background(),
+				mg: newTestProject("test-key", v1alpha1.ProjectParameters{
+					Name:       "test-project",
+					Key:        "test-key",
+					Visibility: new("public"),
+					Branches: map[string]*v1alpha1.ProjectBranchParameters{
+						"release": {ExcludedFromPurge: new(true)},
+					},
+				}),
+			},
+			want: want{
+				observation: managed.ExternalObservation{
+					ResourceExists:   true,
+					ResourceUpToDate: false,
+				},
+			},
+		},
 		"ObserveALMBindingUpToDate": {
 			ext: func() *external {
 				p, l, b, n, q, qp, tg, alm := successfulObserveMocks()
