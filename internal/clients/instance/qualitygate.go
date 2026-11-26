@@ -36,7 +36,7 @@ import (
 // It also handles users / groups / projects association with Quality Gates.
 // It also interacts with Quality Gate Conditions.
 //
-//nolint:interfacebloat // This interface wraps the SonarQube Quality Gates API which has 21 methods
+//nolint:interfacebloat // This interface wraps the SonarQube Quality Gates API which has 22 methods
 type QualityGatesClient interface {
 	AddGroup(ctx context.Context, opt *sonar.QualitygatesAddGroupOptions) (resp *http.Response, err error)
 	AddUser(ctx context.Context, opt *sonar.QualitygatesAddUserOptions) (resp *http.Response, err error)
@@ -57,6 +57,7 @@ type QualityGatesClient interface {
 	SearchUsers(ctx context.Context, opt *sonar.QualitygatesSearchUsersOptions) (v *sonar.QualitygatesSearchUsers, resp *http.Response, err error)
 	Assign(ctx context.Context, opt *sonar.QualitygatesAssignOptions) (resp *http.Response, err error)
 	SetDefault(ctx context.Context, opt *sonar.QualitygatesSetDefaultOptions) (resp *http.Response, err error)
+	SetAiCodeAssurance(ctx context.Context, opt *sonar.QualitygatesSetAiCodeAssuranceOptions) (resp *http.Response, err error)
 	Show(ctx context.Context, opt *sonar.QualitygatesShowOptions) (v *sonar.QualitygatesShow, resp *http.Response, err error)
 	UpdateCondition(ctx context.Context, opt *sonar.QualitygatesUpdateConditionOptions) (resp *http.Response, err error)
 }
@@ -76,6 +77,16 @@ func NewQualityGatesClient(clientConfig common.Config) QualityGatesClient {
 func GenerateQualityGateCreateOptions(spec v1alpha1.QualityGateParameters) *sonar.QualitygatesCreateOptions {
 	return &sonar.QualitygatesCreateOptions{
 		Name: spec.Name,
+	}
+}
+
+// GenerateQualityGateSetAiCodeAssuranceOptions generates the options for
+// qualifying, or disqualifying, a SonarQube Quality Gate for AI Code
+// Assurance.
+func GenerateQualityGateSetAiCodeAssuranceOptions(qualityGateName string, aiCodeAssurance bool) *sonar.QualitygatesSetAiCodeAssuranceOptions {
+	return &sonar.QualitygatesSetAiCodeAssuranceOptions{
+		GateName:        qualityGateName,
+		AiCodeAssurance: aiCodeAssurance,
 	}
 }
 
@@ -132,6 +143,10 @@ func IsQualityGateUpToDate(spec *v1alpha1.QualityGateParameters, observation *v1
 	}
 
 	if !helpers.IsComparablePtrEqualComparable(spec.Default, observation.IsDefault) {
+		return false
+	}
+
+	if !helpers.IsComparablePtrEqualComparable(spec.AiCodeAssurance, observation.IsAiCodeSupported) {
 		return false
 	}
 

@@ -573,6 +573,90 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+// TestUpdateAiCodeAssurance tests the AI Code Assurance reconciliation done
+// by the Update method.
+func TestUpdateAiCodeAssurance(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		desired  *bool
+		observed bool
+		builtIn  bool
+		apiErr   error
+		want     *sonar.QualitygatesSetAiCodeAssuranceOptions
+		wantErr  error
+	}{
+		"UnsetIsUnmanaged": {
+			observed: true,
+		},
+		"AlreadyUpToDate": {
+			desired:  new(true),
+			observed: true,
+		},
+		"Qualify": {
+			desired: new(true),
+			want:    &sonar.QualitygatesSetAiCodeAssuranceOptions{GateName: "external-gate", AiCodeAssurance: true},
+		},
+		"Disqualify": {
+			desired:  new(false),
+			observed: true,
+			want:     &sonar.QualitygatesSetAiCodeAssuranceOptions{GateName: "external-gate", AiCodeAssurance: false},
+		},
+		"BuiltInIsRejected": {
+			desired:  new(false),
+			observed: true,
+			builtIn:  true,
+			wantErr:  errors.New(errSetAiCodeAssurance),
+		},
+		"APIFails": {
+			desired: new(true),
+			apiErr:  errors.New("unknown url"),
+			want:    &sonar.QualitygatesSetAiCodeAssuranceOptions{GateName: "external-gate", AiCodeAssurance: true},
+			wantErr: errors.Wrap(errors.New("unknown url"), errSetAiCodeAssurance),
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var got *sonar.QualitygatesSetAiCodeAssuranceOptions
+
+			e := &external{qualityGatesClient: &fake.MockQualityGatesClient{
+				SetAiCodeAssuranceFn: func(opt *sonar.QualitygatesSetAiCodeAssuranceOptions) (*http.Response, error) {
+					got = opt
+
+					if tc.apiErr != nil {
+						return nil, tc.apiErr
+					}
+
+					return mockHTTPResponse(), nil
+				},
+			}}
+
+			qg := &v1alpha1.QualityGate{
+				Spec: v1alpha1.QualityGateSpec{
+					ForProvider: v1alpha1.QualityGateParameters{Name: "external-gate", AiCodeAssurance: tc.desired},
+				},
+				Status: v1alpha1.QualityGateStatus{
+					AtProvider: v1alpha1.QualityGateObservation{IsAiCodeSupported: tc.observed, IsBuiltIn: tc.builtIn},
+				},
+			}
+			meta.SetExternalName(qg, "external-gate")
+
+			_, err := e.Update(context.Background(), qg)
+
+			if diff := cmp.Diff(tc.wantErr, err, cmp.Comparer(errComparer)); diff != "" {
+				t.Errorf("Update() error mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("SetAiCodeAssurance() options mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 // TestDelete tests the Delete method.
 func TestDelete(t *testing.T) {
 	t.Parallel()

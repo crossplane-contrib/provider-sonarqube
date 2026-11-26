@@ -8,6 +8,8 @@ spec:
   forProvider:
     name: TestQualityGate
     default: false
+    # Requires Developer Edition or higher; unmanaged when unset.
+    # aiCodeAssurance: true
     conditions:
       - metric: blocker_violations
         op: GT

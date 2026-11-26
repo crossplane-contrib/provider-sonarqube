@@ -41,6 +41,11 @@ type QualityGateParameters struct {
 	// Conditions is the list of conditions associated with the Quality Gate.
 	// +kubebuilder:validation:Optional
 	Conditions []QualityGateConditionParameters `json:"conditions,omitempty"`
+	// AiCodeAssurance indicates whether the Quality Gate is qualified for AI Code Assurance.
+	// The qualification is left unmanaged when this field is unset.
+	// WARNING: Requires SonarQube Developer Edition or higher, and cannot be changed on built-in Quality Gates.
+	// +kubebuilder:validation:Optional
+	AiCodeAssurance *bool `json:"aiCodeAssurance,omitempty"`
 }
 
 // QualityGateObservation are the observable fields of a QualityGate.

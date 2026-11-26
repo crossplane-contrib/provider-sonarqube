@@ -60,6 +60,12 @@ spec:
                 description: ForProvider represents the desired state of the Quality
                   Gate.
                 properties:
+                  aiCodeAssurance:
+                    description: |-
+                      AiCodeAssurance indicates whether the Quality Gate is qualified for AI Code Assurance.
+                      The qualification is left unmanaged when this field is unset.
+                      WARNING: Requires SonarQube Developer Edition or higher, and cannot be changed on built-in Quality Gates.
+                    type: boolean
                   conditions:
                     description: Conditions is the list of conditions associated with
                       the Quality Gate.
