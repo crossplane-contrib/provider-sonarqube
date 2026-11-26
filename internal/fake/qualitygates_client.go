@@ -53,6 +53,8 @@ type MockQualityGatesClient struct {
 	SetDefaultFn      func(opt *sonar.QualitygatesSetDefaultOptions) (resp *http.Response, err error)
 	ShowFn            func(opt *sonar.QualitygatesShowOptions) (v *sonar.QualitygatesShow, resp *http.Response, err error)
 	UpdateConditionFn func(opt *sonar.QualitygatesUpdateConditionOptions) (resp *http.Response, err error)
+
+	SetAiCodeAssuranceFn func(opt *sonar.QualitygatesSetAiCodeAssuranceOptions) (resp *http.Response, err error)
 }
 
 // Ensure MockQualityGatesClient implements QualityGatesClient.
@@ -224,6 +226,15 @@ func (m *MockQualityGatesClient) Assign(_ context.Context, opt *sonar.Qualitygat
 func (m *MockQualityGatesClient) SetDefault(_ context.Context, opt *sonar.QualitygatesSetDefaultOptions) (resp *http.Response, err error) {
 	if m.SetDefaultFn != nil {
 		return m.SetDefaultFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
+// SetAiCodeAssurance implements QualityGatesClient.SetAiCodeAssurance.
+func (m *MockQualityGatesClient) SetAiCodeAssurance(_ context.Context, opt *sonar.QualitygatesSetAiCodeAssuranceOptions) (resp *http.Response, err error) {
+	if m.SetAiCodeAssuranceFn != nil {
+		return m.SetAiCodeAssuranceFn(opt)
 	}
 
 	return nil, errNotImplemented

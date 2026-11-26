@@ -685,3 +685,46 @@ func TestGenerateQualityGateSelectOptions(t *testing.T) {
 		})
 	}
 }
+
+// TestQualityGateAiCodeAssurance tests the AI Code Assurance up-to-date check
+// and the options generation.
+func TestQualityGateAiCodeAssurance(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		desired  *bool
+		observed bool
+		want     bool
+	}{
+		"UnsetIsUnmanaged": {desired: nil, observed: true, want: true},
+		"Qualified":        {desired: new(true), observed: true, want: true},
+		"NotQualified":     {desired: new(false), observed: false, want: true},
+		"NeedsQualify":     {desired: new(true), observed: false, want: false},
+		"NeedsDisqualify":  {desired: new(false), observed: true, want: false},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			spec := &v1alpha1.QualityGateParameters{Name: "gate", AiCodeAssurance: tc.desired}
+			observation := &v1alpha1.QualityGateObservation{Name: "gate", IsAiCodeSupported: tc.observed}
+
+			if got := IsQualityGateUpToDate(spec, observation, nil); got != tc.want {
+				t.Errorf("IsQualityGateUpToDate() = %v, want %v", got, tc.want)
+			}
+
+			// An unset field must never be late-initialized.
+			LateInitializeQualityGate(spec, observation)
+
+			if diff := cmp.Diff(tc.desired, spec.AiCodeAssurance); diff != "" {
+				t.Errorf("LateInitializeQualityGate() AiCodeAssurance mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+
+	want := &sonar.QualitygatesSetAiCodeAssuranceOptions{GateName: "gate", AiCodeAssurance: true}
+	if diff := cmp.Diff(want, GenerateQualityGateSetAiCodeAssuranceOptions("gate", true)); diff != "" {
+		t.Errorf("GenerateQualityGateSetAiCodeAssuranceOptions() mismatch (-want +got):\n%s", diff)
+	}
+}
