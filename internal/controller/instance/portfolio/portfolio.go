@@ -176,7 +176,7 @@ func (c *external) Observe(ctx context.Context, portfolio *v1alpha1.Portfolio) (
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	result, resp, err := c.client.ShowDetails(ctx, &sonar.ViewsShowOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
+	result, resp, err := c.client.Show(ctx, &sonar.ViewsShowOptions{Key: externalName}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {
@@ -327,7 +327,7 @@ func (c *external) observeParent(ctx context.Context, key string, parent *string
 		return "", nil
 	}
 
-	details, resp, err := c.client.ShowDetails(ctx, &sonar.ViewsShowOptions{Key: *parent}) //nolint:bodyclose // closed via helpers.CloseBody
+	details, resp, err := c.client.Show(ctx, &sonar.ViewsShowOptions{Key: *parent}) //nolint:bodyclose // closed via helpers.CloseBody
 	defer helpers.CloseBody(resp)
 
 	if err != nil {

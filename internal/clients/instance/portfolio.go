@@ -48,26 +48,6 @@ const (
 	qualifierSubPortfolio = "SVW"
 )
 
-// PortfolioDetails is the api/views/show response. Unlike
-// sonar.ViewDetails, its sub-views expose the branches selected for the
-// applications added to the portfolio.
-type PortfolioDetails struct {
-	sonar.ViewDetails
-
-	// SubViews are the sub-portfolios, referenced portfolios and
-	// applications of the portfolio. It shadows sonar.ViewDetails.SubViews.
-	SubViews []PortfolioSubView `json:"subViews,omitempty"`
-}
-
-// PortfolioSubView is a sub-portfolio, referenced portfolio or application
-// of a portfolio.
-type PortfolioSubView struct {
-	sonar.View
-
-	// SelectedBranches are the branches selected for an application.
-	SelectedBranches []string `json:"selectedBranches,omitempty"`
-}
-
 // PortfolioBranch is a branch of a project or application selected in a
 // portfolio.
 type PortfolioBranch struct {
@@ -127,7 +107,6 @@ type PortfoliosClient interface {
 	SetRemainingProjectsMode(ctx context.Context, opt *sonar.ViewsSetRemainingProjectsModeOptions) (*http.Response, error)
 	SetTagsMode(ctx context.Context, opt *sonar.ViewsSetTagsModeOptions) (*http.Response, error)
 	Show(ctx context.Context, opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error)
-	ShowDetails(ctx context.Context, opt *sonar.ViewsShowOptions) (*PortfolioDetails, *http.Response, error)
 	SubPortfolios(ctx context.Context, opt *sonar.ViewsSubViewsOptions) (*sonar.ViewsSubViews, *http.Response, error)
 	Update(ctx context.Context, opt *sonar.ViewsUpdateOptions) (*http.Response, error)
 }
@@ -139,39 +118,7 @@ type PortfoliosClient interface {
 func NewPortfoliosClient(clientConfig common.Config) PortfoliosClient {
 	newClient := common.NewClient(clientConfig)
 
-	return NewCachedPortfoliosClient(&portfoliosClient{ViewsService: newClient.Views, client: newClient}, cache.ForConfig(clientConfig))
-}
-
-// portfoliosClient is the SonarQube Views service, extended with a show
-// request decoding the fields that sonar.ViewDetails does not expose.
-type portfoliosClient struct {
-	*sonar.ViewsService
-
-	// client sends the requests the Views service does not cover.
-	client *sonar.Client
-}
-
-// ShowDetails shows a portfolio, including the branches selected for its
-// applications.
-func (c *portfoliosClient) ShowDetails(ctx context.Context, opt *sonar.ViewsShowOptions) (*PortfolioDetails, *http.Response, error) {
-	err := c.ValidateShowOpt(opt)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req, err := c.client.NewSonarQubeV1APIRequest(ctx, http.MethodGet, "views/show", opt)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	details := new(PortfolioDetails)
-
-	resp, err := c.client.Do(req, details)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return details, resp, nil
+	return NewCachedPortfoliosClient(newClient.Views, cache.ForConfig(clientConfig))
 }
 
 // GeneratePortfolioCreateOptions generates the options for creating a
@@ -197,7 +144,7 @@ func GeneratePortfolioCreateOptions(spec *v1alpha1.PortfolioParameters) *sonar.V
 // a PortfolioObservation. The parent is not returned by SonarQube: it is
 // set by the caller after looking up the sub-portfolios of the desired
 // parent.
-func GeneratePortfolioObservation(details *PortfolioDetails) v1alpha1.PortfolioObservation {
+func GeneratePortfolioObservation(details *sonar.ViewDetails) v1alpha1.PortfolioObservation {
 	if details == nil {
 		return v1alpha1.PortfolioObservation{}
 	}
@@ -239,7 +186,7 @@ func GeneratePortfolioObservation(details *PortfolioDetails) v1alpha1.PortfolioO
 // subViewKey returns the own key of a referenced portfolio or application.
 // In a portfolio, their key is prefixed by the portfolio key, and their own
 // key is returned as the original key.
-func subViewKey(subView *PortfolioSubView) string {
+func subViewKey(subView *sonar.View) string {
 	if subView.OriginalKey != "" {
 		return subView.OriginalKey
 	}
@@ -265,7 +212,7 @@ func sortPortfolioMembers(members []v1alpha1.PortfolioMemberObservation) {
 
 // IsPortfolioSubPortfolio returns true when the portfolio with the given
 // key is a sub-portfolio created under the observed parent portfolio.
-func IsPortfolioSubPortfolio(parent *PortfolioDetails, key string) bool {
+func IsPortfolioSubPortfolio(parent *sonar.ViewDetails, key string) bool {
 	if parent == nil {
 		return false
 	}

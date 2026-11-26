@@ -357,7 +357,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ShowNotFoundReturnsNotExists": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: func(_ *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 					return nil, mockHTTPNotFound(), errBoom
 				},
 			},
@@ -369,7 +369,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ShowAPIError": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: func(_ *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 					return nil, mockHTTPOK(), errBoom
 				},
 			},
@@ -381,13 +381,11 @@ func TestObserve(t *testing.T) {
 		},
 		"ExistsAndUpToDate": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: func(_ *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
-					return &instance.PortfolioDetails{ViewDetails: sonar.ViewDetails{
-						Key:           testPortfolioKey,
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+					return &sonar.ViewDetails{Key: testPortfolioKey,
 						Name:          testPortfolioName,
 						Visibility:    "public",
-						SelectionMode: selectionModeNone,
-					}}, mockHTTPOK(), nil
+						SelectionMode: selectionModeNone}, mockHTTPOK(), nil
 				},
 			},
 			args: args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, testPortfolioKey)},
@@ -403,7 +401,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ParentShowAPIError": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: func(opt *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
+				ShowFn: func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 					if opt.Key == testParentKey {
 						return nil, mockHTTPOK(), errBoom
 					}
@@ -419,7 +417,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ParentUpToDate": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
+				ShowFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
 			},
 			args: args{ctx: context.Background(), mg: newSubPortfolio(testParentKey)},
 			want: want{
@@ -432,7 +430,7 @@ func TestObserve(t *testing.T) {
 		},
 		"ParentNotFound": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
+				ShowFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
 			},
 			args: args{ctx: context.Background(), mg: newSubPortfolio("missing-parent")},
 			want: want{
@@ -445,7 +443,7 @@ func TestObserve(t *testing.T) {
 		},
 		"UnderAnotherParent": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
+				ShowFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
 			},
 			args: args{ctx: context.Background(), mg: newSubPortfolio("other-parent")},
 			want: want{
@@ -458,13 +456,11 @@ func TestObserve(t *testing.T) {
 		},
 		"ExistsAndNotUpToDate": {
 			client: &fake.MockPortfoliosClient{
-				ShowDetailsFn: func(_ *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
-					return &instance.PortfolioDetails{ViewDetails: sonar.ViewDetails{
-						Key:           testPortfolioKey,
+				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+					return &sonar.ViewDetails{Key: testPortfolioKey,
 						Name:          "Old Name",
 						Visibility:    "public",
-						SelectionMode: selectionModeNone,
-					}}, mockHTTPOK(), nil
+						SelectionMode: selectionModeNone}, mockHTTPOK(), nil
 				},
 			},
 			args: args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, testPortfolioKey)},
@@ -503,13 +499,11 @@ const testParentKey = "parent-portfolio"
 
 // newPortfolioDetails returns the details of the test portfolio with the
 // given name.
-func newPortfolioDetails(name string) *instance.PortfolioDetails {
-	return &instance.PortfolioDetails{ViewDetails: sonar.ViewDetails{
-		Key:           testPortfolioKey,
+func newPortfolioDetails(name string) *sonar.ViewDetails {
+	return &sonar.ViewDetails{Key: testPortfolioKey,
 		Name:          name,
 		Qualifier:     "SVW",
-		SelectionMode: selectionModeNone,
-	}}
+		SelectionMode: selectionModeNone}
 }
 
 // newSubPortfolio builds a Portfolio under the given parent.
@@ -520,20 +514,20 @@ func newSubPortfolio(parent string) *v1alpha1.Portfolio {
 	return p
 }
 
-// showWithParent returns a ShowDetails function serving the test portfolio
+// showWithParent returns a Show function serving the test portfolio
 // as a sub-portfolio of parent, and returning 404 for any other portfolio.
-func showWithParent(parent string) func(opt *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
-	return func(opt *sonar.ViewsShowOptions) (*instance.PortfolioDetails, *http.Response, error) {
+func showWithParent(parent string) func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+	return func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
 		switch opt.Key {
 		case testPortfolioKey:
 			return newPortfolioDetails(testPortfolioName), mockHTTPOK(), nil
 		case parent:
-			return &instance.PortfolioDetails{
-				ViewDetails: sonar.ViewDetails{Key: parent, Qualifier: "VW"},
-				SubViews:    []instance.PortfolioSubView{{View: sonar.View{Key: testPortfolioKey, Qualifier: "SVW"}}},
+			return &sonar.ViewDetails{
+				Key: parent, Qualifier: "VW",
+				SubViews: []sonar.View{{Key: testPortfolioKey, Qualifier: "SVW"}},
 			}, mockHTTPOK(), nil
 		case "other-parent":
-			return &instance.PortfolioDetails{ViewDetails: sonar.ViewDetails{Key: opt.Key, Qualifier: "VW"}}, mockHTTPOK(), nil
+			return &sonar.ViewDetails{Key: opt.Key, Qualifier: "VW"}, mockHTTPOK(), nil
 		default:
 			return nil, mockHTTPNotFound(), errBoom
 		}

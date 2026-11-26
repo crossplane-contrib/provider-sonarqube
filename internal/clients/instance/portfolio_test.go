@@ -17,10 +17,6 @@ limitations under the License.
 package instance
 
 import (
-	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
@@ -44,7 +40,7 @@ func TestGeneratePortfolioObservation(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]struct {
-		details *PortfolioDetails
+		details *sonar.ViewDetails
 		want    v1alpha1.PortfolioObservation
 	}{
 		"NilDetails": {
@@ -52,29 +48,27 @@ func TestGeneratePortfolioObservation(t *testing.T) {
 			want:    v1alpha1.PortfolioObservation{},
 		},
 		"EmptyDetails": {
-			details: &PortfolioDetails{},
+			details: &sonar.ViewDetails{},
 			want:    v1alpha1.PortfolioObservation{},
 		},
 		"FullDetails": {
-			details: &PortfolioDetails{
-				ViewDetails: sonar.ViewDetails{
-					Key:           "my-portfolio",
-					Name:          "My Portfolio",
-					Description:   "A test portfolio",
-					Qualifier:     "VW",
-					Visibility:    "public",
-					SelectionMode: "MANUAL",
-					SelectedProjects: []sonar.ViewSelectedProject{
-						{ProjectKey: "project-b"},
-						{ProjectKey: "project-a", SelectedBranches: []string{"main", "feature"}},
-					},
+			details: &sonar.ViewDetails{
+				Key:           "my-portfolio",
+				Name:          "My Portfolio",
+				Description:   "A test portfolio",
+				Qualifier:     "VW",
+				Visibility:    "public",
+				SelectionMode: "MANUAL",
+				SelectedProjects: []sonar.ViewSelectedProject{
+					{ProjectKey: "project-b"},
+					{ProjectKey: "project-a", SelectedBranches: []string{"main", "feature"}},
 				},
-				SubViews: []PortfolioSubView{
-					{View: sonar.View{Key: "child-b", Qualifier: "SVW"}},
-					{View: sonar.View{Key: "my-portfolio:app", OriginalKey: "app", Qualifier: "APP"}, SelectedBranches: []string{"main"}},
-					{View: sonar.View{Key: "my-portfolio:referenced", OriginalKey: "referenced", Qualifier: "VW"}},
-					{View: sonar.View{Key: "child-a", Qualifier: "SVW"}},
-					{View: sonar.View{Key: "unknown", Qualifier: "TRK"}},
+				SubViews: []sonar.View{
+					{Key: "child-b", Qualifier: "SVW"},
+					{Key: "my-portfolio:app", OriginalKey: "app", Qualifier: "APP", SelectedBranches: []string{"main"}},
+					{Key: "my-portfolio:referenced", OriginalKey: "referenced", Qualifier: "VW"},
+					{Key: "child-a", Qualifier: "SVW"},
+					{Key: "unknown", Qualifier: "TRK"},
 				},
 			},
 			want: v1alpha1.PortfolioObservation{
@@ -94,9 +88,9 @@ func TestGeneratePortfolioObservation(t *testing.T) {
 			},
 		},
 		"SubViewWithoutOriginalKey": {
-			details: &PortfolioDetails{
-				SubViews: []PortfolioSubView{
-					{View: sonar.View{Key: "app", Qualifier: "APP"}},
+			details: &sonar.ViewDetails{
+				SubViews: []sonar.View{
+					{Key: "app", Qualifier: "APP"},
 				},
 			},
 			want: v1alpha1.PortfolioObservation{
@@ -115,106 +109,6 @@ func TestGeneratePortfolioObservation(t *testing.T) {
 			}
 		})
 	}
-}
-
-// TestPortfolioDetailsDecoding verifies the show response decodes the
-// selected branches of the applications, which sonar.View does not expose.
-func TestPortfolioDetailsDecoding(t *testing.T) {
-	t.Parallel()
-
-	payload := `{"key":"pf","name":"PF","qualifier":"VW","selectionMode":"MANUAL",` +
-		`"selectedProjects":[{"projectKey":"p","selectedBranches":["dev"]}],` +
-		`"subViews":[{"key":"pf:app","originalKey":"app","qualifier":"APP","selectedBranches":["main","dev"]}]}`
-
-	var details PortfolioDetails
-
-	err := json.Unmarshal([]byte(payload), &details)
-	if err != nil {
-		t.Fatalf("json.Unmarshal() unexpected error: %v", err)
-	}
-
-	want := v1alpha1.PortfolioObservation{
-		Key:           "pf",
-		Name:          "PF",
-		Qualifier:     "VW",
-		SelectionMode: "MANUAL",
-		Projects:      []v1alpha1.PortfolioMemberObservation{{Key: "p", Branches: []string{"dev"}}},
-		Applications:  []v1alpha1.PortfolioMemberObservation{{Key: "app", Branches: []string{"dev", "main"}}},
-	}
-
-	if diff := cmp.Diff(want, GeneratePortfolioObservation(&details)); diff != "" {
-		t.Errorf("GeneratePortfolioObservation() -want +got:\n%s", diff)
-	}
-}
-
-// TestShowDetails tests the ShowDetails request against a fake SonarQube
-// server.
-func TestShowDetails(t *testing.T) {
-	t.Parallel()
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/views/show" || r.URL.Query().Get("key") != "pf" {
-			w.WriteHeader(http.StatusNotFound)
-
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"key":"pf","subViews":[{"key":"pf:app","originalKey":"app","qualifier":"APP","selectedBranches":["main"]}]}`))
-	}))
-	t.Cleanup(server.Close)
-
-	config := newTestConfig()
-	config.BaseURL = server.URL + "/api/"
-	client := NewPortfoliosClient(config)
-
-	t.Run("Success", func(t *testing.T) {
-		t.Parallel()
-
-		details, resp, err := client.ShowDetails(context.Background(), &sonar.ViewsShowOptions{Key: "pf"})
-		if resp != nil {
-			defer resp.Body.Close()
-		}
-
-		if err != nil {
-			t.Fatalf("ShowDetails() unexpected error: %v", err)
-		}
-
-		want := []PortfolioSubView{{View: sonar.View{Key: "pf:app", OriginalKey: "app", Qualifier: "APP"}, SelectedBranches: []string{"main"}}}
-		if diff := cmp.Diff(want, details.SubViews); diff != "" {
-			t.Errorf("ShowDetails() SubViews -want +got:\n%s", diff)
-		}
-	})
-
-	t.Run("NotFound", func(t *testing.T) {
-		t.Parallel()
-
-		_, resp, err := client.ShowDetails(context.Background(), &sonar.ViewsShowOptions{Key: "missing"})
-		if resp != nil {
-			defer resp.Body.Close()
-		}
-
-		if err == nil {
-			t.Fatal("ShowDetails() expected error, got nil")
-		}
-
-		if resp == nil || resp.StatusCode != http.StatusNotFound {
-			t.Errorf("ShowDetails() response = %v, want a 404 response", resp)
-		}
-	})
-
-	t.Run("InvalidOptions", func(t *testing.T) {
-		t.Parallel()
-
-		_, resp, err := client.ShowDetails(context.Background(), &sonar.ViewsShowOptions{})
-		if resp != nil {
-			defer resp.Body.Close()
-		}
-
-		if err == nil {
-			t.Fatal("ShowDetails() expected a validation error, got nil")
-		}
-	})
 }
 
 // TestGeneratePortfolioCreateOptions tests the
@@ -251,15 +145,15 @@ func TestGeneratePortfolioCreateOptions(t *testing.T) {
 func TestIsPortfolioSubPortfolio(t *testing.T) {
 	t.Parallel()
 
-	parent := &PortfolioDetails{
-		SubViews: []PortfolioSubView{
-			{View: sonar.View{Key: "child", Qualifier: "SVW"}},
-			{View: sonar.View{Key: "parent:referenced", OriginalKey: "referenced", Qualifier: "VW"}},
+	parent := &sonar.ViewDetails{
+		SubViews: []sonar.View{
+			{Key: "child", Qualifier: "SVW"},
+			{Key: "parent:referenced", OriginalKey: "referenced", Qualifier: "VW"},
 		},
 	}
 
 	cases := map[string]struct {
-		parent *PortfolioDetails
+		parent *sonar.ViewDetails
 		key    string
 		want   bool
 	}{
