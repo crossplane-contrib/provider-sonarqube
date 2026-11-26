@@ -82,27 +82,57 @@ func (project *Project) ResolveReferences(ctx context.Context, readerClient clie
 // Application. References and selectors resolve in the Application's own
 // namespace.
 func (application *Application) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
-	resolver := reference.NewAPIResolver(readerClient, application)
+	params := &application.Spec.ForProvider
 
+	projects, refs, err := resolveProjectKeys(ctx, reference.NewAPIResolver(readerClient, application), application.GetNamespace(),
+		params.Projects, params.ProjectRefs, params.ProjectSelector)
+	if err != nil {
+		return err
+	}
+
+	params.Projects = projects
+	params.ProjectRefs = refs
+
+	return nil
+}
+
+// ResolveReferences resolves references to other managed resources for
+// SCALicenseProfile. References and selectors resolve in the
+// SCALicenseProfile's own namespace.
+func (profile *SCALicenseProfile) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	params := &profile.Spec.ForProvider
+
+	projects, refs, err := resolveProjectKeys(ctx, reference.NewAPIResolver(readerClient, profile), profile.GetNamespace(),
+		params.Projects, params.ProjectRefs, params.ProjectSelector)
+	if err != nil {
+		return err
+	}
+
+	params.Projects = projects
+	params.ProjectRefs = refs
+
+	return nil
+}
+
+// resolveProjectKeys resolves the keys of the Projects referenced or
+// selected in namespace into the spec.forProvider.projects field.
+func resolveProjectKeys(ctx context.Context, resolver *reference.APIResolver, namespace string, current []string, refs []xpv1.Reference, selector *xpv1.Selector) ([]string, []xpv1.Reference, error) {
 	response, err := resolver.ResolveMultiple(ctx, reference.MultiResolutionRequest{
-		CurrentValues: application.Spec.ForProvider.Projects,
+		CurrentValues: current,
 		Extract:       reference.ExternalName(),
-		Namespace:     application.GetNamespace(),
-		References:    application.Spec.ForProvider.ProjectRefs,
-		Selector:      application.Spec.ForProvider.ProjectSelector,
+		Namespace:     namespace,
+		References:    refs,
+		Selector:      selector,
 		To: reference.To{
 			List:    &ProjectList{},
 			Managed: &Project{},
 		},
 	})
 	if err != nil {
-		return errors.Wrap(err, "spec.forProvider.projects")
+		return nil, nil, errors.Wrap(err, "spec.forProvider.projects")
 	}
 
-	application.Spec.ForProvider.Projects = response.ResolvedValues
-	application.Spec.ForProvider.ProjectRefs = response.ResolvedReferences
-
-	return nil
+	return response.ResolvedValues, response.ResolvedReferences, nil
 }
 
 // ResolveReferences resolves references to other managed resources for

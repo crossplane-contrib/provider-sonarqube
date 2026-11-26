@@ -1,0 +1,40 @@
+---
+# SCA license profiles are a SonarQube Enterprise Edition feature, and need
+# Software Composition Analysis (SCA) to be enabled on the instance.
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: SCALicenseProfile
+metadata:
+  name: example-sca-license-profile
+  namespace: default
+spec:
+  forProvider:
+    # Display name of the license profile in SonarQube
+    name: Example License Profile
+    # Whether this license profile is used for the projects that are not
+    # assigned to any license profile
+    default: false
+    # Policies of license categories. Only the listed categories are managed.
+    categories:
+      - category: COPYLEFT_STRONG
+        policy: DENY
+      - category: COPYLEFT_NETWORK
+        policy: DENY
+      - category: PERMISSIVE_STANDARD
+        policy: ALLOW
+    # Policies of single licenses, identified by their SPDX identifier. Only
+    # the listed licenses are managed, and they are applied after the
+    # categories, so they take precedence over the policy of their category.
+    licenses:
+      - spdxLicenseId: LGPL-3.0-only
+        policy: ALLOW
+    # Keys of the projects analyzed with this license profile. This list is
+    # exhaustive: any other project assigned to this license profile is
+    # unassigned from it.
+    projects:
+      - example-project-key
+    # Projects can also be referenced through Project managed resources
+    # projectRefs:
+    #   - name: example-project
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

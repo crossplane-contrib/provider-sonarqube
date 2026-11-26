@@ -24,6 +24,7 @@ import (
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
+	"github.com/crossplane/provider-sonarqube/internal/clients/instance"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
 
@@ -491,6 +492,28 @@ func (f *Framework) FindApplicationByKey(ctx context.Context, key string) (*sona
 		return nil, nil //nolint:nilnil // intentional
 	}
 	return &res.Application, nil
+}
+
+// FetchSCALicenseProfile returns the SCA license profile with the given
+// identifier, along with its category and license policies, or (nil, nil)
+// if no such license profile exists. SCA license profiles are an Enterprise
+// Edition feature that needs SCA to be enabled.
+func (f *Framework) FetchSCALicenseProfile(ctx context.Context, id string) (*sonar.ScaLicenseProfileDetails, error) {
+	res, resp, err := f.Sonar.V2.Sca.GetLicenseProfile(ctx, &sonar.ScaLicenseProfileGetOptions{Key: id})
+	defer helpers.CloseBody(resp)
+	if common.IsResponseNotFound(resp) {
+		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// SCALicenseProfileProjects returns the sorted keys of the projects assigned
+// to the SCA license profile with the given identifier.
+func (f *Framework) SCALicenseProfileProjects(ctx context.Context, id string) ([]string, error) {
+	return instance.FetchSCALicenseProfileProjects(ctx, f.Sonar.V2.Sca, id)
 }
 
 // FetchLicense returns the license currently applied to the SonarQube
