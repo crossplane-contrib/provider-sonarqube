@@ -585,6 +585,9 @@ func recordingClient(calls *[]string, failOn string) *fake.MockApplicationsClien
 		UpdateFn: func(opt *sonar.ApplicationsUpdateOptions) (*http.Response, error) {
 			return record("update:" + opt.Name + ":" + opt.Description)
 		},
+		SetTagsFn: func(opt *sonar.ApplicationsSetTagsOptions) (*http.Response, error) {
+			return record("setTags:" + strings.Join(opt.Tags, ","))
+		},
 		AddProjectFn: func(opt *sonar.ApplicationsAddProjectOptions) (*http.Response, error) {
 			return record("add:" + opt.Project)
 		},
@@ -615,9 +618,11 @@ func TestUpdate(t *testing.T) {
 			newBranch("feature", "proj-c", "feature-c", "proj-a", "feature-a"),
 		)
 		app.Spec.ForProvider.Description = new("new description")
+		app.Spec.ForProvider.Tags = &[]string{"team-a", "go"}
 		app.Status.AtProvider = v1alpha1.ApplicationObservation{
 			Name:        "Old Name",
 			Description: "old description",
+			Tags:        []string{"legacy"},
 			Projects:    []string{"proj-a", "proj-b"},
 			Branches: []v1alpha1.ApplicationBranchObservation{
 				newBranchObservation("main", true, "proj-a", "main", "proj-b", "main"),
@@ -631,6 +636,7 @@ func TestUpdate(t *testing.T) {
 
 	fullSync := []string{
 		"update:" + testApplicationName + ":new description",
+		"setTags:team-a,go",
 		"add:proj-c",
 		"deleteBranch:stale",
 		"updateBranch:release>release:proj-a=release-a",
@@ -658,6 +664,7 @@ func TestUpdate(t *testing.T) {
 				app.Status.AtProvider = v1alpha1.ApplicationObservation{
 					Name:        testApplicationName,
 					Description: "unmanaged description",
+					Tags:        []string{"unmanaged-tag"},
 					Projects:    []string{"proj-a"},
 					Branches: []v1alpha1.ApplicationBranchObservation{
 						newBranchObservation("main", true, "proj-a", "main"),
@@ -683,33 +690,58 @@ func TestUpdate(t *testing.T) {
 			wantCalls: fullSync[:1],
 			err:       errors.Wrap(errBoom, errUpdateApplication),
 		},
-		"AddProjectError": {
+		"SetTagsError": {
 			mg:        driftedApplication(),
 			failOn:    fullSync[1],
 			wantCalls: fullSync[:2],
+			err:       errors.Wrap(errBoom, errSetTags),
+		},
+		"EmptyTagsAreCleared": {
+			mg: func() *v1alpha1.Application {
+				app := newApplication(testApplicationKey, nil)
+				app.Spec.ForProvider.Tags = &[]string{}
+				app.Status.AtProvider = v1alpha1.ApplicationObservation{Name: testApplicationName, Tags: []string{"legacy"}}
+
+				return app
+			}(),
+			wantCalls: []string{"setTags:"},
+		},
+		"ReorderedTagsAreNoOp": {
+			mg: func() *v1alpha1.Application {
+				app := newApplication(testApplicationKey, nil)
+				app.Spec.ForProvider.Tags = &[]string{"b", "a"}
+				app.Status.AtProvider = v1alpha1.ApplicationObservation{Name: testApplicationName, Tags: []string{"a", "b"}}
+
+				return app
+			}(),
+		},
+		"AddProjectError": {
+			mg:        driftedApplication(),
+			failOn:    fullSync[2],
+			wantCalls: fullSync[:3],
 			err:       errors.Wrapf(errBoom, errAddProject, "proj-c"),
 		},
 		"DeleteBranchError": {
 			mg:        driftedApplication(),
-			failOn:    fullSync[2],
-			wantCalls: fullSync[:3],
+			failOn:    fullSync[3],
+			wantCalls: fullSync[:4],
 			err:       errors.Wrapf(errBoom, errDeleteBranch, "stale"),
 		},
 		"UpdateBranchError": {
 			mg:        driftedApplication(),
-			failOn:    fullSync[3],
-			wantCalls: fullSync[:4],
+			failOn:    fullSync[4],
+			wantCalls: fullSync[:5],
 			err:       errors.Wrapf(errBoom, errUpdateBranch, "release"),
 		},
 		"CreateBranchError": {
 			mg:        driftedApplication(),
-			failOn:    fullSync[4],
-			wantCalls: fullSync[:5],
+			failOn:    fullSync[5],
+			wantCalls: fullSync[:6],
 			err:       errors.Wrapf(errBoom, errCreateBranch, "feature"),
 		},
 		"RemoveProjectError": {
 			mg:        driftedApplication(),
-			failOn:    fullSync[5],
+			failOn:    fullSync[6],
 			wantCalls: fullSync,
 			err:       errors.Wrapf(errBoom, errRemoveProject, "proj-b"),
 		},

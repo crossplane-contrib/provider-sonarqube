@@ -51,6 +51,13 @@ type ApplicationParameters struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Visibility is immutable"
 	Visibility string `json:"visibility,omitempty"`
 
+	// Tags is the exhaustive list of tags of the application, compared regardless of order.
+	// Tags may only contain lowercase letters, digits and the characters "+", "-", "#" and ".".
+	// When unset, tags are not managed. An empty list removes every tag.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:items:Pattern=`^[a-z0-9+#.-]+$`
+	Tags *[]string `json:"tags,omitempty"`
+
 	// Projects is the exhaustive list of keys of the projects that are members of the application.
 	// Any member project that is not in this list is removed from the application.
 	// +kubebuilder:validation:Optional

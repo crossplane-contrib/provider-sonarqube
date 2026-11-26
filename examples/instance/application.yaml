@@ -14,6 +14,11 @@ spec:
     description: This is an example application managed by Crossplane
     # Visibility of the application, either public or private (immutable)
     visibility: public
+    # Tags of the application. This list is exhaustive: any other tag is
+    # removed, and an empty list removes every tag. Unmanaged when unset.
+    tags:
+      - crossplane
+      - example
     # Keys of the member projects. This list is exhaustive: any other member
     # project is removed from the application.
     projects:

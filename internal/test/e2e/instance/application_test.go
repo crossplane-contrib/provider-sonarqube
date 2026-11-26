@@ -76,11 +76,31 @@ func waitForApplicationProjects(t *testing.T, f *e2e.Framework, key string, want
 	}
 }
 
+// waitForApplicationTags polls SonarQube until the application tags match
+// want, ignoring order.
+func waitForApplicationTags(t *testing.T, f *e2e.Framework, key string, want []string) {
+	t.Helper()
+
+	var got []string
+	if err := wait.PollUntilContextTimeout(context.Background(), 2*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		app, err := f.FindApplicationByKey(ctx, key)
+		if err != nil || app == nil {
+			return false, err
+		}
+		got = append(got[:0], app.Tags...)
+		slices.Sort(got)
+		return slices.Equal(got, want), nil
+	}); err != nil {
+		t.Fatalf("application %q tags = %v, want %v: %v", key, got, want, err)
+	}
+}
+
 // TestApplicationCRUD creates two Projects and an Application referencing
-// them, verifies the application and its membership in SonarQube, then
-// drops a member from the spec and verifies it is removed. Applications
-// are an Enterprise Edition feature that only function on a licensed
-// instance, so this requires SONARQUBE_LICENSE_KEY; it skips otherwise.
+// them, verifies the application, its membership and its tags in SonarQube,
+// then drops a member and every tag from the spec and verifies they are
+// removed. Applications are an Enterprise Edition feature that only function
+// on a licensed instance, so this requires SONARQUBE_LICENSE_KEY; it skips
+// otherwise.
 //
 // Application branches are not exercised: they require analyzed project
 // branches, which the e2e environment does not produce.
@@ -115,6 +135,7 @@ func TestApplicationCRUD(t *testing.T) {
 				Name:        appName,
 				Description: new("created by the enterprise e2e suite"),
 				Visibility:  "public",
+				Tags:        &[]string{"e2e", "crossplane"},
 				ProjectRefs: []xpv1.Reference{{Name: projectA}, {Name: projectB}},
 			},
 		},
@@ -140,14 +161,17 @@ func TestApplicationCRUD(t *testing.T) {
 	}
 
 	waitForApplicationProjects(t, f, appKey, []string{projectA, projectB})
+	waitForApplicationTags(t, f, appKey, []string{"crossplane", "e2e"})
 
-	// Drop projectB from the membership.
+	// Drop projectB from the membership and clear the tags.
 	if err := f.Kube.Get(context.Background(), kubeKey(application), application); err != nil {
 		t.Fatalf("re-fetching application CR: %v", err)
 	}
+	application.Spec.ForProvider.Tags = &[]string{}
 	application.Spec.ForProvider.Projects = nil
 	application.Spec.ForProvider.ProjectRefs = []xpv1.Reference{{Name: projectA}}
 	f.Update(t, application)
 
 	waitForApplicationProjects(t, f, appKey, []string{projectA})
+	waitForApplicationTags(t, f, appKey, nil)
 }
