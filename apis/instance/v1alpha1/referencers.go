@@ -134,6 +134,51 @@ func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, rea
 	return nil
 }
 
+// ResolveReferences resolves references to other managed resources for
+// RemediationAgentSchedule. References and selectors resolve in the
+// RemediationAgentSchedule's own namespace.
+func (schedule *RemediationAgentSchedule) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	resolver := reference.NewAPIResolver(readerClient, schedule)
+
+	response, err := resolver.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(schedule.Spec.ForProvider.ProjectKey),
+		Extract:      reference.ExternalName(),
+		Namespace:    schedule.GetNamespace(),
+		Reference:    schedule.Spec.ForProvider.ProjectKeyRef,
+		Selector:     schedule.Spec.ForProvider.ProjectKeySelector,
+		To: reference.To{
+			List:    &ProjectList{},
+			Managed: &Project{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.projectKey")
+	}
+
+	schedule.Spec.ForProvider.ProjectKey = reference.ToPtrValue(response.ResolvedValue)
+	schedule.Spec.ForProvider.ProjectKeyRef = response.ResolvedReference
+
+	selected, err := resolver.ResolveMultiple(ctx, reference.MultiResolutionRequest{
+		CurrentValues: schedule.Spec.ForProvider.SelectedProjectKeys,
+		Extract:       reference.ExternalName(),
+		Namespace:     schedule.GetNamespace(),
+		References:    schedule.Spec.ForProvider.SelectedProjectKeyRefs,
+		Selector:      schedule.Spec.ForProvider.SelectedProjectKeySelector,
+		To: reference.To{
+			List:    &ProjectList{},
+			Managed: &Project{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.selectedProjectKeys")
+	}
+
+	schedule.Spec.ForProvider.SelectedProjectKeys = selected.ResolvedValues
+	schedule.Spec.ForProvider.SelectedProjectKeyRefs = selected.ResolvedReferences
+
+	return nil
+}
+
 // QualityProfileName extracts the display name of a referenced
 // QualityProfile. Association APIs identify a profile by display name,
 // not by the profile key stored as the external name.
