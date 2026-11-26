@@ -312,6 +312,7 @@ func TestConnectSuccess(t *testing.T) {
 		kube:         kubeClient,
 		usage:        resource.NewProviderConfigUsageTracker(kubeClient, &apisv1alpha1.ProviderConfigUsage{}),
 		newServiceFn: instance.NewPortfoliosClient,
+		newReportsFn: instance.NewGovernanceReportsClient,
 	}
 
 	got, err := c.Connect(context.Background(), p)

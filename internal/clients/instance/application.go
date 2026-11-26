@@ -219,6 +219,10 @@ func IsApplicationUpToDate(spec *v1alpha1.ApplicationParameters, observation *v1
 		return false
 	}
 
+	if !IsGovernanceReportUpToDate(spec.Report, observation.Report) {
+		return false
+	}
+
 	return AreApplicationBranchesUpToDate(spec.Branches, observation.Branches)
 }
 

@@ -66,6 +66,10 @@ type PortfolioParameters struct {
 	// Branch is the branch used in matched projects when SelectionMode is REGEXP, REMAINING, or TAGS.
 	// +kubebuilder:validation:Optional
 	Branch string `json:"branch,omitempty"`
+
+	// Report configures the PDF reports of the portfolio.
+	// +kubebuilder:validation:Optional
+	Report *GovernanceReportParameters `json:"report,omitempty"`
 }
 
 // PortfolioObservation are the observable fields of a Portfolio.
@@ -82,6 +86,8 @@ type PortfolioObservation struct {
 	Visibility string `json:"visibility,omitempty"`
 	// SelectionMode is the current project selection mode.
 	SelectionMode string `json:"selectionMode,omitempty"`
+	// Report is the report configuration, when it is managed.
+	Report *GovernanceReportObservation `json:"report,omitempty"`
 }
 
 // A PortfolioSpec defines the desired state of a Portfolio.

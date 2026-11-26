@@ -91,6 +91,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewPortfoliosClient,
+			newReportsFn: instance.NewGovernanceReportsClient,
 		}),
 		helpers.WithSpecExternalName(mgr.GetClient(), func(mg *v1alpha1.Portfolio) string {
 			return mg.Spec.ForProvider.Key
@@ -118,6 +119,7 @@ type connector struct {
 	kube         client.Client
 	usage        *resource.ProviderConfigUsageTracker
 	newServiceFn func(config common.Config) instance.PortfoliosClient
+	newReportsFn func(config common.Config) instance.GovernanceReportsClient
 }
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
@@ -135,12 +137,13 @@ func (c *connector) Connect(ctx context.Context, portfolio *v1alpha1.Portfolio) 
 
 	svc := c.newServiceFn(*config)
 
-	return &external{client: svc}, nil
+	return &external{client: svc, reports: c.newReportsFn(*config)}, nil
 }
 
 // external implements the ExternalClient interface for Portfolio resources.
 type external struct {
-	client instance.PortfoliosClient
+	client  instance.PortfoliosClient
+	reports instance.GovernanceReportsClient
 }
 
 // Observe checks if the Portfolio exists in SonarQube and whether it
@@ -162,7 +165,13 @@ func (c *external) Observe(ctx context.Context, portfolio *v1alpha1.Portfolio) (
 
 	defer helpers.CloseBody(resp)
 
+	report, err := instance.ObserveGovernanceReport(ctx, c.reports, externalName, portfolio.Spec.ForProvider.Report)
+	if err != nil {
+		return managed.ExternalObservation{}, errors.Wrap(err, errObservePortfolio)
+	}
+
 	portfolio.Status.AtProvider = instance.GeneratePortfolioObservation(result)
+	portfolio.Status.AtProvider.Report = report
 	portfolio.SetConditions(xpv1.Available())
 
 	former := portfolio.Spec.ForProvider.DeepCopy()
@@ -203,8 +212,8 @@ func (c *external) Create(ctx context.Context, portfolio *v1alpha1.Portfolio) (m
 	return managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{}}, nil
 }
 
-// Update updates the Portfolio name, description, and selection
-// mode in SonarQube.
+// Update updates the Portfolio name, description, selection mode and
+// report settings in SonarQube.
 func (c *external) Update(ctx context.Context, portfolio *v1alpha1.Portfolio) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(portfolio)
 	if externalName == "" {
@@ -225,6 +234,11 @@ func (c *external) Update(ctx context.Context, portfolio *v1alpha1.Portfolio) (m
 	err = c.setSelectionMode(ctx, externalName, &portfolio.Spec.ForProvider)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errSetSelectionMode)
+	}
+
+	err = instance.UpdateGovernanceReport(ctx, c.reports, externalName, portfolio.Spec.ForProvider.Report, portfolio.Status.AtProvider.Report)
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdatePortfolio)
 	}
 
 	return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}}, nil
