@@ -976,3 +976,55 @@ func TestIsProjectLateInitializedEdgeCases(t *testing.T) {
 		})
 	}
 }
+
+// TestIsProjectUpToDateContainsAiCode tests that the AI code flag is compared
+// only when it is managed.
+func TestIsProjectUpToDateContainsAiCode(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec     *bool
+		observed *bool
+		want     bool
+	}{
+		"Unmanaged":         {spec: nil, observed: nil, want: true},
+		"UnmanagedObserved": {spec: nil, observed: new(true), want: true},
+		"MatchingTrue":      {spec: new(true), observed: new(true), want: true},
+		"MatchingFalse":     {spec: new(false), observed: new(false), want: true},
+		"Drifted":           {spec: new(true), observed: new(false), want: false},
+		"DriftedFalse":      {spec: new(false), observed: new(true), want: false},
+		"NotObserved":       {spec: new(false), observed: nil, want: false},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsProjectUpToDate(
+				&v1alpha1.ProjectParameters{Key: "key", ContainsAiCode: tc.spec},
+				&v1alpha1.ProjectObservation{
+					Key:            "key",
+					Branches:       map[string]v1alpha1.ProjectBranchObservation{"main": {Name: "main", IsMain: true}},
+					ContainsAiCode: tc.observed,
+				},
+			)
+			if got != tc.want {
+				t.Errorf("IsProjectUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestGenerateProjectContainsAiCodeOptions tests the AI code flag options.
+func TestGenerateProjectContainsAiCodeOptions(t *testing.T) {
+	t.Parallel()
+
+	if diff := cmp.Diff(&sonar.ProjectsProjectOptions{Project: "key"}, GenerateProjectContainsAiCodeGetOptions("key")); diff != "" {
+		t.Errorf("GenerateProjectContainsAiCodeGetOptions() mismatch (-want +got):\n%s", diff)
+	}
+
+	want := &sonar.ProjectsSetContainsAiCodeOptions{Project: "key", ContainsAiCode: true}
+	if diff := cmp.Diff(want, GenerateProjectContainsAiCodeSetOptions("key", true)); diff != "" {
+		t.Errorf("GenerateProjectContainsAiCodeSetOptions() mismatch (-want +got):\n%s", diff)
+	}
+}

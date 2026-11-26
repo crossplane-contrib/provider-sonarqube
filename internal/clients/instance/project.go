@@ -38,9 +38,11 @@ type ProjectsClient interface {
 	BulkDelete(ctx context.Context, opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error)
 	Create(ctx context.Context, opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error)
 	Delete(ctx context.Context, opt *sonar.ProjectsDeleteOptions) (*http.Response, error)
+	GetContainsAiCode(ctx context.Context, opt *sonar.ProjectsProjectOptions) (*sonar.ProjectsContainsAiCode, *http.Response, error)
 	Search(ctx context.Context, opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error)
 	SearchMyProjects(ctx context.Context, opt *sonar.ProjectsSearchMyProjectsOptions) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
 	SearchMyScannableProjects(ctx context.Context, opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
+	SetContainsAiCode(ctx context.Context, opt *sonar.ProjectsSetContainsAiCodeOptions) (*http.Response, error)
 	UpdateKey(ctx context.Context, opt *sonar.ProjectsUpdateKeyOptions) (*http.Response, error)
 	UpdateVisibility(ctx context.Context, opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error)
 }
@@ -145,7 +147,32 @@ func IsProjectUpToDate(spec *v1alpha1.ProjectParameters, observation *v1alpha1.P
 			IsProjectMainBranchUpToDate(observation.Branches, ptr.Deref(spec.DefaultBranch, "main")) &&
 			IsNewCodePeriodUpToDate(spec.NewCodePeriod, &observation.NewCodePeriod) &&
 			AreProjectQualityProfilesUpToDate(spec.QualityProfiles, observation.QualityProfiles) &&
-			IsProjectALMBindingUpToDate(spec.AlmBinding, observation.AlmBinding)
+			IsProjectALMBindingUpToDate(spec.AlmBinding, observation.AlmBinding) &&
+			IsProjectContainsAiCodeUpToDate(spec.ContainsAiCode, observation.ContainsAiCode)
+}
+
+// IsProjectContainsAiCodeUpToDate checks if the observed AI code flag of a
+// SonarQube Project matches the desired one. A nil desired value means the
+// flag is not managed, and is therefore always up to date.
+func IsProjectContainsAiCodeUpToDate(spec, observation *bool) bool {
+	return spec == nil || helpers.IsComparablePtrEqualComparablePtr(spec, observation)
+}
+
+// GenerateProjectContainsAiCodeGetOptions generates the options for reading
+// the AI code flag of a SonarQube Project.
+func GenerateProjectContainsAiCodeGetOptions(projectKey string) *sonar.ProjectsProjectOptions {
+	return &sonar.ProjectsProjectOptions{
+		Project: projectKey,
+	}
+}
+
+// GenerateProjectContainsAiCodeSetOptions generates the options for setting
+// the AI code flag of a SonarQube Project.
+func GenerateProjectContainsAiCodeSetOptions(projectKey string, containsAiCode bool) *sonar.ProjectsSetContainsAiCodeOptions {
+	return &sonar.ProjectsSetContainsAiCodeOptions{
+		Project:        projectKey,
+		ContainsAiCode: containsAiCode,
+	}
 }
 
 // GenerateProjectUpdateVisibilityOptions generates the options for updating the

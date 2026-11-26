@@ -212,6 +212,11 @@ spec:
                       Branches is the map of authorized branches of the project.
                       Any branch that is not in this list will be considered unauthorized and will be deleted by SonarQube.
                     type: object
+                  containsAiCode:
+                    description: |-
+                      ContainsAiCode flags the project as containing AI-generated code, so that AI Code Assurance applies to it.
+                      If unset, the flag is not managed. Not available in SonarQube Community Build: requires a commercial edition of SonarQube Server 2025.1 or later.
+                    type: boolean
                   defaultBranch:
                     description: DefaultBranch is the default branch of the project.
                     minLength: 1
@@ -648,6 +653,11 @@ spec:
                     description: ProjectBranches is the list of branches associated
                       with the project.
                     type: object
+                  containsAiCode:
+                    description: ContainsAiCode indicates if the project is flagged
+                      as containing AI-generated code. Only observed when spec.forProvider.containsAiCode
+                      is set.
+                    type: boolean
                   defaultBranch:
                     description: DefaultBranch is the default branch of the project.
                     type: string

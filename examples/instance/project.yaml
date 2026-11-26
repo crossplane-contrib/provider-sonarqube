@@ -35,6 +35,10 @@ spec:
       name: example-qualitygate
       policy:
         resolve: Always
+    # Flags the project as containing AI-generated code, so that AI Code
+    # Assurance applies to it. Leave unset to not manage the flag. Not available
+    # in SonarQube Community Build.
+    # containsAiCode: true
     # Quality profiles to apply to the project in SonarQube, keyed by language
     qualityProfiles:
       go:

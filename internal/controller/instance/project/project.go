@@ -154,6 +154,7 @@ type observeResult struct {
 	qualityGateName      string
 	qualityProfiles      map[string]v1alpha1.ProjectQualityProfileObservation
 	almBinding           *v1alpha1.ProjectALMBindingObservation
+	containsAiCode       *bool
 	errors               []error
 }
 
@@ -180,7 +181,11 @@ func (c *external) Observe(ctx context.Context, project *v1alpha1.Project) (mana
 	}
 
 	// Make all observation API calls concurrently, collecting results safely.
-	result := c.observeProjectDetails(ctx, externalName, project.Status.AtProvider.Uuid)
+	// The AI code flag is only read when managed, as the endpoint does not exist
+	// in SonarQube Community Build. It is skipped during deletion so that an
+	// unsupported edition cannot block it.
+	observeAiCode := project.Spec.ForProvider.ContainsAiCode != nil && !meta.WasDeleted(project)
+	result := c.observeProjectDetails(ctx, externalName, project.Status.AtProvider.Uuid, observeAiCode)
 
 	// Safely populate observation from collected results (single-threaded)
 	c.applyObserveResult(&project.Status.AtProvider, &result)

@@ -30,6 +30,8 @@ type MockProjectsClient struct {
 	BulkDeleteFn                func(opt *sonar.ProjectsBulkDeleteOptions) (*http.Response, error)
 	CreateFn                    func(opt *sonar.ProjectsCreateOptions) (*sonar.ProjectsCreate, *http.Response, error)
 	DeleteFn                    func(opt *sonar.ProjectsDeleteOptions) (*http.Response, error)
+	GetContainsAiCodeFn         func(opt *sonar.ProjectsProjectOptions) (*sonar.ProjectsContainsAiCode, *http.Response, error)
+	SetContainsAiCodeFn         func(opt *sonar.ProjectsSetContainsAiCodeOptions) (*http.Response, error)
 	SearchFn                    func(opt *sonar.ProjectsSearchOptions) (*sonar.ProjectsSearch, *http.Response, error)
 	SearchMyProjectsFn          func(opt *sonar.ProjectsSearchMyProjectsOptions) (*sonar.ProjectsSearchMyProjects, *http.Response, error)
 	SearchMyScannableProjectsFn func(opt *sonar.ProjectsSearchMyScannableProjectsOptions) (*sonar.ProjectsSearchMyScannableProjects, *http.Response, error)
@@ -108,6 +110,24 @@ func (m *MockProjectsClient) UpdateKey(_ context.Context, opt *sonar.ProjectsUpd
 func (m *MockProjectsClient) UpdateVisibility(_ context.Context, opt *sonar.ProjectsUpdateVisibilityOptions) (*http.Response, error) {
 	if m.UpdateVisibilityFn != nil {
 		return m.UpdateVisibilityFn(opt)
+	}
+
+	return nil, errNotImplemented
+}
+
+// GetContainsAiCode implements ProjectsClient.GetContainsAiCode.
+func (m *MockProjectsClient) GetContainsAiCode(_ context.Context, opt *sonar.ProjectsProjectOptions) (*sonar.ProjectsContainsAiCode, *http.Response, error) {
+	if m.GetContainsAiCodeFn != nil {
+		return m.GetContainsAiCodeFn(opt)
+	}
+
+	return nil, nil, errNotImplemented
+}
+
+// SetContainsAiCode implements ProjectsClient.SetContainsAiCode.
+func (m *MockProjectsClient) SetContainsAiCode(_ context.Context, opt *sonar.ProjectsSetContainsAiCodeOptions) (*http.Response, error) {
+	if m.SetContainsAiCodeFn != nil {
+		return m.SetContainsAiCodeFn(opt)
 	}
 
 	return nil, errNotImplemented

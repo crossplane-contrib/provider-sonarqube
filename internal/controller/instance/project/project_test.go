@@ -1620,3 +1620,137 @@ func TestObserveNilMapsNeverOccur(t *testing.T) {
 		})
 	}
 }
+
+// TestObserveContainsAiCode tests that the AI code flag is only read when it
+// is managed, and that drift on it alone marks the Project out of date.
+func TestObserveContainsAiCode(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		desired      *bool
+		actual       bool
+		getErr       error
+		deleted      bool
+		wantRead     bool
+		wantUpToDate bool
+		wantObserved *bool
+		wantErr      error
+	}{
+		"Unmanaged":     {actual: true, wantUpToDate: true},
+		"UpToDate":      {desired: new(true), actual: true, wantRead: true, wantUpToDate: true, wantObserved: new(true)},
+		"UpToDateFalse": {desired: new(false), wantRead: true, wantUpToDate: true, wantObserved: new(false)},
+		"Drifted":       {desired: new(true), wantRead: true, wantObserved: new(false)},
+		"ReadFails": {
+			desired:  new(true),
+			getErr:   errors.New("unknown url"),
+			wantRead: true,
+			wantErr:  errors.New("cannot observe Project AI code flag"),
+		},
+		"SkippedWhenDeleted": {desired: new(true), getErr: errors.New("unknown url"), deleted: true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			projects, links, branches, ncp, gates, profiles, tags, alm := successfulObserveMocks()
+			read := false
+			projects.GetContainsAiCodeFn = func(opt *sonar.ProjectsProjectOptions) (*sonar.ProjectsContainsAiCode, *http.Response, error) {
+				read = true
+
+				if tc.getErr != nil {
+					return nil, mockHTTPResponseNotFound(), tc.getErr
+				}
+
+				return &sonar.ProjectsContainsAiCode{ContainsAiCode: tc.actual}, mockHTTPResponse(), nil
+			}
+
+			client := newTestExternalClient(projects, links, branches, ncp, gates, profiles, tags, alm)
+			proj := newTestProject("test-key", v1alpha1.ProjectParameters{Key: "test-key", Name: "test-project", ContainsAiCode: tc.desired})
+
+			if tc.deleted {
+				proj.SetDeletionTimestamp(new(metav1.Now()))
+			}
+
+			got, err := client.Observe(context.Background(), proj)
+			checkError(t, "Observe", tc.wantErr, err)
+
+			if read != tc.wantRead {
+				t.Errorf("GetContainsAiCode called = %v, want %v", read, tc.wantRead)
+			}
+
+			if diff := cmp.Diff(tc.wantObserved, proj.Status.AtProvider.ContainsAiCode); diff != "" {
+				t.Errorf("observed containsAiCode mismatch (-want +got):\n%s", diff)
+			}
+
+			if !tc.deleted && got.ResourceUpToDate != tc.wantUpToDate {
+				t.Errorf("Observe() ResourceUpToDate = %v, want %v", got.ResourceUpToDate, tc.wantUpToDate)
+			}
+		})
+	}
+}
+
+// TestUpdateContainsAiCode tests that Update sets the AI code flag only when
+// it is managed and differs from the observed one.
+func TestUpdateContainsAiCode(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		desired  *bool
+		observed *bool
+		setErr   error
+		wantSet  *sonar.ProjectsSetContainsAiCodeOptions
+		wantErr  error
+	}{
+		"Unmanaged": {},
+		"UpToDate":  {desired: new(true), observed: new(true)},
+		"Enable": {
+			desired:  new(true),
+			observed: new(false),
+			wantSet:  &sonar.ProjectsSetContainsAiCodeOptions{Project: "test-key", ContainsAiCode: true},
+		},
+		"Disable": {
+			desired:  new(false),
+			observed: new(true),
+			wantSet:  &sonar.ProjectsSetContainsAiCodeOptions{Project: "test-key"},
+		},
+		"SetFails": {
+			desired:  new(true),
+			observed: new(false),
+			setErr:   errors.New("boom"),
+			wantSet:  &sonar.ProjectsSetContainsAiCodeOptions{Project: "test-key", ContainsAiCode: true},
+			wantErr:  errors.New("cannot update Project AI code flag"),
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			projects, links, branches, ncp, gates, profiles, tags, alm := defaultMockClients()
+
+			var set *sonar.ProjectsSetContainsAiCodeOptions
+
+			projects.SetContainsAiCodeFn = func(opt *sonar.ProjectsSetContainsAiCodeOptions) (*http.Response, error) {
+				set = opt
+
+				if tc.setErr != nil {
+					return nil, tc.setErr
+				}
+
+				return mockHTTPResponse(), nil
+			}
+
+			client := newTestExternalClient(projects, links, branches, ncp, gates, profiles, tags, alm)
+			proj := newTestProject("test-key", v1alpha1.ProjectParameters{Key: "test-key", ContainsAiCode: tc.desired})
+			proj.Status.AtProvider.ContainsAiCode = tc.observed
+
+			_, err := client.Update(context.Background(), proj)
+			checkError(t, "Update", tc.wantErr, err)
+
+			if diff := cmp.Diff(tc.wantSet, set); diff != "" {
+				t.Errorf("SetContainsAiCode options mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

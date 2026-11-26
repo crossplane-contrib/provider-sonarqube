@@ -72,17 +72,17 @@ func (c *external) updateProjectConcurrently(ctx context.Context, project *v1alp
 		c.updateProjectALMBinding(ctx, project, projectKey, errChan)
 	})
 
+	waitGr.Go(func() {
+		c.updateContainsAiCode(ctx, project, projectKey, errChan)
+	})
+
 	// Drain error channel concurrently to avoid deadlock on unbuffered sends.
 	var allErrors []error
 
 	done := make(chan struct{})
 
 	go func() {
-		for err := range errChan {
-			if err != nil {
-				allErrors = append(allErrors, err)
-			}
-		}
+		allErrors = collectErrors(errChan)
 
 		close(done)
 	}()
@@ -90,6 +90,19 @@ func (c *external) updateProjectConcurrently(ctx context.Context, project *v1alp
 	waitGr.Wait()
 	close(errChan)
 	<-done
+
+	return allErrors
+}
+
+// collectErrors gathers the non-nil errors sent on errChan until it is closed.
+func collectErrors(errChan <-chan error) []error {
+	var allErrors []error
+
+	for err := range errChan {
+		if err != nil {
+			allErrors = append(allErrors, err)
+		}
+	}
 
 	return allErrors
 }
@@ -106,6 +119,22 @@ func (c *external) updateVisibility(ctx context.Context, project *v1alpha1.Proje
 
 	if err != nil {
 		errChan <- errors.Wrap(err, "cannot update Project visibility")
+	}
+}
+
+// updateContainsAiCode updates the AI code flag of the project if it is
+// managed and differs from the desired state.
+func (c *external) updateContainsAiCode(ctx context.Context, project *v1alpha1.Project, projectKey string, errChan chan<- error) {
+	desired := project.Spec.ForProvider.ContainsAiCode
+	if instance.IsProjectContainsAiCodeUpToDate(desired, project.Status.AtProvider.ContainsAiCode) {
+		return
+	}
+
+	resp, err := c.projectsClient.SetContainsAiCode(ctx, instance.GenerateProjectContainsAiCodeSetOptions(projectKey, *desired)) //nolint:bodyclose // closed via helpers.CloseBody
+	helpers.CloseBody(resp)
+
+	if err != nil {
+		errChan <- errors.Wrap(err, "cannot update Project AI code flag")
 	}
 }
 

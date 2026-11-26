@@ -76,6 +76,18 @@ func (f *Framework) FindProjectByKey(ctx context.Context, key string) (*sonar.Pr
 	return nil, nil //nolint:nilnil // intentional
 }
 
+// FetchProjectContainsAiCode reports whether the project with the given key
+// is flagged as containing AI code. The endpoint does not exist in SonarQube
+// Community Build.
+func (f *Framework) FetchProjectContainsAiCode(ctx context.Context, key string) (bool, error) {
+	res, resp, err := f.Sonar.Projects.GetContainsAiCode(ctx, &sonar.ProjectsProjectOptions{Project: key})
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return false, err
+	}
+	return res.ContainsAiCode, nil
+}
+
 // FindQualityGate returns the quality gate with the given name, or (nil, nil)
 // if no such gate exists. SonarQube exposes only a List endpoint, so this
 // iterates the full list - fine for the handful of gates used in e2e tests.

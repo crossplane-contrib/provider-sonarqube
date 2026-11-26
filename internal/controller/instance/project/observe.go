@@ -62,8 +62,8 @@ func (c *external) observeProjectExistence(ctx context.Context, projectKey strin
 }
 
 // observeProjectDetails makes all observation API calls concurrently and
-// returns the results.
-func (c *external) observeProjectDetails(ctx context.Context, projectKey, projectId string) observeResult {
+// returns the results. The AI code flag is only read if observeAiCode is true.
+func (c *external) observeProjectDetails(ctx context.Context, projectKey, projectId string, observeAiCode bool) observeResult {
 	var (
 		result observeResult
 		mutex  sync.Mutex
@@ -95,6 +95,12 @@ func (c *external) observeProjectDetails(ctx context.Context, projectKey, projec
 	waitGr.Go(func() {
 		c.observeALMBinding(ctx, projectKey, &result, &mutex)
 	})
+
+	if observeAiCode {
+		waitGr.Go(func() {
+			c.observeContainsAiCode(ctx, projectKey, &result, &mutex)
+		})
+	}
 
 	waitGr.Wait()
 
@@ -236,6 +242,24 @@ func (c *external) observeALMBinding(ctx context.Context, projectKey string, res
 	result.almBinding = instance.GenerateProjectALMBindingObservation(binding)
 }
 
+// observeContainsAiCode retrieves the AI code flag of the project from
+// SonarQube.
+func (c *external) observeContainsAiCode(ctx context.Context, projectKey string, result *observeResult, mutex *sync.Mutex) {
+	flag, resp, flagErr := c.projectsClient.GetContainsAiCode(ctx, instance.GenerateProjectContainsAiCodeGetOptions(projectKey)) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
+
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if flagErr != nil {
+		result.errors = append(result.errors, errors.Wrap(flagErr, "cannot observe Project AI code flag (not available in SonarQube Community Build)"))
+
+		return
+	}
+
+	result.containsAiCode = &flag.ContainsAiCode
+}
+
 // applyObserveResult applies the concurrent observation results
 // to the ProjectObservation.
 func (c *external) applyObserveResult(observation *v1alpha1.ProjectObservation, result *observeResult) {
@@ -268,4 +292,5 @@ func (c *external) applyObserveResult(observation *v1alpha1.ProjectObservation, 
 	}
 
 	observation.AlmBinding = result.almBinding
+	observation.ContainsAiCode = result.containsAiCode
 }
