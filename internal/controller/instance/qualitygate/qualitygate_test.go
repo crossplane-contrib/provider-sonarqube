@@ -581,6 +581,7 @@ func TestUpdateAiCodeAssurance(t *testing.T) {
 	cases := map[string]struct {
 		desired  *bool
 		observed bool
+		builtIn  bool
 		apiErr   error
 		want     *sonar.QualitygatesSetAiCodeAssuranceOptions
 		wantErr  error
@@ -600,6 +601,12 @@ func TestUpdateAiCodeAssurance(t *testing.T) {
 			desired:  new(false),
 			observed: true,
 			want:     &sonar.QualitygatesSetAiCodeAssuranceOptions{GateName: "external-gate", AiCodeAssurance: false},
+		},
+		"BuiltInIsRejected": {
+			desired:  new(false),
+			observed: true,
+			builtIn:  true,
+			wantErr:  errors.New(errSetAiCodeAssurance),
 		},
 		"APIFails": {
 			desired: new(true),
@@ -632,7 +639,7 @@ func TestUpdateAiCodeAssurance(t *testing.T) {
 					ForProvider: v1alpha1.QualityGateParameters{Name: "external-gate", AiCodeAssurance: tc.desired},
 				},
 				Status: v1alpha1.QualityGateStatus{
-					AtProvider: v1alpha1.QualityGateObservation{IsAiCodeSupported: tc.observed},
+					AtProvider: v1alpha1.QualityGateObservation{IsAiCodeSupported: tc.observed, IsBuiltIn: tc.builtIn},
 				},
 			}
 			meta.SetExternalName(qg, "external-gate")

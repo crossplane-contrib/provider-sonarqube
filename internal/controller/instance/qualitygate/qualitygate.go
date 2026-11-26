@@ -232,7 +232,7 @@ func (c *external) Update(ctx context.Context, qualityGate *v1alpha1.QualityGate
 	// Set Quality Gate as default if specified in the spec (idempotent)
 	if qualityGate.Spec.ForProvider.Default != nil && *qualityGate.Spec.ForProvider.Default {
 		updateSetDefaultResp, err := c.qualityGatesClient.SetDefault(ctx, &sonar.QualitygatesSetDefaultOptions{ //nolint:bodyclose // closed via helpers.CloseBody
-			Name: qualityGate.Spec.ForProvider.Name,
+			Name: externalName,
 		})
 		defer helpers.CloseBody(updateSetDefaultResp)
 
@@ -294,6 +294,12 @@ func (c *external) syncAiCodeAssurance(ctx context.Context, qualityGate *v1alpha
 	desired := qualityGate.Spec.ForProvider.AiCodeAssurance
 	if helpers.IsComparablePtrEqualComparable(desired, qualityGate.Status.AtProvider.IsAiCodeSupported) {
 		return nil
+	}
+
+	// Built-in Quality Gates can never be (dis)qualified: fail without
+	// sending a request that SonarQube is bound to reject.
+	if qualityGate.Status.AtProvider.IsBuiltIn {
+		return errors.New(errSetAiCodeAssurance)
 	}
 
 	resp, err := c.qualityGatesClient.SetAiCodeAssurance(ctx, instance.GenerateQualityGateSetAiCodeAssuranceOptions(meta.GetExternalName(qualityGate), *desired)) //nolint:bodyclose // closed via helpers.CloseBody
