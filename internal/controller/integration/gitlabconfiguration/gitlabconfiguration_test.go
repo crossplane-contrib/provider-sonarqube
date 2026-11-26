@@ -360,6 +360,15 @@ func TestObserve(t *testing.T) {
 			want:    managed.ExternalObservation{ResourceExists: true},
 			wantErr: errGetProvisioningToken,
 		},
+		"EmptyProvisioningToken": {
+			objects: []client.Object{credentialsSecret()},
+			client:  getReturns(observedConfiguration()),
+			mg: newTestConfiguration(testExternalName, func(cr *v1alpha1.GitLabConfiguration) {
+				cr.Spec.ForProvider.ProvisioningTokenSecretRef = secretKeySelector("empty")
+			}),
+			want:    managed.ExternalObservation{ResourceExists: true},
+			wantErr: errEmptyProvisioningToken,
+		},
 	}
 
 	for name, tc := range cases {

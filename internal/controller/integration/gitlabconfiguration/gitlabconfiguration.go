@@ -69,6 +69,9 @@ const (
 	// errGetProvisioningToken indicates the provisioning token could not be
 	// read.
 	errGetProvisioningToken = "cannot get GitLab provisioning token"
+	// errEmptyProvisioningToken indicates the referenced provisioning token
+	// is empty.
+	errEmptyProvisioningToken = "GitLab provisioning token is empty"
 	// errGetSavedCredentials indicates the last applied credentials could not
 	// be read.
 	errGetSavedCredentials = "cannot get saved GitLab configuration credentials"
@@ -349,7 +352,12 @@ func (c *external) readCredentials(ctx context.Context, configuration *v1alpha1.
 			return integration.GitLabConfigurationCredentials{}, errors.Wrap(err, errGetProvisioningToken)
 		}
 
+		// An empty token is never sent nor saved, so it could never match
+		// what SonarQube holds and would trigger an update on every poll.
 		credentials.ProvisioningToken = ptr.Deref(provisioningToken, "")
+		if credentials.ProvisioningToken == "" {
+			return integration.GitLabConfigurationCredentials{}, errors.New(errEmptyProvisioningToken)
+		}
 	}
 
 	return credentials, nil
