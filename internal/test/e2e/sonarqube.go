@@ -410,6 +410,22 @@ func (f *Framework) FindPortfolioByKey(ctx context.Context, key string) (*sonar.
 	return res, nil
 }
 
+// FindRemediationAgentSchedule returns the scheduled remediation agent
+// configuration with the given identifier (a project key, or "*" for the
+// instance-wide one), or (nil, nil) if there is none. This is an Enterprise
+// Edition feature.
+func (f *Framework) FindRemediationAgentSchedule(ctx context.Context, scheduleID string) (*sonar.RemediationAgentScheduledAgentConfigResource, error) {
+	res, resp, err := f.Sonar.V2.RemediationAgent.GetScheduledAgentConfig(ctx, scheduleID)
+	defer helpers.CloseBody(resp)
+	if common.IsResponseNotFound(resp) {
+		return nil, nil //nolint:nilnil // intentional: 404 is the natural absence sentinel
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // FindApplicationByKey returns the SonarQube application with the given
 // key, or (nil, nil) if no such application exists. Applications are an
 // Enterprise Edition feature; SonarQube returns 404 both when the key is

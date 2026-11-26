@@ -1,0 +1,55 @@
+---
+# Instance-wide schedule of the Remediation Agent (Enterprise Edition).
+# Deleting this resource disables the schedule.
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: RemediationAgentSchedule
+metadata:
+  name: example-remediation-schedule
+  namespace: default
+spec:
+  forProvider:
+    # Turns scheduled remediation on or off
+    enabled: true
+    # How often the agent runs, either DAILY or WEEKLY
+    frequency: WEEKLY
+    # Day of the run, only valid (and required) with the WEEKLY frequency
+    dayOfWeek: MONDAY
+    # Hour of the run (0-23) in the time zone below
+    hour: 2
+    # IANA time zone of the schedule
+    timezone: Europe/Paris
+    # Maximum number of issues fixed by a run (1-50)
+    maxIssuesPerRun: 5
+    # Runs are paused while this many of their pull requests are open
+    # (1-100, or -1 to never pause)
+    maxOpenPRs: 3
+    # ALL projects, or only the SELECTED ones
+    projectSelectionMode: SELECTED
+    # Keys of the selected projects. This list is exhaustive.
+    selectedProjectKeys:
+      - example-project-key
+    # Projects can also be referenced through Project managed resources
+    # selectedProjectKeyRefs:
+    #   - name: example-project
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+---
+# Schedule of a single project, overriding the instance-wide one.
+# Deleting this resource makes the project follow the instance-wide schedule.
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: RemediationAgentSchedule
+metadata:
+  name: example-project-remediation-schedule
+  namespace: default
+spec:
+  forProvider:
+    # Key of the project, or reference it with projectKeyRef (immutable)
+    projectKeyRef:
+      name: example-project
+    enabled: true
+    frequency: DAILY
+    hour: 4
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
