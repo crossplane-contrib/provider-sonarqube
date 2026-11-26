@@ -98,9 +98,9 @@ func waitForApplicationTags(t *testing.T, f *e2e.Framework, key string, want []s
 // TestApplicationCRUD creates two Projects and an Application referencing
 // them, verifies the application, its membership and its tags in SonarQube,
 // then drops a member and every tag from the spec and verifies they are
-// removed. Applications
-// are an Enterprise Edition feature that only function on a licensed
-// instance, so this requires SONARQUBE_LICENSE_KEY; it skips otherwise.
+// removed. Applications are an Enterprise Edition feature that only function
+// on a licensed instance, so this requires SONARQUBE_LICENSE_KEY; it skips
+// otherwise.
 //
 // Application branches are not exercised: they require analyzed project
 // branches, which the e2e environment does not produce.

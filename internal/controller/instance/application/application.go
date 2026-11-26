@@ -183,8 +183,8 @@ func (c *external) Observe(ctx context.Context, application *v1alpha1.Applicatio
 }
 
 // Create creates the Application in SonarQube and sets the external name
-// to the application key. Member projects and branches are reconciled by
-// the subsequent Update.
+// to the application key. Tags, member projects and branches are reconciled
+// by the subsequent Update.
 func (c *external) Create(ctx context.Context, application *v1alpha1.Application) (managed.ExternalCreation, error) {
 	application.Status.SetConditions(xpv1.Creating())
 
