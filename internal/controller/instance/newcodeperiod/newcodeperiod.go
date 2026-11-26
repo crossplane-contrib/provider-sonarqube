@@ -103,8 +103,12 @@ func (c *connector) Connect(ctx context.Context, newCodePeriod *v1alpha1.NewCode
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, newCodePeriod)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	svc := c.newServiceFn(*config)

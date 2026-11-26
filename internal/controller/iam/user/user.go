@@ -111,8 +111,12 @@ func (c *connector) Connect(ctx context.Context, user *v1alpha1.User) (managed.T
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, user)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	return &external{

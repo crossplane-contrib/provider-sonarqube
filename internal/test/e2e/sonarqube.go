@@ -20,12 +20,17 @@ package e2e
 
 import (
 	"context"
+	"errors"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 
 	"github.com/crossplane/provider-sonarqube/internal/clients/common"
 	"github.com/crossplane/provider-sonarqube/internal/helpers"
 )
+
+// errEmptyResponse is returned by the fetch helpers when SonarQube answers
+// without error but with an empty body.
+var errEmptyResponse = errors.New("empty response from SonarQube")
 
 // FetchGroup returns the SonarQube group with the given ID, or (nil, nil)
 // if no such group exists. Use the resource's external-name annotation -
@@ -537,6 +542,78 @@ func (f *Framework) FetchInstanceNewCodePeriod(ctx context.Context) (*sonar.NewC
 		return nil, err
 	}
 	return res, nil
+}
+
+// FetchCleanCodePolicyMode returns the Clean Code policy mode of the
+// SonarQube instance (MQR or STANDARD_EXPERIENCE).
+func (f *Framework) FetchCleanCodePolicyMode(ctx context.Context) (string, error) {
+	res, resp, err := f.Sonar.V2.CleanCodePolicy.GetMode(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return "", err
+	}
+	if res == nil {
+		return "", errEmptyResponse
+	}
+	return res.Mode, nil
+}
+
+// FetchComputeEngineWorkerCount returns the number of Compute Engine workers
+// of the SonarQube instance.
+func (f *Framework) FetchComputeEngineWorkerCount(ctx context.Context) (*sonar.CeWorkerCount, error) {
+	res, resp, err := f.Sonar.Ce.WorkerCount(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		return nil, errEmptyResponse
+	}
+	return res, nil
+}
+
+// SetComputeEngineWorkerCount sets the number of Compute Engine workers of
+// the SonarQube instance directly, bypassing the provider. Enterprise only.
+func (f *Framework) SetComputeEngineWorkerCount(ctx context.Context, count int64) error {
+	resp, err := f.Sonar.Ce.SetWorkerCount(ctx, &sonar.CeSetWorkerCountOptions{Count: count})
+	defer helpers.CloseBody(resp)
+	return err
+}
+
+// FetchSCIMEnabled reports whether SCIM provisioning is enabled on the
+// SonarQube instance. Enterprise only.
+func (f *Framework) FetchSCIMEnabled(ctx context.Context) (bool, error) {
+	res, resp, err := f.Sonar.ScimManagement.Status(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return false, err
+	}
+	if res == nil {
+		return false, errEmptyResponse
+	}
+	return res.Enabled, nil
+}
+
+// FetchSCAEnabled reports whether Software Composition Analysis is enabled
+// on the SonarQube instance. Enterprise only.
+func (f *Framework) FetchSCAEnabled(ctx context.Context) (bool, error) {
+	res, resp, err := f.Sonar.V2.Sca.GetEnablement(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return false, err
+	}
+	if res == nil {
+		return false, errEmptyResponse
+	}
+	return res.Enablement, nil
+}
+
+// SetDefaultProjectVisibility sets the default visibility of new projects
+// directly, bypassing the provider.
+func (f *Framework) SetDefaultProjectVisibility(ctx context.Context, visibility string) error {
+	resp, err := f.Sonar.Projects.UpdateDefaultVisibility(ctx, &sonar.ProjectsUpdateDefaultVisibilityOptions{ProjectVisibility: visibility})
+	defer helpers.CloseBody(resp)
+	return err
 }
 
 // QualityProfileGroupSelected reports whether the named group is allowed to

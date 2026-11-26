@@ -126,8 +126,12 @@ func (c *connector) Connect(ctx context.Context, webhook *v1alpha1.Webhook) (man
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, webhook)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	svc := c.newServiceFn(*config)
