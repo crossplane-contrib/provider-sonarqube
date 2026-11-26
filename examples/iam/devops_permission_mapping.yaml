@@ -1,0 +1,47 @@
+# DevOpsPermissionMapping requires a commercial edition of SonarQube.
+# One resource manages one role of one platform. The permissions list is
+# exhaustive: any permission not listed is revoked from the role.
+# Valid permissions: user, codeviewer, issueadmin, securityhotspotadmin,
+#                    admin, scan
+---
+# Example 1: built-in GitHub role.
+# Deleting this resource leaves the role's permissions unchanged in SonarQube,
+# because the mapping of a built-in role cannot be deleted.
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: DevOpsPermissionMapping
+metadata:
+  name: example-github-maintain
+  namespace: default
+spec:
+  forProvider:
+    platform: github
+    role: maintain
+    permissions:
+      - user
+      - codeviewer
+      - issueadmin
+      - securityhotspotadmin
+      - scan
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+---
+# Example 2: custom GitLab role.
+# The mapping is created by the provider (or adopted if it already exists),
+# and deleted with this resource.
+apiVersion: iam.sonarqube.crossplane.io/v1alpha1
+kind: DevOpsPermissionMapping
+metadata:
+  name: example-gitlab-custom-role
+  namespace: default
+spec:
+  forProvider:
+    platform: gitlab
+    role: Security Reviewer
+    permissions:
+      - user
+      - codeviewer
+      - securityhotspotadmin
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

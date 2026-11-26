@@ -493,6 +493,27 @@ func (f *Framework) FindApplicationByKey(ctx context.Context, key string) (*sona
 	return &res.Application, nil
 }
 
+// FindDevOpsPermissionMapping returns the permission mapping of the given
+// GitHub or GitLab role, or (nil, nil) if the platform has no such mapping.
+// Permission mappings require a commercial edition of SonarQube.
+func (f *Framework) FindDevOpsPermissionMapping(ctx context.Context, platform, role string) (*sonar.DopTranslationPermissionMapping, error) {
+	search := f.Sonar.V2.DopTranslation.SearchGithubPermissionMappings
+	if platform == "gitlab" {
+		search = f.Sonar.V2.DopTranslation.SearchGitlabPermissionMappings
+	}
+	res, resp, err := search(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	for i := range res.PermissionMappings {
+		if res.PermissionMappings[i].Role == role {
+			return &res.PermissionMappings[i], nil
+		}
+	}
+	return nil, nil //nolint:nilnil // intentional
+}
+
 // FetchLicense returns the license currently applied to the SonarQube
 // instance. SonarQube always returns 200 from this endpoint - even an
 // unlicensed Enterprise/Data Center instance reports a License with empty

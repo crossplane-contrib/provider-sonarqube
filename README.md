@@ -9,7 +9,8 @@ managing them through ad hoc scripts or manual clicks.
 The provider currently covers the areas teams usually need to standardize first:
 
 * Instance resources such as projects, quality gates, quality profiles, rules, and settings
-* IAM resources such as groups and permissions templates
+* IAM resources such as groups, permissions templates, and GitHub or GitLab role
+  permission mappings
 * Integration resources such as GitLab ALM configuration
 
 ## Why This Provider
@@ -169,6 +170,7 @@ Supported resources:
 | `Permissions`, `Group` | `permissions/groups` (unfiltered per project, by name for global permissions), `permissions/users` (by login) | Supported |
 | `PermissionsTemplate` | `permissions/search_templates` (indexed once per instance), `permissions/template_groups`, `permissions/template_users` (per template) | Supported |
 | `QualityGateUsergroupAssociation`, `QualityProfileUsergroupAssociation` | `qualitygates/search_groups`, `qualitygates/search_users`, `qualityprofiles/search_groups`, `qualityprofiles/search_users` (selected principals, per gate or profile) | Supported |
+| `DevOpsPermissionMapping` | `dop-translation/github-permission-mappings`, `dop-translation/gitlab-permission-mappings` (one list per platform) | Supported |
 | `Webhook`, `UserToken` | `webhooks/list` (per project), `user_tokens/search` (per login) | Supported |
 
 When the cache is enabled, the provider exposes the following metrics:
