@@ -84,6 +84,10 @@ type ProjectParameters struct {
 	// The key of the map is the language of the quality profile to be associated with the project, and the value is the reference to the quality profile.
 	// +kubebuilder:validation:Optional
 	QualityProfiles map[string]ProjectQualityProfileReference `json:"qualityProfiles,omitempty"`
+	// ContainsAiCode flags the project as containing AI-generated code, so that AI Code Assurance applies to it.
+	// If unset, the flag is not managed. Not available in SonarQube Community Build: requires a commercial edition of SonarQube Server 2025.1 or later.
+	// +kubebuilder:validation:Optional
+	ContainsAiCode *bool `json:"containsAiCode,omitempty"`
 	// AlmBinding binds the project to a repository on a DevOps platform (GitHub, GitLab, Azure DevOps, Bitbucket, or Bitbucket Cloud), enabling Pull Request decoration.
 	// +kubebuilder:validation:Optional
 	AlmBinding *ProjectALMBindingParameters `json:"almBinding,omitempty"`
@@ -271,6 +275,8 @@ type ProjectObservation struct {
 	// QualityProfiles is a map of language:quality profile associated with the project.
 	// The key of the map is the language of the quality profile associated with the project, and the value is the observed state of the quality profile.
 	QualityProfiles map[string]ProjectQualityProfileObservation `json:"qualityProfiles,omitempty"`
+	// ContainsAiCode indicates if the project is flagged as containing AI-generated code. Only observed when spec.forProvider.containsAiCode is set.
+	ContainsAiCode *bool `json:"containsAiCode,omitempty"`
 	// AlmBinding is the observed state of the project's DevOps platform binding.
 	AlmBinding *ProjectALMBindingObservation `json:"almBinding,omitempty"`
 }

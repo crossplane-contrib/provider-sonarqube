@@ -1146,6 +1146,11 @@ func (in *ProjectObservation) DeepCopyInto(out *ProjectObservation) {
 			(*out)[key] = val
 		}
 	}
+	if in.ContainsAiCode != nil {
+		in, out := &in.ContainsAiCode, &out.ContainsAiCode
+		*out = new(bool)
+		**out = **in
+	}
 	if in.AlmBinding != nil {
 		in, out := &in.AlmBinding, &out.AlmBinding
 		*out = new(ProjectALMBindingObservation)
@@ -1239,6 +1244,11 @@ func (in *ProjectParameters) DeepCopyInto(out *ProjectParameters) {
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
 		}
+	}
+	if in.ContainsAiCode != nil {
+		in, out := &in.ContainsAiCode, &out.ContainsAiCode
+		*out = new(bool)
+		**out = **in
 	}
 	if in.AlmBinding != nil {
 		in, out := &in.AlmBinding, &out.AlmBinding
