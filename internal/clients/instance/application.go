@@ -92,11 +92,9 @@ func GenerateApplicationUpdateOptions(key string, spec *v1alpha1.ApplicationPara
 // GenerateApplicationSetTagsOptions generates the options for replacing the
 // tags of a SonarQube Application. An empty list of tags removes every tag.
 func GenerateApplicationSetTagsOptions(key string, tags []string) *sonar.ApplicationsSetTagsOptions {
-	// SonarQube clears the tags when the parameter is present but empty. The
-	// client rejects an empty list and would omit the parameter, so a single
-	// empty tag is sent instead.
-	if len(tags) == 0 {
-		tags = []string{""}
+	// The client rejects a nil list, which would be an unset parameter.
+	if tags == nil {
+		tags = []string{}
 	}
 
 	return &sonar.ApplicationsSetTagsOptions{

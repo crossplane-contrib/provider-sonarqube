@@ -141,7 +141,7 @@ func TestGenerateApplicationSetTagsOptions(t *testing.T) {
 		},
 		"EmptyTagsSendAnEmptyParameter": {
 			tags: []string{},
-			want: &sonar.ApplicationsSetTagsOptions{Application: "app", Tags: []string{""}},
+			want: &sonar.ApplicationsSetTagsOptions{Application: "app", Tags: []string{}},
 		},
 	}
 
