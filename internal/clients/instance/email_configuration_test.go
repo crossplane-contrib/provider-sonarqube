@@ -198,6 +198,10 @@ func TestIsEmailConfigurationUpToDate(t *testing.T) {
 			spec: oauthEmailSpec(), current: oauth, saved: oauth,
 			mutate: func(c *sonar.SystemEmailConfiguration) { c.OauthScope = new("other") },
 		},
+		"ScopeNotReported": {
+			spec: oauthEmailSpec(), current: oauth, saved: oauth, want: true,
+			mutate: func(c *sonar.SystemEmailConfiguration) { c.OauthScope = nil },
+		},
 	}
 
 	fieldDrifts := map[string]observationOption{

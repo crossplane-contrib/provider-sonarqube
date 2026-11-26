@@ -157,8 +157,12 @@ func (c *connector) Connect(ctx context.Context, configuration *v1alpha1.EmailCo
 	}
 
 	config, err := common.GetConfig(ctx, c.kube, configuration)
-	if err != nil || config == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, errGetPC)
+	}
+
+	if config == nil {
+		return nil, errors.Wrap(errors.New("empty configuration returned"), errGetPC)
 	}
 
 	return &external{kubeClient: c.kube, client: c.newServiceFn(*config)}, nil
@@ -204,14 +208,21 @@ func (c *external) Observe(ctx context.Context, configuration *v1alpha1.EmailCon
 		return managed.ExternalObservation{ResourceExists: true}, nil
 	}
 
-	current, err := c.readCredentials(ctx, configuration)
-	if err != nil {
-		return managed.ExternalObservation{ResourceExists: true}, err
-	}
+	// The credentials only serve to detect their rotation, which matters only
+	// when the provider may update the configuration: an observe-only
+	// resource must not require its credential Secrets to exist.
+	var current, saved instance.EmailConfigurationCredentials
 
-	saved, err := c.getSavedCredentials(ctx, configuration)
-	if err != nil {
-		return managed.ExternalObservation{ResourceExists: true}, err
+	if mayUpdate(configuration) {
+		current, err = c.readCredentials(ctx, configuration)
+		if err != nil {
+			return managed.ExternalObservation{ResourceExists: true}, err
+		}
+
+		saved, err = c.getSavedCredentials(ctx, configuration)
+		if err != nil {
+			return managed.ExternalObservation{ResourceExists: true}, err
+		}
 	}
 
 	former := configuration.Spec.ForProvider.DeepCopy()
@@ -420,20 +431,33 @@ func (c *external) getSavedValue(ctx context.Context, configuration *v1alpha1.Em
 	return ptr.Deref(value, ""), nil
 }
 
-// connectionDetails returns the credentials applied to SonarQube, stored in
-// the connection secret to detect their rotation.
-func connectionDetails(credentials instance.EmailConfigurationCredentials) managed.ConnectionDetails {
-	details := managed.ConnectionDetails{}
+// mayUpdate reports whether the management policies of the resource let the
+// provider update the configuration in SonarQube. Unset policies default to
+// all actions.
+func mayUpdate(configuration *v1alpha1.EmailConfiguration) bool {
+	policies := configuration.GetManagementPolicies()
+	if len(policies) == 0 {
+		return true
+	}
 
-	for key, value := range map[string]string{
-		connectionDetailBasicPasswordKey:     credentials.BasicPassword,
-		connectionDetailOAuthClientIDKey:     credentials.OAuthClientID,
-		connectionDetailOAuthClientSecretKey: credentials.OAuthClientSecret,
-	} {
-		if value != "" {
-			details[key] = []byte(value)
+	for _, policy := range policies {
+		if policy == xpv1.ManagementActionAll || policy == xpv1.ManagementActionUpdate {
+			return true
 		}
 	}
 
-	return details
+	return false
+}
+
+// connectionDetails returns the credentials applied to SonarQube, stored in
+// the connection secret to detect their rotation. The keys of the other
+// authentication method are published empty, so that credentials no longer in
+// use do not linger in the connection secret, which the publisher only merges
+// into.
+func connectionDetails(credentials instance.EmailConfigurationCredentials) managed.ConnectionDetails {
+	return managed.ConnectionDetails{
+		connectionDetailBasicPasswordKey:     []byte(credentials.BasicPassword),
+		connectionDetailOAuthClientIDKey:     []byte(credentials.OAuthClientID),
+		connectionDetailOAuthClientSecretKey: []byte(credentials.OAuthClientSecret),
+	}
 }

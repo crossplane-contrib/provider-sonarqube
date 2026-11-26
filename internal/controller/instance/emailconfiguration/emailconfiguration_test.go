@@ -341,6 +341,13 @@ func TestObserve(t *testing.T) {
 			want:    unread,
 			wantErr: errGetBasicPassword,
 		},
+		"ObserveOnlyWithoutSecrets": {
+			client: getReturns(observedConfiguration()),
+			mg: newTestConfiguration(testExternalName, func(cr *v1alpha1.EmailConfiguration) {
+				cr.SetManagementPolicies(xpv1.ManagementPolicies{xpv1.ManagementActionObserve})
+			}),
+			want: upToDate,
+		},
 		"EmptyPassword": {
 			objects: []client.Object{credentialsSecret()},
 			client:  getReturns(observedConfiguration()),
@@ -498,7 +505,9 @@ func TestCreate(t *testing.T) {
 			},
 			mg: newTestConfiguration(""),
 			want: managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{
-				connectionDetailBasicPasswordKey: []byte(testPassword),
+				connectionDetailBasicPasswordKey:     []byte(testPassword),
+				connectionDetailOAuthClientIDKey:     []byte{},
+				connectionDetailOAuthClientSecretKey: []byte{},
 			}},
 			wantExternalName: testExternalName,
 		},
@@ -510,6 +519,7 @@ func TestCreate(t *testing.T) {
 			},
 			mg: newTestConfiguration("", withOAuth()),
 			want: managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{
+				connectionDetailBasicPasswordKey:     []byte{},
 				connectionDetailOAuthClientIDKey:     []byte(testClientID),
 				connectionDetailOAuthClientSecretKey: []byte(testClientSecret),
 			}},
@@ -567,7 +577,9 @@ func TestUpdate(t *testing.T) {
 			objects: []client.Object{credentialsSecret()},
 			mg:      newTestConfiguration(testExternalName),
 			want: managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{
-				connectionDetailBasicPasswordKey: []byte(testPassword),
+				connectionDetailBasicPasswordKey:     []byte(testPassword),
+				connectionDetailOAuthClientIDKey:     []byte{},
+				connectionDetailOAuthClientSecretKey: []byte{},
 			}},
 		},
 	}

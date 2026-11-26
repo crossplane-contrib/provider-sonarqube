@@ -123,13 +123,16 @@ func areEmailConfigurationFieldsUpToDate(spec *v1alpha1.EmailConfigurationParame
 }
 
 // areEmailConfigurationOAuthFieldsUpToDate reports whether the OAuth fields
-// match the observation. Unset optional fields match any value.
+// match the observation. Unset optional fields match any value. SonarQube
+// versions before 2026.5 neither store nor return the OAuth scope, so an
+// empty observed scope matches any value rather than requesting an update
+// that could never converge.
 func areEmailConfigurationOAuthFieldsUpToDate(spec *v1alpha1.EmailConfigurationParameters, observation *v1alpha1.EmailConfigurationObservation) bool {
 	return observation.IsOAuthClientIDSet &&
 		observation.IsOAuthClientSecretSet &&
 		helpers.IsComparablePtrEqualComparable(spec.OAuthAuthenticationHost, observation.OAuthAuthenticationHost) &&
 		helpers.IsComparablePtrEqualComparable(spec.OAuthTenant, observation.OAuthTenant) &&
-		helpers.IsComparablePtrEqualComparable(spec.OAuthScope, observation.OAuthScope)
+		(observation.OAuthScope == "" || helpers.IsComparablePtrEqualComparable(spec.OAuthScope, observation.OAuthScope))
 }
 
 // formatEmailPort formats the port as the SonarQube API represents it.

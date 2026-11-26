@@ -71,12 +71,13 @@ func TestEmailConfigurationLifecycle(t *testing.T) {
 		secretKey      = "password"
 		connSecretName = "e2e-email-configuration-connection"
 		smtpHost       = "smtp.example.com"
+		smtpPassword   = "e2e-fake-smtp-password"
 	)
 
 	credentials := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: f.Namespace},
 		Type:       corev1.SecretTypeOpaque,
-		StringData: map[string]string{secretKey: "e2e-fake-smtp-password"},
+		StringData: map[string]string{secretKey: smtpPassword},
 	}
 	if err := f.Kube.Create(context.Background(), credentials); err != nil && !apierrors.IsAlreadyExists(err) {
 		t.Fatalf("creating SMTP password secret: %v", err)
@@ -144,9 +145,11 @@ func TestEmailConfigurationLifecycle(t *testing.T) {
 		return got.Port == "465" && got.SecurityProtocol == "SSLTLS"
 	})
 
-	// Change the host directly in SonarQube to simulate drift.
+	// Change the host directly in SonarQube to simulate drift. SonarQube
+	// refuses to change the host unless the password is sent with it.
 	_, resp, err := f.Sonar.V2.System.UpdateEmailConfiguration(context.Background(), id, &sonar.SystemEmailConfigurationUpdateOptions{
-		Host: "drifted.example.com",
+		Host:          "drifted.example.com",
+		BasicPassword: smtpPassword,
 	})
 	helpers.CloseBody(resp)
 	if err != nil {
