@@ -109,6 +109,27 @@ func (f *Framework) FindQualityProfile(ctx context.Context, name, language strin
 	return nil, nil //nolint:nilnil // intentional
 }
 
+// FindBuiltInQualityProfile returns a built-in quality profile of the given
+// language that has active rules, or (nil, nil) if there is none. Built-in
+// profile names change between SonarQube versions (e.g. "Sonar way" became
+// "Sonar way core/extended/comprehensive"), so tests must not hardcode them.
+func (f *Framework) FindBuiltInQualityProfile(ctx context.Context, language string) (*sonar.QualityProfile, error) {
+	res, resp, err := f.Sonar.Qualityprofiles.Search(ctx, &sonar.QualityprofilesSearchOptions{Language: language})
+	defer helpers.CloseBody(resp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range res.Profiles {
+		if res.Profiles[i].IsBuiltIn && res.Profiles[i].ActiveRuleCount > 0 {
+			return &res.Profiles[i], nil
+		}
+	}
+
+	return nil, nil //nolint:nilnil // intentional
+}
+
 // FetchRule returns the SonarQube rule with the given fully-qualified key
 // (e.g. "java:my-custom-rule"), or (nil, nil) if no such rule exists.
 func (f *Framework) FetchRule(ctx context.Context, key string) (*sonar.RulesDetails, error) {

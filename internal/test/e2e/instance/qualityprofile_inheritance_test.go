@@ -32,18 +32,31 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/test/e2e"
 )
 
-// TestQualityProfileInheritance creates a profile extending the built-in
-// "Sonar way", checks that it inherits its rules, then removes the parent.
+// TestQualityProfileInheritance creates a profile extending a built-in one,
+// checks that it inherits its rules, then removes the parent.
 func TestQualityProfileInheritance(t *testing.T) {
 	t.Parallel()
 
 	f := e2e.New(t)
 
 	const (
-		name       = "e2e-qp-go-inheritance"
-		language   = "go"
-		parentName = "Sonar way"
+		name     = "e2e-qp-go-inheritance"
+		language = "go"
 	)
+
+	// Use the actual name of a built-in profile: legacy names such as
+	// "Sonar way" are accepted as aliases by change_parent but resolve to a
+	// differently named profile, so they would never be observed as such.
+	builtIn, err := f.FindBuiltInQualityProfile(context.Background(), language)
+	if err != nil {
+		t.Fatalf("finding a built-in %s quality profile: %v", language, err)
+	}
+
+	if builtIn == nil {
+		t.Fatalf("no built-in %s quality profile with active rules", language)
+	}
+
+	parentName := builtIn.Name
 
 	qp := &instancev1alpha1.QualityProfile{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: f.Namespace},
@@ -84,7 +97,7 @@ func TestQualityProfileInheritance(t *testing.T) {
 
 	waitForParent(parentName)
 
-	err := f.Kube.Get(context.Background(), client.ObjectKeyFromObject(qp), qp)
+	err = f.Kube.Get(context.Background(), client.ObjectKeyFromObject(qp), qp)
 	if err != nil {
 		t.Fatalf("getting quality profile: %v", err)
 	}
