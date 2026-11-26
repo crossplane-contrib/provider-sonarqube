@@ -39,7 +39,28 @@ type QualityProfileParameters struct {
 	// Default indicates whether this Quality Profile is the default one.
 	// +kubebuilder:validation:Optional
 	Default *bool `json:"default,omitempty"`
+	// Parent is the name of the Quality Profile, of the same language, that
+	// this one inherits its rules from. Built-in profiles such as "Sonar way"
+	// can be named directly. Set it to an empty string to remove any parent,
+	// or leave it unset to not manage inheritance.
+	// Note that deleting a Quality Profile in SonarQube also deletes all the
+	// profiles inheriting from it.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=100
+	Parent *string `json:"parent,omitempty"`
+	// ParentRef is a reference to a QualityProfile to retrieve its name and
+	// set it as the parent of this one.
+	// +kubebuilder:validation:Optional
+	ParentRef *xpv1.Reference `json:"parentRef,omitempty"`
+	// ParentSelector selects a reference to a QualityProfile to retrieve its
+	// name and set it as the parent of this one.
+	// +kubebuilder:validation:Optional
+	ParentSelector *xpv1.Selector `json:"parentSelector,omitempty"`
 	// Rules is the list of rules to be activated in the Quality Profile.
+	// Rules inherited from the parent profile stay active without being listed.
+	// Listing one overrides it, and removing an overridden rule from the list
+	// restores the parent configuration. Any other active rule that is not
+	// listed is deactivated.
 	// +kubebuilder:validation:Optional
 	Rules []QualityProfileRuleParameters `json:"rules,omitempty"`
 }
@@ -66,6 +87,9 @@ type QualityProfileObservation struct {
 	LastUsed *metav1.Time `json:"lastUsed,omitempty"`
 	// Name is the display name of the Quality Profile.
 	Name string `json:"name"`
+	// Parent is the name of the parent Quality Profile, empty when the
+	// Quality Profile does not inherit from another one.
+	Parent string `json:"parent,omitempty"`
 	// ProjectCount is the number of projects associated with the Quality Profile.
 	ProjectCount int64 `json:"projectCount"`
 	// RulesUpdatedAt is the last time the rules in the Quality Profile were updated.
@@ -115,6 +139,10 @@ type QualityProfileRuleObservation struct {
 	Impacts     []QualityProfileRuleImpact `json:"impacts,omitempty"`
 	Parameters  map[string]string          `json:"parameters,omitempty"`
 	Prioritized bool                       `json:"prioritized"`
+	// Inheritance tells whether the rule is the profile's own (NONE),
+	// inherited from the parent profile (INHERITED), or inherited and
+	// overridden (OVERRIDES).
+	Inheritance string `json:"inheritance,omitempty"`
 }
 
 // QualityProfileRuleImpact represents the impact of a rule

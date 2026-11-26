@@ -36,6 +36,12 @@ const (
 	// severityKey is the key used in the parameters map to
 	// specify severity for a rule activation.
 	severityKey = "severity"
+	// ruleInheritanceInherited marks an active rule that a Quality Profile
+	// inherits unchanged from its parent.
+	ruleInheritanceInherited = "INHERITED"
+	// ruleInheritanceOverrides marks an inherited rule whose configuration
+	// the Quality Profile overrides.
+	ruleInheritanceOverrides = "OVERRIDES"
 )
 
 // RulesClient is the client for SonarQube Rules API.
@@ -163,6 +169,7 @@ type ruleActiveSettings struct {
 	Params      *map[string]string
 	Impacts     []v1alpha1.QualityProfileRuleImpact
 	Prioritized *bool
+	Inheritance string
 }
 
 // findQualityProfileActiveRuleSettings parses the activated rules,
@@ -185,6 +192,7 @@ func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *
 				Severity:    &activeRule.Severity,
 				Params:      &params,
 				Prioritized: &activeRule.PrioritizedRule,
+				Inheritance: activeRule.Inherit,
 				Impacts:     GenerateQualityProfileImpactsObservation(&activeRule.Impacts),
 			}
 		}
@@ -206,6 +214,8 @@ func GenerateQualityProfileRuleObservation(rule sonar.RulesDetails, activatedSet
 	}
 
 	if activatedSettings != nil {
+		ruleObservation.Inheritance = activatedSettings.Inheritance
+
 		if activatedSettings.Severity != nil {
 			ruleObservation.Severity = *activatedSettings.Severity
 		}

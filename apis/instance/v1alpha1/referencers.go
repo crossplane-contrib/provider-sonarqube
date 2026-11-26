@@ -109,6 +109,11 @@ func (application *Application) ResolveReferences(ctx context.Context, readerCli
 func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
 	resolver := reference.NewAPIResolver(readerClient, qualityProfile)
 
+	err := qualityProfile.resolveParent(ctx, resolver)
+	if err != nil {
+		return err
+	}
+
 	for ruleIdx := range qualityProfile.Spec.ForProvider.Rules {
 		rule := &qualityProfile.Spec.ForProvider.Rules[ruleIdx]
 
@@ -130,6 +135,38 @@ func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, rea
 		rule.Rule = reference.ToPtrValue(response.ResolvedValue)
 		rule.RuleRef = response.ResolvedReference
 	}
+
+	return nil
+}
+
+// resolveParent resolves the reference or selector to the parent
+// QualityProfile into its display name.
+func (qualityProfile *QualityProfile) resolveParent(ctx context.Context, resolver *reference.APIResolver) error {
+	params := &qualityProfile.Spec.ForProvider
+
+	// Without a reference there is nothing to resolve, and writing the result
+	// back would turn an empty parent (no parent) into an unset one (unmanaged).
+	if params.ParentRef == nil && params.ParentSelector == nil {
+		return nil
+	}
+
+	response, err := resolver.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(params.Parent),
+		Extract:      QualityProfileName(),
+		Namespace:    qualityProfile.GetNamespace(),
+		Reference:    params.ParentRef,
+		Selector:     params.ParentSelector,
+		To: reference.To{
+			List:    &QualityProfileList{},
+			Managed: &QualityProfile{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.parent")
+	}
+
+	params.Parent = reference.ToPtrValue(response.ResolvedValue)
+	params.ParentRef = response.ResolvedReference
 
 	return nil
 }

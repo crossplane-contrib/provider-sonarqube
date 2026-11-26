@@ -101,9 +101,101 @@ spec:
                     maxLength: 100
                     minLength: 1
                     type: string
+                  parent:
+                    description: |-
+                      Parent is the name of the Quality Profile, of the same language, that
+                      this one inherits its rules from. Built-in profiles such as "Sonar way"
+                      can be named directly. Set it to an empty string to remove any parent,
+                      or leave it unset to not manage inheritance.
+                      Note that deleting a Quality Profile in SonarQube also deletes all the
+                      profiles inheriting from it.
+                    maxLength: 100
+                    type: string
+                  parentRef:
+                    description: |-
+                      ParentRef is a reference to a QualityProfile to retrieve its name and
+                      set it as the parent of this one.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  parentSelector:
+                    description: |-
+                      ParentSelector selects a reference to a QualityProfile to retrieve its
+                      name and set it as the parent of this one.
+                    properties:
+                      matchControllerRef:
+                        description: |-
+                          MatchControllerRef ensures an object with the same controller reference
+                          as the selecting object is selected.
+                        type: boolean
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels ensures an object with matching labels
+                          is selected.
+                        type: object
+                      policy:
+                        description: Policies for selection.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    type: object
                   rules:
-                    description: Rules is the list of rules to be activated in the
-                      Quality Profile.
+                    description: |-
+                      Rules is the list of rules to be activated in the Quality Profile.
+                      Rules inherited from the parent profile stay active without being listed.
+                      Listing one overrides it, and removing an overridden rule from the list
+                      restores the parent configuration. Any other active rule that is not
+                      listed is deactivated.
                     items:
                       description: |-
                         QualityProfileRuleParameters are the configurable fields of a
@@ -331,6 +423,11 @@ spec:
                   name:
                     description: Name is the display name of the Quality Profile.
                     type: string
+                  parent:
+                    description: |-
+                      Parent is the name of the parent Quality Profile, empty when the
+                      Quality Profile does not inherit from another one.
+                    type: string
                   projectCount:
                     description: ProjectCount is the number of projects associated
                       with the Quality Profile.
@@ -359,6 +456,12 @@ spec:
                                 type: string
                             type: object
                           type: array
+                        inheritance:
+                          description: |-
+                            Inheritance tells whether the rule is the profile's own (NONE),
+                            inherited from the parent profile (INHERITED), or inherited and
+                            overridden (OVERRIDES).
+                          type: string
                         key:
                           type: string
                         name:

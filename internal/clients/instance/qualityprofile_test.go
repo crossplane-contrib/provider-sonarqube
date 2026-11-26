@@ -1444,3 +1444,132 @@ func TestLateInitializeQualityProfileRules(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateQualityProfileParentObservation tests the extraction of the
+// direct parent from an inheritance response.
+func TestGenerateQualityProfileParentObservation(t *testing.T) {
+	t.Parallel()
+
+	ancestors := []sonar.QualityprofilesInheritanceProfile{{Key: "root", Name: "Root"}, {Key: "mid", Name: "Mid"}}
+
+	cases := map[string]struct {
+		inheritance *sonar.QualityprofilesInheritance
+		want        string
+	}{
+		"Nil":        {},
+		"NoAncestor": {inheritance: &sonar.QualityprofilesInheritance{}},
+		"MatchesParentKey": {
+			inheritance: &sonar.QualityprofilesInheritance{
+				Profile:   sonar.QualityprofilesInheritanceProfile{Parent: "mid"},
+				Ancestors: ancestors,
+			},
+			want: "Mid",
+		},
+		"FallsBackToClosestAncestor": {
+			inheritance: &sonar.QualityprofilesInheritance{Ancestors: ancestors},
+			want:        "Root",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := GenerateQualityProfileParentObservation(tc.inheritance); got != tc.want {
+				t.Errorf("GenerateQualityProfileParentObservation(...) = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestQualityProfileParentOptions tests the options generated to read and
+// change the parent of a Quality Profile.
+func TestQualityProfileParentOptions(t *testing.T) {
+	t.Parallel()
+
+	params := v1alpha1.QualityProfileParameters{Name: "child", Language: "go", Parent: new("Sonar way")}
+
+	wantChange := &sonar.QualityprofilesChangeParentOptions{QualityProfile: "child", Language: "go", ParentQualityProfile: "Sonar way"}
+	if diff := cmp.Diff(wantChange, GenerateQualityProfileChangeParentOptions(params)); diff != "" {
+		t.Errorf("GenerateQualityProfileChangeParentOptions(...): -want, +got:\n%s", diff)
+	}
+
+	wantInheritance := &sonar.QualityprofilesInheritanceOptions{QualityProfile: "child", Language: "go"}
+	if diff := cmp.Diff(wantInheritance, GenerateQualityProfileInheritanceOptions("child", "go")); diff != "" {
+		t.Errorf("GenerateQualityProfileInheritanceOptions(...): -want, +got:\n%s", diff)
+	}
+
+	wantReset := &sonar.QualityprofilesActivateRuleOptions{Key: "key", Rule: "go:S1", Reset: true}
+	if diff := cmp.Diff(wantReset, GenerateQualityProfileResetRuleOption("key", "go:S1")); diff != "" {
+		t.Errorf("GenerateQualityProfileResetRuleOption(...): -want, +got:\n%s", diff)
+	}
+}
+
+// TestInheritedQualityProfileRules tests how rules coming from a parent
+// profile are associated with the desired ones.
+func TestInheritedQualityProfileRules(t *testing.T) {
+	t.Parallel()
+
+	observations := []v1alpha1.QualityProfileRuleObservation{
+		{Key: "unlisted-inherited", Inheritance: "INHERITED"},
+		{Key: "unlisted-override", Inheritance: "OVERRIDES"},
+		{Key: "unlisted-own", Inheritance: "NONE"},
+		{Key: "listed-inherited", Inheritance: "INHERITED", Severity: "MAJOR"},
+		{Key: "listed-override", Inheritance: "OVERRIDES", Severity: "MAJOR"},
+	}
+	specs := []v1alpha1.QualityProfileRuleParameters{
+		{Rule: new("listed-inherited"), Severity: new("BLOCKER")},
+		{Rule: new("listed-override"), Severity: new("MAJOR")},
+	}
+
+	associations := GenerateQualityProfileRulesAssociation(specs, observations)
+
+	if _, found := associations["unlisted-inherited"]; found {
+		t.Errorf("GenerateQualityProfileRulesAssociation(...): unlisted inherited rule must be ignored")
+	}
+
+	keys := func(rules []*v1alpha1.QualityProfileRuleObservation) []string {
+		out := make([]string, 0, len(rules))
+		for _, rule := range rules {
+			out = append(out, rule.Key)
+		}
+
+		return out
+	}
+
+	if diff := cmp.Diff([]string{"unlisted-own"}, keys(FindMissingQualityProfileRules(associations))); diff != "" {
+		t.Errorf("FindMissingQualityProfileRules(...): -want, +got:\n%s", diff)
+	}
+
+	if diff := cmp.Diff([]string{"unlisted-override"}, keys(FindUnlistedQualityProfileRuleOverrides(associations))); diff != "" {
+		t.Errorf("FindUnlistedQualityProfileRuleOverrides(...): -want, +got:\n%s", diff)
+	}
+
+	outdated := FindNotUpToDateQualityProfileRules(associations)
+	if len(outdated) != 1 || outdated[0].Observation.Key != "listed-inherited" {
+		t.Errorf("FindNotUpToDateQualityProfileRules(...) = %v, want only listed-inherited", outdated)
+	}
+
+	onlyInherited := GenerateQualityProfileRulesAssociation(nil, observations[:1])
+	if !AreQualityProfileRulesUpToDate(onlyInherited) {
+		t.Errorf("AreQualityProfileRulesUpToDate(...): a profile with only inherited rules must be up to date")
+	}
+}
+
+// TestInheritedQualityProfileRuleObservation tests that the inheritance of an
+// activation is observed.
+func TestInheritedQualityProfileRuleObservation(t *testing.T) {
+	t.Parallel()
+
+	got := GenerateQualityProfileRulesObservation("child", &sonar.RulesSearch{
+		Rules: []sonar.RulesDetails{{Key: "go:S1"}},
+		Actives: map[string][]sonar.RulesActivation{"go:S1": {
+			{QProfile: "parent", Inherit: "NONE"},
+			{QProfile: "child", Inherit: "INHERITED"},
+		}},
+	})
+
+	if len(got) != 1 || got[0].Inheritance != "INHERITED" {
+		t.Errorf("GenerateQualityProfileRulesObservation(...) = %+v, want inheritance INHERITED", got)
+	}
+}

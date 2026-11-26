@@ -99,6 +99,52 @@ func GenerateRenameQualityProfileOption(key string, params v1alpha1.QualityProfi
 	}
 }
 
+// GenerateQualityProfileInheritanceOptions generates the options for reading
+// the inheritance of a SonarQube Quality Profile, identified by its name and
+// language.
+func GenerateQualityProfileInheritanceOptions(name, language string) *sonar.QualityprofilesInheritanceOptions {
+	return &sonar.QualityprofilesInheritanceOptions{
+		QualityProfile: name,
+		Language:       language,
+	}
+}
+
+// GenerateQualityProfileParentObservation returns the name of the direct
+// parent found in a SonarQube QualityprofilesInheritance, or an empty string
+// when the profile has no parent.
+func GenerateQualityProfileParentObservation(inheritance *sonar.QualityprofilesInheritance) string {
+	if inheritance == nil || len(inheritance.Ancestors) == 0 {
+		return ""
+	}
+
+	// Ancestors hold the whole chain: match the parent key, and fall back to
+	// the first entry, which is the closest ancestor.
+	for _, ancestor := range inheritance.Ancestors {
+		if ancestor.Key == inheritance.Profile.Parent {
+			return ancestor.Name
+		}
+	}
+
+	return inheritance.Ancestors[0].Name
+}
+
+// GenerateQualityProfileChangeParentOptions generates SonarQube
+// QualityprofilesChangeParentOptions from QualityProfileParameters.
+// An empty parent removes the inheritance link.
+func GenerateQualityProfileChangeParentOptions(params v1alpha1.QualityProfileParameters) *sonar.QualityprofilesChangeParentOptions {
+	return &sonar.QualityprofilesChangeParentOptions{
+		QualityProfile:       params.Name,
+		Language:             params.Language,
+		ParentQualityProfile: ptr.Deref(params.Parent, ""),
+	}
+}
+
+// IsQualityProfileParentUpToDate checks whether the observed parent matches
+// the desired one. An unset parent is not managed, hence always up to date.
+func IsQualityProfileParentUpToDate(spec *v1alpha1.QualityProfileParameters, observation *v1alpha1.QualityProfileObservation) bool {
+	return helpers.IsComparablePtrEqualComparable(spec.Parent, observation.Parent)
+}
+
 // GenerateQualityProfileObservation generates QualityProfileObservation
 // from SonarQube QualityprofilesShow.
 func GenerateQualityProfileObservation(observation *sonar.QualityprofilesShow, rules *sonar.RulesSearch) v1alpha1.QualityProfileObservation {
@@ -149,6 +195,10 @@ func IsQualityProfileUpToDate(spec *v1alpha1.QualityProfileParameters, observati
 	}
 
 	if !helpers.IsComparablePtrEqualComparable(spec.Default, observation.IsDefault) {
+		return false
+	}
+
+	if !IsQualityProfileParentUpToDate(spec, observation) {
 		return false
 	}
 
@@ -212,6 +262,17 @@ func GenerateQualityProfileDeactivateRuleOption(qualityProfileKey, ruleKey strin
 	}
 }
 
+// GenerateQualityProfileResetRuleOption generates SonarQube
+// QualityprofilesActivateRuleOption restoring the configuration an overridden
+// rule has in the parent profile.
+func GenerateQualityProfileResetRuleOption(qualityProfileKey, ruleKey string) *sonar.QualityprofilesActivateRuleOptions {
+	return &sonar.QualityprofilesActivateRuleOptions{
+		Key:   qualityProfileKey,
+		Rule:  ruleKey,
+		Reset: true,
+	}
+}
+
 // QualityProfileRuleAssociation associates a QualityProfileRuleObservation with
 // its corresponding QualityProfileRuleParameters.
 type QualityProfileRuleAssociation struct {
@@ -223,6 +284,8 @@ type QualityProfileRuleAssociation struct {
 // GenerateQualityProfileRulesAssociation generates associations between
 // QualityProfileRuleParameters and QualityProfileRuleObservation
 // The key in the returned map is the rule key (which is unique per rule).
+// Rules inherited from the parent profile and absent from the specs are left
+// out, as they belong to the parent.
 func GenerateQualityProfileRulesAssociation(specs []v1alpha1.QualityProfileRuleParameters, observations []v1alpha1.QualityProfileRuleObservation) map[string]QualityProfileRuleAssociation {
 	associations := make(map[string]QualityProfileRuleAssociation)
 
@@ -254,6 +317,12 @@ func GenerateQualityProfileRulesAssociation(specs []v1alpha1.QualityProfileRuleP
 				Spec:        &specs[idx],
 				UpToDate:    false,
 			}
+		}
+	}
+
+	for key, assoc := range associations {
+		if assoc.Spec == nil && assoc.Observation.Inheritance == ruleInheritanceInherited {
+			delete(associations, key)
 		}
 	}
 
@@ -289,17 +358,34 @@ func FindNonExistingQualityProfileRules(associations map[string]QualityProfileRu
 
 // FindMissingQualityProfileRules finds QualityProfileRuleObservations that
 // do not have a corresponding QualityProfileRuleParameters
-// These are rules that need to be deactivated.
+// These are rules that need to be deactivated. Overrides of inherited rules
+// are excluded, see FindUnlistedQualityProfileRuleOverrides.
 func FindMissingQualityProfileRules(associations map[string]QualityProfileRuleAssociation) []*v1alpha1.QualityProfileRuleObservation {
 	var missing []*v1alpha1.QualityProfileRuleObservation
 
 	for _, assoc := range associations {
-		if assoc.Spec == nil && assoc.Observation != nil {
+		if assoc.Spec == nil && assoc.Observation != nil && assoc.Observation.Inheritance != ruleInheritanceOverrides {
 			missing = append(missing, assoc.Observation)
 		}
 	}
 
 	return missing
+}
+
+// FindUnlistedQualityProfileRuleOverrides finds the inherited rules that are
+// overridden in the profile but have no corresponding
+// QualityProfileRuleParameters.
+// These are rules that need to be reset to the parent configuration.
+func FindUnlistedQualityProfileRuleOverrides(associations map[string]QualityProfileRuleAssociation) []*v1alpha1.QualityProfileRuleObservation {
+	var overrides []*v1alpha1.QualityProfileRuleObservation
+
+	for _, assoc := range associations {
+		if assoc.Spec == nil && assoc.Observation != nil && assoc.Observation.Inheritance == ruleInheritanceOverrides {
+			overrides = append(overrides, assoc.Observation)
+		}
+	}
+
+	return overrides
 }
 
 // FindNotUpToDateQualityProfileRules finds QualityProfileRuleAssociations

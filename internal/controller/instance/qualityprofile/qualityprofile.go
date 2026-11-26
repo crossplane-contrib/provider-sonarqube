@@ -59,6 +59,10 @@ const (
 	errDeleteQualityProfile = "cannot delete SonarQube Quality Profile"
 	// errShowQualityProfile indicates retrieving QualityProfile failed.
 	errShowQualityProfile = "cannot get SonarQube Quality Profile"
+	// errInheritanceQualityProfile indicates retrieving the parent failed.
+	errInheritanceQualityProfile = "cannot get SonarQube Quality Profile inheritance"
+	// errParentQualityProfile indicates changing the parent failed.
+	errParentQualityProfile = "cannot change SonarQube Quality Profile parent"
 )
 
 // SetupGated adds a controller that reconciles QualityProfile
@@ -164,8 +168,14 @@ func (c *external) Observe(ctx context.Context, profile *v1alpha1.QualityProfile
 		return managed.ExternalObservation{}, errors.Wrap(err, errShowQualityProfile)
 	}
 
+	parent, err := c.observeParent(ctx, qualityProfile)
+	if err != nil {
+		return managed.ExternalObservation{}, errors.Wrap(err, errInheritanceQualityProfile)
+	}
+
 	// Update status with observed state
 	profile.Status.AtProvider = instance.GenerateQualityProfileObservation(qualityProfile, rules)
+	profile.Status.AtProvider.Parent = parent
 	profile.Status.SetConditions(xpv1.Available())
 	current := profile.Spec.ForProvider.DeepCopy()
 
@@ -245,10 +255,17 @@ func (c *external) Update(ctx context.Context, profile *v1alpha1.QualityProfile)
 		}
 	}
 
-	associations := instance.GenerateQualityProfileRulesAssociation(profile.Spec.ForProvider.Rules, profile.Status.AtProvider.Rules)
+	// Changing the parent changes the active rules, so it comes before their
+	// synchronization.
+	rules, err := c.syncQualityProfileParent(ctx, profile)
+	if err != nil {
+		return managed.ExternalUpdate{}, err
+	}
+
+	associations := instance.GenerateQualityProfileRulesAssociation(profile.Spec.ForProvider.Rules, rules)
 
 	// Sync Quality Profile Rules
-	err := c.syncQualityProfileRules(ctx, profile, associations)
+	err = c.syncQualityProfileRules(ctx, profile, associations)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot sync Quality Profile Rules")
 	}
@@ -281,6 +298,48 @@ func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
 
+// observeParent returns the name of the parent of the given Quality Profile.
+// The inheritance is only fetched for profiles reporting that they have one.
+func (c *external) observeParent(ctx context.Context, qualityProfile *sonar.QualityprofilesShow) (string, error) {
+	if !qualityProfile.Profile.IsInherited {
+		return "", nil
+	}
+
+	inheritance, resp, err := c.qualityProfilesClient.Inheritance(ctx, instance.GenerateQualityProfileInheritanceOptions(qualityProfile.Profile.Name, qualityProfile.Profile.Language)) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
+
+	if err != nil {
+		return "", err
+	}
+
+	return instance.GenerateQualityProfileParentObservation(inheritance), nil
+}
+
+// syncQualityProfileParent changes the parent of the Quality Profile when it
+// differs from the desired one, and returns the rules active in the profile
+// afterwards.
+func (c *external) syncQualityProfileParent(ctx context.Context, profile *v1alpha1.QualityProfile) ([]v1alpha1.QualityProfileRuleObservation, error) {
+	if instance.IsQualityProfileParentUpToDate(&profile.Spec.ForProvider, &profile.Status.AtProvider) {
+		return profile.Status.AtProvider.Rules, nil
+	}
+
+	resp, err := c.qualityProfilesClient.ChangeParent(ctx, instance.GenerateQualityProfileChangeParentOptions(profile.Spec.ForProvider)) //nolint:bodyclose // closed via helpers.CloseBody
+	defer helpers.CloseBody(resp)
+
+	if err != nil {
+		return nil, errors.Wrap(err, errParentQualityProfile)
+	}
+
+	externalName := meta.GetExternalName(profile)
+
+	rules, err := instance.FetchAllQualityProfileRules(ctx, c.rulesClient, externalName)
+	if err != nil {
+		return nil, errors.Wrap(err, errShowQualityProfile)
+	}
+
+	return instance.GenerateQualityProfileRulesObservation(externalName, rules), nil
+}
+
 // syncQualityProfileRules syncs QualityProfile rules with associations.
 func (c *external) syncQualityProfileRules(ctx context.Context, profile *v1alpha1.QualityProfile, associations map[string]instance.QualityProfileRuleAssociation) error {
 	if len(associations) == 0 {
@@ -294,6 +353,10 @@ func (c *external) syncQualityProfileRules(ctx context.Context, profile *v1alpha
 
 	// Phase 1: Deactivate rules that should not be active (in observation but not in spec)
 	aggregatedErrors := c.deactivateUnwantedQualityProfileRules(ctx, externalName, associations)
+
+	// Reset the overrides of inherited rules that are not listed anymore
+	resetErrors := c.resetUnlistedQualityProfileRuleOverrides(ctx, externalName, associations)
+	aggregatedErrors = append(aggregatedErrors, resetErrors...)
 
 	// Phase 2: Activate rules that should be active (in spec but not in observation)
 	activateErrors := c.activateMissingQualityProfileRules(ctx, externalName, associations)
@@ -332,6 +395,28 @@ func (c *external) deactivateUnwantedQualityProfileRules(ctx context.Context, ex
 			continue
 		}
 		// Remove from associations after successful deactivation
+		delete(associations, ruleObservation.Key)
+	}
+
+	return errs
+}
+
+// resetUnlistedQualityProfileRuleOverrides restores the parent configuration
+// of the inherited rules that are overridden but not in the spec.
+// Returns a slice of errors encountered during the reset.
+func (c *external) resetUnlistedQualityProfileRuleOverrides(ctx context.Context, externalName string, associations map[string]instance.QualityProfileRuleAssociation) []error {
+	var errs []error
+
+	for _, ruleObservation := range instance.FindUnlistedQualityProfileRuleOverrides(associations) {
+		resetResp, err := c.qualityProfilesClient.ActivateRule(ctx, instance.GenerateQualityProfileResetRuleOption(externalName, ruleObservation.Key)) //nolint:bodyclose // closed via helpers.CloseBody
+		helpers.CloseBody(resetResp)
+
+		if err != nil {
+			errs = append(errs, errors.Wrapf(err, "cannot reset rule %s", ruleObservation.Key))
+
+			continue
+		}
+		// The rule is now inherited, hence not managed anymore
 		delete(associations, ruleObservation.Key)
 	}
 
