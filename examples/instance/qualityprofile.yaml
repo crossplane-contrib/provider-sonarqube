@@ -12,6 +12,12 @@ spec:
     language: go
     # Don't make this the server default in this example
     default: false
+    # Inherit the rules of another profile of the same language. Use an empty
+    # string to remove any parent, or omit the field to not manage inheritance.
+    # To inherit from a profile managed by this provider, use parentRef or
+    # parentSelector instead.
+    parent: Sonar way
+    # Inherited rules stay active without being listed.
     # Two example rules showcasing parameters, severity/impacts and prioritization
     rules:
       # Rule using traditional severity approach
@@ -31,6 +37,23 @@ spec:
         prioritized: false
         params:
           Max: "500"
+
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: QualityProfile
+metadata:
+  name: example-qualityprofile-go-child
+  namespace: default
+spec:
+  forProvider:
+    name: example-go-child-profile
+    language: go
+    parentRef:
+      name: example-qualityprofile-go
 
   providerConfigRef:
     name: example

@@ -1620,6 +1620,21 @@ func (in *QualityProfileParameters) DeepCopyInto(out *QualityProfileParameters) 
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Parent != nil {
+		in, out := &in.Parent, &out.Parent
+		*out = new(string)
+		**out = **in
+	}
+	if in.ParentRef != nil {
+		in, out := &in.ParentRef, &out.ParentRef
+		*out = new(v2.Reference)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.ParentSelector != nil {
+		in, out := &in.ParentSelector, &out.ParentSelector
+		*out = new(v2.Selector)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
 		*out = make([]QualityProfileRuleParameters, len(*in))

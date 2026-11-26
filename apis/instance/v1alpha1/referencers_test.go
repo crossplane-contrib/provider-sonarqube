@@ -806,3 +806,97 @@ func TestResolveReferences(t *testing.T) { //nolint:gocognit,maintidx // TestRes
 		})
 	}
 }
+
+// TestQualityProfileResolveParentReference tests the resolution of the parent
+// of a QualityProfile.
+func TestQualityProfileResolveParentReference(t *testing.T) {
+	t.Parallel()
+
+	parentNamed := func(obj client.Object) error {
+		if qp, ok := obj.(*QualityProfile); ok {
+			qp.Spec.ForProvider.Name = "Company profile"
+		}
+
+		return nil
+	}
+
+	cases := map[string]struct {
+		reason    string
+		parent    *string
+		ref       *xpv1.Reference
+		selector  *xpv1.Selector
+		client    client.Reader
+		want      *string
+		errSubstr string
+	}{
+		"Unset": {
+			reason: "An unset parent stays unset.",
+			client: test.NewMockClient(),
+		},
+		"Empty_Preserved": {
+			reason: "An empty parent must not become unset.",
+			parent: new(""),
+			client: test.NewMockClient(),
+			want:   new(""),
+		},
+		"BuiltIn_Preserved": {
+			reason: "A parent named directly is preserved.",
+			parent: new("Sonar way"),
+			client: test.NewMockClient(),
+			want:   new("Sonar way"),
+		},
+		"Ref_ResolvesName": {
+			reason: "A reference resolves to the name of the profile.",
+			ref:    &xpv1.Reference{Name: "parent"},
+			client: &test.MockClient{MockGet: test.NewMockGetFn(nil, parentNamed)},
+			want:   new("Company profile"),
+		},
+		"Selector_ResolvesName": {
+			reason:   "A selector resolves to the name of the profile.",
+			selector: &xpv1.Selector{MatchLabels: map[string]string{"role": "parent"}},
+			client: &test.MockClient{MockList: test.NewMockListFn(nil, func(obj client.ObjectList) error {
+				if list, ok := obj.(*QualityProfileList); ok {
+					list.Items = []QualityProfile{{Spec: QualityProfileSpec{ForProvider: QualityProfileParameters{Name: "Company profile"}}}}
+				}
+
+				return nil
+			})},
+			want: new("Company profile"),
+		},
+		"Ref_NotFound": {
+			reason:    "A missing referenced profile is an error.",
+			ref:       &xpv1.Reference{Name: "parent"},
+			client:    &test.MockClient{MockGet: test.NewMockGetFn(kerrors.NewNotFound(schema.GroupResource{}, "parent"))},
+			errSubstr: "spec.forProvider.parent",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			profile := newTestQualityProfile(testNamespace)
+			profile.Spec.ForProvider.Parent = tc.parent
+			profile.Spec.ForProvider.ParentRef = tc.ref
+			profile.Spec.ForProvider.ParentSelector = tc.selector
+
+			err := profile.ResolveReferences(context.Background(), tc.client)
+			if tc.errSubstr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.errSubstr) {
+					t.Fatalf("%s: error = %v, want containing %q", tc.reason, err, tc.errSubstr)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("%s: unexpected error: %v", tc.reason, err)
+			}
+
+			got := profile.Spec.ForProvider.Parent
+			if (got == nil) != (tc.want == nil) || ptr.Deref(got, "") != ptr.Deref(tc.want, "") {
+				t.Errorf("%s: parent = %v, want %v", tc.reason, got, tc.want)
+			}
+		})
+	}
+}

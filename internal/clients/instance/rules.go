@@ -36,6 +36,12 @@ const (
 	// severityKey is the key used in the parameters map to
 	// specify severity for a rule activation.
 	severityKey = "severity"
+	// ruleInheritanceInherited marks an active rule that a Quality Profile
+	// inherits unchanged from its parent.
+	ruleInheritanceInherited = "INHERITED"
+	// ruleInheritanceOverrides marks an inherited rule whose configuration
+	// the Quality Profile overrides.
+	ruleInheritanceOverrides = "OVERRIDES"
 )
 
 // RulesClient is the client for SonarQube Rules API.
@@ -114,7 +120,9 @@ func FetchAllQualityProfileRules(ctx context.Context, rulesClient RulesClient, q
 
 		// Check if we've fetched all rules
 		// Paging.Total is the total number of rules, we compare with what we've collected
-		if int64(len(allRules)) >= rules.Paging.Total {
+		// An empty page also ends the iteration, as asking for the next page
+		// would loop forever when the total shrinks or is inconsistent.
+		if int64(len(allRules)) >= rules.Paging.Total || len(rules.Rules) == 0 {
 			// Return aggregated result with the paging info from last response
 			return &sonar.RulesSearch{
 				Actives: allActives,
@@ -163,6 +171,7 @@ type ruleActiveSettings struct {
 	Params      *map[string]string
 	Impacts     []v1alpha1.QualityProfileRuleImpact
 	Prioritized *bool
+	Inheritance string
 }
 
 // findQualityProfileActiveRuleSettings parses the activated rules,
@@ -185,6 +194,7 @@ func findQualityProfileActiveRuleSettings(qualityProfileId string, activeRules *
 				Severity:    &activeRule.Severity,
 				Params:      &params,
 				Prioritized: &activeRule.PrioritizedRule,
+				Inheritance: activeRule.Inherit,
 				Impacts:     GenerateQualityProfileImpactsObservation(&activeRule.Impacts),
 			}
 		}
@@ -206,6 +216,8 @@ func GenerateQualityProfileRuleObservation(rule sonar.RulesDetails, activatedSet
 	}
 
 	if activatedSettings != nil {
+		ruleObservation.Inheritance = activatedSettings.Inheritance
+
 		if activatedSettings.Severity != nil {
 			ruleObservation.Severity = *activatedSettings.Severity
 		}

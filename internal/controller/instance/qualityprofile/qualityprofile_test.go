@@ -63,7 +63,7 @@ func mockHTTPResponse() *http.Response {
 }
 
 // TestObserve tests the Observe method.
-func TestObserve(t *testing.T) {
+func TestObserve(t *testing.T) { //nolint:maintidx // table-driven test covering many cases
 	t.Parallel()
 
 	type args struct {
@@ -99,10 +99,36 @@ func TestObserve(t *testing.T) {
 				err: nil,
 			},
 		},
-		"ShowFailsReturnsNotExists": {
+		"ShowFailsReturnsError": {
 			qualityProfilesClient: &fake.MockQualityProfilesClient{
 				ShowFn: func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
 					return nil, nil, errors.New("api error")
+				},
+			},
+			rulesClient: &fake.MockRulesClient{},
+			args: args{
+				ctx: context.Background(),
+				mg: func() *v1alpha1.QualityProfile {
+					qp := &v1alpha1.QualityProfile{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        "test-profile",
+							Annotations: map[string]string{},
+						},
+					}
+					meta.SetExternalName(qp, "AU-TpxcA-iU5OvuD2FLz")
+
+					return qp
+				}(),
+			},
+			want: want{
+				o:   managed.ExternalObservation{},
+				err: errors.Wrap(errors.New("api error"), errShowQualityProfile),
+			},
+		},
+		"ShowNotFoundReturnsNotExists": {
+			qualityProfilesClient: &fake.MockQualityProfilesClient{
+				ShowFn: func(opt *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
+					return nil, &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, errors.New("not found")
 				},
 			},
 			rulesClient: &fake.MockRulesClient{},
@@ -725,5 +751,249 @@ func TestSyncQualityProfileRules(t *testing.T) {
 				t.Errorf("syncQualityProfileRules() error mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+// TestObserveParent tests that Observe reports the parent of a Quality
+// Profile and detects its drift.
+func TestObserveParent(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		reason         string
+		isInherited    bool
+		inheritanceErr error
+		parent         *string
+		wantParent     string
+		wantUpToDate   bool
+		wantErr        error
+	}{
+		"UnmanagedParentIsUpToDate": {
+			reason:       "An unset parent is not managed",
+			isInherited:  true,
+			wantParent:   "Sonar way",
+			wantUpToDate: true,
+		},
+		"MatchingParentIsUpToDate": {
+			reason:       "The desired parent is observed",
+			isInherited:  true,
+			parent:       new("Sonar way"),
+			wantParent:   "Sonar way",
+			wantUpToDate: true,
+		},
+		"MissingParentIsOutOfDate": {
+			reason: "A desired parent is not set yet",
+			parent: new("Sonar way"),
+		},
+		"UnwantedParentIsOutOfDate": {
+			reason:      "An empty parent requires the inheritance to be removed",
+			isInherited: true,
+			parent:      new(""),
+			wantParent:  "Sonar way",
+		},
+		"NoParentIsUpToDate": {
+			reason:       "An empty parent matches a profile without parent",
+			parent:       new(""),
+			wantUpToDate: true,
+		},
+		"InheritanceError": {
+			reason:         "A failure to read the inheritance is returned",
+			isInherited:    true,
+			inheritanceErr: errors.New("boom"),
+			wantErr:        errors.Wrap(errors.New("boom"), errInheritanceQualityProfile),
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			e := external{
+				qualityProfilesClient: &fake.MockQualityProfilesClient{
+					ShowFn: func(_ *sonar.QualityprofilesShowOptions) (*sonar.QualityprofilesShow, *http.Response, error) {
+						return &sonar.QualityprofilesShow{Profile: sonar.QualityprofilesShownProfile{
+							Key: "key", Name: "child", Language: "go", IsInherited: tc.isInherited,
+						}}, mockHTTPResponse(), nil
+					},
+					// Left unset for profiles without parent: calling it fails.
+					InheritanceFn: func(opt *sonar.QualityprofilesInheritanceOptions) (*sonar.QualityprofilesInheritance, *http.Response, error) {
+						if !tc.isInherited || opt.QualityProfile != "child" || opt.Language != "go" {
+							return nil, nil, errors.Errorf("unexpected inheritance call: %+v", opt)
+						}
+
+						if tc.inheritanceErr != nil {
+							return nil, nil, tc.inheritanceErr
+						}
+
+						return &sonar.QualityprofilesInheritance{
+							Ancestors: []sonar.QualityprofilesInheritanceProfile{{Key: "parent", Name: "Sonar way"}},
+						}, mockHTTPResponse(), nil
+					},
+				},
+				rulesClient: &fake.MockRulesClient{
+					SearchFn: func(_ *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
+						return &sonar.RulesSearch{
+							Rules:   []sonar.RulesDetails{{Key: "go:S100"}},
+							Actives: map[string][]sonar.RulesActivation{"go:S100": {{QProfile: "key", Inherit: "INHERITED"}}},
+							Paging:  sonar.Paging{Total: 1},
+						}, mockHTTPResponse(), nil
+					},
+				},
+			}
+
+			profile := &v1alpha1.QualityProfile{
+				ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{meta.AnnotationKeyExternalName: "key"}},
+				Spec: v1alpha1.QualityProfileSpec{ForProvider: v1alpha1.QualityProfileParameters{
+					Name: "child", Language: "go", Parent: tc.parent,
+				}},
+			}
+
+			got, err := e.Observe(context.Background(), profile)
+			if diff := cmp.Diff(tc.wantErr, err, cmp.Comparer(errComparer)); diff != "" {
+				t.Fatalf("\n%s\ne.Observe(...): -want error, +got error:\n%s", tc.reason, diff)
+			}
+
+			if got.ResourceUpToDate != tc.wantUpToDate {
+				t.Errorf("\n%s\ne.Observe(...): ResourceUpToDate = %t, want %t", tc.reason, got.ResourceUpToDate, tc.wantUpToDate)
+			}
+
+			if profile.Status.AtProvider.Parent != tc.wantParent {
+				t.Errorf("\n%s\ne.Observe(...): parent = %q, want %q", tc.reason, profile.Status.AtProvider.Parent, tc.wantParent)
+			}
+
+			if diff := cmp.Diff(tc.parent, profile.Spec.ForProvider.Parent); diff != "" {
+				t.Errorf("\n%s\ne.Observe(...): parent must not be late initialized: -want, +got:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+// TestUpdateParent tests that Update changes the parent before synchronizing
+// the rules against the resulting profile.
+func TestUpdateParent(t *testing.T) {
+	t.Parallel()
+
+	errBoom := errors.New("boom")
+
+	cases := map[string]struct {
+		reason    string
+		parent    *string
+		changeErr error
+		searchErr error
+		wantCalls []string
+		wantErr   error
+	}{
+		"UnmanagedParent": {
+			reason:    "The parent is left alone, and stale rules are synchronized",
+			wantCalls: []string{"reset go:S2", "activate go:S3"},
+		},
+		"UpToDateParent": {
+			reason:    "The parent is not changed when it already matches",
+			parent:    new("old"),
+			wantCalls: []string{"reset go:S2", "activate go:S3"},
+		},
+		"SetParent": {
+			reason:    "Rules inherited from the new parent are neither activated nor deactivated",
+			parent:    new("new"),
+			wantCalls: []string{"parent new"},
+		},
+		"RemoveParent": {
+			reason:    "An empty parent removes the inheritance",
+			parent:    new(""),
+			wantCalls: []string{"parent "},
+		},
+		"ChangeParentError": {
+			reason:    "A failure to change the parent stops the update",
+			parent:    new("new"),
+			changeErr: errBoom,
+			wantCalls: []string{"parent new"},
+			wantErr:   errors.Wrap(errBoom, errParentQualityProfile),
+		},
+		"RefreshRulesError": {
+			reason:    "A failure to read the rules after the change is returned",
+			parent:    new("new"),
+			searchErr: errBoom,
+			wantCalls: []string{"parent new"},
+			wantErr:   errors.Wrap(errBoom, errShowQualityProfile),
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var calls []string
+
+			e := external{
+				qualityProfilesClient: &fake.MockQualityProfilesClient{
+					ChangeParentFn: func(opt *sonar.QualityprofilesChangeParentOptions) (*http.Response, error) {
+						calls = append(calls, "parent "+opt.ParentQualityProfile)
+
+						if tc.changeErr != nil {
+							return nil, tc.changeErr
+						}
+
+						return mockHTTPResponse(), nil
+					},
+					ActivateRuleFn: func(opt *sonar.QualityprofilesActivateRuleOptions) (*http.Response, error) {
+						verb := "activate "
+						if opt.Reset {
+							verb = "reset "
+						}
+
+						calls = append(calls, verb+opt.Rule)
+
+						return mockHTTPResponse(), nil
+					},
+				},
+				rulesClient: &fake.MockRulesClient{
+					SearchFn: func(_ *sonar.RulesSearchOptions) (*sonar.RulesSearch, *http.Response, error) {
+						return &sonar.RulesSearch{
+							Rules:   []sonar.RulesDetails{{Key: "go:S3"}},
+							Actives: map[string][]sonar.RulesActivation{"go:S3": {{QProfile: "key", Inherit: "INHERITED"}}},
+							Paging:  sonar.Paging{Total: 1},
+						}, mockHTTPResponse(), tc.searchErr
+					},
+				},
+			}
+
+			profile := &v1alpha1.QualityProfile{
+				ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{meta.AnnotationKeyExternalName: "key"}},
+				Spec: v1alpha1.QualityProfileSpec{ForProvider: v1alpha1.QualityProfileParameters{
+					Name: "child", Language: "go", Parent: tc.parent,
+					Rules: []v1alpha1.QualityProfileRuleParameters{{Rule: new("go:S3")}},
+				}},
+				Status: v1alpha1.QualityProfileStatus{AtProvider: v1alpha1.QualityProfileObservation{
+					Name: "child", Parent: "old",
+					Rules: []v1alpha1.QualityProfileRuleObservation{
+						{Key: "go:S1", Inheritance: "INHERITED"},
+						{Key: "go:S2", Inheritance: "OVERRIDES"},
+					},
+				}},
+			}
+
+			_, err := e.Update(context.Background(), profile)
+			if diff := cmp.Diff(tc.wantErr, err, cmp.Comparer(errComparer)); diff != "" {
+				t.Errorf("\n%s\ne.Update(...): -want error, +got error:\n%s", tc.reason, diff)
+			}
+
+			if diff := cmp.Diff(tc.wantCalls, calls); diff != "" {
+				t.Errorf("\n%s\ne.Update(...): -want calls, +got calls:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+// TestResetUnlistedQualityProfileRuleOverridesError tests that a failed reset
+// is reported.
+func TestResetUnlistedQualityProfileRuleOverridesError(t *testing.T) {
+	t.Parallel()
+
+	e := external{qualityProfilesClient: &fake.MockQualityProfilesClient{}}
+	associations := instance.GenerateQualityProfileRulesAssociation(nil, []v1alpha1.QualityProfileRuleObservation{{Key: "go:S1", Inheritance: "OVERRIDES"}})
+
+	errs := e.resetUnlistedQualityProfileRuleOverrides(context.Background(), "key", associations)
+	if len(errs) != 1 {
+		t.Errorf("resetUnlistedQualityProfileRuleOverrides(...): got %d errors, want 1", len(errs))
 	}
 }
