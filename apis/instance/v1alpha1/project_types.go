@@ -66,10 +66,13 @@ type ProjectParameters struct {
 	// NewCodePeriod is the new code definition of the project.
 	// +kubebuilder:validation:Optional
 	NewCodePeriod *ProjectNewCodePeriodParameters `json:"newCodePeriod,omitempty"`
-	// Branches is the map of authorized branches of the project.
-	// Any branch that is not in this list will be considered unauthorized and will be deleted by SonarQube.
+	// Branches configures branches of the project, keyed by branch name.
+	// The provider neither creates nor deletes branches: SonarQube creates them
+	// when they are first analyzed, and the configuration of a branch that does
+	// not exist yet is applied once it appears. Branches that are not listed are
+	// left untouched.
 	// +kubebuilder:validation:Optional
-	Branches map[string]*ProjectNewCodePeriodParameters `json:"branches,omitempty"`
+	Branches map[string]*ProjectBranchParameters `json:"branches,omitempty"`
 	// QualityGateName is the name of the quality gate to be associated with the project.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
@@ -219,14 +222,36 @@ type ProjectLinkParameters struct {
 // ProjectNewCodePeriodParameters represent the parameters of the
 // new code definition of a project.
 type ProjectNewCodePeriodParameters struct {
-	// Type is the type of the new code definition. Can be either "PREVIOUS_VERSION" or "NUMBER_OF_DAYS" or "REFERENCE_BRANCH" for projects.
-	// Can be "SPECIFIC_ANALYSIS" for branches.
+	// Type is the type of the new code definition. Can be "PREVIOUS_VERSION", "NUMBER_OF_DAYS" or "REFERENCE_BRANCH".
+	// "SPECIFIC_ANALYSIS" is only available on branches, see branches.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=PREVIOUS_VERSION;NUMBER_OF_DAYS;REFERENCE_BRANCH;SPECIFIC_ANALYSIS
+	// +kubebuilder:validation:Enum=PREVIOUS_VERSION;NUMBER_OF_DAYS;REFERENCE_BRANCH
 	Type string `json:"type"`
-	// Value is the value of the new code definition. If the type is "previous_version", this field should be empty. If the type is "reference_branch", this field should be the name of the reference branch.
+	// Value is the value of the new code definition. If the type is "PREVIOUS_VERSION", this field should be empty. If the type is "REFERENCE_BRANCH", this field should be the name of the reference branch.
 	// +kubebuilder:validation:Optional
 	Value *string `json:"value,omitempty"`
+}
+
+// ProjectBranchParameters are the configurable fields of a branch of a
+// project. Every field is optional, and unset settings are not managed.
+// +kubebuilder:validation:XValidation:rule="!has(self.value) || has(self.type)",message="value requires type to be set"
+type ProjectBranchParameters struct {
+	// Type is the type of the new code definition of the branch. Can be "PREVIOUS_VERSION", "NUMBER_OF_DAYS", "REFERENCE_BRANCH" or "SPECIFIC_ANALYSIS".
+	// If unset, the new code definition of the branch is not managed.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=PREVIOUS_VERSION;NUMBER_OF_DAYS;REFERENCE_BRANCH;SPECIFIC_ANALYSIS
+	Type *string `json:"type,omitempty"`
+	// Value is the value of the new code definition of the branch. If the type is "PREVIOUS_VERSION", this field should be empty. If the type is "REFERENCE_BRANCH", this field should be the name of the reference branch.
+	// Requires type to be set.
+	// +kubebuilder:validation:Optional
+	Value *string `json:"value,omitempty"`
+	// ExcludedFromPurge protects the branch from being automatically deleted by
+	// SonarQube when it has not been analyzed for a while. If unset, the
+	// protection of the branch is not managed.
+	// The main branch is always protected by SonarQube: setting this field to
+	// false has no effect while the branch is the main branch.
+	// +kubebuilder:validation:Optional
+	ExcludedFromPurge *bool `json:"excludedFromPurge,omitempty"`
 }
 
 // ProjectQualityProfileReference represent the reference to a quality profile

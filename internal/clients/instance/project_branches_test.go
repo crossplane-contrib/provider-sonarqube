@@ -185,7 +185,7 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		spec        map[string]*v1alpha1.ProjectNewCodePeriodParameters
+		spec        map[string]*v1alpha1.ProjectBranchParameters
 		observation map[string]v1alpha1.ProjectBranchObservation
 		want        bool
 	}{
@@ -202,8 +202,8 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 			want: true,
 		},
 		"SpecBranchNotInObservation": {
-			spec: map[string]*v1alpha1.ProjectNewCodePeriodParameters{
-				"feature": {Type: "NUMBER_OF_DAYS", Value: new("30")},
+			spec: map[string]*v1alpha1.ProjectBranchParameters{
+				"feature": {Type: new("NUMBER_OF_DAYS"), Value: new("30")},
 			},
 			observation: map[string]v1alpha1.ProjectBranchObservation{
 				"main": {},
@@ -211,8 +211,8 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 			want: true,
 		},
 		"MatchingBranchNewCodePeriod": {
-			spec: map[string]*v1alpha1.ProjectNewCodePeriodParameters{
-				"main": {Type: "NUMBER_OF_DAYS", Value: new("30")},
+			spec: map[string]*v1alpha1.ProjectBranchParameters{
+				"main": {Type: new("NUMBER_OF_DAYS"), Value: new("30")},
 			},
 			observation: map[string]v1alpha1.ProjectBranchObservation{
 				"main": {
@@ -225,8 +225,8 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 			want: true,
 		},
 		"MismatchedBranchNewCodePeriod": {
-			spec: map[string]*v1alpha1.ProjectNewCodePeriodParameters{
-				"main": {Type: "NUMBER_OF_DAYS", Value: new("30")},
+			spec: map[string]*v1alpha1.ProjectBranchParameters{
+				"main": {Type: new("NUMBER_OF_DAYS"), Value: new("30")},
 			},
 			observation: map[string]v1alpha1.ProjectBranchObservation{
 				"main": {
@@ -237,6 +237,31 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 				},
 			},
 			want: false,
+		},
+		"MatchingBranchPurgeProtection": {
+			spec: map[string]*v1alpha1.ProjectBranchParameters{
+				"release": {ExcludedFromPurge: new(true)},
+			},
+			observation: map[string]v1alpha1.ProjectBranchObservation{
+				"release": {ExcludedFromPurge: true},
+			},
+			want: true,
+		},
+		"MismatchedBranchPurgeProtection": {
+			spec: map[string]*v1alpha1.ProjectBranchParameters{
+				"release": {ExcludedFromPurge: new(true)},
+			},
+			observation: map[string]v1alpha1.ProjectBranchObservation{
+				"release": {ExcludedFromPurge: false},
+			},
+			want: false,
+		},
+		"NilBranchSpec": {
+			spec: map[string]*v1alpha1.ProjectBranchParameters{"release": nil},
+			observation: map[string]v1alpha1.ProjectBranchObservation{
+				"release": {ExcludedFromPurge: true},
+			},
+			want: true,
 		},
 	}
 
@@ -249,6 +274,98 @@ func TestAreProjectBranchesUpToDate(t *testing.T) {
 				t.Errorf("AreProjectBranchesUpToDate() = %v, want %v", got, tc.want)
 			}
 		})
+	}
+}
+
+// TestIsBranchPurgeProtectionUpToDate tests checking the automatic deletion
+// protection of a branch.
+func TestIsBranchPurgeProtectionUpToDate(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec        *v1alpha1.ProjectBranchParameters
+		observation *v1alpha1.ProjectBranchObservation
+		want        bool
+	}{
+		"NilObservation":      {spec: nil, observation: nil, want: false},
+		"NilSpec":             {spec: nil, observation: &v1alpha1.ProjectBranchObservation{ExcludedFromPurge: true}, want: true},
+		"UnsetIsNotManaged":   {spec: &v1alpha1.ProjectBranchParameters{}, observation: &v1alpha1.ProjectBranchObservation{ExcludedFromPurge: true}, want: true},
+		"ProtectionRemoved":   {spec: &v1alpha1.ProjectBranchParameters{ExcludedFromPurge: new(true)}, observation: &v1alpha1.ProjectBranchObservation{}, want: false},
+		"ProtectionUnwanted":  {spec: &v1alpha1.ProjectBranchParameters{ExcludedFromPurge: new(false)}, observation: &v1alpha1.ProjectBranchObservation{ExcludedFromPurge: true}, want: false},
+		"UnprotectedAsWanted": {spec: &v1alpha1.ProjectBranchParameters{ExcludedFromPurge: new(false)}, observation: &v1alpha1.ProjectBranchObservation{}, want: true},
+		"MainBranchCannotBeUnprotected": {
+			spec:        &v1alpha1.ProjectBranchParameters{ExcludedFromPurge: new(false)},
+			observation: &v1alpha1.ProjectBranchObservation{IsMain: true, ExcludedFromPurge: true},
+			want:        true,
+		},
+		"MainBranchProtected": {
+			spec:        &v1alpha1.ProjectBranchParameters{ExcludedFromPurge: new(true)},
+			observation: &v1alpha1.ProjectBranchObservation{IsMain: true, ExcludedFromPurge: true},
+			want:        true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsBranchPurgeProtectionUpToDate(tc.spec, tc.observation)
+			if got != tc.want {
+				t.Errorf("IsBranchPurgeProtectionUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestIsBranchNewCodePeriodUpToDate tests checking the new code period of a
+// branch.
+func TestIsBranchNewCodePeriodUpToDate(t *testing.T) {
+	t.Parallel()
+
+	observed := &v1alpha1.ProjectBranchObservation{
+		NewCodePeriod: v1alpha1.ProjectNewCodePeriodObservation{Type: "PREVIOUS_VERSION"},
+	}
+
+	tests := map[string]struct {
+		spec        *v1alpha1.ProjectBranchParameters
+		observation *v1alpha1.ProjectBranchObservation
+		want        bool
+	}{
+		"NilObservation":  {spec: nil, observation: nil, want: false},
+		"NilSpec":         {spec: nil, observation: observed, want: true},
+		"TypeNotManaged":  {spec: &v1alpha1.ProjectBranchParameters{ExcludedFromPurge: new(true)}, observation: observed, want: true},
+		"MatchingType":    {spec: &v1alpha1.ProjectBranchParameters{Type: new("PREVIOUS_VERSION")}, observation: observed, want: true},
+		"MismatchingType": {spec: &v1alpha1.ProjectBranchParameters{Type: new("NUMBER_OF_DAYS")}, observation: observed, want: false},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := IsBranchNewCodePeriodUpToDate(tc.spec, tc.observation)
+			if got != tc.want {
+				t.Errorf("IsBranchNewCodePeriodUpToDate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestGenerateProjectBranchesSetAutomaticDeletionProtectionOptions tests
+// generating set automatic deletion protection options.
+func TestGenerateProjectBranchesSetAutomaticDeletionProtectionOptions(t *testing.T) {
+	t.Parallel()
+
+	for _, protected := range []bool{true, false} {
+		want := &sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions{
+			Project: "my-project",
+			Branch:  "release/1.0",
+			Value:   protected,
+		}
+
+		got := GenerateProjectBranchesSetAutomaticDeletionProtectionOptions("my-project", "release/1.0", protected)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("GenerateProjectBranchesSetAutomaticDeletionProtectionOptions() mismatch (-want +got):\n%s", diff)
+		}
 	}
 }
 

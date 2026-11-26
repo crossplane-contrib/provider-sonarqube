@@ -26,6 +26,14 @@ spec:
       type: NUMBER_OF_DAYS
       # Value of the new code definition, required if type is reference_branch
       value: "90"
+    # Settings of individual branches, keyed by branch name. Branches are
+    # created by SonarQube analyses: settings apply once the branch exists.
+    branches:
+      release/1.0:
+        # New code definition of the branch, optional
+        type: PREVIOUS_VERSION
+        # Protect the branch from automatic purge, left unmanaged if unset
+        excludedFromPurge: true
     # Links to display in the project overview in SonarQube
     links:
       - name: GitHub Repository

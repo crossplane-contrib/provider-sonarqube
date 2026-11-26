@@ -83,20 +83,76 @@ func GenerateBranchesObservations(branches sonar.ProjectBranchesList) map[string
 }
 
 // AreProjectBranchesUpToDate checks if the observed branches of a
-// SonarQube Project are up to date with the authorized branches
-// specified in the managed resource.
-// Only confirms that each branch new code definition matches
-// the branch status in the observation for each branch specified in the spec.
-func AreProjectBranchesUpToDate(spec map[string]*v1alpha1.ProjectNewCodePeriodParameters, observation map[string]v1alpha1.ProjectBranchObservation) bool {
+// SonarQube Project are up to date with the branches specified in the managed
+// resource.
+// Only the branches present in both the spec and the observation are compared:
+// a branch of the spec that does not exist yet cannot be configured.
+func AreProjectBranchesUpToDate(spec map[string]*v1alpha1.ProjectBranchParameters, observation map[string]v1alpha1.ProjectBranchObservation) bool {
 	for branchName, branchObservation := range observation {
-		// Check if the branch exists in the spec and if its new code period is up to date with the observation. If the branch does not exist in the spec, we consider it up to date since we are only concerned with branches specified in the spec.
-		branchSpec, ok := spec[branchName]
-		if ok && !IsNewCodePeriodUpToDate(branchSpec, &branchObservation.NewCodePeriod) {
+		branchSpec := spec[branchName]
+		if !IsBranchNewCodePeriodUpToDate(branchSpec, &branchObservation) ||
+			!IsBranchPurgeProtectionUpToDate(branchSpec, &branchObservation) {
 			return false
 		}
 	}
 
 	return true
+}
+
+// IsBranchNewCodePeriodUpToDate checks if the observed new code period of a
+// branch matches the one specified for it, if any.
+func IsBranchNewCodePeriodUpToDate(spec *v1alpha1.ProjectBranchParameters, observation *v1alpha1.ProjectBranchObservation) bool {
+	if observation == nil {
+		return false
+	}
+
+	return IsNewCodePeriodUpToDate(GenerateBranchNewCodePeriodParameters(spec), &observation.NewCodePeriod)
+}
+
+// IsBranchPurgeProtectionUpToDate checks if the observed automatic deletion
+// protection of a branch matches the one specified for it, if any.
+//
+// SonarQube does not allow removing the protection of the main branch, so such
+// a request is considered up to date: Update could never converge on it.
+func IsBranchPurgeProtectionUpToDate(spec *v1alpha1.ProjectBranchParameters, observation *v1alpha1.ProjectBranchObservation) bool {
+	if observation == nil {
+		return false
+	}
+
+	if spec == nil || spec.ExcludedFromPurge == nil {
+		return true
+	}
+
+	if observation.IsMain && !*spec.ExcludedFromPurge {
+		return true
+	}
+
+	return *spec.ExcludedFromPurge == observation.ExcludedFromPurge
+}
+
+// GenerateBranchNewCodePeriodParameters extracts the new code definition from
+// the parameters of a branch. It returns nil when the new code definition of
+// the branch is not managed.
+func GenerateBranchNewCodePeriodParameters(spec *v1alpha1.ProjectBranchParameters) *v1alpha1.ProjectNewCodePeriodParameters {
+	if spec == nil || spec.Type == nil {
+		return nil
+	}
+
+	return &v1alpha1.ProjectNewCodePeriodParameters{
+		Type:  *spec.Type,
+		Value: spec.Value,
+	}
+}
+
+// GenerateProjectBranchesSetAutomaticDeletionProtectionOptions generates the
+// options for protecting a branch of a SonarQube Project from automatic
+// deletion, or for removing that protection.
+func GenerateProjectBranchesSetAutomaticDeletionProtectionOptions(projectKey, branchName string, protected bool) *sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions {
+	return &sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions{
+		Project: projectKey,
+		Branch:  branchName,
+		Value:   protected,
+	}
 }
 
 // IsProjectMainBranchUpToDate checks if the main branch of a SonarQube Project

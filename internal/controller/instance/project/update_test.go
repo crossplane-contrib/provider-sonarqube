@@ -20,9 +20,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"sync"
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 
 	v1alpha1 "github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 	"github.com/crossplane/provider-sonarqube/internal/fake"
@@ -90,5 +94,142 @@ func TestUpdateProjectLinksBoundsConcurrency(t *testing.T) {
 
 	if got := tracker.Peak(); got > helpers.MaxConcurrentRequests {
 		t.Errorf("updateProjectLinks() peak concurrency = %d, want at most %d", got, helpers.MaxConcurrentRequests)
+	}
+}
+
+// TestUpdateBranches tests that only the drifted settings of existing branches
+// are updated.
+func TestUpdateBranches(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		spec           map[string]*v1alpha1.ProjectBranchParameters
+		observation    map[string]v1alpha1.ProjectBranchObservation
+		defaultBranch  *string
+		apiErr         error
+		wantProtection []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions
+		wantPeriods    []sonar.NewCodePeriodsSetOptions
+		wantErrs       []string
+	}{
+		"UpToDate": {
+			spec:        map[string]*v1alpha1.ProjectBranchParameters{"release": {ExcludedFromPurge: new(true)}},
+			observation: map[string]v1alpha1.ProjectBranchObservation{"release": {ExcludedFromPurge: true}},
+		},
+		"MissingBranchIsSkipped": {
+			spec:        map[string]*v1alpha1.ProjectBranchParameters{"release": {ExcludedFromPurge: new(true)}, "stale": {ExcludedFromPurge: new(true)}},
+			observation: map[string]v1alpha1.ProjectBranchObservation{"stale": {}},
+			wantProtection: []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions{
+				{Project: "key", Branch: "stale", Value: true},
+			},
+		},
+		"ProtectionOnly": {
+			spec:        map[string]*v1alpha1.ProjectBranchParameters{"release": {ExcludedFromPurge: new(false)}},
+			observation: map[string]v1alpha1.ProjectBranchObservation{"release": {ExcludedFromPurge: true}},
+			wantProtection: []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions{
+				{Project: "key", Branch: "release", Value: false},
+			},
+		},
+		"MainBranchIsNeverUnprotected": {
+			spec: map[string]*v1alpha1.ProjectBranchParameters{"main": {Type: new("PREVIOUS_VERSION"), ExcludedFromPurge: new(false)}},
+			observation: map[string]v1alpha1.ProjectBranchObservation{
+				"main": {IsMain: true, ExcludedFromPurge: true},
+			},
+			wantPeriods: []sonar.NewCodePeriodsSetOptions{{Project: "key", Branch: "main", Type: "PREVIOUS_VERSION"}},
+		},
+		"PromotedBranchIsNotUnprotected": {
+			spec:          map[string]*v1alpha1.ProjectBranchParameters{"release": {ExcludedFromPurge: new(false)}},
+			observation:   map[string]v1alpha1.ProjectBranchObservation{"release": {ExcludedFromPurge: true}},
+			defaultBranch: new("release"),
+		},
+		"PromotedBranchIsProtected": {
+			spec:          map[string]*v1alpha1.ProjectBranchParameters{"release": {ExcludedFromPurge: new(true)}},
+			observation:   map[string]v1alpha1.ProjectBranchObservation{"release": {}},
+			defaultBranch: new("release"),
+			wantProtection: []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions{
+				{Project: "key", Branch: "release", Value: true},
+			},
+		},
+		"NewCodePeriodOnly": {
+			spec:        map[string]*v1alpha1.ProjectBranchParameters{"release": {Type: new("NUMBER_OF_DAYS"), Value: new("30")}},
+			observation: map[string]v1alpha1.ProjectBranchObservation{"release": {ExcludedFromPurge: true}},
+			wantPeriods: []sonar.NewCodePeriodsSetOptions{{Project: "key", Branch: "release", Type: "NUMBER_OF_DAYS", Value: "30"}},
+		},
+		"BothFail": {
+			spec:        map[string]*v1alpha1.ProjectBranchParameters{"release": {Type: new("PREVIOUS_VERSION"), ExcludedFromPurge: new(true)}},
+			observation: map[string]v1alpha1.ProjectBranchObservation{"release": {}},
+			apiErr:      errors.New("boom"),
+			wantProtection: []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions{
+				{Project: "key", Branch: "release", Value: true},
+			},
+			wantPeriods: []sonar.NewCodePeriodsSetOptions{{Project: "key", Branch: "release", Type: "PREVIOUS_VERSION"}},
+			wantErrs: []string{
+				"cannot update automatic deletion protection for branch release: boom",
+				"cannot update new code period for branch release: boom",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			project := &v1alpha1.Project{}
+			project.Spec.ForProvider.Branches = tc.spec
+			project.Status.AtProvider.Branches = tc.observation
+			project.Spec.ForProvider.DefaultBranch = tc.defaultBranch
+			project.Status.AtProvider.DefaultBranch = "main"
+
+			var (
+				mutex      sync.Mutex
+				protection []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions
+				periods    []sonar.NewCodePeriodsSetOptions
+			)
+
+			ext := &external{
+				projectBranchesClient: &fake.MockProjectBranchesClient{
+					SetAutomaticDeletionProtectionFn: func(opt *sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions) (*http.Response, error) {
+						mutex.Lock()
+						defer mutex.Unlock()
+
+						protection = append(protection, *opt)
+
+						return nil, tc.apiErr
+					},
+				},
+				projectNewCodePeriodsClient: &fake.MockNewCodePeriodsClient{
+					SetFn: func(opt *sonar.NewCodePeriodsSetOptions) (*http.Response, error) {
+						mutex.Lock()
+						defer mutex.Unlock()
+
+						periods = append(periods, *opt)
+
+						return nil, tc.apiErr
+					},
+				},
+			}
+
+			errChan := make(chan error, 2*len(tc.spec))
+			ext.updateBranches(context.Background(), project, "key", errChan)
+			close(errChan)
+
+			var gotErrs []string
+			for err := range errChan {
+				gotErrs = append(gotErrs, err.Error())
+			}
+
+			slices.Sort(gotErrs)
+
+			if diff := cmp.Diff(tc.wantProtection, protection); diff != "" {
+				t.Errorf("protection calls mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.wantPeriods, periods); diff != "" {
+				t.Errorf("new code period calls mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.wantErrs, gotErrs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
