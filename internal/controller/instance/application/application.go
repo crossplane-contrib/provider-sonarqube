@@ -89,6 +89,7 @@ func Setup(mgr ctrl.Manager, options helpers.Options) error {
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
 			newServiceFn: instance.NewApplicationsClient,
+			newReportsFn: instance.NewGovernanceReportsClient,
 		}),
 		helpers.WithSpecExternalName(mgr.GetClient(), func(mg *v1alpha1.Application) string {
 			return mg.Spec.ForProvider.Key
@@ -116,6 +117,7 @@ type connector struct {
 	kube         client.Client
 	usage        *resource.ProviderConfigUsageTracker
 	newServiceFn func(config common.Config) instance.ApplicationsClient
+	newReportsFn func(config common.Config) instance.GovernanceReportsClient
 }
 
 // Connect produces an ExternalClient by tracking ProviderConfig usage,
@@ -133,16 +135,18 @@ func (c *connector) Connect(ctx context.Context, application *v1alpha1.Applicati
 
 	svc := c.newServiceFn(*config)
 
-	return &external{client: svc}, nil
+	return &external{client: svc, reports: c.newReportsFn(*config)}, nil
 }
 
 // external implements the ExternalClient interface for Application resources.
 type external struct {
-	client instance.ApplicationsClient
+	client  instance.ApplicationsClient
+	reports instance.GovernanceReportsClient
 }
 
 // Observe checks if the Application exists in SonarQube and whether its
-// name, description, member projects and branches match the desired state.
+// name, description, member projects, branches and report settings match the
+// desired state.
 func (c *external) Observe(ctx context.Context, application *v1alpha1.Application) (managed.ExternalObservation, error) {
 	externalName := meta.GetExternalName(application)
 	if externalName == "" {
@@ -169,7 +173,13 @@ func (c *external) Observe(ctx context.Context, application *v1alpha1.Applicatio
 		return managed.ExternalObservation{}, err
 	}
 
+	report, err := instance.ObserveGovernanceReport(ctx, c.reports, externalName, application.Spec.ForProvider.Report)
+	if err != nil {
+		return managed.ExternalObservation{}, errors.Wrap(err, errObserveApplication)
+	}
+
 	application.Status.AtProvider = instance.GenerateApplicationObservation(&result.Application, branchProjects)
+	application.Status.AtProvider.Report = report
 	application.SetConditions(xpv1.Available())
 
 	return managed.ExternalObservation{
@@ -197,8 +207,8 @@ func (c *external) Create(ctx context.Context, application *v1alpha1.Application
 	return managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{}}, nil
 }
 
-// Update reconciles the Application name, description, member projects and
-// branches in SonarQube.
+// Update reconciles the Application name, description, member projects,
+// branches and report settings in SonarQube.
 func (c *external) Update(ctx context.Context, application *v1alpha1.Application) (managed.ExternalUpdate, error) {
 	externalName := meta.GetExternalName(application)
 	if externalName == "" {
@@ -233,6 +243,13 @@ func (c *external) Update(ctx context.Context, application *v1alpha1.Application
 	err = c.removeProjects(ctx, externalName, instance.ApplicationProjectsToRemove(spec.Projects, observation.Projects))
 	if err != nil {
 		return managed.ExternalUpdate{}, err
+	}
+
+	// Report settings come last so that a rejected one does not block the
+	// membership and branches.
+	err = instance.UpdateGovernanceReport(ctx, c.reports, externalName, spec.Report, observation.Report)
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateApplication)
 	}
 
 	return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}}, nil

@@ -29,6 +29,14 @@ spec:
         projects:
           - project: example-project-key
             branch: release
+    # PDF report settings. Each setting is only managed when set.
+    report:
+      # How often the report is sent: daily, weekly or monthly
+      frequency: weekly
+      # Exhaustive list of recipient emails, an empty list removes all of them
+      # (SonarQube only documents recipients for portfolios)
+      # recipients:
+      #   - reports@example.com
   providerConfigRef:
     name: example
     kind: ProviderConfig

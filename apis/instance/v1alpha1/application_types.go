@@ -72,6 +72,10 @@ type ApplicationParameters struct {
 	// +listType=map
 	// +listMapKey=name
 	Branches []ApplicationBranchParameters `json:"branches,omitempty"`
+
+	// Report configures the PDF reports of the application.
+	// +kubebuilder:validation:Optional
+	Report *GovernanceReportParameters `json:"report,omitempty"`
 }
 
 // ApplicationBranchParameters are the configurable fields of an
@@ -122,6 +126,8 @@ type ApplicationObservation struct {
 	Projects []string `json:"projects,omitempty"`
 	// Branches are the branches of the application.
 	Branches []ApplicationBranchObservation `json:"branches,omitempty"`
+	// Report is the report configuration, when it is managed.
+	Report *GovernanceReportObservation `json:"report,omitempty"`
 }
 
 // ApplicationBranchObservation is the observed state of an Application

@@ -83,6 +83,32 @@ spec:
                     description: Regexp is the regular expression used for project
                       key matching when SelectionMode is REGEXP.
                     type: string
+                  report:
+                    description: Report configures the PDF reports of the portfolio.
+                    properties:
+                      frequency:
+                        description: |-
+                          Frequency is how often the report is sent. When unset, the frequency is
+                          not managed: removing it keeps the last value applied in SonarQube.
+                        enum:
+                        - daily
+                        - weekly
+                        - monthly
+                        type: string
+                      recipients:
+                        description: |-
+                          Recipients is the exhaustive list of email addresses the report is sent
+                          to, as configured on the component itself. When unset, the recipients are
+                          not managed; an empty list removes all of them.
+                          SonarQube only documents recipients for portfolios: it may reject them on
+                          an application.
+                        items:
+                          minLength: 1
+                          pattern: ^[^,\s]+$
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: set
+                    type: object
                   selectionMode:
                     default: NONE
                     description: SelectionMode describes how projects are selected
@@ -190,6 +216,25 @@ spec:
                     description: Qualifier is the component qualifier (VW for root
                       portfolio, SVW for sub-portfolio).
                     type: string
+                  report:
+                    description: Report is the report configuration, when it is managed.
+                    properties:
+                      frequency:
+                        description: |-
+                          Frequency is the report frequency set on the component. It is empty when
+                          the component uses the global frequency.
+                        type: string
+                      globalFrequency:
+                        description: GlobalFrequency is the report frequency configured
+                          globally.
+                        type: string
+                      recipients:
+                        description: Recipients are the report recipients set on the
+                          component.
+                        items:
+                          type: string
+                        type: array
+                    type: object
                   selectionMode:
                     description: SelectionMode is the current project selection mode.
                     type: string

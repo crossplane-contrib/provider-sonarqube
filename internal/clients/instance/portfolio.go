@@ -143,5 +143,9 @@ func IsPortfolioUpToDate(spec *v1alpha1.PortfolioParameters, observation *v1alph
 		return false
 	}
 
+	if !IsGovernanceReportUpToDate(spec.Report, observation.Report) {
+		return false
+	}
+
 	return normalizeSelectionMode(spec.SelectionMode) == normalizeSelectionMode(observation.SelectionMode)
 }

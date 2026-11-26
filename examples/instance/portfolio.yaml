@@ -1,0 +1,28 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Portfolio
+metadata:
+  name: example-portfolio
+  namespace: default
+spec:
+  forProvider:
+    # Key of the portfolio in SonarQube, must be unique across the server
+    key: example-portfolio-key
+    # Display name of the portfolio in SonarQube
+    name: Example Portfolio
+    # Description of the portfolio in SonarQube
+    description: This is an example portfolio managed by Crossplane
+    # Visibility of the portfolio, either public or private (immutable)
+    visibility: public
+    # How projects are selected: MANUAL, NONE, REGEXP, REMAINING or TAGS
+    selectionMode: NONE
+    # PDF report settings. Each setting is only managed when set.
+    report:
+      # How often the report is sent: daily, weekly or monthly
+      frequency: weekly
+      # Exhaustive list of recipient emails, an empty list removes all of them
+      recipients:
+        - reports@example.com
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
