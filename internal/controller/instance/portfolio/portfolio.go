@@ -189,9 +189,14 @@ func (c *external) Observe(ctx context.Context, portfolio *v1alpha1.Portfolio) (
 
 	observation := instance.GeneratePortfolioObservation(result)
 
-	observation.Parent, err = c.observeParent(ctx, externalName, portfolio.Spec.ForProvider.Parent)
-	if err != nil {
-		return managed.ExternalObservation{}, err
+	// The parent is only needed to detect drift: skip its lookup while the
+	// portfolio is being deleted, so that a failing parent lookup does not
+	// block the deletion.
+	if !meta.WasDeleted(portfolio) {
+		observation.Parent, err = c.observeParent(ctx, externalName, portfolio.Spec.ForProvider.Parent)
+		if err != nil {
+			return managed.ExternalObservation{}, err
+		}
 	}
 
 	portfolio.Status.AtProvider = observation
