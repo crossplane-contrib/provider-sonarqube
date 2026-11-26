@@ -178,6 +178,14 @@ func (c *external) updateBranches(ctx context.Context, project *v1alpha1.Project
 	// comes from the spec, so its size is controlled by the tenant.
 	branchesGroup := helpers.NewRequestGroup()
 
+	// The branch being made the main branch by updateDefaultBranch, if any.
+	// It runs concurrently, and SonarQube rejects removing the protection of
+	// the main branch, so the protection of that branch is not removed.
+	promotedBranch := ""
+	if defaultBranch := project.Spec.ForProvider.DefaultBranch; defaultBranch != nil && *defaultBranch != project.Status.AtProvider.DefaultBranch {
+		promotedBranch = *defaultBranch
+	}
+
 	for branchName, branchSpec := range project.Spec.ForProvider.Branches {
 		branchObservation, branchExists := project.Status.AtProvider.Branches[branchName]
 		if !branchExists {
@@ -192,7 +200,10 @@ func (c *external) updateBranches(ctx context.Context, project *v1alpha1.Project
 			})
 		}
 
-		if !instance.IsBranchPurgeProtectionUpToDate(branchSpec, &branchObservation) {
+		// IsBranchPurgeProtectionUpToDate is true when the protection is not
+		// managed, so ExcludedFromPurge is set past it.
+		if !instance.IsBranchPurgeProtectionUpToDate(branchSpec, &branchObservation) &&
+			(branchName != promotedBranch || *branchSpec.ExcludedFromPurge) {
 			branchesGroup.Go(func() error {
 				c.updateBranchPurgeProtection(ctx, projectKey, branchName, *branchSpec.ExcludedFromPurge, errChan)
 

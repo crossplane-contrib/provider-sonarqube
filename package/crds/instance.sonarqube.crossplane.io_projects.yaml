@@ -294,18 +294,17 @@ spec:
                     properties:
                       type:
                         description: |-
-                          Type is the type of the new code definition. Can be either "PREVIOUS_VERSION" or "NUMBER_OF_DAYS" or "REFERENCE_BRANCH" for projects.
-                          Can be "SPECIFIC_ANALYSIS" for branches.
+                          Type is the type of the new code definition. Can be "PREVIOUS_VERSION", "NUMBER_OF_DAYS" or "REFERENCE_BRANCH".
+                          "SPECIFIC_ANALYSIS" is only available on branches, see branches.
                         enum:
                         - PREVIOUS_VERSION
                         - NUMBER_OF_DAYS
                         - REFERENCE_BRANCH
-                        - SPECIFIC_ANALYSIS
                         type: string
                       value:
                         description: Value is the value of the new code definition.
-                          If the type is "previous_version", this field should be
-                          empty. If the type is "reference_branch", this field should
+                          If the type is "PREVIOUS_VERSION", this field should be
+                          empty. If the type is "REFERENCE_BRANCH", this field should
                           be the name of the reference branch.
                         type: string
                     required:

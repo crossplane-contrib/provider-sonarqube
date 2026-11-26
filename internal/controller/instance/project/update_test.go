@@ -105,6 +105,7 @@ func TestUpdateBranches(t *testing.T) {
 	tests := map[string]struct {
 		spec           map[string]*v1alpha1.ProjectBranchParameters
 		observation    map[string]v1alpha1.ProjectBranchObservation
+		defaultBranch  *string
 		apiErr         error
 		wantProtection []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions
 		wantPeriods    []sonar.NewCodePeriodsSetOptions
@@ -135,6 +136,19 @@ func TestUpdateBranches(t *testing.T) {
 			},
 			wantPeriods: []sonar.NewCodePeriodsSetOptions{{Project: "key", Branch: "main", Type: "PREVIOUS_VERSION"}},
 		},
+		"PromotedBranchIsNotUnprotected": {
+			spec:          map[string]*v1alpha1.ProjectBranchParameters{"release": {ExcludedFromPurge: new(false)}},
+			observation:   map[string]v1alpha1.ProjectBranchObservation{"release": {ExcludedFromPurge: true}},
+			defaultBranch: new("release"),
+		},
+		"PromotedBranchIsProtected": {
+			spec:          map[string]*v1alpha1.ProjectBranchParameters{"release": {ExcludedFromPurge: new(true)}},
+			observation:   map[string]v1alpha1.ProjectBranchObservation{"release": {}},
+			defaultBranch: new("release"),
+			wantProtection: []sonar.ProjectBranchesSetAutomaticDeletionProtectionOptions{
+				{Project: "key", Branch: "release", Value: true},
+			},
+		},
 		"NewCodePeriodOnly": {
 			spec:        map[string]*v1alpha1.ProjectBranchParameters{"release": {Type: new("NUMBER_OF_DAYS"), Value: new("30")}},
 			observation: map[string]v1alpha1.ProjectBranchObservation{"release": {ExcludedFromPurge: true}},
@@ -162,6 +176,8 @@ func TestUpdateBranches(t *testing.T) {
 			project := &v1alpha1.Project{}
 			project.Spec.ForProvider.Branches = tc.spec
 			project.Status.AtProvider.Branches = tc.observation
+			project.Spec.ForProvider.DefaultBranch = tc.defaultBranch
+			project.Status.AtProvider.DefaultBranch = "main"
 
 			var (
 				mutex      sync.Mutex
