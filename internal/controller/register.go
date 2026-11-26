@@ -20,6 +20,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/crossplane/provider-sonarqube/internal/controller/config"
+	"github.com/crossplane/provider-sonarqube/internal/controller/iam/devopspermissionmapping"
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/group"
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/permissions"
 	"github.com/crossplane/provider-sonarqube/internal/controller/iam/permissionstemplate"
@@ -71,6 +72,7 @@ func SetupGated(mgr ctrl.Manager, opts helpers.Options) error {
 		group.SetupGated,
 		permissions.SetupGated,
 		permissionstemplate.SetupGated,
+		devopspermissionmapping.SetupGated,
 		almazure.SetupGated,
 		almbitbucket.SetupGated,
 		almbitbucketcloud.SetupGated,
