@@ -443,6 +443,21 @@ func (f *Framework) FindALMGitHubDefinitionByKey(ctx context.Context, key string
 	return nil, nil //nolint:nilnil // intentional
 }
 
+// FetchGitHubConfiguration returns the GitHub authentication configuration
+// of the instance, or (nil, nil) if there is none. SonarQube supports a
+// single one per instance.
+func (f *Framework) FetchGitHubConfiguration(ctx context.Context) (*sonar.DopTranslationGithubConfiguration, error) {
+	res, resp, err := f.Sonar.V2.DopTranslation.SearchGithubConfigurations(ctx)
+	defer helpers.CloseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	if res == nil || len(res.GithubConfigurations) == 0 {
+		return nil, nil //nolint:nilnil // intentional: absence is the natural "not configured" sentinel
+	}
+	return &res.GithubConfigurations[0], nil
+}
+
 // FindPortfolioByKey returns the SonarQube portfolio with the given key,
 // or (nil, nil) if no such portfolio exists. Portfolios are an Enterprise
 // Edition feature; SonarQube returns 404 both when the key is unknown and
