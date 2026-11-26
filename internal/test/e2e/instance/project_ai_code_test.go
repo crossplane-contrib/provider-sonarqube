@@ -60,9 +60,6 @@ func TestProjectContainsAiCode(t *testing.T) {
 
 	project := newE2EApplicationProject(f, key)
 	project.Spec.ForProvider.ContainsAiCode = new(true)
-	// An unset quality gate name makes the reference resolver apply an empty
-	// string, which fails CRD validation.
-	project.Spec.ForProvider.QualityGateName = new("Sonar way")
 
 	f.CreateAndWaitForReady(t, project, 2*time.Minute)
 	waitForProjectContainsAiCode(t, f, key, true)

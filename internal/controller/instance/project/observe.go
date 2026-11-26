@@ -252,7 +252,12 @@ func (c *external) observeContainsAiCode(ctx context.Context, projectKey string,
 	defer mutex.Unlock()
 
 	if flagErr != nil {
-		result.errors = append(result.errors, errors.Wrap(flagErr, "cannot observe Project AI code flag (not available in SonarQube Community Build)"))
+		msg := "cannot observe Project AI code flag"
+		if common.IsResponseNotFound(resp) {
+			msg += " (not available in SonarQube Community Build)"
+		}
+
+		result.errors = append(result.errors, errors.Wrap(flagErr, msg))
 
 		return
 	}
