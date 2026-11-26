@@ -255,12 +255,14 @@ func (c *external) Update(ctx context.Context, profile *v1alpha1.SCALicenseProfi
 
 	// Categories are updated before licenses, so that the desired license
 	// policies take precedence over the policy of their category.
-	err := c.updateCategories(ctx, externalName, instance.SCALicenseProfileCategoriesToUpdate(spec.Categories, observation.Categories))
+	categories := instance.SCALicenseProfileCategoriesToUpdate(spec.Categories, observation.Categories)
+
+	err := c.updateCategories(ctx, externalName, categories)
 	if err != nil {
 		return managed.ExternalUpdate{}, err
 	}
 
-	err = c.updateLicenses(ctx, externalName, spec.Licenses, observation.Licenses)
+	missing, err := c.updateLicenses(ctx, externalName, spec.Licenses, licensesAfterCategoryUpdates(observation.Licenses, categories))
 	if err != nil {
 		return managed.ExternalUpdate{}, err
 	}
@@ -275,7 +277,39 @@ func (c *external) Update(ctx context.Context, profile *v1alpha1.SCALicenseProfi
 		return managed.ExternalUpdate{}, err
 	}
 
+	// Unknown licenses are reported last, so that they do not keep the
+	// assigned projects from being reconciled.
+	if len(missing) > 0 {
+		return managed.ExternalUpdate{}, errors.Errorf(errUnknownLicenses, strings.Join(missing, ", "))
+	}
+
 	return managed.ExternalUpdate{ConnectionDetails: managed.ConnectionDetails{}}, nil
+}
+
+// licensesAfterCategoryUpdates returns the observed license policies as they
+// stand once the given category policies are applied: updating a category
+// policy sets the policy of every license of the category, so the observed
+// policy of those licenses no longer holds.
+func licensesAfterCategoryUpdates(observation []v1alpha1.SCALicenseProfileLicenseObservation, categories []v1alpha1.SCALicenseProfileCategoryPolicy) []v1alpha1.SCALicenseProfileLicenseObservation {
+	if len(categories) == 0 {
+		return observation
+	}
+
+	updated := make(map[string]string, len(categories))
+	for _, category := range categories {
+		updated[category.Category] = category.Policy
+	}
+
+	licenses := make([]v1alpha1.SCALicenseProfileLicenseObservation, len(observation))
+	for i, license := range observation {
+		if policy, found := updated[license.Category]; found {
+			license.Policy = policy
+		}
+
+		licenses[i] = license
+	}
+
+	return licenses
 }
 
 // Delete deletes the license profile from SonarQube.
@@ -323,9 +357,9 @@ func (c *external) updateCategories(ctx context.Context, key string, categories 
 }
 
 // updateLicenses applies the desired license policies that differ from the
-// observed ones. It fails when a desired license is not known to the
-// license profile, after applying the policies of the known ones.
-func (c *external) updateLicenses(ctx context.Context, key string, spec []v1alpha1.SCALicenseProfileLicensePolicy, observation []v1alpha1.SCALicenseProfileLicenseObservation) error {
+// observed ones, and returns the SPDX identifiers of the desired licenses
+// that are not known to the license profile.
+func (c *external) updateLicenses(ctx context.Context, key string, spec []v1alpha1.SCALicenseProfileLicensePolicy, observation []v1alpha1.SCALicenseProfileLicenseObservation) ([]string, error) {
 	updates, missing := instance.SCALicenseProfileLicensesToUpdate(spec, observation)
 
 	for _, update := range updates {
@@ -336,15 +370,11 @@ func (c *external) updateLicenses(ctx context.Context, key string, spec []v1alph
 		helpers.CloseBody(resp)
 
 		if err != nil {
-			return errors.Wrapf(err, errUpdateLicense, update.SPDXLicenseID)
+			return nil, errors.Wrapf(err, errUpdateLicense, update.SPDXLicenseID)
 		}
 	}
 
-	if len(missing) > 0 {
-		return errors.Errorf(errUnknownLicenses, strings.Join(missing, ", "))
-	}
-
-	return nil
+	return missing, nil
 }
 
 // assignProjects assigns the given projects to the license profile.

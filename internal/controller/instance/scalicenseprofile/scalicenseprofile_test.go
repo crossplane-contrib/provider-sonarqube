@@ -753,8 +753,30 @@ func TestUpdate(t *testing.T) {
 				settings:   []*sonar.ScaLicenseProfileUpdateRequest{{Name: "Renamed", Default: new(true)}},
 				categories: []string{testProfileID + "/PERMISSIVE_STANDARD=DENY"},
 				licenses:   []string{testProfileID + "/l1=ALLOW"},
+				assigned:   []string{testProfileID + "/proj-c"},
+				unassigned: []string{"proj-b"},
 			},
 			err: errors.Errorf(errUnknownLicenses, "Unknown-1.0, Unknown-2.0"),
+		},
+		"CategoryUpdateReappliesItsLicenses": {
+			mg: func() *v1alpha1.SCALicenseProfile {
+				mg := newProfile(testProfileID, func(p *v1alpha1.SCALicenseProfileParameters) {
+					p.Categories = []v1alpha1.SCALicenseProfileCategoryPolicy{{Category: "PERMISSIVE_STANDARD", Policy: "DENY"}}
+					p.Licenses = []v1alpha1.SCALicenseProfileLicensePolicy{{SPDXLicenseID: "MIT", Policy: "ALLOW"}}
+					p.Projects = nil
+				})
+				mg.Status.AtProvider = v1alpha1.SCALicenseProfileObservation{
+					Name:       testProfileName,
+					Categories: []v1alpha1.SCALicenseProfileCategoryObservation{{Category: "PERMISSIVE_STANDARD", Policy: "ALLOW"}},
+					Licenses:   []v1alpha1.SCALicenseProfileLicenseObservation{{ID: "l1", SPDXLicenseID: "MIT", Category: "PERMISSIVE_STANDARD", Policy: "ALLOW"}},
+				}
+
+				return mg
+			}(),
+			want: updateCalls{
+				categories: []string{testProfileID + "/PERMISSIVE_STANDARD=DENY"},
+				licenses:   []string{testProfileID + "/l1=ALLOW"},
+			},
 		},
 		"AssignError": {
 			mg:      drifted(),
