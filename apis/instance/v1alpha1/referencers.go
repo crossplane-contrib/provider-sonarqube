@@ -104,6 +104,51 @@ func (application *Application) ResolveReferences(ctx context.Context, readerCli
 }
 
 // ResolveReferences resolves references to other managed resources for
+// Dashboard. References and selectors resolve in the Dashboard's own
+// namespace.
+func (dashboard *Dashboard) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
+	resolver := reference.NewAPIResolver(readerClient, dashboard)
+
+	projectResponse, err := resolver.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(dashboard.Spec.ForProvider.ProjectKey),
+		Extract:      reference.ExternalName(),
+		Namespace:    dashboard.GetNamespace(),
+		Reference:    dashboard.Spec.ForProvider.ProjectKeyRef,
+		Selector:     dashboard.Spec.ForProvider.ProjectKeySelector,
+		To: reference.To{
+			List:    &ProjectList{},
+			Managed: &Project{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.projectKey")
+	}
+
+	dashboard.Spec.ForProvider.ProjectKey = reference.ToPtrValue(projectResponse.ResolvedValue)
+	dashboard.Spec.ForProvider.ProjectKeyRef = projectResponse.ResolvedReference
+
+	portfolioResponse, err := resolver.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(dashboard.Spec.ForProvider.PortfolioKey),
+		Extract:      reference.ExternalName(),
+		Namespace:    dashboard.GetNamespace(),
+		Reference:    dashboard.Spec.ForProvider.PortfolioKeyRef,
+		Selector:     dashboard.Spec.ForProvider.PortfolioKeySelector,
+		To: reference.To{
+			List:    &PortfolioList{},
+			Managed: &Portfolio{},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.portfolioKey")
+	}
+
+	dashboard.Spec.ForProvider.PortfolioKey = reference.ToPtrValue(portfolioResponse.ResolvedValue)
+	dashboard.Spec.ForProvider.PortfolioKeyRef = portfolioResponse.ResolvedReference
+
+	return nil
+}
+
+// ResolveReferences resolves references to other managed resources for
 // QualityProfile. References and selectors resolve in the QualityProfile's
 // own namespace.
 func (qualityProfile *QualityProfile) ResolveReferences(ctx context.Context, readerClient client.Reader) error {
