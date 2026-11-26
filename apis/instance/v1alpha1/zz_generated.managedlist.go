@@ -17,6 +17,15 @@ func (l *ApplicationList) GetItems() []resource.Managed {
 	return items
 }
 
+// GetItems of this EmailConfigurationList.
+func (l *EmailConfigurationList) GetItems() []resource.Managed {
+	items := make([]resource.Managed, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+	return items
+}
+
 // GetItems of this LicenseList.
 func (l *LicenseList) GetItems() []resource.Managed {
 	items := make([]resource.Managed, len(l.Items))
