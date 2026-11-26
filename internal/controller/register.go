@@ -37,6 +37,7 @@ import (
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualitygate"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/qualityprofile"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/rule"
+	"github.com/crossplane/provider-sonarqube/internal/controller/instance/scalicenseprofile"
 	"github.com/crossplane/provider-sonarqube/internal/controller/instance/settings"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almazure"
 	"github.com/crossplane/provider-sonarqube/internal/controller/integration/alm/almbitbucket"
@@ -66,6 +67,7 @@ func SetupGated(mgr ctrl.Manager, opts helpers.Options) error {
 		portfolio.SetupGated,
 		project.SetupGated,
 		rule.SetupGated,
+		scalicenseprofile.SetupGated,
 		user.SetupGated,
 		usertoken.SetupGated,
 		group.SetupGated,

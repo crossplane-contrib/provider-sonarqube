@@ -312,3 +312,31 @@ func TestNewApplicationsClient(t *testing.T) {
 		})
 	}
 }
+
+// TestNewSCALicenseProfilesClient tests creating a new SCA license profiles
+// client.
+func TestNewSCALicenseProfilesClient(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		config common.Config
+	}{
+		"PersonalAccessToken": {
+			config: newTestConfig(),
+		},
+		"BasicAuth": {
+			config: newBasicAuthTestConfig(),
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			client := NewSCALicenseProfilesClient(tc.config)
+			if client == nil {
+				t.Error("NewSCALicenseProfilesClient() returned nil")
+			}
+		})
+	}
+}
