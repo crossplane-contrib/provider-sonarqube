@@ -21,6 +21,7 @@ package aicodefixconfiguration
 import (
 	"context"
 
+	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
@@ -178,7 +179,7 @@ func (c *external) Update(ctx context.Context, configuration *v1alpha1.AICodeFix
 func (c *external) Delete(ctx context.Context, configuration *v1alpha1.AICodeFixConfiguration) (managed.ExternalDelete, error) {
 	configuration.SetConditions(xpv1.Deleting())
 
-	err := c.setEnablement(ctx, &integration.AICodeFixEnablementOptions{Enablement: v1alpha1.AICodeFixDisabled}, errDisable)
+	err := c.setEnablement(ctx, &sonar.FixSuggestionsSetEnablementOptions{Enablement: v1alpha1.AICodeFixDisabled}, errDisable)
 
 	return managed.ExternalDelete{}, err
 }
@@ -189,7 +190,7 @@ func (c *external) Disconnect(_ context.Context) error {
 }
 
 // setEnablement sends the enablement, wrapping a failure with errMessage.
-func (c *external) setEnablement(ctx context.Context, opts *integration.AICodeFixEnablementOptions, errMessage string) error {
+func (c *external) setEnablement(ctx context.Context, opts *sonar.FixSuggestionsSetEnablementOptions, errMessage string) error {
 	resp, err := c.client.SetEnablement(ctx, opts) //nolint:bodyclose // closed via helpers.CloseBody
 	helpers.CloseBody(resp)
 

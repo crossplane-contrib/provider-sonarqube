@@ -29,7 +29,7 @@ import (
 // FixSuggestionsClient interface.
 type MockFixSuggestionsClient struct {
 	GetEnablementFn func() (*sonar.FixSuggestionsFeatureEnablement, *http.Response, error)
-	SetEnablementFn func(opt *integration.AICodeFixEnablementOptions) (*http.Response, error)
+	SetEnablementFn func(opt *sonar.FixSuggestionsSetEnablementOptions) (*http.Response, error)
 }
 
 // Ensure MockFixSuggestionsClient implements FixSuggestionsClient.
@@ -45,7 +45,7 @@ func (m *MockFixSuggestionsClient) GetEnablement(_ context.Context) (*sonar.FixS
 }
 
 // SetEnablement implements FixSuggestionsClient.SetEnablement.
-func (m *MockFixSuggestionsClient) SetEnablement(_ context.Context, opt *integration.AICodeFixEnablementOptions) (*http.Response, error) {
+func (m *MockFixSuggestionsClient) SetEnablement(_ context.Context, opt *sonar.FixSuggestionsSetEnablementOptions) (*http.Response, error) {
 	if m.SetEnablementFn != nil {
 		return m.SetEnablementFn(opt)
 	}

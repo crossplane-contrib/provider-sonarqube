@@ -87,7 +87,7 @@ func TestFixSuggestionsClient(t *testing.T) {
 		t.Errorf("GetEnablement() = %+v", got)
 	}
 
-	resp, err := client.SetEnablement(context.Background(), &AICodeFixEnablementOptions{ //nolint:bodyclose // fake or test server responses
+	resp, err := client.SetEnablement(context.Background(), &sonar.FixSuggestionsSetEnablementOptions{ //nolint:bodyclose // fake or test server responses
 		Enablement:         v1alpha1.AICodeFixEnabledForSomeProjects,
 		EnabledProjectKeys: []string{"a", "b"},
 	})
@@ -122,7 +122,7 @@ func TestFixSuggestionsClientSetEnablementValidation(t *testing.T) {
 	server, requests := newFixSuggestionsTestServer(t)
 	client := NewFixSuggestionsClient(common.Config{AuthType: common.PersonalAccessToken, Token: "token", BaseURL: server.URL + "/api/"})
 
-	for name, opt := range map[string]*AICodeFixEnablementOptions{
+	for name, opt := range map[string]*sonar.FixSuggestionsSetEnablementOptions{
 		"Nil":     nil,
 		"Empty":   {},
 		"Invalid": {Enablement: "SOMETIMES"},
@@ -144,19 +144,19 @@ func TestGenerateAICodeFixEnablementOptions(t *testing.T) {
 
 	cases := map[string]struct {
 		spec v1alpha1.AICodeFixConfigurationParameters
-		want *AICodeFixEnablementOptions
+		want *sonar.FixSuggestionsSetEnablementOptions
 	}{
 		"AllProjectsDropsKeys": {
 			spec: v1alpha1.AICodeFixConfigurationParameters{Enablement: v1alpha1.AICodeFixEnabledForAllProjects, EnabledProjectKeys: []string{"a"}},
-			want: &AICodeFixEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForAllProjects},
+			want: &sonar.FixSuggestionsSetEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForAllProjects},
 		},
 		"SomeProjects": {
 			spec: v1alpha1.AICodeFixConfigurationParameters{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects, EnabledProjectKeys: []string{"a"}},
-			want: &AICodeFixEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects, EnabledProjectKeys: []string{"a"}},
+			want: &sonar.FixSuggestionsSetEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects, EnabledProjectKeys: []string{"a"}},
 		},
 		"SomeProjectsNone": {
 			spec: v1alpha1.AICodeFixConfigurationParameters{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects},
-			want: &AICodeFixEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects, EnabledProjectKeys: []string{}},
+			want: &sonar.FixSuggestionsSetEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects, EnabledProjectKeys: []string{}},
 		},
 	}
 

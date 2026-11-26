@@ -76,12 +76,12 @@ func newTestConfiguration(projects ...string) *v1alpha1.AICodeFixConfiguration {
 
 // enablementClient returns a client reporting the given enablement and
 // recording the enablement it is sent.
-func enablementClient(enablement string, projects []string, sent **integration.AICodeFixEnablementOptions) *fake.MockFixSuggestionsClient {
+func enablementClient(enablement string, projects []string, sent **sonar.FixSuggestionsSetEnablementOptions) *fake.MockFixSuggestionsClient {
 	return &fake.MockFixSuggestionsClient{
 		GetEnablementFn: func() (*sonar.FixSuggestionsFeatureEnablement, *http.Response, error) {
 			return &sonar.FixSuggestionsFeatureEnablement{Enablement: enablement, EnabledProjectKeys: projects}, &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
 		},
-		SetEnablementFn: func(opt *integration.AICodeFixEnablementOptions) (*http.Response, error) {
+		SetEnablementFn: func(opt *sonar.FixSuggestionsSetEnablementOptions) (*http.Response, error) {
 			if sent != nil {
 				*sent = opt
 			}
@@ -163,9 +163,9 @@ func TestObserve(t *testing.T) {
 func TestCreateUpdateDelete(t *testing.T) {
 	t.Parallel()
 
-	want := &integration.AICodeFixEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects, EnabledProjectKeys: []string{"a"}}
+	want := &sonar.FixSuggestionsSetEnablementOptions{Enablement: v1alpha1.AICodeFixEnabledForSomeProjects, EnabledProjectKeys: []string{"a"}}
 
-	var sent *integration.AICodeFixEnablementOptions
+	var sent *sonar.FixSuggestionsSetEnablementOptions
 
 	e := &external{client: enablementClient(v1alpha1.AICodeFixDisabled, nil, &sent)}
 
@@ -192,7 +192,7 @@ func TestWriteErrors(t *testing.T) {
 	t.Parallel()
 
 	e := &external{client: &fake.MockFixSuggestionsClient{
-		SetEnablementFn: func(*integration.AICodeFixEnablementOptions) (*http.Response, error) {
+		SetEnablementFn: func(*sonar.FixSuggestionsSetEnablementOptions) (*http.Response, error) {
 			return nil, errors.New("boom")
 		},
 	}}
