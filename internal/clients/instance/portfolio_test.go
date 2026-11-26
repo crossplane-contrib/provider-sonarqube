@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/boxboxjason/sonarqube-client-go/v2/sonar"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/crossplane/provider-sonarqube/apis/instance/v1alpha1"
 )
@@ -57,6 +59,17 @@ func TestGeneratePortfolioObservation(t *testing.T) {
 				Qualifier:     "VW",
 				Visibility:    "public",
 				SelectionMode: "MANUAL",
+				SelectedProjects: []sonar.ViewSelectedProject{
+					{ProjectKey: "project-b"},
+					{ProjectKey: "project-a", SelectedBranches: []string{"main", "feature"}},
+				},
+				SubViews: []sonar.View{
+					{Key: "child-b", Qualifier: "SVW"},
+					{Key: "my-portfolio:app", OriginalKey: "app", Qualifier: "APP", SelectedBranches: []string{"main"}},
+					{Key: "my-portfolio:referenced", OriginalKey: "referenced", Qualifier: "VW"},
+					{Key: "child-a", Qualifier: "SVW"},
+					{Key: "unknown", Qualifier: "TRK"},
+				},
 			},
 			want: v1alpha1.PortfolioObservation{
 				Key:           "my-portfolio",
@@ -65,16 +78,23 @@ func TestGeneratePortfolioObservation(t *testing.T) {
 				Qualifier:     "VW",
 				Visibility:    "public",
 				SelectionMode: "MANUAL",
+				Projects: []v1alpha1.PortfolioMemberObservation{
+					{Key: "project-a", Branches: []string{"feature", "main"}},
+					{Key: "project-b"},
+				},
+				Applications:       []v1alpha1.PortfolioMemberObservation{{Key: "app", Branches: []string{"main"}}},
+				SubPortfolios:      []string{"referenced"},
+				LocalSubPortfolios: []string{"child-a", "child-b"},
 			},
 		},
-		"PartialDetails": {
+		"SubViewWithoutOriginalKey": {
 			details: &sonar.ViewDetails{
-				Key:  "partial",
-				Name: "Partial Portfolio",
+				SubViews: []sonar.View{
+					{Key: "app", Qualifier: "APP"},
+				},
 			},
 			want: v1alpha1.PortfolioObservation{
-				Key:  "partial",
-				Name: "Partial Portfolio",
+				Applications: []v1alpha1.PortfolioMemberObservation{{Key: "app"}},
 			},
 		},
 	}
@@ -84,32 +104,227 @@ func TestGeneratePortfolioObservation(t *testing.T) {
 			t.Parallel()
 
 			got := GeneratePortfolioObservation(tc.details)
-
-			if got.Key != tc.want.Key {
-				t.Errorf("GeneratePortfolioObservation() Key = %q, want %q", got.Key, tc.want.Key)
-			}
-
-			if got.Name != tc.want.Name {
-				t.Errorf("GeneratePortfolioObservation() Name = %q, want %q", got.Name, tc.want.Name)
-			}
-
-			if got.Description != tc.want.Description {
-				t.Errorf("GeneratePortfolioObservation() Description = %q, want %q", got.Description, tc.want.Description)
-			}
-
-			if got.Qualifier != tc.want.Qualifier {
-				t.Errorf("GeneratePortfolioObservation() Qualifier = %q, want %q", got.Qualifier, tc.want.Qualifier)
-			}
-
-			if got.Visibility != tc.want.Visibility {
-				t.Errorf("GeneratePortfolioObservation() Visibility = %q, want %q", got.Visibility, tc.want.Visibility)
-			}
-
-			if got.SelectionMode != tc.want.SelectionMode {
-				t.Errorf("GeneratePortfolioObservation() SelectionMode = %q, want %q", got.SelectionMode, tc.want.SelectionMode)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GeneratePortfolioObservation() -want +got:\n%s", diff)
 			}
 		})
 	}
+}
+
+// TestGeneratePortfolioCreateOptions tests the
+// GeneratePortfolioCreateOptions function.
+func TestGeneratePortfolioCreateOptions(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		spec *v1alpha1.PortfolioParameters
+		want *sonar.ViewsCreateOptions
+	}{
+		"RootPortfolio": {
+			spec: &v1alpha1.PortfolioParameters{Key: "k", Name: "n", Description: "d", Visibility: "private"},
+			want: &sonar.ViewsCreateOptions{Key: "k", Name: "n", Description: "d", Visibility: "private"},
+		},
+		"SubPortfolioOmitsVisibility": {
+			spec: &v1alpha1.PortfolioParameters{Key: "k", Name: "n", Visibility: "public", Parent: new("parent")},
+			want: &sonar.ViewsCreateOptions{Key: "k", Name: "n", Parent: "parent"},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if diff := cmp.Diff(tc.want, GeneratePortfolioCreateOptions(tc.spec)); diff != "" {
+				t.Errorf("GeneratePortfolioCreateOptions() -want +got:\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestIsPortfolioSubPortfolio tests the IsPortfolioSubPortfolio function.
+func TestIsPortfolioSubPortfolio(t *testing.T) {
+	t.Parallel()
+
+	parent := &sonar.ViewDetails{
+		SubViews: []sonar.View{
+			{Key: "child", Qualifier: "SVW"},
+			{Key: "parent:referenced", OriginalKey: "referenced", Qualifier: "VW"},
+		},
+	}
+
+	cases := map[string]struct {
+		parent *sonar.ViewDetails
+		key    string
+		want   bool
+	}{
+		"NilParent":           {parent: nil, key: "child", want: false},
+		"SubPortfolio":        {parent: parent, key: "child", want: true},
+		"ReferencedPortfolio": {parent: parent, key: "referenced", want: false},
+		"Unrelated":           {parent: parent, key: "other", want: false},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := IsPortfolioSubPortfolio(tc.parent, tc.key); got != tc.want {
+				t.Errorf("IsPortfolioSubPortfolio() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestDesiredPortfolioMembers tests the DesiredPortfolioProjects and
+// DesiredPortfolioApplications functions.
+func TestDesiredPortfolioMembers(t *testing.T) {
+	t.Parallel()
+
+	want := map[string][]string{"a": {"main", "dev"}, "b": nil}
+
+	projects := DesiredPortfolioProjects([]v1alpha1.PortfolioProjectParameters{
+		{Key: new("a"), Branches: []string{"main"}},
+		{Key: new("b")},
+		{Key: new("a"), Branches: []string{"dev"}},
+		{KeyRef: &xpv1.Reference{Name: "unresolved"}},
+	})
+	if diff := cmp.Diff(want, projects); diff != "" {
+		t.Errorf("DesiredPortfolioProjects() -want +got:\n%s", diff)
+	}
+
+	applications := DesiredPortfolioApplications([]v1alpha1.PortfolioApplicationParameters{
+		{Key: new("a"), Branches: []string{"main"}},
+		{Key: new("b")},
+		{Key: new("a"), Branches: []string{"dev"}},
+		{KeyRef: &xpv1.Reference{Name: "unresolved"}},
+	})
+	if diff := cmp.Diff(want, applications); diff != "" {
+		t.Errorf("DesiredPortfolioApplications() -want +got:\n%s", diff)
+	}
+}
+
+// TestDiffPortfolioMembers tests the DiffPortfolioMembers function.
+func TestDiffPortfolioMembers(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		desired     map[string][]string
+		observation []v1alpha1.PortfolioMemberObservation
+		want        PortfolioMembersDiff
+	}{
+		"UpToDate": {
+			desired:     map[string][]string{"a": nil, "b": {"dev", "main"}},
+			observation: []v1alpha1.PortfolioMemberObservation{{Key: "a", Branches: []string{"x"}}, {Key: "b", Branches: []string{"main", "dev"}}},
+			want:        PortfolioMembersDiff{},
+		},
+		"AddMembersWithBranches": {
+			desired: map[string][]string{"b": {"dev"}, "a": nil},
+			want: PortfolioMembersDiff{
+				Add:         []string{"a", "b"},
+				AddBranches: []PortfolioBranch{{Key: "b", Branch: "dev"}},
+			},
+		},
+		"ReconcileBranches": {
+			desired:     map[string][]string{"a": {"dev", "feature"}},
+			observation: []v1alpha1.PortfolioMemberObservation{{Key: "a", Branches: []string{"dev", "main"}}},
+			want: PortfolioMembersDiff{
+				AddBranches:    []PortfolioBranch{{Key: "a", Branch: "feature"}},
+				RemoveBranches: []PortfolioBranch{{Key: "a", Branch: "main"}},
+			},
+		},
+		"RemoveMembers": {
+			desired:     map[string][]string{},
+			observation: []v1alpha1.PortfolioMemberObservation{{Key: "b"}, {Key: "a"}},
+			want:        PortfolioMembersDiff{Remove: []string{"a", "b"}},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := DiffPortfolioMembers(tc.desired, tc.observation)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("DiffPortfolioMembers() -want +got:\n%s", diff)
+			}
+
+			if got.IsEmpty() != cmp.Equal(tc.want, PortfolioMembersDiff{}) {
+				t.Errorf("PortfolioMembersDiff.IsEmpty() = %v", got.IsEmpty())
+			}
+		})
+	}
+}
+
+// TestPortfolioMembersDiffs tests the PortfolioProjectsDiff,
+// PortfolioApplicationsDiff and referenced portfolio helpers.
+func TestPortfolioMembersDiffs(t *testing.T) {
+	t.Parallel()
+
+	observation := &v1alpha1.PortfolioObservation{
+		Projects:      []v1alpha1.PortfolioMemberObservation{{Key: "old-project"}},
+		Applications:  []v1alpha1.PortfolioMemberObservation{{Key: "old-app"}},
+		SubPortfolios: []string{"old-ref", "kept-ref"},
+	}
+
+	t.Run("Unmanaged", func(t *testing.T) {
+		t.Parallel()
+
+		spec := &v1alpha1.PortfolioParameters{SelectionMode: SelectionModeManual}
+
+		if diff := PortfolioProjectsDiff(spec, observation); !diff.IsEmpty() {
+			t.Errorf("PortfolioProjectsDiff() = %+v, want empty", diff)
+		}
+
+		if diff := PortfolioApplicationsDiff(spec, observation); !diff.IsEmpty() {
+			t.Errorf("PortfolioApplicationsDiff() = %+v, want empty", diff)
+		}
+
+		if got := PortfolioSubPortfoliosToAdd(spec, observation); got != nil {
+			t.Errorf("PortfolioSubPortfoliosToAdd() = %v, want nil", got)
+		}
+
+		if got := PortfolioSubPortfoliosToRemove(spec, observation); got != nil {
+			t.Errorf("PortfolioSubPortfoliosToRemove() = %v, want nil", got)
+		}
+	})
+
+	t.Run("ProjectsIgnoredOutsideManualMode", func(t *testing.T) {
+		t.Parallel()
+
+		spec := &v1alpha1.PortfolioParameters{SelectionMode: "TAGS", Projects: &[]v1alpha1.PortfolioProjectParameters{}}
+
+		if diff := PortfolioProjectsDiff(spec, observation); !diff.IsEmpty() {
+			t.Errorf("PortfolioProjectsDiff() = %+v, want empty", diff)
+		}
+	})
+
+	t.Run("Managed", func(t *testing.T) {
+		t.Parallel()
+
+		spec := &v1alpha1.PortfolioParameters{
+			SelectionMode: SelectionModeManual,
+			Projects:      &[]v1alpha1.PortfolioProjectParameters{{Key: new("new-project")}},
+			Applications:  &[]v1alpha1.PortfolioApplicationParameters{{Key: new("new-app")}},
+			SubPortfolios: &[]string{"kept-ref", "new-ref"},
+		}
+
+		wantProjects := PortfolioMembersDiff{Add: []string{"new-project"}, Remove: []string{"old-project"}}
+		if diff := cmp.Diff(wantProjects, PortfolioProjectsDiff(spec, observation)); diff != "" {
+			t.Errorf("PortfolioProjectsDiff() -want +got:\n%s", diff)
+		}
+
+		wantApplications := PortfolioMembersDiff{Add: []string{"new-app"}, Remove: []string{"old-app"}}
+		if diff := cmp.Diff(wantApplications, PortfolioApplicationsDiff(spec, observation)); diff != "" {
+			t.Errorf("PortfolioApplicationsDiff() -want +got:\n%s", diff)
+		}
+
+		if diff := cmp.Diff([]string{"new-ref"}, PortfolioSubPortfoliosToAdd(spec, observation)); diff != "" {
+			t.Errorf("PortfolioSubPortfoliosToAdd() -want +got:\n%s", diff)
+		}
+
+		if diff := cmp.Diff([]string{"old-ref"}, PortfolioSubPortfoliosToRemove(spec, observation)); diff != "" {
+			t.Errorf("PortfolioSubPortfoliosToRemove() -want +got:\n%s", diff)
+		}
+	})
 }
 
 // TestLateInitializePortfolio tests the LateInitializePortfolio function.
@@ -150,7 +365,7 @@ func TestLateInitializePortfolio(t *testing.T) {
 
 			LateInitializePortfolio(tc.spec, tc.observation)
 
-			if tc.spec != nil && *tc.spec != *specCopy {
+			if tc.spec != nil && !cmp.Equal(tc.spec, specCopy) {
 				t.Errorf("LateInitializePortfolio() modified spec unexpectedly: got %+v, want %+v", *tc.spec, *specCopy)
 			}
 		})
@@ -298,6 +513,61 @@ func TestIsPortfolioUpToDate(t *testing.T) {
 				SelectionMode: "NONE",
 			},
 			want: false,
+		},
+		"ParentUpToDate": {
+			spec:        &v1alpha1.PortfolioParameters{Name: "n", Parent: new("parent")},
+			observation: &v1alpha1.PortfolioObservation{Name: "n", Parent: "parent"},
+			want:        true,
+		},
+		"ParentMismatch": {
+			spec:        &v1alpha1.PortfolioParameters{Name: "n", Parent: new("parent")},
+			observation: &v1alpha1.PortfolioObservation{Name: "n"},
+			want:        false,
+		},
+		"MembersUpToDate": {
+			spec: &v1alpha1.PortfolioParameters{
+				Name:          "n",
+				SelectionMode: "MANUAL",
+				Projects:      &[]v1alpha1.PortfolioProjectParameters{{Key: new("p"), Branches: []string{"dev"}}},
+				Applications:  &[]v1alpha1.PortfolioApplicationParameters{{Key: new("a")}},
+				SubPortfolios: &[]string{"r"},
+			},
+			observation: &v1alpha1.PortfolioObservation{
+				Name:          "n",
+				SelectionMode: "MANUAL",
+				Projects:      []v1alpha1.PortfolioMemberObservation{{Key: "p", Branches: []string{"dev"}}},
+				Applications:  []v1alpha1.PortfolioMemberObservation{{Key: "a", Branches: []string{"main"}}},
+				SubPortfolios: []string{"r"},
+			},
+			want: true,
+		},
+		"ProjectBranchMismatch": {
+			spec: &v1alpha1.PortfolioParameters{
+				Name:          "n",
+				SelectionMode: "MANUAL",
+				Projects:      &[]v1alpha1.PortfolioProjectParameters{{Key: new("p"), Branches: []string{"dev"}}},
+			},
+			observation: &v1alpha1.PortfolioObservation{
+				Name:          "n",
+				SelectionMode: "MANUAL",
+				Projects:      []v1alpha1.PortfolioMemberObservation{{Key: "p"}},
+			},
+			want: false,
+		},
+		"ApplicationMismatch": {
+			spec:        &v1alpha1.PortfolioParameters{Name: "n", Applications: &[]v1alpha1.PortfolioApplicationParameters{}},
+			observation: &v1alpha1.PortfolioObservation{Name: "n", Applications: []v1alpha1.PortfolioMemberObservation{{Key: "a"}}},
+			want:        false,
+		},
+		"SubPortfolioMissing": {
+			spec:        &v1alpha1.PortfolioParameters{Name: "n", SubPortfolios: &[]string{"r"}},
+			observation: &v1alpha1.PortfolioObservation{Name: "n"},
+			want:        false,
+		},
+		"SubPortfolioExtra": {
+			spec:        &v1alpha1.PortfolioParameters{Name: "n", SubPortfolios: &[]string{}},
+			observation: &v1alpha1.PortfolioObservation{Name: "n", SubPortfolios: []string{"r"}},
+			want:        false,
 		},
 	}
 

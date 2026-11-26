@@ -1,0 +1,61 @@
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Portfolio
+metadata:
+  name: example-portfolio
+  namespace: default
+spec:
+  forProvider:
+    # Key of the portfolio in SonarQube, must be unique across the server (immutable)
+    key: example-portfolio-key
+    # Display name of the portfolio in SonarQube
+    name: Example Portfolio
+    # Description of the portfolio in SonarQube
+    description: This is an example portfolio managed by Crossplane
+    # Visibility of the portfolio, either public or private (immutable)
+    visibility: public
+    # Projects are selected manually: projects can only be set in MANUAL mode
+    selectionMode: MANUAL
+    # Projects selected in the portfolio. This list is exhaustive: any other
+    # selected project is removed from the portfolio. When branches are set,
+    # they are the exhaustive list of the selected project branches.
+    projects:
+      - key: example-project-key
+      # Projects can also be referenced through Project managed resources
+      # - keyRef:
+      #     name: example-project
+      #   branches:
+      #     - main
+      #     - release
+    # Applications added to the portfolio. This list is exhaustive: any other
+    # application is removed from the portfolio.
+    applications:
+      - key: example-application-key
+    # Keys of existing portfolios referenced in this portfolio. This list is
+    # exhaustive: any other referenced portfolio is removed from the portfolio.
+    # subPortfolios:
+    #   - another-portfolio-key
+    # subPortfolioRefs:
+    #   - name: another-portfolio
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig
+---
+apiVersion: instance.sonarqube.crossplane.io/v1alpha1
+kind: Portfolio
+metadata:
+  name: example-sub-portfolio
+  namespace: default
+spec:
+  forProvider:
+    key: example-sub-portfolio-key
+    name: Example Sub-Portfolio
+    # Parent portfolio of this sub-portfolio. Changing it moves the
+    # sub-portfolio; it cannot be unset once set.
+    parentRef:
+      name: example-portfolio
+    selectionMode: TAGS
+    tags: backend
+  providerConfigRef:
+    name: example
+    kind: ProviderConfig

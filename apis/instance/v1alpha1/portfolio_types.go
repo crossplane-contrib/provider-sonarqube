@@ -26,6 +26,8 @@ import (
 )
 
 // PortfolioParameters are the configurable fields of a Portfolio.
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.parent) || has(self.parent)",message="parent cannot be unset once set"
+// +kubebuilder:validation:XValidation:rule="!has(self.projects) || size(self.projects) == 0 || (has(self.selectionMode) && self.selectionMode == 'MANUAL')",message="projects can only be set when selectionMode is MANUAL"
 type PortfolioParameters struct {
 	// Key is the portfolio key. Immutable after creation.
 	// +kubebuilder:validation:Required
@@ -43,6 +45,7 @@ type PortfolioParameters struct {
 	Description string `json:"description,omitempty"`
 
 	// Visibility is the portfolio visibility. Immutable after creation.
+	// Only applies to root portfolios: sub-portfolios inherit the visibility of their root portfolio.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=public
 	// +kubebuilder:validation:Enum=public;private
@@ -66,6 +69,113 @@ type PortfolioParameters struct {
 	// Branch is the branch used in matched projects when SelectionMode is REGEXP, REMAINING, or TAGS.
 	// +kubebuilder:validation:Optional
 	Branch string `json:"branch,omitempty"`
+
+	// Parent is the key of the parent portfolio, making this portfolio a sub-portfolio of it.
+	// The parent can be changed to move the sub-portfolio to another portfolio, but it cannot be
+	// unset once set: a sub-portfolio cannot be turned into a root portfolio.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	Parent *string `json:"parent,omitempty"`
+
+	// ParentRef is a reference to a Portfolio used to set Parent.
+	// +kubebuilder:validation:Optional
+	ParentRef *xpv1.Reference `json:"parentRef,omitempty"`
+
+	// ParentSelector selects a reference to a Portfolio used to set Parent.
+	// +kubebuilder:validation:Optional
+	ParentSelector *xpv1.Selector `json:"parentSelector,omitempty"`
+
+	// Projects is the exhaustive list of projects manually selected in the portfolio.
+	// Any selected project that is not in this list is removed from the portfolio.
+	// When unset, the selected projects are not managed.
+	// Only allowed when SelectionMode is MANUAL.
+	// +kubebuilder:validation:Optional
+	Projects *[]PortfolioProjectParameters `json:"projects,omitempty"`
+
+	// Applications is the exhaustive list of applications added to the portfolio.
+	// Any application of the portfolio that is not in this list is removed from it.
+	// When unset, the applications of the portfolio are not managed.
+	// +kubebuilder:validation:Optional
+	Applications *[]PortfolioApplicationParameters `json:"applications,omitempty"`
+
+	// SubPortfolios is the exhaustive list of keys of the existing portfolios referenced in this
+	// portfolio. Any referenced portfolio that is not in this list is removed from the portfolio.
+	// When unset, and no SubPortfolioRefs or SubPortfolioSelector is set, the referenced
+	// portfolios are not managed.
+	// Sub-portfolios created under this portfolio are managed through the parent of their own
+	// Portfolio resource and are not affected by this list.
+	// +kubebuilder:validation:Optional
+	// +listType=set
+	SubPortfolios *[]string `json:"subPortfolios,omitempty"`
+
+	// SubPortfolioRefs are references to Portfolios used to populate SubPortfolios.
+	// +kubebuilder:validation:Optional
+	SubPortfolioRefs []xpv1.Reference `json:"subPortfolioRefs,omitempty"`
+
+	// SubPortfolioSelector selects references to Portfolios used to populate SubPortfolios.
+	// +kubebuilder:validation:Optional
+	SubPortfolioSelector *xpv1.Selector `json:"subPortfolioSelector,omitempty"`
+}
+
+// PortfolioProjectParameters select a project, and optionally its branches,
+// in a portfolio.
+// +kubebuilder:validation:XValidation:rule="has(self.key) || has(self.keyRef) || has(self.keySelector)",message="one of key, keyRef or keySelector must be set"
+type PortfolioProjectParameters struct {
+	// Key is the project key.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	Key *string `json:"key,omitempty"`
+
+	// KeyRef is a reference to a Project used to set Key.
+	// +kubebuilder:validation:Optional
+	KeyRef *xpv1.Reference `json:"keyRef,omitempty"`
+
+	// KeySelector selects a reference to a Project used to set Key.
+	// +kubebuilder:validation:Optional
+	KeySelector *xpv1.Selector `json:"keySelector,omitempty"`
+
+	// Branches is the exhaustive list of the project branches selected in the portfolio.
+	// When empty, the selected branches are not managed: SonarQube selects the project main
+	// branch when the project is added. List the main branch explicitly to select it alongside
+	// other branches.
+	// +kubebuilder:validation:Optional
+	// +listType=set
+	Branches []string `json:"branches,omitempty"`
+}
+
+// PortfolioApplicationParameters select an application, and optionally its
+// branches, in a portfolio.
+// +kubebuilder:validation:XValidation:rule="has(self.key) || has(self.keyRef) || has(self.keySelector)",message="one of key, keyRef or keySelector must be set"
+type PortfolioApplicationParameters struct {
+	// Key is the application key.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	Key *string `json:"key,omitempty"`
+
+	// KeyRef is a reference to an Application used to set Key.
+	// +kubebuilder:validation:Optional
+	KeyRef *xpv1.Reference `json:"keyRef,omitempty"`
+
+	// KeySelector selects a reference to an Application used to set Key.
+	// +kubebuilder:validation:Optional
+	KeySelector *xpv1.Selector `json:"keySelector,omitempty"`
+
+	// Branches is the exhaustive list of the application branches selected in the portfolio.
+	// When empty, the selected branches are not managed: SonarQube selects the application main
+	// branch when the application is added. List the main branch explicitly to select it
+	// alongside other branches.
+	// +kubebuilder:validation:Optional
+	// +listType=set
+	Branches []string `json:"branches,omitempty"`
+}
+
+// PortfolioMemberObservation is the observed state of a project or an
+// application selected in a portfolio.
+type PortfolioMemberObservation struct {
+	// Key is the project or application key.
+	Key string `json:"key"`
+	// Branches are the explicitly selected branches, if any.
+	Branches []string `json:"branches,omitempty"`
 }
 
 // PortfolioObservation are the observable fields of a Portfolio.
@@ -82,6 +192,18 @@ type PortfolioObservation struct {
 	Visibility string `json:"visibility,omitempty"`
 	// SelectionMode is the current project selection mode.
 	SelectionMode string `json:"selectionMode,omitempty"`
+	// Parent is the key of the parent portfolio, when the portfolio is a sub-portfolio of the
+	// desired parent. SonarQube does not return the parent of a portfolio, so it is observed by
+	// looking up the sub-portfolios of the desired parent only.
+	Parent string `json:"parent,omitempty"`
+	// Projects are the projects manually selected in the portfolio.
+	Projects []PortfolioMemberObservation `json:"projects,omitempty"`
+	// Applications are the applications added to the portfolio.
+	Applications []PortfolioMemberObservation `json:"applications,omitempty"`
+	// SubPortfolios are the keys of the portfolios referenced in the portfolio.
+	SubPortfolios []string `json:"subPortfolios,omitempty"`
+	// LocalSubPortfolios are the keys of the sub-portfolios created under the portfolio.
+	LocalSubPortfolios []string `json:"localSubPortfolios,omitempty"`
 }
 
 // A PortfolioSpec defines the desired state of a Portfolio.

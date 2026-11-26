@@ -382,12 +382,10 @@ func TestObserve(t *testing.T) {
 		"ExistsAndUpToDate": {
 			client: &fake.MockPortfoliosClient{
 				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
-					return &sonar.ViewDetails{
-						Key:           testPortfolioKey,
+					return &sonar.ViewDetails{Key: testPortfolioKey,
 						Name:          testPortfolioName,
 						Visibility:    "public",
-						SelectionMode: selectionModeNone,
-					}, mockHTTPOK(), nil
+						SelectionMode: selectionModeNone}, mockHTTPOK(), nil
 				},
 			},
 			args: args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, testPortfolioKey)},
@@ -401,15 +399,68 @@ func TestObserve(t *testing.T) {
 				err: nil,
 			},
 		},
+		"ParentShowAPIError": {
+			client: &fake.MockPortfoliosClient{
+				ShowFn: func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+					if opt.Key == testParentKey {
+						return nil, mockHTTPOK(), errBoom
+					}
+
+					return newPortfolioDetails(testPortfolioName), mockHTTPOK(), nil
+				},
+			},
+			args: args{ctx: context.Background(), mg: newSubPortfolio(testParentKey)},
+			want: want{
+				o:   managed.ExternalObservation{},
+				err: errors.Wrapf(errBoom, errObserveParent, testParentKey),
+			},
+		},
+		"ParentUpToDate": {
+			client: &fake.MockPortfoliosClient{
+				ShowFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
+			},
+			args: args{ctx: context.Background(), mg: newSubPortfolio(testParentKey)},
+			want: want{
+				o: managed.ExternalObservation{
+					ResourceExists:    true,
+					ResourceUpToDate:  true,
+					ConnectionDetails: managed.ConnectionDetails{},
+				},
+			},
+		},
+		"ParentNotFound": {
+			client: &fake.MockPortfoliosClient{
+				ShowFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
+			},
+			args: args{ctx: context.Background(), mg: newSubPortfolio("missing-parent")},
+			want: want{
+				o: managed.ExternalObservation{
+					ResourceExists:    true,
+					ResourceUpToDate:  false,
+					ConnectionDetails: managed.ConnectionDetails{},
+				},
+			},
+		},
+		"UnderAnotherParent": {
+			client: &fake.MockPortfoliosClient{
+				ShowFn: showWithParent(testParentKey), //nolint:bodyclose // fake responses have no body
+			},
+			args: args{ctx: context.Background(), mg: newSubPortfolio("other-parent")},
+			want: want{
+				o: managed.ExternalObservation{
+					ResourceExists:    true,
+					ResourceUpToDate:  false,
+					ConnectionDetails: managed.ConnectionDetails{},
+				},
+			},
+		},
 		"ExistsAndNotUpToDate": {
 			client: &fake.MockPortfoliosClient{
 				ShowFn: func(_ *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
-					return &sonar.ViewDetails{
-						Key:           testPortfolioKey,
+					return &sonar.ViewDetails{Key: testPortfolioKey,
 						Name:          "Old Name",
 						Visibility:    "public",
-						SelectionMode: selectionModeNone,
-					}, mockHTTPOK(), nil
+						SelectionMode: selectionModeNone}, mockHTTPOK(), nil
 				},
 			},
 			args: args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, testPortfolioKey)},
@@ -440,6 +491,46 @@ func TestObserve(t *testing.T) {
 				t.Errorf("Observe() observation -want +got:\n%s", diff)
 			}
 		})
+	}
+}
+
+// testParentKey is the parent portfolio key used across tests.
+const testParentKey = "parent-portfolio"
+
+// newPortfolioDetails returns the details of the test portfolio with the
+// given name.
+func newPortfolioDetails(name string) *sonar.ViewDetails {
+	return &sonar.ViewDetails{Key: testPortfolioKey,
+		Name:          name,
+		Qualifier:     "SVW",
+		SelectionMode: selectionModeNone}
+}
+
+// newSubPortfolio builds a Portfolio under the given parent.
+func newSubPortfolio(parent string) *v1alpha1.Portfolio {
+	p := newPortfolio(testPortfolioKey, testPortfolioName, testPortfolioKey)
+	p.Spec.ForProvider.Parent = &parent
+
+	return p
+}
+
+// showWithParent returns a Show function serving the test portfolio
+// as a sub-portfolio of parent, and returning 404 for any other portfolio.
+func showWithParent(parent string) func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+	return func(opt *sonar.ViewsShowOptions) (*sonar.ViewDetails, *http.Response, error) {
+		switch opt.Key {
+		case testPortfolioKey:
+			return newPortfolioDetails(testPortfolioName), mockHTTPOK(), nil
+		case parent:
+			return &sonar.ViewDetails{
+				Key: parent, Qualifier: "VW",
+				SubViews: []sonar.View{{Key: testPortfolioKey, Qualifier: "SVW"}},
+			}, mockHTTPOK(), nil
+		case "other-parent":
+			return &sonar.ViewDetails{Key: opt.Key, Qualifier: "VW"}, mockHTTPOK(), nil
+		default:
+			return nil, mockHTTPNotFound(), errBoom
+		}
 	}
 }
 
@@ -550,6 +641,24 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			args: args{ctx: context.Background(), mg: newPortfolioWithMode(testPortfolioKey, testPortfolioName, "", selectionModeRemaining, "", "", "")},
+			want: want{
+				o:            managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{}},
+				err:          nil,
+				externalName: testPortfolioKey,
+			},
+		},
+		"SuccessSubPortfolio": {
+			client: &fake.MockPortfoliosClient{
+				CreateFn: func(opt *sonar.ViewsCreateOptions) (*http.Response, error) {
+					if opt.Parent != testParentKey || opt.Visibility != "" {
+						return nil, errors.Errorf("unexpected create options %+v", opt)
+					}
+
+					return mockHTTPOK(), nil
+				},
+				SetNoneModeFn: okNoneMode,
+			},
+			args: args{ctx: context.Background(), mg: newSubPortfolio(testParentKey)},
 			want: want{
 				o:            managed.ExternalCreation{ConnectionDetails: managed.ConnectionDetails{}},
 				err:          nil,
@@ -726,6 +835,18 @@ func TestDelete(t *testing.T) {
 				err: errors.Wrap(errBoom, errDeletePortfolio),
 			},
 		},
+		"NotFoundIsDeleted": {
+			client: &fake.MockPortfoliosClient{
+				DeleteFn: func(_ *sonar.ViewsDeleteOptions) (*http.Response, error) {
+					return mockHTTPNotFound(), errBoom //nolint:nilnil // SonarQube returns the 404 response alongside the error
+				},
+			},
+			args: args{ctx: context.Background(), mg: newPortfolio(testPortfolioKey, testPortfolioName, testPortfolioKey)},
+			want: want{
+				o:   managed.ExternalDelete{},
+				err: nil,
+			},
+		},
 		"Success": {
 			client: &fake.MockPortfoliosClient{
 				DeleteFn: func(_ *sonar.ViewsDeleteOptions) (*http.Response, error) {
@@ -892,4 +1013,185 @@ func TestSetSelectionModePassesCorrectOptions(t *testing.T) {
 			t.Errorf("setSelectionMode() with unknown mode error = %v, want nil", err)
 		}
 	})
+}
+
+// recordingPortfoliosClient returns a MockPortfoliosClient accepting every
+// membership, move and selection mode call, recording them in calls. The
+// call named fail returns errBoom instead.
+func recordingPortfoliosClient(calls *[]string, fail string) *fake.MockPortfoliosClient {
+	record := func(call string) (*http.Response, error) {
+		*calls = append(*calls, call)
+		if strings.HasPrefix(call, fail+" ") || call == fail {
+			return nil, errBoom
+		}
+
+		return mockHTTPOK(), nil
+	}
+
+	return &fake.MockPortfoliosClient{
+		UpdateFn: func(_ *sonar.ViewsUpdateOptions) (*http.Response, error) {
+			return record("Update")
+		},
+		MoveFn: func(opt *sonar.ViewsMoveOptions) (*http.Response, error) {
+			return record("Move " + opt.Key + " " + opt.Destination)
+		},
+		SetManualModeFn: func(_ *sonar.ViewsSetManualModeOptions) (*http.Response, error) {
+			return record("SetManualMode")
+		},
+		SetNoneModeFn: func(_ *sonar.ViewsSetNoneModeOptions) (*http.Response, error) {
+			return record("SetNoneMode")
+		},
+		AddProjectFn: func(opt *sonar.ViewsAddProjectOptions) (*http.Response, error) {
+			return record("AddProject " + opt.Project)
+		},
+		RemoveProjectFn: func(opt *sonar.ViewsRemoveProjectOptions) (*http.Response, error) {
+			return record("RemoveProject " + opt.Project)
+		},
+		AddProjectBranchFn: func(opt *sonar.ViewsAddProjectBranchOptions) (*http.Response, error) {
+			return record("AddProjectBranch " + opt.Project + " " + opt.Branch)
+		},
+		RemoveProjectBranchFn: func(opt *sonar.ViewsRemoveProjectBranchOptions) (*http.Response, error) {
+			return record("RemoveProjectBranch " + opt.Project + " " + opt.Branch)
+		},
+		AddApplicationFn: func(opt *sonar.ViewsAddApplicationOptions) (*http.Response, error) {
+			return record("AddApplication " + opt.Application)
+		},
+		RemoveApplicationFn: func(opt *sonar.ViewsRemoveApplicationOptions) (*http.Response, error) {
+			return record("RemoveApplication " + opt.Application)
+		},
+		AddApplicationBranchFn: func(opt *sonar.ViewsAddApplicationBranchOptions) (*http.Response, error) {
+			return record("AddApplicationBranch " + opt.Application + " " + opt.Branch)
+		},
+		RemoveApplicationBranchFn: func(opt *sonar.ViewsRemoveApplicationBranchOptions) (*http.Response, error) {
+			return record("RemoveApplicationBranch " + opt.Application + " " + opt.Branch)
+		},
+		AddPortfolioFn: func(opt *sonar.ViewsAddPortfolioOptions) (*http.Response, error) {
+			return record("AddPortfolio " + opt.Reference)
+		},
+		RemovePortfolioFn: func(opt *sonar.ViewsRemovePortfolioOptions) (*http.Response, error) {
+			return record("RemovePortfolio " + opt.Reference)
+		},
+	}
+}
+
+// newManualPortfolio builds an observed MANUAL Portfolio with drifted
+// parent, projects, applications and referenced portfolios.
+func newManualPortfolio() *v1alpha1.Portfolio {
+	p := newSubPortfolio(testParentKey)
+	p.Spec.ForProvider.SelectionMode = selectionModeManual
+	p.Spec.ForProvider.Projects = &[]v1alpha1.PortfolioProjectParameters{
+		{Key: new("project-new"), Branches: []string{"dev"}},
+		{Key: new("project-kept"), Branches: []string{"dev"}},
+	}
+	p.Spec.ForProvider.Applications = &[]v1alpha1.PortfolioApplicationParameters{
+		{Key: new("app-new")},
+		{Key: new("app-kept"), Branches: []string{"release"}},
+	}
+	p.Spec.ForProvider.SubPortfolios = &[]string{"ref-new"}
+	p.Status.AtProvider = v1alpha1.PortfolioObservation{
+		Name:          testPortfolioName,
+		SelectionMode: selectionModeManual,
+		Projects: []v1alpha1.PortfolioMemberObservation{
+			{Key: "project-kept", Branches: []string{"main"}},
+			{Key: "project-old"},
+		},
+		Applications: []v1alpha1.PortfolioMemberObservation{
+			{Key: "app-kept", Branches: []string{"main"}},
+			{Key: "app-old"},
+		},
+		SubPortfolios: []string{"ref-old"},
+	}
+
+	return p
+}
+
+// TestUpdateReconcilesMembers verifies Update moves the portfolio under its
+// parent and reconciles its members, in order, without setting the MANUAL
+// selection mode again.
+func TestUpdateReconcilesMembers(t *testing.T) {
+	t.Parallel()
+
+	var calls []string
+
+	e := &external{client: recordingPortfoliosClient(&calls, "")}
+
+	_, err := e.Update(context.Background(), newManualPortfolio())
+	if err != nil {
+		t.Fatalf("Update() unexpected error: %v", err)
+	}
+
+	want := []string{
+		"Update",
+		"Move " + testPortfolioKey + " " + testParentKey,
+		"AddProject project-new",
+		"AddProjectBranch project-kept dev",
+		"AddProjectBranch project-new dev",
+		"RemoveProjectBranch project-kept main",
+		"RemoveProject project-old",
+		"AddApplication app-new",
+		"AddApplicationBranch app-kept release",
+		"RemoveApplicationBranch app-kept main",
+		"RemoveApplication app-old",
+		"AddPortfolio ref-new",
+		"RemovePortfolio ref-old",
+	}
+	if diff := cmp.Diff(want, calls); diff != "" {
+		t.Errorf("Update() calls -want +got:\n%s", diff)
+	}
+}
+
+// TestUpdateSetsManualMode verifies Update sets the MANUAL selection mode
+// when the portfolio is in another mode.
+func TestUpdateSetsManualMode(t *testing.T) {
+	t.Parallel()
+
+	var calls []string
+
+	p := newPortfolioWithMode(testPortfolioKey, testPortfolioName, testPortfolioKey, selectionModeManual, "", "", "")
+	p.Status.AtProvider.SelectionMode = selectionModeNone
+
+	e := &external{client: recordingPortfoliosClient(&calls, "")}
+
+	_, err := e.Update(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Update() unexpected error: %v", err)
+	}
+
+	if diff := cmp.Diff([]string{"Update", "SetManualMode"}, calls); diff != "" {
+		t.Errorf("Update() calls -want +got:\n%s", diff)
+	}
+}
+
+// TestUpdateMemberErrors verifies Update reports the failing member call.
+func TestUpdateMemberErrors(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]error{
+		"Move":                    errors.Wrapf(errBoom, errMovePortfolio, testParentKey),
+		"AddProject":              errors.Wrapf(errBoom, errAddProject, "project-new"),
+		"AddProjectBranch":        errors.Wrapf(errBoom, errAddProjectBranch, "dev", "project-kept"),
+		"RemoveProjectBranch":     errors.Wrapf(errBoom, errRemoveProjectBranch, "main", "project-kept"),
+		"RemoveProject":           errors.Wrapf(errBoom, errRemoveProject, "project-old"),
+		"AddApplication":          errors.Wrapf(errBoom, errAddApplication, "app-new"),
+		"AddApplicationBranch":    errors.Wrapf(errBoom, errAddApplicationBranch, "release", "app-kept"),
+		"RemoveApplicationBranch": errors.Wrapf(errBoom, errRemoveApplicationBranch, "main", "app-kept"),
+		"RemoveApplication":       errors.Wrapf(errBoom, errRemoveApplication, "app-old"),
+		"AddPortfolio":            errors.Wrapf(errBoom, errAddSubPortfolio, "ref-new"),
+		"RemovePortfolio":         errors.Wrapf(errBoom, errRemoveSubPortfolio, "ref-old"),
+	}
+
+	for fail, want := range cases {
+		t.Run(fail, func(t *testing.T) {
+			t.Parallel()
+
+			var calls []string
+
+			e := &external{client: recordingPortfoliosClient(&calls, fail)}
+
+			_, err := e.Update(context.Background(), newManualPortfolio())
+			if diff := cmp.Diff(want, err, errComparer); diff != "" {
+				t.Errorf("Update() error -want +got:\n%s", diff)
+			}
+		})
+	}
 }
