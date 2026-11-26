@@ -10,7 +10,8 @@ The provider currently covers the areas teams usually need to standardize first:
 
 * Instance resources such as projects, quality gates, quality profiles, rules, and settings
 * IAM resources such as groups and permissions templates
-* Integration resources such as GitLab ALM configuration
+* Integration resources such as GitLab ALM configuration and Jira bindings
+  (Enterprise Edition)
 
 ## Why This Provider
 
