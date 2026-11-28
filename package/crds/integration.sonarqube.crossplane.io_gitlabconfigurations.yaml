@@ -1,0 +1,374 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.23.0
+  name: gitlabconfigurations.integration.sonarqube.crossplane.io
+spec:
+  group: integration.sonarqube.crossplane.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - sonarqube
+    kind: GitLabConfiguration
+    listKind: GitLabConfigurationList
+    plural: gitlabconfigurations
+    singular: gitlabconfiguration
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          A GitLabConfiguration manages the GitLab authentication and provisioning
+          configuration of a SonarQube instance (Administration > Authentication >
+          GitLab), through the api/v2/dop-translation/gitlab-configurations
+          endpoints.
+
+          It is not the GitLab ALM integration managed by ALMGitLab, which
+          configures DevOps platform settings used for project import and merge
+          request decoration.
+
+          SonarQube supports a single GitLab configuration per instance. The
+          external name is the configuration ID assigned by SonarQube. To manage a
+          configuration that already exists, set the crossplane.io/external-name
+          annotation to its ID.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              A GitLabConfigurationSpec defines the desired state of a
+              GitLabConfiguration.
+
+              writeConnectionSecretToRef is required: SonarQube never returns the
+              application secret nor the provisioning token, so the provider stores the
+              values it last applied there to detect their rotation.
+            properties:
+              forProvider:
+                description: |-
+                  GitLabConfigurationParameters are the configurable fields of a
+                  GitLabConfiguration.
+                properties:
+                  allowAllGroups:
+                    description: |-
+                      AllowAllGroups provisions every group visible to the provisioning
+                      token and ignores AllowedGroups. It only applies to AUTO_PROVISIONING,
+                      and SonarQube rejects it for gitlab.com.
+                      Late-initialized from SonarQube if unset.
+                    type: boolean
+                  allowUsersToSignUp:
+                    description: |-
+                      AllowUsersToSignUp lets users who are not yet in SonarQube sign up
+                      with GitLab. With JIT, this creates their SonarQube account on first
+                      login.
+                      Late-initialized from SonarQube if unset.
+                    type: boolean
+                  allowedGroups:
+                    description: |-
+                      AllowedGroups are the GitLab groups whose members may authenticate.
+                      Subgroups are included. With AUTO_PROVISIONING, members of these groups
+                      are provisioned in SonarQube, and the list must not be empty unless
+                      AllowAllGroups is true.
+                      Late-initialized from SonarQube if unset.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  applicationId:
+                    description: ApplicationID is the ID of the GitLab OAuth application.
+                    minLength: 1
+                    type: string
+                  applicationSecretRef:
+                    description: |-
+                      ApplicationSecretRef references the Secret key holding the secret of
+                      the GitLab OAuth application. The Secret is read from the
+                      GitLabConfiguration's namespace.
+                    properties:
+                      key:
+                        type: string
+                      name:
+                        description: Name of the secret.
+                        type: string
+                    required:
+                    - key
+                    - name
+                    type: object
+                  enabled:
+                    default: true
+                    description: |-
+                      Enabled enables GitLab authentication.
+                      Defaults to true.
+                    type: boolean
+                  provisioningTokenSecretRef:
+                    description: |-
+                      ProvisioningTokenSecretRef references the Secret key holding the GitLab
+                      token used for AUTO_PROVISIONING. The Secret is read from the
+                      GitLabConfiguration's namespace.
+                      Removing this reference does not remove the token from SonarQube.
+                    properties:
+                      key:
+                        type: string
+                      name:
+                        description: Name of the secret.
+                        type: string
+                    required:
+                    - key
+                    - name
+                    type: object
+                  provisioningType:
+                    default: JIT
+                    description: |-
+                      ProvisioningType is how users and groups are provisioned: JIT (just in
+                      time, on first login) or AUTO_PROVISIONING (synchronized from GitLab,
+                      requires ProvisioningTokenSecretRef).
+                      Defaults to JIT.
+                    enum:
+                    - JIT
+                    - AUTO_PROVISIONING
+                    type: string
+                  synchronizeGroups:
+                    description: |-
+                      SynchronizeGroups synchronizes the GitLab groups of a user with
+                      SonarQube groups on login.
+                      Late-initialized from SonarQube if unset (false on creation).
+                    type: boolean
+                  url:
+                    description: URL is the URL of the GitLab instance, for example
+                      https://gitlab.com.
+                    format: uri
+                    minLength: 1
+                    type: string
+                required:
+                - applicationId
+                - applicationSecretRef
+                - url
+                type: object
+                x-kubernetes-validations:
+                - message: provisioningTokenSecretRef is required when provisioningType
+                    is AUTO_PROVISIONING
+                  rule: '!has(self.provisioningType) || self.provisioningType != ''AUTO_PROVISIONING''
+                    || has(self.provisioningTokenSecretRef)'
+                - message: allowedGroups must not be empty when provisioningType is
+                    AUTO_PROVISIONING, unless allowAllGroups is true
+                  rule: '!has(self.provisioningType) || self.provisioningType != ''AUTO_PROVISIONING''
+                    || (has(self.allowAllGroups) && self.allowAllGroups) || (has(self.allowedGroups)
+                    && size(self.allowedGroups) > 0)'
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  kind: ClusterProviderConfig
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  kind:
+                    description: Kind of the referenced object.
+                    type: string
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - forProvider
+            type: object
+            x-kubernetes-validations:
+            - message: writeConnectionSecretToRef with a non-empty name is required
+              rule: has(self.writeConnectionSecretToRef) && size(self.writeConnectionSecretToRef.name)
+                > 0
+          status:
+            description: |-
+              A GitLabConfigurationStatus represents the observed state of a
+              GitLabConfiguration.
+            properties:
+              atProvider:
+                description: |-
+                  GitLabConfigurationObservation are the observable fields of a
+                  GitLabConfiguration.
+                properties:
+                  allowAllGroups:
+                    description: |-
+                      AllowAllGroups reports whether every group visible to the provisioning
+                      token is provisioned.
+                    type: boolean
+                  allowUsersToSignUp:
+                    description: AllowUsersToSignUp reports whether new users may
+                      sign up.
+                    type: boolean
+                  allowedGroups:
+                    description: AllowedGroups are the GitLab groups whose members
+                      may authenticate.
+                    items:
+                      type: string
+                    type: array
+                  applicationId:
+                    description: ApplicationID is the ID of the GitLab OAuth application.
+                    type: string
+                  enabled:
+                    description: Enabled reports whether GitLab authentication is
+                      enabled.
+                    type: boolean
+                  errorMessage:
+                    description: |-
+                      ErrorMessage is the error SonarQube reports when validating the
+                      configuration against GitLab, if any.
+                    type: string
+                  id:
+                    description: |-
+                      ID is the identifier of the configuration in SonarQube, used as the
+                      external name.
+                    type: string
+                  isProvisioningTokenSet:
+                    description: |-
+                      IsProvisioningTokenSet reports whether SonarQube holds a provisioning
+                      token.
+                    type: boolean
+                  provisioningType:
+                    description: ProvisioningType is the provisioning type.
+                    type: string
+                  synchronizeGroups:
+                    description: SynchronizeGroups reports whether GitLab groups are
+                      synchronized.
+                    type: boolean
+                  url:
+                    description: URL is the URL of the GitLab instance.
+                    type: string
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              lastHandledReconcileAt:
+                description: |-
+                  LastHandledReconcileAt holds the value of the most recent
+                  reconcile-requested-at annotation token that the controller has
+                  processed. Users can compare this to the annotation to determine
+                  whether a reconcile request has been handled.
+                type: string
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
